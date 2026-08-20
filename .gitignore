@@ -1,0 +1,61 @@
+# ── Secrets ──────────────────────────────────────────────
+.env
+.env.local
+*.pem
+*.key
+*.jks
+*.keystore
+
+# ── Archived nested repo (vayu-framework history) ────────
+website/.git.vayu-backup/
+
+# ── PHP / Composer ───────────────────────────────────────
+website/vendor/
+composer.phar
+
+# ── Website runtime state ────────────────────────────────
+website/database/database.sqlite
+website/database/*.sqlite-shm
+website/database/*.sqlite-wal
+website/storage/uploads/
+website/storage/logs/
+website/logs/
+
+# ── Flutter / Dart ───────────────────────────────────────
+mobile_app/build/
+mobile_app/.dart_tool/
+mobile_app/.packages
+mobile_app/.flutter-plugins
+mobile_app/.flutter-plugins-dependencies
+
+# Desktop targets: regenerable with `flutter create .`, 82M
+mobile_app/linux/
+mobile_app/macos/
+mobile_app/windows/
+mobile_app/web/
+mobile_app/ios/
+
+# Android: config IS committed, machine-local bits are not
+mobile_app/android/.gradle/
+mobile_app/android/local.properties
+mobile_app/android/app/build/
+mobile_app/android/.cxx/
+
+# ── Editors / IDE ────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.sublime-workspace
+*.sublime-project
+*.swp
+
+# ── OS ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Logs / temp ──────────────────────────────────────────
+*.log
+*.cache
+*.tmp
+*.temp
+*.bak

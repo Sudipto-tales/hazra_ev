@@ -1,0 +1,95 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import 'app.dart';
+import 'core/config/api_config.dart';
+import 'data/api/api_client.dart';
+import 'data/api/token_store.dart';
+import 'data/mock/product_store.dart';
+import 'data/repositories/admin_repository.dart';
+import 'data/repositories/employee_repository.dart';
+import 'data/repositories/http_admin_repository.dart';
+import 'data/repositories/http_employee_repository.dart';
+import 'data/repositories/mock_admin_repository.dart';
+import 'data/repositories/mock_employee_repository.dart';
+import 'services/location_service.dart';
+import 'state/app_scope.dart';
+import 'state/notification_center.dart';
+import 'state/settings_controller.dart';
+import 'state/tracking_controller.dart';
+
+/// Composition root.
+///
+/// Defaults to the live API at [ApiConfig.baseUrl] — `localhost:8000`. The
+/// mock repositories are still wired and one flag away, so the UI can be
+/// worked on with no server running:
+///
+/// ```sh
+/// flutter run                                   # live API on localhost
+/// flutter run --dart-define=USE_MOCKS=true      # offline, static fixtures
+/// flutter run --dart-define=API_HOST=10.0.2.2   # Android emulator
+/// ```
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
+  debugPrint('[hazra-ev] ${ApiConfig.describe()}');
+
+  final NotificationCenter notifications = NotificationCenter();
+
+  final EmployeeRepository repository;
+  final AdminRepository adminRepository;
+  ApiClient? api;
+
+  if (ApiConfig.useMocks) {
+    // One catalogue and one notification feed shared by both repositories, so a
+    // product the admin lists is immediately visible on the employee side.
+    // Against the real API the server does this instead.
+    final ProductStore productStore = ProductStore();
+
+    repository = MockEmployeeRepository(
+      products: productStore,
+      notifications: notifications,
+    );
+    adminRepository = MockAdminRepository(
+      products: productStore,
+      notifications: notifications,
+    );
+  } else {
+    final TokenStore tokens = await TokenStore.open();
+
+    api = ApiClient(tokens: tokens);
+
+    // Both refresh attempts failed — the only honest thing left is to send the
+    // user back to sign-in rather than fail every screen independently.
+    api.onSessionExpired = () {
+      appNavigatorKey.currentState?.popUntil((Route<dynamic> r) => r.isFirst);
+    };
+
+    repository = HttpEmployeeRepository(api);
+    adminRepository = HttpAdminRepository(api);
+  }
+
+  final LocationService locationService = MockLocationService();
+  final TrackingController tracking = TrackingController(
+    repository: repository,
+    locationService: locationService,
+  );
+  final SettingsController settings = SettingsController();
+
+  runApp(
+    AppScope(
+      repository: repository,
+      adminRepository: adminRepository,
+      locationService: locationService,
+      tracking: tracking,
+      settings: settings,
+      notifications: notifications,
+      api: api,
+      child: const TrackingApp(),
+    ),
+  );
+}
