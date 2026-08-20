@@ -181,7 +181,9 @@ build_message() {
     fi
   fi
 
-  local head="$type($scope): $subject"
+  local head
+  if [[ $scope == "$type" ]]; then head="$type: $subject"
+  else                             head="$type($scope): $subject"; fi
   (( ${#head} > 72 )) && head="${head:0:69}..."
 
   printf '%s\n\n' "$head"
