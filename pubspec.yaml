@@ -1,0 +1,40 @@
+name: employeetracking_mobile_app
+description: Salesman / Employee tracking mobile app — UI layer with static data.
+publish_to: "none"
+version: 0.1.0+1
+
+# Requires Flutter 3.27+ (uses Color.withValues and TextScaler.clamp).
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # API client. `http` is enough for this surface — every call is a plain
+  # JSON request/response against website/api, and the one streaming endpoint
+  # (SSE /stream) is an admin-web concern, not a mobile one.
+  http: ^1.5.0
+
+  # Survives the access/refresh token pair across app restarts so the field
+  # team is not asked to sign in every launch.
+  shared_preferences: ^2.5.5
+
+  # OpenStreetMap basemap for the admin route screen. Pure Dart/Flutter — it
+  # renders raster tiles itself rather than embedding a platform map view, so
+  # there is no Google/Mapbox key and no per-platform native setup.
+  # The hand-painted RoutePainter stays as the offline fallback.
+  flutter_map: ^8.3.1
+
+  # LatLng type flutter_map speaks. The app's own models stay plain doubles;
+  # conversion happens at the map boundary only.
+  latlong2: ^0.10.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

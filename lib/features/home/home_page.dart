@@ -1,0 +1,492 @@
+import 'package:flutter/material.dart';
+
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/dimens.dart';
+import '../../core/theme/theme_ext.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/mock/mock_data.dart';
+import '../../data/models/models.dart';
+import '../../state/app_scope.dart';
+import '../../state/tracking_controller.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/avatar.dart';
+import '../../widgets/stat_tile.dart';
+import '../../widgets/states.dart';
+import '../../widgets/status_badge.dart';
+import '../reports/create_report_page.dart';
+import '../reports/report_detail_page.dart';
+import '../shell/main_shell.dart';
+import 'activity_page.dart';
+import 'widgets/activity_timeline.dart';
+import 'widgets/day_dialogs.dart';
+import 'widgets/session_card.dart';
+import 'widgets/tracking_sheet.dart';
+import 'widgets/visit_tile.dart';
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final AppScope scope = AppScope.of(context);
+
+    return Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: ListenableBuilder(
+          listenable: scope.tracking,
+          builder: (BuildContext context, _) {
+            final TrackingController c = scope.tracking;
+
+            if (c.isLoading) {
+              return const Padding(
+                padding: EdgeInsets.all(Insets.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SkeletonBox(width: 160, height: 18),
+                    SizedBox(height: Insets.xl),
+                    SkeletonBox(height: 210, radius: Radii.xl),
+                    SizedBox(height: Insets.xl),
+                    LoadingCards(count: 2),
+                  ],
+                ),
+              );
+            }
+
+            if (c.error != null && c.snapshot == null) {
+              return ErrorState(onRetry: c.load);
+            }
+
+            return RefreshIndicator(
+              onRefresh: c.refresh,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  Insets.lg,
+                  Insets.sm,
+                  Insets.lg,
+                  Insets.xxxl,
+                ),
+                children: <Widget>[
+                  const _HomeHeader(),
+                  const SizedBox(height: Insets.lg),
+                  if (c.locationHealth != LocationHealth.ok ||
+                      c.status.isDegraded) ...<Widget>[
+                    AlertBanner(
+                      icon: Icons.warning_amber_rounded,
+                      tone: c.locationHealth.blocksStart
+                          ? AppColors.danger
+                          : AppColors.warning,
+                      title: c.locationHealth.title,
+                      message: c.locationHealth.message,
+                      actionLabel: 'Details',
+                      onAction: () => showTrackingSheet(context),
+                    ),
+                    const SizedBox(height: Insets.lg),
+                  ],
+                  SessionCard(
+                    controller: c,
+                    onStartDay: () => _startDay(context, c),
+                    onEndDay: () => _endDay(context, c),
+                    onPause: () => _pause(context, c),
+                    onTrackingTap: () => showTrackingSheet(context),
+                  ),
+                  const SizedBox(height: Insets.xl),
+                  const _QuickActions(),
+                  const SectionHeader(
+                    title: "Today's summary",
+                    padding: EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
+                  ),
+                  _SummaryGrid(controller: c),
+                  SectionHeader(
+                    title: 'Company visits',
+                    subtitle: '${c.snapshot?.visits.length ?? 0} today',
+                    padding: const EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
+                  ),
+                  _VisitsBlock(controller: c),
+                  SectionHeader(
+                    title: 'Activity',
+                    subtitle: 'Where you went and what you submitted',
+                    actionLabel: 'View all',
+                    onAction: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ActivityPage(
+                          events: c.snapshot?.activity ?? const <ActivityEvent>[],
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
+                  ),
+                  _ActivityBlock(controller: c),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _startDay(BuildContext context, TrackingController c) async {
+    final StartDayResult result = await c.startDay();
+    if (!context.mounted) return;
+
+    switch (result.outcome) {
+      case StartDayOutcome.started:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Day started at ${Fmt.time(c.joiningTime)} · tracking is on',
+            ),
+          ),
+        );
+      case StartDayOutcome.blocked:
+        await showLocationBlockedDialog(
+          context,
+          result.health,
+          onEnable: () async {
+            await AppScope.of(context)
+                .locationService
+                .requestPermission(background: true);
+            if (!context.mounted) return;
+            await _startDay(context, c);
+          },
+        );
+      case StartDayOutcome.alreadyRunning:
+        break;
+    }
+  }
+
+  Future<void> _endDay(BuildContext context, TrackingController c) async {
+    final bool ok = await confirmEndDay(context, c);
+    if (!ok || !context.mounted) return;
+    await c.endDay();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Day ended · ${Fmt.duration(c.workedToday)} worked, '
+          '${Fmt.km(c.summary.distanceKm)} travelled',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pause(BuildContext context, TrackingController c) async {
+    await c.pauseSession();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Session closed · start a new one when you resume'),
+      ),
+    );
+  }
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader();
+
+  String get _greeting {
+    final int h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Employee me = MockData.employee;
+
+    return Row(
+      children: <Widget>[
+        ProfileAvatar(
+          initials: me.initials,
+          imageUrl: me.avatarUrl,
+          size: Sizes.avatarMd,
+          statusColor: AppColors.success,
+        ),
+        const SizedBox(width: Insets.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                '$_greeting, ${me.firstName}',
+                style: theme.textTheme.titleLarge,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(Fmt.longDate(DateTime.now()), style: theme.textTheme.bodySmall),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No new notifications')),
+          ),
+          style: IconButton.styleFrom(
+            backgroundColor: context.cardColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(Radii.md),
+              side: BorderSide(color: context.lineColor),
+            ),
+          ),
+          icon: const Icon(Icons.notifications_none_rounded, size: 21),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: _ActionChip(
+            icon: Icons.note_add_outlined,
+            label: 'New report',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const CreateReportPage(),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: Insets.md),
+        Expanded(
+          child: _ActionChip(
+            icon: Icons.description_outlined,
+            label: 'My reports',
+            onTap: () => ShellScope.maybeOf(context)?.goToTab(1),
+          ),
+        ),
+        const SizedBox(width: Insets.md),
+        Expanded(
+          child: _ActionChip(
+            icon: Icons.my_location_rounded,
+            label: 'Tracking',
+            onTap: () => showTrackingSheet(context),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(vertical: Insets.md),
+      child: Column(
+        children: <Widget>[
+          Icon(icon, size: 21, color: AppColors.primary),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryGrid extends StatelessWidget {
+  const _SummaryGrid({required this.controller});
+
+  final TrackingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final DaySummary s = controller.summary;
+    return StatGrid(
+      children: <Widget>[
+        StatTile(
+          icon: Icons.login_rounded,
+          value: Fmt.time(controller.joiningTime),
+          label: 'Joining time',
+          tone: AppColors.success,
+        ),
+        StatTile(
+          icon: Icons.timer_outlined,
+          value: Fmt.duration(controller.workedToday),
+          label: 'Working time',
+          tone: AppColors.primary,
+        ),
+        StatTile(
+          icon: Icons.layers_outlined,
+          value: '${controller.sessions.length}',
+          label: 'Sessions',
+          tone: AppColors.info,
+        ),
+        StatTile(
+          icon: Icons.route_rounded,
+          value: Fmt.km(s.distanceKm),
+          label: 'Distance',
+          tone: AppColors.primary,
+        ),
+        StatTile(
+          icon: Icons.business_rounded,
+          value: '${s.companiesVisited}',
+          label: 'Companies visited',
+          tone: AppColors.warning,
+        ),
+        StatTile(
+          icon: Icons.description_outlined,
+          value: '${s.reportsSubmitted}',
+          label: 'Reports submitted',
+          tone: AppColors.primary,
+        ),
+        StatTile(
+          icon: Icons.pause_circle_outline_rounded,
+          value: Fmt.duration(s.stopDuration),
+          label: 'Total stop time',
+          tone: AppColors.warning,
+          caption: 'Longest ${Fmt.duration(s.longestStop)}',
+        ),
+        StatTile(
+          icon: Icons.place_outlined,
+          value: '${controller.snapshot?.stops.length ?? 0}',
+          label: 'Stops detected',
+          tone: AppColors.info,
+        ),
+      ],
+    );
+  }
+}
+
+class _VisitsBlock extends StatelessWidget {
+  const _VisitsBlock({required this.controller});
+
+  final TrackingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<CompanyVisit> visits =
+        controller.snapshot?.visits ?? const <CompanyVisit>[];
+
+    if (visits.isEmpty) {
+      return AppCard(
+        child: EmptyState(
+          icon: Icons.business_outlined,
+          title: 'No visits yet',
+          message: 'Company visits appear here once a stop is detected at a '
+              'customer location.',
+        ),
+      );
+    }
+
+    return Column(
+      children: visits
+          .map(
+            (CompanyVisit v) => Padding(
+              padding: const EdgeInsets.only(bottom: Insets.md),
+              child: VisitTile(
+                visit: v,
+                now: controller.now,
+                onReportTap: (String id) => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ReportDetailPage(reportId: id),
+                  ),
+                ),
+                onAddReport: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => CreateReportPage(visit: v),
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _ActivityBlock extends StatelessWidget {
+  const _ActivityBlock({required this.controller});
+
+  final TrackingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<ActivityEvent> events =
+        controller.snapshot?.activity ?? const <ActivityEvent>[];
+
+    if (events.isEmpty) {
+      return AppCard(
+        child: EmptyState(
+          icon: Icons.timeline_rounded,
+          title: 'Nothing recorded yet',
+          message: controller.status == WorkStatus.notStarted
+              ? 'Start your day and your movements, visits and reports will show up here.'
+              : 'Your activity will appear as you travel and visit companies.',
+        ),
+      );
+    }
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              StatusBadge.work(controller.status, dense: true),
+              const Spacer(),
+              Text(
+                '${events.length} events',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          const SizedBox(height: Insets.lg),
+          ActivityTimeline(
+            events: events,
+            maxItems: 7,
+            onReportTap: (String id) => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ReportDetailPage(reportId: id),
+              ),
+            ),
+          ),
+          if (events.length > 7) ...<Widget>[
+            const SizedBox(height: Insets.md),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ActivityPage(events: events),
+                  ),
+                ),
+                child: Text('View all ${events.length} events'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
