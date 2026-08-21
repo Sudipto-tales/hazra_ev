@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scooters — Hazra EV</title>
+<meta name="description" content="Compare all six Hazra EV electric scooters: range, top speed, battery and ex-showroom price.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/hazra.css">
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/render.js"></script>
+<script defer src="assets/js/hazra.js"></script>
+</head>
+<body>
+
+<section class="page-hero">
+  <div class="page-hero__bg">
+    <img src="https://images.unsplash.com/photo-1554223789-df81106a45ed?auto=format&fit=crop&w=1800&q=80" alt="">
+  </div>
+  <div class="page-hero__inner wrap">
+    <div class="crumbs"><a href="index.html">Home</a><span>/</span><span>Scooters</span></div>
+    <h1>The Urja Collection</h1>
+    <p class="lead" style="color:#CBD5E1;margin-top:14px">Six models. Two battery chemistries.
+      One warranty. Filter by speed class, then compare the numbers side by side.</p>
+  </div>
+</section>
+
+<section class="section section--tight">
+  <div class="wrap">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between"
+         data-reveal="up">
+      <div data-filter-group="#productGrid" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="chip is-active" data-filter="all">All models</button>
+        <button class="chip" data-filter="high-speed">High speed</button>
+        <button class="chip" data-filter="low-speed">Low speed</button>
+        <button class="chip" data-filter="commercial">Commercial</button>
+      </div>
+      <div class="field" style="margin:0;min-width:250px">
+        <input type="text" placeholder=" " data-search="#productGrid" id="psearch">
+        <label for="psearch">Search the lineup</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="product-grid" id="productGrid"></div>
+    <p class="center" id="productGrid-empty" style="display:none;color:var(--muted);padding:40px 0">
+      Nothing matches that search. Try a model name like <b>Urja</b> or <b>Vega</b>.</p>
+  </div>
+</section>
+
+<section class="section section--alt">
+  <div class="wrap">
+    <div class="section-head" data-reveal="up">
+      <span class="eyebrow"><span class="material-symbols-outlined" style="font-size:15px">table_chart</span>Side by side</span>
+      <h2>Compare every model</h2>
+      <p class="lead">Prices are ex-showroom Kolkata for the graphene battery variant, before GST,
+        insurance and any state EV subsidy you qualify for.</p>
+    </div>
+    <div class="table-scroll" data-reveal="up">
+      <table class="compare">
+        <thead><tr>
+          <th>Model</th><th>Class</th><th>Range</th><th>Top speed</th><th>Charge</th>
+          <th>Motor</th><th>Battery</th><th>From</th>
+        </tr></thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap"><div class="split">
+    <div data-reveal="left">
+      <span class="eyebrow eyebrow--eco"><span class="material-symbols-outlined" style="font-size:15px">battery_full</span>Battery choice</span>
+      <h2>Graphene or lithium-ion?</h2>
+      <p class="lead">Both carry the same four-year warranty. The difference is weight, charge speed
+        and what you pay up front.</p>
+      <div class="accordion" data-accordion-single style="margin-top:26px">
+        <div class="acc is-open"><button class="acc__head">Graphene — the value pick
+          <span class="material-symbols-outlined">add</span></button>
+          <div class="acc__panel"><p>Heavier by roughly 9 kg and fixed to the frame, but ₹11,500 cheaper
+            and more tolerant of deep discharge. Right for a scooter that lives in a garage and charges
+            overnight.</p></div></div>
+        <div class="acc"><button class="acc__head">Lithium-ion — the light pick
+          <span class="material-symbols-outlined">add</span></button>
+          <div class="acc__panel"><p>Removable, about 12 kg, and charges roughly 25% faster. If you park
+            on the street or live above the ground floor, this is the one to buy.</p></div></div>
+        <div class="acc"><button class="acc__head">How long will either last?
+          <span class="material-symbols-outlined">add</span></button>
+          <div class="acc__panel"><p>Both are rated to 1,000 full cycles to 80% capacity. In practice our
+            oldest fleet packs — 2019 graphene, 41,000 km — still return about 74% of rated range.</p></div></div>
+      </div>
+    </div>
+    <div data-reveal="right">
+      <div class="split__media">
+        <img src="https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=900&q=80"
+             alt="Battery pack and charger" loading="lazy">
+        <div class="split__float">
+          <b>1,000</b>
+          <span style="font-size:.86rem;color:var(--muted)">charge cycles to 80% capacity, on both
+            chemistries, covered for four years</span>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<section class="section section--tight">
+  <div class="wrap"><div class="cta-band" data-reveal="zoom">
+    <h2>Still deciding?</h2>
+    <p>Book a 20-minute test ride at your nearest dealer. Ride two models back to back —
+      that usually settles it faster than any spec sheet.</p>
+    <a class="btn btn--lg" href="contact.html#testride" style="margin-top:24px">
+      <span class="material-symbols-outlined">two_wheeler</span>Book a Test Ride</a>
+  </div></div>
+</section>
+
+</body>
+</html>

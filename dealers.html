@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dealer Locator — Hazra EV</title>
+<meta name="description" content="Find your nearest Hazra EV showroom or service point across 19 states, or apply to become a dealer.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/hazra.css">
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/render.js"></script>
+<script defer src="assets/js/hazra.js"></script>
+</head>
+<body>
+
+<section class="page-hero">
+  <div class="page-hero__bg">
+    <img src="https://images.unsplash.com/photo-1561490497-43bc900ac2d8?auto=format&fit=crop&w=1800&q=80" alt="">
+  </div>
+  <div class="page-hero__inner wrap">
+    <div class="crumbs"><a href="index.html">Home</a><span>/</span><span>Dealers</span></div>
+    <h1>Find your nearest Hazra EV</h1>
+    <p class="lead" style="color:#CBD5E1;margin-top:14px">212 showrooms and service points across
+      19 states. Search by city, or filter to only the ones that stock the model you want.</p>
+  </div>
+</section>
+
+<section class="section section--tight">
+  <div class="wrap">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between"
+         data-reveal="up">
+      <div data-filter-group="#dealerList" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="chip is-active" data-filter="all">All</button>
+        <button class="chip" data-filter="showroom">Showroom</button>
+        <button class="chip" data-filter="service">Service only</button>
+        <button class="chip" data-filter="fleet">Fleet centre</button>
+      </div>
+      <div class="field" style="margin:0;min-width:280px">
+        <input type="text" placeholder=" " data-search="#dealerList" id="dsearch">
+        <label for="dsearch">Search city, area or dealer</label>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="wrap">
+    <div class="split" style="align-items:start;gap:36px">
+      <div class="grid" id="dealerList" style="gap:16px"></div>
+      <div data-reveal="right" style="position:sticky;top:calc(var(--nav-h) + 20px)">
+        <div class="split__media">
+          <img src="https://images.unsplash.com/photo-1643902917449-98c7ef8c9685?auto=format&fit=crop&w=900&q=80"
+               alt="Hazra EV showroom floor" loading="lazy">
+          <div class="split__float"><b>212</b>
+            <span style="font-size:.86rem;color:var(--muted)">points across 19 states — 78% of our
+              customers live within 30 km of one</span></div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <h3 style="font-size:1.1rem;margin-bottom:10px">No dealer in your district?</h3>
+          <p style="color:var(--muted);font-size:.9rem">We deliver to the door in any pin code we cover
+            and pair you with the nearest service point for warranty work. Doorstep service reaches
+            18 km beyond every dealer.</p>
+          <a class="btn btn--block btn--sm" href="contact.html">
+            <span class="material-symbols-outlined">local_shipping</span>Check my pin code</a>
+        </div>
+      </div>
+    </div>
+    <p class="center" id="dealerList-empty" style="display:none;color:var(--muted);padding:40px 0">
+      No match. Try a larger city nearby — <b>Kolkata</b>, <b>Patna</b> or <b>Guwahati</b>.</p>
+  </div>
+</section>
+
+<!-- become a dealer -->
+<section class="section section--night" id="become">
+  <div class="wrap">
+    <div class="section-head center" data-reveal="up">
+      <span class="eyebrow"><span class="material-symbols-outlined" style="font-size:15px">storefront</span>Partner with us</span>
+      <h2>Become a Hazra EV dealer</h2>
+      <p class="lead">We open roughly 40 points a year and we are deliberately slow about it —
+        no district gets a showroom until we can staff its service bay.</p>
+    </div>
+    <div class="steps" data-reveal="up" style="margin-bottom:48px">
+      <div class="step"><h4>Apply</h4><p>Send us the form. Location, capital available, and whether you
+        already run an automotive business.</p></div>
+      <div class="step"><h4>Site visit</h4><p>Our regional manager visits within three weeks and assesses
+        footfall, frontage and service space.</p></div>
+      <div class="step"><h4>Agreement</h4><p>Territory, targets and margin are fixed in writing.
+        No exclusivity fee, no deposit beyond stock.</p></div>
+      <div class="step"><h4>Open</h4><p>Forty hours of technician training, a launch stock of 12 units,
+        and a co-funded opening campaign.</p></div>
+    </div>
+    <div class="card card--night" style="max-width:760px;margin-inline:auto" data-reveal="up">
+      <h3 style="margin-bottom:18px">Dealer enquiry</h3>
+      <form data-fake-form="Thanks — our regional manager will call you within 3 working days.">
+        <div class="form-grid">
+          <div class="field"><input type="text" placeholder=" " required id="dn"><label for="dn">Full name</label></div>
+          <div class="field"><input type="tel" placeholder=" " required id="dp"><label for="dp">Phone number</label></div>
+          <div class="field"><input type="text" placeholder=" " required id="dc"><label for="dc">City / district</label></div>
+          <div class="field field--select"><select id="dcap"><option>Under ₹15 lakh</option>
+            <option>₹15–30 lakh</option><option>₹30–50 lakh</option><option>Above ₹50 lakh</option>
+            </select><label for="dcap">Capital available</label></div>
+        </div>
+        <div class="field"><textarea placeholder=" " id="dm"></textarea>
+          <label for="dm">Tell us about your existing business</label></div>
+        <button class="btn btn--block btn--lg" type="submit">
+          <span class="material-symbols-outlined">send</span>Submit enquiry</button>
+        <p class="form-note"><span class="material-symbols-outlined" style="font-size:17px">lock</span>
+          Prototype form — nothing is sent anywhere.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var dealers = [
+    ['Hazra EV Bhawanipore','showroom','23A Hazra Road, Kolkata 700026','West Bengal','Mon–Sat, 10am–8pm','+91 91471 02945','Flagship · all 6 models · 360° bay'],
+    ['Hazra EV Salt Lake','showroom','DC Block, Sector 1, Kolkata 700064','West Bengal','Mon–Sun, 10am–9pm','+91 91471 02946','All models · finance desk'],
+    ['Hazra EV Howrah Service','service','14 Belilious Road, Howrah 711101','West Bengal','Mon–Sat, 9am–7pm','+91 91471 02947','Service &amp; warranty only'],
+    ['Hazra EV Durgapur','showroom','City Centre, Durgapur 713216','West Bengal','Mon–Sat, 10am–8pm','+91 91471 02948','Urja range · Cargo 7'],
+    ['Hazra EV Siliguri','showroom','Sevoke Road, Siliguri 734001','West Bengal','Mon–Sat, 10am–8pm','+91 91471 02949','All models · hill test route'],
+    ['Hazra EV Dankuni Fleet','fleet','Plant Gate 2, Dankuni 712311','West Bengal','Mon–Fri, 9am–6pm','+91 91471 02950','Fleet sales · telematics onboarding'],
+    ['Hazra EV Patna','showroom','Boring Road, Patna 800001','Bihar','Mon–Sun, 10am–8pm','+91 91471 02951','Urja range · Vega 1000'],
+    ['Hazra EV Bhubaneswar','showroom','Saheed Nagar, Bhubaneswar 751007','Odisha','Mon–Sat, 10am–8pm','+91 91471 02952','All models'],
+    ['Hazra EV Guwahati','showroom','GS Road, Guwahati 781005','Assam','Mon–Sat, 10am–8pm','+91 91471 02953','Urja range · service bay'],
+    ['Hazra EV Ranchi Service','service','Lalpur, Ranchi 834001','Jharkhand','Mon–Sat, 9am–7pm','+91 91471 02954','Service &amp; spares'],
+    ['Hazra EV Raipur','showroom','Pandri, Raipur 492004','Chhattisgarh','Mon–Sat, 10am–8pm','+91 91471 02955','Urja range'],
+    ['Hazra EV Asansol Fleet','fleet','GT Road, Asansol 713301','West Bengal','Mon–Sat, 9am–7pm','+91 91471 02956','Cargo 7 fleet centre']
+  ];
+  var list = document.getElementById('dealerList');
+  if (!list) return;
+  list.innerHTML = dealers.map(function (d, i) {
+    return '<article class="dealer" data-tags="' + d[1] + ' all" data-reveal="up" data-delay="' +
+      (i % 4) * 60 + '">' +
+      '<div class="dealer__pin"><span class="material-symbols-outlined">' +
+      (d[1] === 'service' ? 'build' : d[1] === 'fleet' ? 'local_shipping' : 'store') + '</span></div>' +
+      '<div style="flex:1;min-width:0"><h4>' + d[0] + '</h4>' +
+      '<p>' + d[2] + ' · ' + d[3] + '</p>' +
+      '<div class="dealer__meta">' +
+      '<span><span class="material-symbols-outlined">schedule</span>' + d[4] + '</span>' +
+      '<span><span class="material-symbols-outlined">call</span>' + d[5] + '</span>' +
+      '<span><span class="material-symbols-outlined">check_circle</span>' + d[6] + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">' +
+      '<a class="btn btn--sm" href="contact.html#testride">Book test ride</a>' +
+      '<a class="btn btn--ghost btn--sm" href="#">Directions</a></div>' +
+      '</div></article>';
+  }).join('');
+});
+</script>
+</body>
+</html>
