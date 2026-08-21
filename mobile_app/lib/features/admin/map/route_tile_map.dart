@@ -13,12 +13,19 @@ import '../../../services/osrm_service.dart';
 import 'route_painter.dart' show RouteMapColors;
 
 /// The route drawn on a real OpenStreetMap basemap, with the GPS trace snapped
-/// to the road network by OSRM.
+/// to the road network.
 ///
 /// Two polylines are drawn on purpose: the faint one is the raw trace as the
-/// handset recorded it, the solid one is what OSRM matched. Seeing both is how
-/// an admin tells "the employee drove down a side street" apart from "the
-/// matcher guessed". When snapping is off or fails, only the raw trace shows.
+/// handset recorded it, the solid one is the road match. Seeing both is how an
+/// admin tells "the employee drove down a side street" apart from "the matcher
+/// guessed". When snapping is off or fails, only the raw trace shows.
+///
+/// The match comes from the server when it has one — matched once when the day
+/// closed, cached, and sent as polyline6 beside the trace. Every device that
+/// opens that day then draws the same roads without any of them touching a
+/// matching host. [OsrmService] is the fallback for the cases the server
+/// cannot cover: today's still-open route, and a payload from a server with
+/// matching turned off.
 ///
 /// Tiles come from the network, so this widget can fail in a way the painted
 /// fallback cannot. It reports that through [onTilesUnavailable] rather than
@@ -58,6 +65,11 @@ class _RouteTileMapState extends State<RouteTileMap> {
   List<List<LatLng>>? _snapped;
   bool _snapping = false;
 
+  /// True when [_snapped] came from the server rather than a device-side OSRM
+  /// call. The drawn line is identical either way; what differs is that the
+  /// server knows which sessions it failed on and says so.
+  bool _snappedByServer = false;
+
   /// Tile health. The fallback only fires when nothing at all has rendered —
   /// a handful of 404s at the edge of coverage is not an outage.
   int _tileErrors = 0;
@@ -75,6 +87,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.track, widget.track)) {
       _snapped = null;
+      _snappedByServer = false;
       _snap();
     }
   }
@@ -87,6 +100,16 @@ class _RouteTileMapState extends State<RouteTileMap> {
   }
 
   Future<void> _snap() async {
+    final List<List<LatLng>>? served = _servedSegments();
+    if (served != null) {
+      setState(() {
+        _snapped = served;
+        _snappedByServer = true;
+        _snapping = false;
+      });
+      return;
+    }
+
     if (!MapConfig.snapToRoads) return;
     setState(() => _snapping = true);
     final List<List<LatLng>> result =
@@ -94,8 +117,51 @@ class _RouteTileMapState extends State<RouteTileMap> {
     if (!mounted) return;
     setState(() {
       _snapped = result;
+      _snappedByServer = false;
       _snapping = false;
     });
+  }
+
+  /// The server's matched geometry, aligned index-for-index with
+  /// [_rawSegments] so a session keeps its colour in both lines.
+  ///
+  /// A session the server could not match keeps its raw points here rather than
+  /// being dropped: the alignment is what [_polylines] indexes on, and a hole in
+  /// it would recolour every session after the gap.
+  List<List<LatLng>>? _servedSegments() {
+    final MatchedRoute? matched = widget.track.matched;
+    if (matched == null || !matched.isUsable) return null;
+
+    final List<List<LocationLog>> raw = widget.track.segments;
+    final List<WorkSession> sessions = widget.track.sessions;
+
+    final Map<String, int> indexById = <String, int>{
+      for (final WorkSession s in sessions) s.id: s.index,
+    };
+
+    final List<List<LatLng>> out = <List<LatLng>>[];
+    bool any = false;
+
+    for (final List<LocationLog> segment in raw) {
+      final int index =
+          segment.isEmpty ? -1 : (indexById[segment.first.sessionId] ?? -1);
+      final List<GeoPoint>? points =
+          index < 0 ? null : matched.pointsForSession(index);
+
+      if (points == null) {
+        out.add(segment
+            .map((LocationLog p) => LatLng(p.latitude, p.longitude))
+            .toList(growable: false));
+        continue;
+      }
+
+      any = true;
+      out.add(points
+          .map((GeoPoint p) => LatLng(p.latitude, p.longitude))
+          .toList(growable: false));
+    }
+
+    return any ? out : null;
   }
 
   List<List<LatLng>> get _rawSegments => widget.track.segments
@@ -114,6 +180,25 @@ class _RouteTileMapState extends State<RouteTileMap> {
       if (snapped[i].length != raw[i].length) return true;
     }
     return false;
+  }
+
+  /// The caveat the solid line needs, or null when it needs none.
+  ///
+  /// A partly-matched day is the case worth naming: the line is road-accurate
+  /// for most of the day and a straight chord for one session, and without this
+  /// there is nothing on screen that distinguishes the two.
+  String? get _snapNotice {
+    if (_snapped == null) return null;
+
+    if (!_hasSnap) {
+      return MapConfig.snapToRoads ? 'Raw GPS trace' : null;
+    }
+
+    final MatchedRoute? matched = widget.track.matched;
+
+    return _snappedByServer && matched != null && matched.status == 'partial'
+        ? 'Part of this day is raw GPS'
+        : null;
   }
 
   LatLngBounds get _bounds =>
@@ -297,13 +382,13 @@ class _RouteTileMapState extends State<RouteTileMap> {
                 ),
               ),
             )
-          else if (MapConfig.snapToRoads && _snapped != null && !_hasSnap)
+          else if (_snapNotice != null)
             Positioned(
               top: Insets.sm,
               left: Insets.sm,
               child: _Pill(
                 background: colors.plate,
-                child: const Text('Raw GPS trace'),
+                child: Text(_snapNotice!),
               ),
             ),
         ],

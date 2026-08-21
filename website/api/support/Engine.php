@@ -472,6 +472,7 @@ final class Engine
 
         if (!$rows) {
             db_execute("DELETE FROM day_routes WHERE employee_id = ? AND work_date = ?", [$employeeId, $workDate]);
+            MapMatch::invalidate($employeeId, $workDate);
             return;
         }
 
@@ -525,6 +526,11 @@ final class Engine
                 Wire::ts($rows[count($rows) - 1]['recorded_at']),
             ],
         );
+
+        // The matched geometry describes the trace that just changed, so it is
+        // now a stale answer. Dropped, not rebuilt: ingest is a write path and
+        // the matcher is a network hop, so re-matching happens on the next read.
+        MapMatch::invalidate($employeeId, $workDate);
     }
 
     // --------------------------------------------------------------- timeline

@@ -1,4 +1,5 @@
 import '../../core/config/tracking_config.dart';
+import '../../core/utils/polyline.dart';
 import '../models/models.dart';
 
 /// JSON → model. The mirror of `website/api/support/Present.php`.
@@ -577,6 +578,55 @@ class Wire {
       stops: maps(j['stops']).map(stop).toList(),
       visits: maps(j['visits']).map(visit).toList(),
       totalDistanceKm: dbl(j['totalDistanceKm']),
+      matched: matchedRoute(j['matched']),
+    );
+  }
+
+  /// Road-matched geometry, decoded from the polyline6 the server sends.
+  ///
+  /// This is the decoding boundary on purpose: the models layer stays free of
+  /// wire formats, so `MatchedSegment` holds coordinates rather than a string
+  /// nobody downstream could read.
+  ///
+  /// Null in, null out — the field is absent for today's route, when the client
+  /// asked for `snap=0`, and whenever the matcher was unavailable.
+  static MatchedRoute? matchedRoute(dynamic raw) {
+    if (raw is! Map<String, dynamic>) return null;
+
+    final List<MatchedSegment> segments = <MatchedSegment>[];
+
+    for (final Map<String, dynamic> s in maps(raw['segments'])) {
+      final String encoded = str(s['polyline']);
+      if (encoded.isEmpty) continue;
+
+      final List<GeoPoint> points = PolylineCodec.decode(encoded)
+          .map((List<double> p) => GeoPoint(p[0], p[1]))
+          .toList(growable: false);
+
+      if (points.length < 2) continue;
+
+      segments.add(
+        MatchedSegment(
+          // seq is 1-based; a missing one means the single-session case.
+          sessionIndex: integer(s['seq']) == 0 ? 1 : integer(s['seq']),
+          points: points,
+          distanceKm: dbl(s['distanceKm']),
+          matched: boolean(s['matched']),
+          confidence: dbl(s['confidence']),
+          ratio: s['ratio'] == null ? null : dbl(s['ratio']),
+        ),
+      );
+    }
+
+    if (segments.isEmpty) return null;
+
+    return MatchedRoute(
+      engine: str(raw['engine']),
+      profile: str(raw['profile']),
+      status: str(raw['status']),
+      confidence: dbl(raw['confidence']),
+      distanceKm: dbl(raw['distanceKm']),
+      segments: segments,
     );
   }
 

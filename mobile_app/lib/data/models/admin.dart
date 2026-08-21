@@ -323,6 +323,94 @@ class TeamAttendanceRow {
 
 /// Everything the route map needs for one employee on one day.
 /// `GET /api/admin/employees/{id}/route`.
+/// A bare coordinate.
+///
+/// The models layer deliberately owns no map-package type — swapping
+/// flutter_map for anything else must not reach in here — so matched geometry
+/// decodes to this and the map widget converts once.
+class GeoPoint {
+  const GeoPoint(this.latitude, this.longitude);
+
+  final double latitude;
+  final double longitude;
+}
+
+/// One session's road-matched geometry.
+///
+/// [matched] false means the matcher could not explain this session's fixes and
+/// [points] is the raw trace instead. That is drawn, but drawn honestly — the
+/// alternative, hiding the fallback, makes a straight line across a field look
+/// like a road.
+class MatchedSegment {
+  const MatchedSegment({
+    required this.sessionIndex,
+    required this.points,
+    required this.distanceKm,
+    required this.matched,
+    required this.confidence,
+    this.ratio,
+  });
+
+  /// The session's 1-based index, so the segment can be lined up with
+  /// [RouteTrack.segments] and keep the same colour.
+  final int sessionIndex;
+
+  final List<GeoPoint> points;
+  final double distanceKm;
+  final bool matched;
+
+  /// The engine's own score. OSRM reports 0 on a good match in several builds,
+  /// so this is a hint — [ratio] is what the server actually gated on.
+  final double confidence;
+
+  /// Matched road length over raw trace length. Near 1 is a clean match; the
+  /// server rejects anything far from it, so a present value is already sane.
+  final double? ratio;
+}
+
+/// The day's route as the road network explains it.
+///
+/// Sits beside the raw trace in [RouteTrack], never instead of it: showing both
+/// is how an admin tells "rode down a side street" apart from "the matcher
+/// guessed".
+class MatchedRoute {
+  const MatchedRoute({
+    required this.engine,
+    required this.profile,
+    required this.status,
+    required this.confidence,
+    required this.distanceKm,
+    required this.segments,
+  });
+
+  /// `osrm` or `valhalla`.
+  final String engine;
+
+  /// `motorcycle`, `motor_scooter`, `driving`. On OSRM this is a label the
+  /// server was configured with, not proof of how the graph was built.
+  final String profile;
+
+  /// `ok`, `partial` or `skipped`. `partial` means at least one session fell
+  /// back to its raw trace.
+  final String status;
+
+  final double confidence;
+  final double distanceKm;
+  final List<MatchedSegment> segments;
+
+  /// Whether anything here is worth drawing over the raw trace.
+  bool get isUsable => segments.any((MatchedSegment s) => s.matched);
+
+  /// Geometry for the session with this 1-based index, or null when the server
+  /// sent none for it.
+  List<GeoPoint>? pointsForSession(int index) {
+    for (final MatchedSegment s in segments) {
+      if (s.sessionIndex == index && s.matched) return s.points;
+    }
+    return null;
+  }
+}
+
 class RouteTrack {
   const RouteTrack({
     required this.employeeId,
@@ -332,6 +420,7 @@ class RouteTrack {
     required this.stops,
     required this.visits,
     required this.totalDistanceKm,
+    this.matched,
   });
 
   final String employeeId;
@@ -341,6 +430,11 @@ class RouteTrack {
   final List<StopRecord> stops;
   final List<CompanyVisit> visits;
   final double totalDistanceKm;
+
+  /// Road-matched geometry, when the server had it. Null for today (the trace
+  /// is still being written), when snapping is off, and whenever the matcher
+  /// was unavailable — all of which mean "draw the raw trace".
+  final MatchedRoute? matched;
 
   bool get isEmpty => points.length < 2;
 

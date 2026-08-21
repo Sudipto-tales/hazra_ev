@@ -12,6 +12,13 @@ require_once __DIR__ . '/../support/V1Controller.php';
  * objects — roughly a 4x size reduction on the largest payload in the system.
  * `t` is epoch seconds. `simplify=` is metres of Douglas-Peucker tolerance:
  * send 8 for the overview and 0 when the user zooms in.
+ *
+ * `matched` carries the road-matched geometry beside the raw trace — never
+ * instead of it. Both are sent so the client can draw the raw fixes faint under
+ * the snapped road, which is how an admin tells "rode down a side street" apart
+ * from "the matcher guessed". It is null for today (the trace is still being
+ * written, so nothing about it is cacheable yet), when `snap=0`, and whenever
+ * matching was unavailable.
  */
 final class RoutesController extends V1Controller
 {
@@ -25,9 +32,21 @@ final class RoutesController extends V1Controller
         // the drawn route that was built when the session closed.
         $live = $date >= Ctx::today();
 
+        // Matching a live day would cache an answer that is wrong by the next
+        // batch, so `snap` only ever applies to a closed one.
+        $snap = !$live
+            && MapMatch::enabled()
+            && ($this->hasQuery('snap') ? Wire::bool($this->query('snap')) : true);
+
+        // One employee is a page the admin is waiting on and a single matcher
+        // round trip; a team is a fan-out where filling every miss inline turns
+        // one slow request into N of them. The team map therefore serves the
+        // cache only, and `php vayu match` is what keeps it warm.
+        $allowBuild = count($employeeIds) === 1;
+
         $tracks = [];
         foreach ($employeeIds as $employeeId) {
-            $tracks[] = $this->track($employeeId, $date, $simplify, $live);
+            $tracks[] = $this->track($employeeId, $date, $simplify, $live, $snap, $allowBuild);
         }
 
         if ($live) {
@@ -36,7 +55,12 @@ final class RoutesController extends V1Controller
             header('Cache-Control: ' . Envelope::IMMUTABLE);
         }
 
-        Envelope::ok($tracks, ['date' => $date, 'total' => count($tracks), 'simplify' => $simplify]);
+        Envelope::ok($tracks, [
+            'date'     => $date,
+            'total'    => count($tracks),
+            'simplify' => $simplify,
+            'snap'     => $snap,
+        ]);
     }
 
     // ------------------------------------------------------------- internals
@@ -62,8 +86,14 @@ final class RoutesController extends V1Controller
         return $ids;
     }
 
-    private function track(string $employeeId, string $date, float $simplify, bool $live): array
-    {
+    private function track(
+        string $employeeId,
+        string $date,
+        float $simplify,
+        bool $live,
+        bool $snap,
+        bool $allowBuild,
+    ): array {
         $points = $live
             ? $this->livePoints($employeeId, $date, $simplify)
             : $this->storedPoints($employeeId, $date, $simplify);
@@ -81,6 +111,11 @@ final class RoutesController extends V1Controller
             'stops'           => [],
             'visits'          => [],
             'totalDistanceKm' => $points['distanceKm'],
+            // Cached; a miss matches on this read and stores the result, so the
+            // first admin to open a day pays for it and nobody after them does.
+            'matched'         => $snap
+                ? MapMatch::forDay($employeeId, $date, false, $allowBuild)
+                : null,
         ];
 
         if ($this->wants('stops') || $this->includes() === []) {
