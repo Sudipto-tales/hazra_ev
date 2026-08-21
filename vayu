@@ -17,6 +17,7 @@ $framework = require __DIR__ . '/config/framework.php';
 require __DIR__ . '/core/Console/SetupCommand.php';
 require __DIR__ . '/core/Console/RunCommand.php';
 require __DIR__ . '/core/Console/MigrateCommand.php';
+require __DIR__ . '/core/Console/MatchCommand.php';
 
 $command = $argv[1] ?? null;
 
@@ -24,6 +25,7 @@ $commands = [
     'run'     => 'Start the development server',
     'setup'   => 'Run the interactive setup wizard',
     'migrate' => 'Run database migrations (--fresh, --seed)',
+    'match'   => 'Backfill road-matched route geometry (--days, --date, --employee, --force)',
 ];
 
 if ($command === null || $command === 'help' || $command === '--help') {
@@ -45,6 +47,7 @@ match ($command) {
     'run'   => (new RunCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'setup' => (new SetupCommand(__DIR__, $framework))->run(),
     'migrate' => (new MigrateCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
+    'match'   => (new MatchCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     default => (function () use ($command) {
         echo PHP_EOL;
         echo "  \033[31mUnknown command: {$command}\033[0m" . PHP_EOL;
