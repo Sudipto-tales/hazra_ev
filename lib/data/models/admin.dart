@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'activity_event.dart';
+import 'day_closeout.dart';
 import 'employee.dart';
 import 'report.dart';
 import 'statistics.dart';
@@ -208,6 +209,8 @@ class EmployeeDay {
     required this.activity,
     required this.summary,
     this.lastFix,
+    this.dayState = DayState.open,
+    this.closeout,
   });
 
   final Employee employee;
@@ -223,7 +226,35 @@ class EmployeeDay {
   final DaySummary summary;
   final LocationLog? lastFix;
 
+  /// Whether the employee can still work this day. Only an admin can move it
+  /// back to [DayState.open] once it is closed.
+  final DayState dayState;
+
+  /// The employee's end-of-day declaration, when they made one. Absent on a
+  /// day that was auto-closed — nobody was there to ask.
+  final DayCloseout? closeout;
+
   bool get isEmpty => sessions.isEmpty;
+
+  /// Overlays the lock, which is the only part of the day that changes after
+  /// the fact. Everything else arrives in one payload and stays put.
+  EmployeeDay withLock({required DayState dayState, DayCloseout? closeout}) =>
+      EmployeeDay(
+        employee: employee,
+        date: date,
+        attendance: attendance,
+        status: status,
+        movement: movement,
+        sessions: sessions,
+        stops: stops,
+        visits: visits,
+        reports: reports,
+        activity: activity,
+        summary: summary,
+        lastFix: lastFix,
+        dayState: dayState,
+        closeout: closeout,
+      );
 }
 
 /// Admin verdict on a report.

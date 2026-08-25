@@ -1,4 +1,5 @@
 import 'activity_event.dart';
+import 'day_closeout.dart';
 import 'statistics.dart';
 import 'tracking.dart';
 import 'visit.dart';
@@ -17,6 +18,8 @@ class HomeSnapshot {
     required this.stops,
     required this.lastFix,
     required this.sync,
+    this.dayState = DayState.open,
+    this.closeout,
   });
 
   final WorkStatus status;
@@ -29,6 +32,13 @@ class HomeSnapshot {
   final List<StopRecord> stops;
   final LocationLog? lastFix;
   final SyncSnapshot sync;
+
+  /// Whether the day is still workable. The server owns this — the device only
+  /// mirrors it, because a stale local copy is how you get two truths.
+  final DayState dayState;
+
+  /// Present once the employee has submitted their end-of-day declaration.
+  final DayCloseout? closeout;
 
   WorkSession? get activeSession {
     for (final WorkSession s in sessions) {
@@ -48,6 +58,8 @@ class HomeSnapshot {
     List<StopRecord>? stops,
     LocationLog? lastFix,
     SyncSnapshot? sync,
+    DayState? dayState,
+    DayCloseout? closeout,
   }) {
     return HomeSnapshot(
       status: status ?? this.status,
@@ -60,6 +72,8 @@ class HomeSnapshot {
       stops: stops ?? this.stops,
       lastFix: lastFix ?? this.lastFix,
       sync: sync ?? this.sync,
+      dayState: dayState ?? this.dayState,
+      closeout: closeout ?? this.closeout,
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'day_closeout.dart';
+
 /// Attendance → Session → Location log chain, plus the status vocabulary the
 /// whole app renders from.
 
@@ -152,6 +154,7 @@ class WorkSession {
     required this.locationPoints,
     required this.startLatitude,
     required this.startLongitude,
+    this.endReason,
   });
 
   final String id;
@@ -165,7 +168,14 @@ class WorkSession {
   final double startLatitude;
   final double startLongitude;
 
+  /// Why the session stopped. Null while it is still open.
+  final SessionEndReason? endReason;
+
   bool get isOpen => endTime == null;
+
+  /// Closed with nobody watching — GPS and network were both gone, so no
+  /// closeout form was ever shown for it.
+  bool get wasAutoClosed => endReason == SessionEndReason.auto;
 
   Duration durationAt(DateTime now) =>
       (endTime ?? now).difference(startTime);

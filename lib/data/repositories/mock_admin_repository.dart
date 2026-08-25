@@ -2,6 +2,7 @@ import '../../core/config/tracking_config.dart';
 import '../../core/utils/formatters.dart';
 import '../../state/notification_center.dart';
 import '../mock/admin_mock_data.dart';
+import '../mock/day_lock_store.dart';
 import '../mock/mock_data.dart';
 import '../mock/product_store.dart';
 import '../models/models.dart';
@@ -24,8 +25,10 @@ class MockAdminRepository implements AdminRepository {
     this.latency = const Duration(milliseconds: 450),
     ProductStore? products,
     NotificationCenter? notifications,
+    DayLockStore? dayLock,
   })  : _products = products ?? ProductStore(),
-        _notifications = notifications ?? NotificationCenter();
+        _notifications = notifications ?? NotificationCenter(),
+        _dayLock = dayLock ?? DayLockStore();
 
   final Duration latency;
   final ProductStore _products;
@@ -58,8 +61,23 @@ class MockAdminRepository implements AdminRepository {
     return null;
   }
 
-  EmployeeDay _day(Employee employee, DateTime date) =>
-      AdminMockData.dayFor(employee: employee, date: date);
+  /// Shared with `MockEmployeeRepository` — see [DayLockStore]. Only the
+  /// mock employee's own day carries a lock; the rest of the generated roster
+  /// has no closeout to show.
+  final DayLockStore _dayLock;
+
+  EmployeeDay _day(Employee employee, DateTime date) {
+    final EmployeeDay day =
+        AdminMockData.dayFor(employee: employee, date: date);
+    if (employee.id != MockData.employee.id ||
+        !Fmt.isSameDay(date, MockData.today)) {
+      return day;
+    }
+    return day.withLock(
+      dayState: _dayLock.state,
+      closeout: _dayLock.closeout,
+    );
+  }
 
   // ---------------------------------------------------------------- identity
 
@@ -686,6 +704,16 @@ class MockAdminRepository implements AdminRepository {
     // have changed something the generator reads — drop their caches.
     AdminMockData.invalidate(employee.id);
     return _delayed(employee);
+  }
+
+  @override
+  Future<void> reopenDay({
+    required String employeeId,
+    required DateTime date,
+    required String reason,
+  }) async {
+    await Future<void>.delayed(latency);
+    _dayLock.reopen(reason: reason, by: AdminMockData.admin.name);
   }
 
   @override

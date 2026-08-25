@@ -146,9 +146,49 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
     );
   }
 
+  /// Reopening shifts numbers a manager will later be asked about, so the
+  /// reason is mandatory and stored with it.
+  Future<void> _reopenDay(EmployeeDay day) async {
+    final String? reason = await _askReopenReason(context);
+    if (reason == null || !mounted) return;
+
+    try {
+      await AppScope.of(context).adminRepository.reopenDay(
+            employeeId: day.employee.id,
+            date: day.date,
+            reason: reason,
+          );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text('Could not reopen the day. Try again.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${day.employee.firstName} can work this day again'),
+      ),
+    );
+    _load();
+  }
+
   List<Widget> _content(EmployeeDay day) {
+    final List<Widget> lock = <Widget>[
+      if (day.dayState.isLocked || day.closeout != null) ...<Widget>[
+        _CloseoutCard(day: day, onReopen: () => _reopenDay(day)),
+        const SizedBox(height: Insets.lg),
+      ],
+    ];
+
     if (day.isEmpty) {
       return <Widget>[
+        ...lock,
         AppCard(
           child: EmptyState(
             icon: Icons.event_busy_outlined,
@@ -164,6 +204,7 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
     final DateTime now = DateTime.now();
 
     return <Widget>[
+      ...lock,
       StatGrid(
         children: <Widget>[
           StatTile(
@@ -318,6 +359,189 @@ class _Header extends StatelessWidget {
               value: Fmt.relative(member!.lastFix!.recordedAt),
               dense: true,
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Asks for the reason a day is being reopened. Returns null if the admin
+/// backed out; never returns an empty string.
+Future<String?> _askReopenReason(BuildContext context) {
+  final TextEditingController controller = TextEditingController();
+  final GlobalKey<FormState> form = GlobalKey<FormState>();
+
+  return showDialog<String>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Reopen this day?'),
+        content: Form(
+          key: form,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'The employee will be able to start a new session on this day. '
+                'What they already submitted is kept on record.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: Insets.lg),
+              TextFormField(
+                controller: controller,
+                autofocus: true,
+                textCapitalization: TextCapitalization.sentences,
+                maxLength: 160,
+                decoration: const InputDecoration(
+                  labelText: 'Reason',
+                  hintText: 'Why is this day being reopened?',
+                ),
+                validator: (String? v) => (v ?? '').trim().isEmpty
+                    ? 'A reason is required'
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (!(form.currentState?.validate() ?? false)) return;
+              Navigator.pop(context, controller.text.trim());
+            },
+            child: const Text('Reopen'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+/// The employee's declaration, and the admin's one lever over it.
+///
+/// Declared and tracked figures are shown as two separate rows on purpose. The
+/// gap between them is the reason the declaration is collected at all, and
+/// averaging or reconciling them here would hide exactly what an admin opened
+/// this screen to see.
+class _CloseoutCard extends StatelessWidget {
+  const _CloseoutCard({required this.day, required this.onReopen});
+
+  final EmployeeDay day;
+  final VoidCallback onReopen;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final DayCloseout? c = day.closeout;
+    final bool locked = day.dayState.isLocked;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                locked ? Icons.lock_outline_rounded : Icons.lock_open_rounded,
+                size: 18,
+                color: locked ? AppColors.info : AppColors.success,
+              ),
+              const SizedBox(width: Insets.sm),
+              Expanded(
+                child: Text(
+                  locked ? 'Day closed by employee' : 'Day reopened',
+                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 15),
+                ),
+              ),
+              if (c != null)
+                Row(
+                  children: <Widget>[
+                    for (int i = 1; i <= 5; i++)
+                      Icon(
+                        i <= c.rating
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        size: 16,
+                        color: i <= c.rating
+                            ? AppColors.warning
+                            : AppColors.textTertiary,
+                      ),
+                  ],
+                ),
+            ],
+          ),
+          if (c != null) ...<Widget>[
+            const Divider(height: Insets.xl),
+            KeyValueRow(
+              label: 'Employee reported',
+              value: '${Fmt.km(c.declaredDistanceKm)} · '
+                  '${c.declaredVisits} visits',
+              dense: true,
+            ),
+            KeyValueRow(
+              label: 'GPS tracked',
+              value: '${Fmt.km(c.measuredDistanceKm)} · '
+                  '${c.measuredVisits} visits',
+              dense: true,
+            ),
+            if (c.distanceDeviationPercent != null)
+              KeyValueRow(
+                label: 'Difference',
+                value: '${c.distanceDeviationPercent! > 0 ? '+' : ''}'
+                    '${c.distanceDeviationPercent!.toStringAsFixed(0)}%',
+                dense: true,
+                valueColor:
+                    c.distanceLooksOff ? AppColors.danger : AppColors.success,
+              ),
+            KeyValueRow(
+              label: 'Submitted',
+              value: Fmt.time(c.submittedAt),
+              dense: true,
+            ),
+            if (c.tags.isNotEmpty) ...<Widget>[
+              const SizedBox(height: Insets.md),
+              Wrap(
+                spacing: Insets.sm,
+                runSpacing: Insets.xs,
+                children: <Widget>[
+                  for (final DayFeedbackTag tag in c.tags)
+                    StatusBadge(
+                      label: tag.label,
+                      tone: BadgeTone.neutral,
+                      dense: true,
+                    ),
+                ],
+              ),
+            ],
+            if (c.feedback != null) ...<Widget>[
+              const SizedBox(height: Insets.md),
+              Text(c.feedback!, style: theme.textTheme.bodySmall),
+            ],
+          ] else ...<Widget>[
+            const SizedBox(height: Insets.sm),
+            Text(
+              'No declaration — this day was closed without the employee '
+              'filling in the end-of-day form.',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+          if (locked) ...<Widget>[
+            const SizedBox(height: Insets.lg),
+            SizedBox(
+              height: Sizes.touchTarget,
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onReopen,
+                icon: const Icon(Icons.lock_open_rounded, size: 19),
+                label: const Text('Reopen day'),
+              ),
+            ),
+          ],
         ],
       ),
     );

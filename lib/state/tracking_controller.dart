@@ -7,12 +7,37 @@ import '../data/models/models.dart';
 import '../data/repositories/employee_repository.dart';
 import '../services/location_service.dart';
 
-enum StartDayOutcome { started, blocked, alreadyRunning }
+enum StartDayOutcome {
+  started,
+  blocked,
+  offline,
+  dayLocked,
+  alreadyRunning,
+}
 
 class StartDayResult {
-  const StartDayResult(this.outcome, this.health);
+  const StartDayResult(this.outcome, this.health, [this.dayState = DayState.open]);
   final StartDayOutcome outcome;
   final LocationHealth health;
+  final DayState dayState;
+}
+
+/// Why End Day cannot proceed. The day is only ever closed online with a live
+/// GPS fix, because the lock that follows lives on the server — a day closed
+/// offline would be a fact only this device believed.
+enum EndDayBlock { none, locationOff, offline, alreadyClosed }
+
+class EndDayGate {
+  const EndDayGate(this.block, this.health, [this.fix]);
+
+  final EndDayBlock block;
+  final LocationHealth health;
+
+  /// The closing fix, captured during the check so the form does not have to
+  /// wait for GPS a second time.
+  final LocationLog? fix;
+
+  bool get ok => block == EndDayBlock.none;
 }
 
 /// Owns the workday / session state machine and the live timer.
@@ -33,6 +58,16 @@ class TrackingController extends ChangeNotifier {
   final TrackingConfig config;
 
   Timer? _ticker;
+  int _tick = 0;
+
+  /// When GPS and network both went away with a session open. Null whenever
+  /// either one is back.
+  DateTime? _degradedSince;
+
+  /// Set when the watchdog closed a session on its own, so Home can say so
+  /// once and then forget it.
+  DateTime? _autoClosedAt;
+
   StreamSubscription<SyncSnapshot>? _syncSub;
   StreamSubscription<LocationLog>? _fixSub;
 
@@ -62,6 +97,22 @@ class TrackingController extends ChangeNotifier {
   SyncSnapshot? get sync => _snapshot?.sync;
   LocationLog? get lastFix => _snapshot?.lastFix;
 
+  /// Server-owned. The device mirrors it and never decides it locally.
+  DayState get dayState => _snapshot?.dayState ?? DayState.open;
+  DayCloseout? get closeout => _snapshot?.closeout;
+  bool get isDayLocked => dayState.isLocked;
+
+  /// Non-null until [acknowledgeAutoClose] — Home shows one notice for it.
+  DateTime? get autoClosedAt => _autoClosedAt;
+
+  void acknowledgeAutoClose() {
+    if (_autoClosedAt == null) return;
+    _autoClosedAt = null;
+    notifyListeners();
+  }
+
+  bool get _isOnline => _snapshot?.sync.isOnline ?? true;
+
   /// Live duration of the open session; zero when nothing is running.
   Duration get sessionElapsed {
     final WorkSession? s = activeSession;
@@ -90,7 +141,8 @@ class TrackingController extends ChangeNotifier {
       if (_disposed) return;
       _snapshot = fresh;
       _error = null;
-      if (status.isSessionOpen) {
+      // A locked day never resumes tracking, whatever the device thinks.
+      if (status.isSessionOpen && !isDayLocked) {
         await _location.startTracking(sessionId: activeSession!.id);
         _listenToLocation();
         _startTicker();
@@ -106,11 +158,19 @@ class TrackingController extends ChangeNotifier {
   Future<void> refresh() async {
     try {
       final HomeSnapshot fresh = await _repo.home();
-      // Preserve locally-started/ended sessions across a pull-to-refresh.
+      // Preserve locally-started/ended sessions across a pull-to-refresh —
+      // unless the server says the day is closed, in which case the server
+      // wins outright. The lock is the one piece of state the device does not
+      // get an opinion on.
+      final bool locked = fresh.dayState.isLocked;
       _snapshot = fresh.copyWith(
-        sessions: _snapshot?.sessions,
-        status: _snapshot?.status,
+        sessions: locked ? null : _snapshot?.sessions,
+        status: locked ? null : _snapshot?.status,
       );
+      if (locked) {
+        await _location.stopTracking();
+        _stopTicker();
+      }
       _error = null;
     } catch (e) {
       _error = e;
@@ -133,6 +193,34 @@ class TrackingController extends ChangeNotifier {
     _busy = true;
     notifyListeners();
     try {
+      // Ask the server before anything else. This one call does double duty:
+      // it proves there is a connection, and it settles whether today is still
+      // workable. Local state can be stale — fresh install, cleared data, a
+      // second device — and starting a day the server has closed is exactly
+      // the divergence the lock exists to prevent.
+      try {
+        final HomeSnapshot fresh = await _repo.home();
+        if (_disposed) {
+          return const StartDayResult(
+              StartDayOutcome.alreadyRunning, LocationHealth.ok);
+        }
+        _snapshot = (_snapshot ?? _emptySnapshot()).copyWith(
+          dayState: fresh.dayState,
+          closeout: fresh.closeout,
+          summary: fresh.summary,
+          sync: fresh.sync,
+        );
+      } catch (_) {
+        _applyHealth(LocationHealth.noInternet);
+        return const StartDayResult(
+            StartDayOutcome.offline, LocationHealth.noInternet);
+      }
+
+      if (isDayLocked) {
+        return StartDayResult(
+            StartDayOutcome.dayLocked, LocationHealth.ok, dayState);
+      }
+
       final LocationHealth health = await _location.health();
       if (health.blocksStart) {
         _applyHealth(health);
@@ -181,30 +269,110 @@ class TrackingController extends ChangeNotifier {
   Future<void> pauseSession() async {
     final WorkSession? open = activeSession;
     if (open == null) return;
-    _closeSession(open, WorkStatus.idle);
+    _closeSession(open, WorkStatus.idle, reason: SessionEndReason.pause);
     await _location.stopTracking();
     _stopTicker();
+    _degradedSince = null;
     notifyListeners();
   }
 
-  /// End Day — closes the session for good and freezes the day's numbers.
-  Future<void> endDay() async {
+  /// Everything that must be true before the closeout form may open: the day
+  /// still open, a live connection, and a real GPS fix. Captures that fix so
+  /// [endDay] does not have to wait for one again.
+  ///
+  /// Called before the form rather than after it, so nobody fills in six fields
+  /// only to be told they cannot submit.
+  Future<EndDayGate> checkEndDay() async {
+    if (isDayLocked) {
+      return const EndDayGate(EndDayBlock.alreadyClosed, LocationHealth.ok);
+    }
+    if (!_isOnline) {
+      return const EndDayGate(EndDayBlock.offline, LocationHealth.noInternet);
+    }
+
+    final LocationHealth health = await _location.health();
+    if (_disposed) return const EndDayGate(EndDayBlock.offline, LocationHealth.ok);
+    if (health.blocksStart) {
+      _applyHealth(health);
+      notifyListeners();
+      return EndDayGate(EndDayBlock.locationOff, health);
+    }
+
+    final LocationLog? fix =
+        await _location.currentFix(sessionId: activeSession?.id ?? 'ses_close');
+    if (_disposed) return const EndDayGate(EndDayBlock.offline, LocationHealth.ok);
+    if (fix == null) {
+      _applyHealth(LocationHealth.serviceDisabled);
+      notifyListeners();
+      return const EndDayGate(
+          EndDayBlock.locationOff, LocationHealth.serviceDisabled);
+    }
+
+    return EndDayGate(EndDayBlock.none, health, fix);
+  }
+
+  /// End Day — submits the declaration, then closes the day for good.
+  ///
+  /// Server first, device second, deliberately. If the POST fails the day stays
+  /// open on both sides; if it succeeded and the device then crashed, the next
+  /// `load()` picks the lock up from the server. The reverse order would let a
+  /// device believe in a lock the server never wrote.
+  ///
+  /// Throws whatever the repository throws — the caller shows it.
+  Future<DayCloseout> endDay(
+    DayCloseoutDraft draft, {
+    LocationLog? finalFix,
+  }) async {
     _busy = true;
     notifyListeners();
     try {
+      final DayCloseout stored = await _repo.submitDayCloseout(draft);
+      if (_disposed) return stored;
+
       final WorkSession? open = activeSession;
       if (open != null) {
-        final LocationLog? fix = await _location.currentFix(sessionId: open.id);
-        _closeSession(open, WorkStatus.ended, finalFix: fix);
+        _closeSession(
+          open,
+          WorkStatus.ended,
+          reason: SessionEndReason.manual,
+          finalFix: finalFix,
+          endedAt: draft.endedAt,
+        );
       } else {
         _snapshot = _snapshot?.copyWith(status: WorkStatus.ended);
       }
+
+      _snapshot = _snapshot?.copyWith(
+        dayState: DayState.closedByEmployee,
+        closeout: stored,
+      );
+
       await _location.stopTracking();
       _stopTicker();
+      _degradedSince = null;
+      _autoClosedAt = null;
+      return stored;
     } finally {
       _busy = false;
       notifyListeners();
     }
+  }
+
+  /// The watchdog's close. GPS and network have both been gone long enough that
+  /// nothing is being recorded and nothing can be asked — so the session ends
+  /// and **no** closeout form is shown. The day stays open: an automatic close
+  /// is not a declaration. The employee can start a new session when they are
+  /// back, or close the day properly then.
+  void _autoCloseSession() {
+    final WorkSession? open = activeSession;
+    if (open == null) return;
+
+    _closeSession(open, WorkStatus.idle, reason: SessionEndReason.auto);
+    _autoClosedAt = _now;
+    _degradedSince = null;
+    unawaited(_location.stopTracking());
+    _stopTicker();
+    notifyListeners();
   }
 
   /// Demo helper: puts the day back to "Not Started" so the start flow can be
@@ -213,13 +381,21 @@ class TrackingController extends ChangeNotifier {
     await _location.stopTracking();
     _stopTicker();
     _snapshot = _emptySnapshot();
+    _degradedSince = null;
+    _autoClosedAt = null;
     notifyListeners();
   }
 
   // ---------------------------------------------------------------- internals
 
-  void _closeSession(WorkSession open, WorkStatus next, {LocationLog? finalFix}) {
-    final DateTime end = finalFix?.recordedAt ?? DateTime.now();
+  void _closeSession(
+    WorkSession open,
+    WorkStatus next, {
+    required SessionEndReason reason,
+    LocationLog? finalFix,
+    DateTime? endedAt,
+  }) {
+    final DateTime end = endedAt ?? finalFix?.recordedAt ?? DateTime.now();
     final List<WorkSession> updated = sessions
         .map((WorkSession s) => s.id == open.id
             ? WorkSession(
@@ -231,6 +407,7 @@ class TrackingController extends ChangeNotifier {
                 locationPoints: s.locationPoints,
                 startLatitude: s.startLatitude,
                 startLongitude: s.startLongitude,
+                endReason: reason,
               )
             : s)
         .toList(growable: false);
@@ -283,10 +460,53 @@ class TrackingController extends ChangeNotifier {
   void _startTicker() {
     _ticker?.cancel();
     if (_disposed) return;
+    _tick = 0;
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       _now = DateTime.now();
+      _tick++;
+      // GPS being switched off mid-session is silent — nothing pushes an event
+      // for it — so it has to be looked for. The watchdog below is blind
+      // without this.
+      if (_tick % 15 == 0) unawaited(_pollHealth());
+      _evaluateWatchdog();
       notifyListeners();
     });
+  }
+
+  Future<void> _pollHealth() async {
+    if (!status.isSessionOpen) return;
+    final LocationHealth health = await _location.health();
+    if (_disposed || _snapshot == null || health == locationHealth) return;
+    _applyHealth(health);
+    notifyListeners();
+  }
+
+  /// GPS unusable **and** no network, for [TrackingConfig.autoCloseAfterMinutes],
+  /// with a session open → close it.
+  ///
+  /// Either condition alone is survivable and must not trigger this: offline
+  /// still queues fixes on the device, and a live connection means the server
+  /// sees the health ping and can decide for itself. Only losing both leaves a
+  /// session that records nothing and can be told nothing — a fiction. The
+  /// server runs the same rule from its side ("no fixes received"), which is
+  /// what covers a device that is simply dead.
+  void _evaluateWatchdog() {
+    if (!status.isSessionOpen) {
+      _degradedSince = null;
+      return;
+    }
+
+    final bool blind = locationHealth.blocksStart && !_isOnline;
+    if (!blind) {
+      _degradedSince = null;
+      return;
+    }
+
+    _degradedSince ??= _now;
+    if (_now.difference(_degradedSince!) >=
+        Duration(minutes: config.autoCloseAfterMinutes)) {
+      _autoCloseSession();
+    }
   }
 
   void _stopTicker() {

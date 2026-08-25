@@ -179,6 +179,13 @@ class Wire {
         locationPoints: integer(j['locationPoints']),
         startLatitude: dbl(j['startLatitude']),
         startLongitude: dbl(j['startLongitude']),
+        endReason: j['endReason'] == null
+            ? null
+            : _enum(
+                SessionEndReason.values,
+                j['endReason'],
+                SessionEndReason.manual,
+              ),
       );
 
   static LocationLog? fixOrNull(Object? raw) {
@@ -429,6 +436,37 @@ class Wire {
         reportId: strOrNull(j['reportId']),
       );
 
+  // --------------------------------------------------------- day close-out
+
+  static List<DayFeedbackTag> feedbackTags(Object? raw) {
+    if (raw is! List) return const <DayFeedbackTag>[];
+    final List<DayFeedbackTag> out = <DayFeedbackTag>[];
+    for (final Object? item in raw) {
+      for (final DayFeedbackTag tag in DayFeedbackTag.values) {
+        if (tag.name == item) out.add(tag);
+      }
+    }
+    return out;
+  }
+
+  static DayCloseout? dayCloseoutOrNull(Object? raw) {
+    if (raw is! Map) return null;
+    return dayCloseout(Map<String, dynamic>.from(raw));
+  }
+
+  static DayCloseout dayCloseout(Map<String, dynamic> j) => DayCloseout(
+        id: str(j['id']),
+        date: date(j['date']),
+        submittedAt: date(j['submittedAt']),
+        declaredDistanceKm: dbl(j['declaredDistanceKm']),
+        declaredVisits: integer(j['declaredVisits']),
+        measuredDistanceKm: dbl(j['measuredDistanceKm']),
+        measuredVisits: integer(j['measuredVisits']),
+        rating: integer(j['rating']),
+        tags: feedbackTags(j['tags']),
+        feedback: strOrNull(j['feedback']),
+      );
+
   // ------------------------------------------------------------ screen views
 
   static HomeSnapshot homeSnapshot(Map<String, dynamic> j) => HomeSnapshot(
@@ -452,6 +490,8 @@ class Wire {
               ? null
               : Map<String, dynamic>.from(j['sync'] as Map),
         ),
+        dayState: _enum(DayState.values, j['dayState'], DayState.open),
+        closeout: dayCloseoutOrNull(j['closeout']),
       );
 
   static EmployeeDay employeeDay(Map<String, dynamic> j, Employee fallback) =>
@@ -477,6 +517,8 @@ class Wire {
               : Map<String, dynamic>.from(j['summary'] as Map),
         ),
         lastFix: fixOrNull(j['lastFix']),
+        dayState: _enum(DayState.values, j['dayState'], DayState.open),
+        closeout: dayCloseoutOrNull(j['closeout']),
       );
 
   static TeamMember teamMember(Map<String, dynamic> j) => TeamMember(

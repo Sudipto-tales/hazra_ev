@@ -1,5 +1,6 @@
 import '../../core/utils/formatters.dart';
 import '../../state/notification_center.dart';
+import '../mock/day_lock_store.dart';
 import '../mock/mock_data.dart';
 import '../mock/product_store.dart';
 import '../models/models.dart';
@@ -14,8 +15,10 @@ class MockEmployeeRepository implements EmployeeRepository {
     this.latency = const Duration(milliseconds: 450),
     ProductStore? products,
     NotificationCenter? notifications,
+    DayLockStore? dayLock,
   })  : _products = products ?? ProductStore(),
-        _notifications = notifications ?? NotificationCenter();
+        _notifications = notifications ?? NotificationCenter(),
+        _dayLock = dayLock ?? DayLockStore();
 
   final Duration latency;
 
@@ -26,6 +29,12 @@ class MockEmployeeRepository implements EmployeeRepository {
 
   final List<VisitReport> _extraReports = <VisitReport>[];
   int _draftSeq = 0;
+
+  /// Shared with `MockAdminRepository` — see [DayLockStore]. This is what
+  /// makes an admin reopen show up on the employee's Home.
+  final DayLockStore _dayLock;
+
+  DayCloseout? get _closeout => _dayLock.closeout;
 
   Future<T> _delayed<T>(T value) =>
       Future<T>.delayed(latency, () => value);
@@ -44,7 +53,7 @@ class MockEmployeeRepository implements EmployeeRepository {
 
     return _delayed(
       HomeSnapshot(
-        status: WorkStatus.working,
+        status: _closeout == null ? WorkStatus.working : WorkStatus.ended,
         movement: MovementStatus.moving,
         locationHealth: LocationHealth.ok,
         sessions: MockData.todaySessions,
@@ -64,6 +73,8 @@ class MockEmployeeRepository implements EmployeeRepository {
         stops: MockData.todayStops,
         lastFix: MockData.lastFix,
         sync: MockData.syncSnapshot,
+        dayState: _dayLock.state,
+        closeout: _closeout,
       ),
     );
   }
@@ -192,6 +203,27 @@ class MockEmployeeRepository implements EmployeeRepository {
     );
     _extraReports.insert(0, report);
     return report;
+  }
+
+  @override
+  Future<DayCloseout> submitDayCloseout(DayCloseoutDraft draft) async {
+    await Future<void>.delayed(latency);
+
+    final int visits = MockData.todayVisits.length;
+    final DayCloseout stored = DayCloseout(
+      id: 'clo_local_${draft.clientId}',
+      date: MockData.today,
+      submittedAt: DateTime.now(),
+      declaredDistanceKm: draft.declaredDistanceKm,
+      declaredVisits: draft.declaredVisits,
+      measuredDistanceKm: MockData.todaySummary.distanceKm,
+      measuredVisits: visits,
+      rating: draft.rating,
+      tags: draft.tags,
+      feedback: draft.feedback,
+    );
+    // Idempotent, like the endpoint: a retry gets the record already on file.
+    return _dayLock.close(stored);
   }
 
   @override

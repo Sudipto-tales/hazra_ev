@@ -19,6 +19,7 @@ import 'employee_repository.dart';
 ///   products()     GET  /products
 ///   notifications()GET  /notifications
 ///   submitReport() POST /reports          (Idempotency-Key)
+///   submitDayCloseout() POST /days/me/closeout  (Idempotency-Key)
 class HttpEmployeeRepository implements EmployeeRepository {
   HttpEmployeeRepository(this._api);
 
@@ -35,7 +36,7 @@ class HttpEmployeeRepository implements EmployeeRepository {
   @override
   Future<HomeSnapshot> home() async {
     final ApiResult result = await _api.get('/days/me', query: <String, dynamic>{
-      'include': 'sessions,summary,activity,visits,stops,lastFix,sync',
+      'include': 'sessions,summary,activity,visits,stops,lastFix,sync,closeout',
     });
 
     return Wire.homeSnapshot(result.map);
@@ -205,6 +206,30 @@ class HttpEmployeeRepository implements EmployeeRepository {
 
   /// Device-generated id. Not a real UUID — it only has to be unique per
   /// device, and pulling in a uuid package for one call is not worth it.
+  /// Ends the day. No offline queue on purpose — see the interface doc. The
+  /// caller checks connectivity first; if it still fails here, the day stays
+  /// open, which is the safe direction to fail in.
+  @override
+  Future<DayCloseout> submitDayCloseout(DayCloseoutDraft draft) async {
+    final ApiResult result = await _api.post(
+      '/days/me/closeout',
+      idempotencyKey: draft.clientId,
+      body: <String, dynamic>{
+        'clientId': draft.clientId,
+        'endedAt': draft.endedAt.toUtc().toIso8601String(),
+        'declaredDistanceKm': draft.declaredDistanceKm,
+        'declaredVisits': draft.declaredVisits,
+        'rating': draft.rating,
+        'tags': draft.tags
+            .map((DayFeedbackTag t) => t.name)
+            .toList(growable: false),
+        'feedback': draft.feedback,
+      },
+    );
+
+    return Wire.dayCloseout(result.map);
+  }
+
   static String _clientId() {
     final int now = DateTime.now().microsecondsSinceEpoch;
     final int salt = Random().nextInt(1 << 32);
