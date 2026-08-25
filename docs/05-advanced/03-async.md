@@ -79,7 +79,7 @@ Run multiple PHP functions with unified error handling:
 
 ```php
 $results = Async::all([
-    'db_users'  => fn() => db_fetch_all("SELECT * FROM users_tbl LIMIT 10"),
+    'db_users'  => fn() => db_fetch_all("SELECT * FROM users LIMIT 10"),
     'api_stats' => fn() => api_get('https://api.example.com/stats'),
     'file_size' => fn() => filesize('/path/to/file.pdf'),
 ]);

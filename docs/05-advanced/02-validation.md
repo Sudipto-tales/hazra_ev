@@ -38,7 +38,7 @@ class UserController extends ApiController
         // If validation fails, a 422 JSON response is sent automatically.
         // If it passes, $data contains only the validated fields.
 
-        db_execute("INSERT INTO users_tbl (name, email, role) VALUES (?, ?, ?)",
+        db_execute("INSERT INTO users (name, email, role) VALUES (?, ?, ?)",
             [$data['name'], $data['email'], $data['role']]);
 
         $this->success(null, 'User created', 201);

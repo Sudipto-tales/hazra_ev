@@ -202,7 +202,7 @@ final class Ctx
         ?array $after = null,
     ): void {
         db_execute(
-            "INSERT INTO audit_log (org_id, actor_id, entity, entity_id, action, before, after, occurred_at)
+            "INSERT INTO audit_log (org_id, actor_id, entity, entity_id, action, `before`, `after`, occurred_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 self::orgId(), self::id(), $entity, $entityId, $action,

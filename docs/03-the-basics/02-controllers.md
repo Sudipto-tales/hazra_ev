@@ -38,14 +38,14 @@ class UserController extends ApiController
 {
     public function index()
     {
-        $users = db_fetch_all("SELECT id, name, email FROM users_tbl");
+        $users = db_fetch_all("SELECT id, name, email FROM users");
         $this->success($users);
     }
 
     public function show()
     {
         $id = $this->param('id');
-        $user = db_fetch_one("SELECT * FROM users_tbl WHERE id = ?", [$id]);
+        $user = db_fetch_one("SELECT * FROM users WHERE id = ?", [$id]);
 
         if (!$user) {
             $this->error('User not found', 404);
@@ -62,7 +62,7 @@ class UserController extends ApiController
             'email' => 'required|email',
         ]);
 
-        db_execute("UPDATE users_tbl SET name = ?, email = ? WHERE id = ?",
+        db_execute("UPDATE users SET name = ?, email = ? WHERE id = ?",
             [$data['name'], $data['email'], $id]);
 
         $this->success(null, 'User updated');

@@ -17,6 +17,8 @@ $framework = require __DIR__ . '/config/framework.php';
 require __DIR__ . '/core/Console/SetupCommand.php';
 require __DIR__ . '/core/Console/RunCommand.php';
 require __DIR__ . '/core/Console/MigrateCommand.php';
+require __DIR__ . '/core/Console/DbSyncCommand.php';
+require __DIR__ . '/core/Console/DbExportCommand.php';
 require __DIR__ . '/core/Console/MatchCommand.php';
 
 $command = $argv[1] ?? null;
@@ -24,7 +26,9 @@ $command = $argv[1] ?? null;
 $commands = [
     'run'     => 'Start the development server',
     'setup'   => 'Run the interactive setup wizard',
-    'migrate' => 'Run database migrations (--fresh, --seed)',
+    'migrate' => 'Run database migrations (--fresh, --seed, --demo)',
+    'db:sync' => 'Apply pending migrations and seeders — additive, safe to re-run',
+    'db:export' => 'Write the schema + bootstrap admin as .sql for phpMyAdmin import',
     'match'   => 'Backfill road-matched route geometry (--days, --date, --employee, --force)',
 ];
 
@@ -47,6 +51,8 @@ match ($command) {
     'run'   => (new RunCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'setup' => (new SetupCommand(__DIR__, $framework))->run(),
     'migrate' => (new MigrateCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
+    'db:sync' => (new DbSyncCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
+    'db:export' => (new DbExportCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'match'   => (new MatchCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     default => (function () use ($command) {
         echo PHP_EOL;

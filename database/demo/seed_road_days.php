@@ -3,7 +3,7 @@
 /**
  * Dev helper: replaces the most recent days with tracks that follow real roads.
  *
- *   php database/seed_road_days.php [--days=2] [--dwell=18]
+ *   php database/demo/seed_road_days.php [--days=2] [--dwell=18]
  *
  * `seed.php` builds a track by interpolating a straight line between the origin
  * and each branch. Correct for stop detection, useless for road matching: the
@@ -23,14 +23,14 @@
  * is not something the server can cache an answer about.
  */
 
-require __DIR__ . '/../vendor/autoload.php';
-Dotenv\Dotenv::createImmutable(dirname(__DIR__))->safeLoad();
+require __DIR__ . '/../../vendor/autoload.php';
+Dotenv\Dotenv::createImmutable(dirname(__DIR__, 2))->safeLoad();
 
-require __DIR__ . '/../config/env.php';
-require __DIR__ . '/../config/db.php';
+require __DIR__ . '/../../config/env.php';
+require __DIR__ . '/../../config/db.php';
 
 foreach (['Uuid', 'Wire', 'Geo', 'Polyline', 'MapMatch', 'Envelope', 'Ctx', 'Present', 'Engine'] as $support) {
-    require_once __DIR__ . "/../api/support/{$support}.php";
+    require_once __DIR__ . "/../../api/support/{$support}.php";
 }
 
 $days  = (int) (option($argv, 'days') ?? 2);
@@ -38,7 +38,7 @@ $dwell = (int) (option($argv, 'dwell') ?? 18);
 
 $org = db_fetch_one("SELECT * FROM organizations LIMIT 1");
 if (!$org) {
-    exit("  no organisation — run php vayu migrate --seed first\n");
+    exit("  no organisation — run php vayu migrate --fresh --demo first\n");
 }
 
 $timezone = new DateTimeZone($org['timezone']);
@@ -46,7 +46,7 @@ $employees = db_fetch_all("SELECT * FROM users WHERE role = 'employee' ORDER BY 
 $branches = db_fetch_all("SELECT * FROM branches ORDER BY name");
 
 if (!$employees || !$branches) {
-    exit("  no employees or branches — run php vayu migrate --seed first\n");
+    exit("  no employees or branches — run php vayu migrate --fresh --demo first\n");
 }
 
 $interval = (int) db_fetch_one("SELECT location_interval_seconds FROM tracking_configs LIMIT 1")['location_interval_seconds'];

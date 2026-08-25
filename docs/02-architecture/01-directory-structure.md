@@ -55,8 +55,10 @@ vayu/
 │   └── js/script.js             # Client-side JavaScript
 │
 ├── database/
-│   └── migrations/              # Database migration files
-│       └── UsersTable.php
+│   ├── migrations/              # Schema migrations, applied in filename order
+│   ├── seeds/                   # Idempotent seed data, tracked like migrations
+│   ├── demo/                    # Opt-in demo dataset (php vayu migrate --demo)
+│   └── exports/                 # Generated .sql (php vayu db:export, git-ignored)
 │
 ├── storage/                     # File uploads & application data
 ├── docs/                        # Documentation
@@ -71,6 +73,6 @@ vayu/
 | `core/` | Framework engine — all classes auto-loaded by bootstrap |
 | `app/` | Your application — controllers, views, components |
 | `api/` | API layer — gateway routes and API controllers |
-| `database/` | Migrations and seeders |
+| `database/` | Migrations, seeders, demo data, generated exports |
 | `assets/` | Static files served directly |
 | `storage/` | Runtime files (uploads, logs, cache) |
