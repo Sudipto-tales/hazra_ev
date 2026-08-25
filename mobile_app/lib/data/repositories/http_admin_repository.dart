@@ -17,7 +17,8 @@ class HttpAdminRepository implements AdminRepository {
   final ApiClient _api;
 
   static const String _dayIncludes =
-      'sessions,stops,visits,reports,activity,summary,lastFix,attendance';
+      'sessions,stops,visits,reports,activity,summary,lastFix,attendance,'
+      'closeout';
 
   @override
   Future<AdminUser> profile() async {
@@ -320,6 +321,19 @@ class HttpAdminRepository implements AdminRepository {
   Future<void> setEmployeeActive(String employeeId, bool active) =>
       _api.patch('/employees/$employeeId',
           body: <String, dynamic>{'active': active});
+
+  /// `POST /days/{id}/reopen`. The reason is stored server-side with the
+  /// admin's identity, which is what makes a shifted day explainable later.
+  @override
+  Future<void> reopenDay({
+    required String employeeId,
+    required DateTime date,
+    required String reason,
+  }) =>
+      _api.post('/days/$employeeId/reopen', body: <String, dynamic>{
+        'date': Wire.day(date),
+        'reason': reason,
+      });
 
   @override
   Future<TrackingConfig> config() async {

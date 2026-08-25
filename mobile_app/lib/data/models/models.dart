@@ -2,6 +2,7 @@ export 'activity_event.dart';
 export 'admin.dart';
 export 'app_notification.dart';
 export 'company.dart';
+export 'day_closeout.dart';
 export 'employee.dart';
 export 'home_snapshot.dart';
 export 'product.dart';

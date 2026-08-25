@@ -1,6 +1,18 @@
 <?php
 
-class MigrateCommand
+/**
+ * `php vayu db:sync` — bring a database up to the checkout it is running from.
+ *
+ * This is the command to run on the server after every pull. It applies any
+ * migration that has not run and any seeder that has not run, in order, and
+ * does nothing else. There is no rollback path and no --fresh: it never drops a
+ * table and never rewrites a row, so running it against live data is safe and
+ * running it twice is a no-op.
+ *
+ * Development keeps `php vayu migrate` for the destructive shortcuts
+ * (--fresh, --demo).
+ */
+class DbSyncCommand
 {
     private string $baseDir;
     private array $framework;
@@ -13,18 +25,12 @@ class MigrateCommand
 
     public function run(array $args): void
     {
-        $fresh = in_array('--fresh', $args, true);
-        $seed  = in_array('--seed', $args, true);
-        $demo  = in_array('--demo', $args, true);
+        $status = in_array('--status', $args, true);
+        $dry    = in_array('--dry', $args, true) || in_array('--dry-run', $args, true);
 
-        // Bind first: db.php assigns $pdo in whatever scope requires it, and
-        // its db_* helpers read the global.
         global $pdo;
 
         if (in_array('--create-database', $args, true)) {
-            // db.php reads this and creates a missing MySQL database instead of
-            // failing. Off by default: a typo in DB_DATABASE should be an
-            // error, not a second empty database.
             $_ENV['DB_CREATE_DATABASE'] = '1';
         }
 
@@ -42,42 +48,57 @@ class MigrateCommand
             exit(1);
         }
 
-        if ($demo && env('APP_ENV') === 'production') {
-            echo PHP_EOL . "  \033[31m--demo refused.\033[0m APP_ENV is production." . PHP_EOL . PHP_EOL;
-            exit(1);
-        }
+        $pendingMigrations = migrations_pending($pdo);
+        $pendingSeeders    = seeders_pending($pdo);
 
         echo PHP_EOL;
-        echo "  \033[2mdriver: " . Dialect::driver() . "\033[0m" . PHP_EOL . PHP_EOL;
+        echo "  \033[1mdb:sync\033[0m \033[2m" . Dialect::driver();
+        if (Dialect::isMysql()) {
+            echo ' · ' . env('DB_DATABASE') . '@' . env('DB_HOST', '127.0.0.1');
+        }
+        echo "\033[0m" . PHP_EOL . PHP_EOL;
 
-        if ($fresh) {
-            echo "  \033[1mRolling back\033[0m" . PHP_EOL;
-            migrations_down($pdo);
+        if ($status || $dry) {
+            $this->report('Migrations', migration_files(), $pendingMigrations);
+            $this->report('Seeders', seeder_files(), $pendingSeeders);
+
             echo PHP_EOL;
+            echo $dry
+                ? "  \033[2mdry run — nothing was applied\033[0m" . PHP_EOL . PHP_EOL
+                : PHP_EOL;
+
+            exit(0);
         }
 
-        echo "  \033[1mMigrating\033[0m" . PHP_EOL;
-        $count = migrations_up($pdo);
-
-        if ($count === 0) {
+        echo "  \033[1mMigrations\033[0m" . PHP_EOL;
+        if (migrations_up($pdo) === 0) {
             echo "  \033[2mnothing to migrate\033[0m" . PHP_EOL;
         }
 
-        // Demo data goes in before the seeders so the bootstrap admin lands in
-        // the same organisation the demo created.
-        if ($demo) {
-            echo PHP_EOL . "  \033[1mDemo data\033[0m" . PHP_EOL;
-            migrations_demo($pdo);
+        echo PHP_EOL . "  \033[1mSeeders\033[0m" . PHP_EOL;
+        if (migrations_seed($pdo) === 0) {
+            echo "  \033[2mnothing to seed\033[0m" . PHP_EOL;
         }
 
-        if ($seed) {
-            echo PHP_EOL . "  \033[1mSeeding\033[0m" . PHP_EOL;
-            if (migrations_seed($pdo) === 0) {
-                echo "  \033[2mnothing to seed\033[0m" . PHP_EOL;
-            }
+        echo PHP_EOL . "  \033[32min sync\033[0m" . PHP_EOL . PHP_EOL;
+    }
+
+    /** @param string[] $files absolute paths @param string[] $pending basenames */
+    private function report(string $title, array $files, array $pending): void
+    {
+        echo "  \033[1m{$title}\033[0m" . PHP_EOL;
+
+        if (!$files) {
+            echo "    \033[2mnone\033[0m" . PHP_EOL;
+            return;
         }
 
-        echo PHP_EOL;
+        foreach ($files as $file) {
+            $name = basename($file, '.php');
+            echo in_array($name, $pending, true)
+                ? "    \033[33mpending\033[0m {$name}" . PHP_EOL
+                : "    \033[32mapplied\033[0m {$name}" . PHP_EOL;
+        }
     }
 
     /**

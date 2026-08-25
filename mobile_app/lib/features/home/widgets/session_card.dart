@@ -178,6 +178,7 @@ class SessionCard extends StatelessWidget {
           const SizedBox(height: Insets.lg),
           _Actions(
             status: status,
+            locked: controller.isDayLocked,
             busy: controller.isBusy,
             onStartDay: onStartDay,
             onEndDay: onEndDay,
@@ -207,6 +208,7 @@ class SessionCard extends StatelessWidget {
 class _Actions extends StatelessWidget {
   const _Actions({
     required this.status,
+    required this.locked,
     required this.busy,
     required this.onStartDay,
     required this.onEndDay,
@@ -214,6 +216,10 @@ class _Actions extends StatelessWidget {
   });
 
   final WorkStatus status;
+
+  /// The day is closed server-side. Only an admin can undo that, so the
+  /// primary action is dead rather than merely discouraged.
+  final bool locked;
   final bool busy;
   final VoidCallback onStartDay;
   final VoidCallback onEndDay;
@@ -221,7 +227,7 @@ class _Actions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (status == WorkStatus.ended) {
+    if (locked || status == WorkStatus.ended) {
       return _WhiteButton(
         label: 'Day completed',
         icon: Icons.check_circle_rounded,

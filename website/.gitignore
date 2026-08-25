@@ -38,3 +38,6 @@ Thumbs.db
 /agent/**
 # Uploaded report images
 /storage/uploads/
+
+# Generated SQL exports (php vayu db:export)
+/database/exports/*.sql

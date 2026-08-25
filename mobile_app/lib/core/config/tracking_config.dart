@@ -12,6 +12,7 @@ class TrackingConfig {
     this.offlineThresholdMinutes = 10,
     this.locationUnavailableThresholdMinutes = 15,
     this.syncBatchSize = 50,
+    this.autoCloseAfterMinutes = 30,
   });
 
   /// How often a GPS fix is captured while a session is active.
@@ -44,6 +45,12 @@ class TrackingConfig {
   /// Queued offline fixes flushed per request.
   final int syncBatchSize;
 
+  /// GPS off *and* no network for this long with a session open → the session
+  /// closes itself. The day stays open: an automatic close is not a
+  /// declaration, so no closeout form is shown for it. The server enforces the
+  /// same rule for devices that are simply dead.
+  final int autoCloseAfterMinutes;
+
   static const TrackingConfig defaults = TrackingConfig();
 
   /// Used by the admin "tracking rules" form, which edits one field at a time.
@@ -58,6 +65,7 @@ class TrackingConfig {
     int? offlineThresholdMinutes,
     int? locationUnavailableThresholdMinutes,
     int? syncBatchSize,
+    int? autoCloseAfterMinutes,
   }) {
     return TrackingConfig(
       locationIntervalSeconds:
@@ -76,6 +84,8 @@ class TrackingConfig {
           locationUnavailableThresholdMinutes ??
               this.locationUnavailableThresholdMinutes,
       syncBatchSize: syncBatchSize ?? this.syncBatchSize,
+      autoCloseAfterMinutes:
+          autoCloseAfterMinutes ?? this.autoCloseAfterMinutes,
     );
   }
 }

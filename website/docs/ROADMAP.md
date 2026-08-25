@@ -40,8 +40,9 @@ This document tracks what's been built, what's in progress, and what's planned. 
 - [x] **SQL Helpers** — `db_fetch_all()`, `db_fetch_one()`, `db_execute()`, `db_last_insert_id()`
 - [x] **MongoDB Helpers** — `mongo_find()`, `mongo_insert()`, `mongo_update()`, `mongo_delete()`
 - [x] **Prepared Statements** — PDO prepared statements by default (injection-safe)
-- [x] **Migration Framework** — `Migration` base class with `up()`, `down()`, `seed()`
-- [x] **Users Migration** — `UsersTable` with auth-ready schema
+- [x] **Migration Framework** — `Migration` base class with `up()`, `down()`, and a portable `exec()`
+- [x] **Portable Migrations** — `Dialect` type tokens, one migration set runs on SQLite and MySQL
+- [x] **Seeder Ledger** — `database/seeds/` tracked in a `seeders` table, `php vayu db:sync` applies pending schema + seeds
 
 ## Phase 5: Authentication [COMPLETE]
 

@@ -5,6 +5,7 @@ import 'app.dart';
 import 'core/config/api_config.dart';
 import 'data/api/api_client.dart';
 import 'data/api/token_store.dart';
+import 'data/mock/day_lock_store.dart';
 import 'data/mock/product_store.dart';
 import 'data/repositories/admin_repository.dart';
 import 'data/repositories/employee_repository.dart';
@@ -45,18 +46,22 @@ Future<void> main() async {
   ApiClient? api;
 
   if (ApiConfig.useMocks) {
-    // One catalogue and one notification feed shared by both repositories, so a
-    // product the admin lists is immediately visible on the employee side.
-    // Against the real API the server does this instead.
+    // One catalogue, one notification feed and one day lock shared by both
+    // repositories, so a product the admin lists is immediately visible on the
+    // employee side — and a day the admin reopens is workable again. Against
+    // the real API the server does this instead.
     final ProductStore productStore = ProductStore();
+    final DayLockStore dayLock = DayLockStore();
 
     repository = MockEmployeeRepository(
       products: productStore,
       notifications: notifications,
+      dayLock: dayLock,
     );
     adminRepository = MockAdminRepository(
       products: productStore,
       notifications: notifications,
+      dayLock: dayLock,
     );
   } else {
     final TokenStore tokens = await TokenStore.open();

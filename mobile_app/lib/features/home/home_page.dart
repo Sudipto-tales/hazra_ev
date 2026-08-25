@@ -18,6 +18,7 @@ import '../reports/report_detail_page.dart';
 import '../shell/main_shell.dart';
 import 'activity_page.dart';
 import 'widgets/activity_timeline.dart';
+import 'widgets/day_closeout_sheet.dart';
 import 'widgets/day_dialogs.dart';
 import 'widgets/session_card.dart';
 import 'widgets/tracking_sheet.dart';
@@ -84,6 +85,20 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: Insets.lg),
                   ],
+                  if (c.autoClosedAt != null) ...<Widget>[
+                    AlertBanner(
+                      icon: Icons.timer_off_rounded,
+                      tone: AppColors.info,
+                      title: 'Session closed automatically',
+                      message:
+                          'GPS and internet were both off at ${Fmt.time(c.autoClosedAt)}, '
+                          'so your session was closed. Your day is still open — '
+                          'start a new session whenever you are ready.',
+                      actionLabel: 'Dismiss',
+                      onAction: c.acknowledgeAutoClose,
+                    ),
+                    const SizedBox(height: Insets.lg),
+                  ],
                   SessionCard(
                     controller: c,
                     onStartDay: () => _startDay(context, c),
@@ -91,6 +106,10 @@ class HomePage extends StatelessWidget {
                     onPause: () => _pause(context, c),
                     onTrackingTap: () => showTrackingSheet(context),
                   ),
+                  if (c.closeout != null) ...<Widget>[
+                    const SizedBox(height: Insets.lg),
+                    _CloseoutRecap(closeout: c.closeout!),
+                  ],
                   const SizedBox(height: Insets.xl),
                   const _QuickActions(),
                   const SectionHeader(
@@ -152,21 +171,83 @@ class HomePage extends StatelessWidget {
             await _startDay(context, c);
           },
         );
+      case StartDayOutcome.offline:
+        await showOfflineDialog(context, forEndDay: false);
+      case StartDayOutcome.dayLocked:
+        await showDayLockedDialog(context, result.dayState);
       case StartDayOutcome.alreadyRunning:
         break;
     }
   }
 
+  /// Gate first, form second, submit third.
+  ///
+  /// The checks run *before* the form opens so nobody fills in six fields only
+  /// to be told they cannot submit. And the day is only marked closed here once
+  /// the server has accepted it — a failure leaves the day open on both sides,
+  /// which is the safe direction to fail in.
   Future<void> _endDay(BuildContext context, TrackingController c) async {
-    final bool ok = await confirmEndDay(context, c);
-    if (!ok || !context.mounted) return;
-    await c.endDay();
+    final EndDayGate gate = await c.checkEndDay();
+    if (!context.mounted) return;
+
+    switch (gate.block) {
+      case EndDayBlock.alreadyClosed:
+        await showDayLockedDialog(context, c.dayState);
+        return;
+      case EndDayBlock.offline:
+        await showOfflineDialog(context, forEndDay: true);
+        return;
+      case EndDayBlock.locationOff:
+        await showLocationBlockedDialog(
+          context,
+          gate.health,
+          note: 'Your day cannot be closed without a valid GPS fix.',
+          onEnable: () async {
+            await AppScope.of(context)
+                .locationService
+                .requestPermission(background: true);
+            if (!context.mounted) return;
+            await _endDay(context, c);
+          },
+        );
+        return;
+      case EndDayBlock.none:
+        break;
+    }
+
+    if (!context.mounted) return;
+    final DayCloseoutDraft? draft = await showDayCloseoutSheet(
+      context,
+      summary: c.summary,
+      workedToday: c.workedToday,
+      sessionCount: c.sessions.length,
+      joiningTime: c.joiningTime,
+      visitsDetected: c.snapshot?.visits.length ?? c.summary.companiesVisited,
+      endedAt: gate.fix?.recordedAt ?? DateTime.now(),
+    );
+    if (draft == null || !context.mounted) return;
+
+    try {
+      await c.endDay(draft, finalFix: gate.fix);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text(
+            'Could not close your day. It is still open — try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Day ended · ${Fmt.duration(c.workedToday)} worked, '
-          '${Fmt.km(c.summary.distanceKm)} travelled',
+          'Day closed · ${Fmt.duration(c.workedToday)} worked, '
+          '${Fmt.km(c.summary.distanceKm)} tracked',
         ),
       ),
     );
@@ -484,6 +565,89 @@ class _ActivityBlock extends StatelessWidget {
                 child: Text('View all ${events.length} events'),
               ),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// What the employee declared when they closed the day, shown back to them.
+///
+/// The declared and tracked figures sit side by side rather than merged: the
+/// employee should see exactly what their manager will see.
+class _CloseoutRecap extends StatelessWidget {
+  const _CloseoutRecap({required this.closeout});
+
+  final DayCloseout closeout;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.lock_outline_rounded,
+                  size: 18, color: AppColors.info),
+              const SizedBox(width: Insets.sm),
+              Expanded(
+                child: Text(
+                  'Day closed at ${Fmt.time(closeout.submittedAt)}',
+                  style: theme.textTheme.titleMedium?.copyWith(fontSize: 15),
+                ),
+              ),
+              Row(
+                children: <Widget>[
+                  for (int i = 1; i <= 5; i++)
+                    Icon(
+                      i <= closeout.rating
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: 16,
+                      color: i <= closeout.rating
+                          ? AppColors.warning
+                          : AppColors.textTertiary,
+                    ),
+                ],
+              ),
+            ],
+          ),
+          const Divider(height: Insets.xl),
+          KeyValueRow(
+            label: 'You reported',
+            value: '${Fmt.km(closeout.declaredDistanceKm)} · '
+                '${closeout.declaredVisits} visits',
+            dense: true,
+          ),
+          KeyValueRow(
+            label: 'GPS tracked',
+            value: '${Fmt.km(closeout.measuredDistanceKm)} · '
+                '${closeout.measuredVisits} visits',
+            dense: true,
+            valueColor: closeout.distanceLooksOff ? AppColors.warning : null,
+          ),
+          if (closeout.tags.isNotEmpty) ...<Widget>[
+            const SizedBox(height: Insets.md),
+            Wrap(
+              spacing: Insets.sm,
+              runSpacing: Insets.xs,
+              children: <Widget>[
+                for (final DayFeedbackTag tag in closeout.tags)
+                  StatusBadge(
+                    label: tag.label,
+                    tone: BadgeTone.neutral,
+                    dense: true,
+                  ),
+              ],
+            ),
+          ],
+          if (closeout.feedback != null) ...<Widget>[
+            const SizedBox(height: Insets.md),
+            Text(closeout.feedback!, style: theme.textTheme.bodySmall),
           ],
         ],
       ),

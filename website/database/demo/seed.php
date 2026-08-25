@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Development seed. Run with `php vayu migrate --seed`.
+ * Development seed. Run with `php vayu migrate --demo`.
  *
  * Produces one organisation, an admin, four employees, the reference companies
  * visits are detected against, an EV catalogue, and five working days of GPS
@@ -14,10 +14,10 @@
  */
 
 return function (PDO $pdo): void {
-    require_once __DIR__ . '/../api/support/bootstrap.php';
+    require_once __DIR__ . '/../../api/support/bootstrap.php';
 
     if ($pdo->query("SELECT COUNT(*) FROM organizations")->fetchColumn() > 0) {
-        echo "  \033[2malready seeded — drop with `php vayu migrate --fresh --seed`\033[0m\n";
+        echo "  \033[2malready seeded — drop with `php vayu migrate --fresh --demo`\033[0m\n";
         return;
     }
 

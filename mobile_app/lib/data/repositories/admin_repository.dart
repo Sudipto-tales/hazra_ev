@@ -133,6 +133,18 @@ abstract class AdminRepository {
 
   Future<void> setEmployeeActive(String employeeId, bool active);
 
+  /// Reopens a day the employee has closed, so they can work it again.
+  ///
+  /// [reason] is required and stored. A reopen shifts the numbers a manager
+  /// will later be asked about, and one with no reason on it cannot be
+  /// explained. The employee's original declaration is kept either way — it is
+  /// history, not a mistake.
+  Future<void> reopenDay({
+    required String employeeId,
+    required DateTime date,
+    required String reason,
+  });
+
   Future<TrackingConfig> config();
 
   Future<TrackingConfig> saveConfig(TrackingConfig config);

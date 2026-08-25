@@ -53,6 +53,14 @@ abstract class EmployeeRepository {
 
   /// Returns the stored record. In the live app this queues offline and retries.
   Future<VisitReport> submitReport(ReportDraft draft);
+
+  /// Ends the day for good: stores the employee's declaration and locks the
+  /// day server-side. Deliberately **not** queued offline — the lock lives on
+  /// the server, so a device that closes the day while disconnected would be
+  /// the only thing that believes it. Callers must be online.
+  ///
+  /// Idempotent on `draft.clientId`; a retry returns the existing record.
+  Future<DayCloseout> submitDayCloseout(DayCloseoutDraft draft);
 }
 
 /// What the create-report form collects before it becomes a [VisitReport].

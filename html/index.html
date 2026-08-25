@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vespa Matic - Follow Elegant</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (via CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="hero-wrapper">
+        <!-- Main Background Image (Blurry/Atmospheric) -->
+        <div class="bg-overlay"></div>
+        
+        <main class="main-canvas">
+            <!-- Left Side: Content & Controls -->
+            <section class="content-panel">
+                <nav class="navbar">
+                    <div class="nav-links">
+                        <a href="#" class="nav-item active">Home</a>
+                        <a href="#" class="nav-item">Product</a>
+                        <a href="#" class="nav-item">About</a>
+                        <a href="#" class="nav-item">Pricing</a>
+                    </div>
+                </nav>
+
+                <div class="hero-text">
+                    <h1 class="reveal-text">
+                        Feel True <br>
+                        <span class="inline-avatars">
+                            <img src="https://i.pravatar.cc/100?u=1" alt="User">
+                            <img src="https://i.pravatar.cc/100?u=2" alt="User">
+                            <img src="https://i.pravatar.cc/100?u=3" alt="User">
+                        </span>
+                        Comfort With <br>
+                        Vespa Matic - <br>
+                        Follow Elegant
+                    </h1>
+                    
+                    <div class="stats-counter">
+                        <span class="dot-line"></span>
+                        <div class="counter-box">0</div>
+                        <span class="dot-line"></span>
+                    </div>
+
+                    <div class="description">
+                        <span class="accent-dot"></span>
+                        <p>VESPA MATIC IS AN ENVIRONMENTALLY FRIENDLY CHOICE WITH AN ENGINE THAT IS EFFICIENT IN FUEL CONSUMPTION.</p>
+                    </div>
+                </div>
+
+                <div class="bottom-controls">
+                    <div class="pagination">2/<span>15</span></div>
+                    <div class="product-cards">
+                        <div class="p-card">
+                            <img src="https://images.unsplash.com/photo-1591533036499-52e04e0e564d?auto=format&fit=crop&q=60&w=400" alt="Classic">
+                            <span>Classic</span>
+                        </div>
+                        <div class="p-card active">
+                            <img src="https://images.unsplash.com/photo-1558981285-6f0c94958bb6?auto=format&fit=crop&q=60&w=400" alt="Retro">
+                            <span>Retro</span>
+                            <div class="card-icon"><i data-lucide="info"></i></div>
+                        </div>
+                        <div class="p-card">
+                            <img src="https://images.unsplash.com/photo-1512413316925-fd4b93f31521?auto=format&fit=crop&q=60&w=400" alt="Manual">
+                            <span>Manual</span>
+                            <div class="card-icon"><i data-lucide="plus"></i></div>
+                        </div>
+                    </div>
+                    <div class="nav-arrows">
+                        <button class="arrow-btn"><i data-lucide="arrow-left"></i></button>
+                        <button class="arrow-btn"><i data-lucide="arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- Custom Corner Interlock (Top Right) -->
+                <div class="interlock-corner tr"></div>
+                <!-- Custom Corner Interlock (Bottom Right) -->
+                <div class="interlock-corner br"></div>
+            </section>
+
+            <!-- Right Side: Visual Image Window -->
+            <section class="visual-panel">
+                <div class="image-container">
+                    <img src="https://images.unsplash.com/photo-1591533036499-52e04e0e564d?auto=format&fit=crop&q=80&w=1200" alt="Vespa Matic" class="hero-img">
+                    
+                    <!-- Floating Info Pills -->
+                    <div class="info-pill top reveal-item">
+                        <i data-lucide="wind"></i>
+                        <span>Soft/Touch</span>
+                    </div>
+                    <div class="info-pill bottom reveal-item">
+                        <i data-lucide="gauge"></i>
+                        <span>120km/hour</span>
+                    </div>
+
+                    <!-- Side Branding -->
+                    <div class="side-tag">
+                        <span>VESPA MATIC</span>
+                        <div class="tag-arrow"><i data-lucide="arrow-up-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- Contact Header -->
+                <div class="header-actions">
+                    <button class="cart-btn"><i data-lucide="shopping-cart"></i></button>
+                    <button class="contact-btn">CONTACT US</button>
+                </div>
+
+                <!-- Glassmorphic Tags Overlay -->
+                <div class="glass-tags">
+                    <div class="tag-row">
+                        <span class="glass-tag">Vespa</span>
+                        <span class="glass-tag">Matic</span>
+                    </div>
+                    <div class="tag-row">
+                        <span class="glass-tag">Retro</span>
+                        <span class="glass-tag">Elegant</span>
+                    </div>
+                    <div class="tag-row">
+                        <span class="glass-tag">Energy</span>
+                        <span class="glass-tag">Speed</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

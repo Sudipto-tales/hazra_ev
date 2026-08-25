@@ -1,69 +1,64 @@
 <?php
 
 /**
- * Admin-owned tracking configuration — one row per organisation, never per
- * employee and never per device (data doc §10.1).
+ * The org-wide tracking rulebook, its version history, and the holiday
+ * calendar the nightly rollup reads AttendanceStatus.holiday from.
  *
- * `version` bumps on every write and backs the ETag, so a device that already
- * holds the current config gets a 304.
+ * Types are Dialect tokens; see config/dialect.php and the port note in 001.
  */
-class TrackingConfigTables
+class TrackingConfigTables extends Migration
 {
-    protected $pdo;
-
-    public function __construct($pdo)
-    {
-        $this->pdo = $pdo;
-    }
-
     public function up()
     {
-        $this->pdo->exec("
+        $this->exec("
             CREATE TABLE IF NOT EXISTS tracking_configs (
-                org_id                                 TEXT PRIMARY KEY REFERENCES organizations(id),
-                version                                INTEGER NOT NULL DEFAULT 1,
-                location_interval_seconds              INTEGER NOT NULL DEFAULT 30,
-                min_accuracy_metres                    REAL    NOT NULL DEFAULT 50,
-                stop_radius_metres                     REAL    NOT NULL DEFAULT 75,
-                stop_threshold_minutes                 INTEGER NOT NULL DEFAULT 10,
-                long_stop_threshold_minutes            INTEGER NOT NULL DEFAULT 45,
-                movement_speed_threshold_kmh           REAL    NOT NULL DEFAULT 2,
-                max_jump_kmh                           REAL    NOT NULL DEFAULT 180,
-                offline_threshold_minutes              INTEGER NOT NULL DEFAULT 10,
-                location_unavailable_threshold_minutes INTEGER NOT NULL DEFAULT 15,
-                sync_batch_size                        INTEGER NOT NULL DEFAULT 50,
-                updated_at                             TEXT NOT NULL,
-                updated_by                             TEXT REFERENCES users(id),
+                org_id                                 {uuid} PRIMARY KEY,
+                version                                {int} NOT NULL DEFAULT 1,
+                location_interval_seconds              {int} NOT NULL DEFAULT 30,
+                min_accuracy_metres                    {float} NOT NULL DEFAULT 50,
+                stop_radius_metres                     {float} NOT NULL DEFAULT 75,
+                stop_threshold_minutes                 {int} NOT NULL DEFAULT 10,
+                long_stop_threshold_minutes            {int} NOT NULL DEFAULT 45,
+                movement_speed_threshold_kmh           {float} NOT NULL DEFAULT 2,
+                max_jump_kmh                           {float} NOT NULL DEFAULT 180,
+                offline_threshold_minutes              {int} NOT NULL DEFAULT 10,
+                location_unavailable_threshold_minutes {int} NOT NULL DEFAULT 15,
+                sync_batch_size                        {int} NOT NULL DEFAULT 50,
+                updated_at                             {ts} NOT NULL,
+                updated_by                             {uuid},
                 CHECK (location_interval_seconds BETWEEN 5 AND 600),
-                CHECK (long_stop_threshold_minutes >= stop_threshold_minutes)
-            );
+                CHECK (long_stop_threshold_minutes >= stop_threshold_minutes),
+                FOREIGN KEY (org_id) REFERENCES organizations(id),
+                FOREIGN KEY (updated_by) REFERENCES users(id)
+            ) {opts};
 
             -- 'What was the rule on the 3rd' needs an answer (schema doc §4).
             CREATE TABLE IF NOT EXISTS tracking_config_history (
-                id         TEXT PRIMARY KEY,
-                org_id     TEXT NOT NULL REFERENCES organizations(id),
-                version    INTEGER NOT NULL,
-                payload    TEXT NOT NULL,        -- JSON snapshot of the row as written
-                changed_at TEXT NOT NULL,
-                changed_by TEXT REFERENCES users(id)
-            );
+                id         {uuid} PRIMARY KEY,
+                org_id     {uuid} NOT NULL,
+                version    {int} NOT NULL,
+                payload    {json} NOT NULL,        -- JSON snapshot of the row as written
+                changed_at {ts} NOT NULL,
+                changed_by {uuid},
+                FOREIGN KEY (org_id) REFERENCES organizations(id),
+                FOREIGN KEY (changed_by) REFERENCES users(id)
+            ) {opts};
             CREATE INDEX IF NOT EXISTS idx_config_history ON tracking_config_history (org_id, version DESC);
 
             -- Closes the 'holiday calendar has no source' gap in data doc §13.
             -- AttendanceStatus.holiday is read from here by the nightly rollup.
             CREATE TABLE IF NOT EXISTS holidays (
-                org_id TEXT NOT NULL REFERENCES organizations(id),
-                date   TEXT NOT NULL,            -- yyyy-mm-dd
-                name   TEXT NOT NULL,
-                PRIMARY KEY (org_id, date)
-            );
+                org_id {uuid} NOT NULL,
+                date   {date} NOT NULL,            -- yyyy-mm-dd
+                name   {str} NOT NULL,
+                PRIMARY KEY (org_id, date),
+                FOREIGN KEY (org_id) REFERENCES organizations(id)
+            ) {opts};
         ");
     }
 
     public function down()
     {
-        foreach (['holidays', 'tracking_config_history', 'tracking_configs'] as $table) {
-            $this->pdo->exec("DROP TABLE IF EXISTS {$table}");
-        }
+        $this->drop(['holidays', 'tracking_config_history', 'tracking_configs']);
     }
 }
