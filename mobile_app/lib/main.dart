@@ -14,6 +14,7 @@ import 'data/repositories/http_admin_repository.dart';
 import 'data/repositories/http_employee_repository.dart';
 import 'data/repositories/mock_admin_repository.dart';
 import 'data/repositories/mock_employee_repository.dart';
+import 'data/repositories/tracking_repository.dart';
 import 'services/location_service.dart';
 import 'state/app_scope.dart';
 import 'state/notification_center.dart';
@@ -44,6 +45,12 @@ Future<void> main() async {
 
   final EmployeeRepository repository;
   final AdminRepository adminRepository;
+
+  /// The tracking write path — sessions, fixes and device health. Separate
+  /// from the two read repositories because it is driven by the device's own
+  /// state machine and its offline queue, not by a screen asking for data.
+  final TrackingRepository trackingRepository;
+
   ApiClient? api;
 
   if (ApiConfig.useMocks) {
@@ -64,6 +71,9 @@ Future<void> main() async {
       notifications: notifications,
       dayLock: dayLock,
     );
+    // Nothing to write to. The no-op hands the device's own session id back,
+    // so the offline build behaves exactly as it did before the write path.
+    trackingRepository = const NoopTrackingRepository();
   } else {
     final TokenStore tokens = await TokenStore.open();
 
@@ -77,6 +87,7 @@ Future<void> main() async {
 
     repository = HttpEmployeeRepository(api);
     adminRepository = HttpAdminRepository(api);
+    trackingRepository = HttpTrackingRepository(api);
   }
 
   // Id → name for companies and branches, backed by `GET /companies`. Built
@@ -92,7 +103,17 @@ Future<void> main() async {
   final TrackingController tracking = TrackingController(
     repository: repository,
     locationService: locationService,
+    trackingRepository: trackingRepository,
   );
+
+  // The queue's way out. Only the real GPS service has a queue worth draining;
+  // the mock's is simulated and has nothing to upload. The controller is the
+  // uploader because it is the only thing that knows which server session a
+  // device-side session id belongs to.
+  if (locationService is GeoLocationService) {
+    locationService.attachUploader(tracking.uploadQueuedFixes);
+  }
+
   // The repository is what makes preferences server-backed: open() pulls
   // GET /me/preferences and every later setter flushes a partial PATCH.
   // Without it the controller is a local cache and nothing more.
@@ -104,6 +125,7 @@ Future<void> main() async {
       repository: repository,
       adminRepository: adminRepository,
       companies: companies,
+      trackingRepository: trackingRepository,
       locationService: locationService,
       tracking: tracking,
       settings: settings,

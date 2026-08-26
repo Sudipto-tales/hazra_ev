@@ -168,14 +168,29 @@ class MockLocationService implements LocationService {
   }
 }
 
-/// Uploads one batch of queued fixes. Returns normally on success and throws
-/// on failure — that throw is the only evidence this class has that the device
-/// is offline.
+/// Uploads one batch of queued fixes for one session.
 ///
-/// The real implementation is `POST /tracking/locations` (see
-/// `docs/02-API-PLAN.md`); it belongs in the repository layer, not here,
+/// [sessionId] is the device-side session id every fix in [batch] carries; the
+/// uploader is responsible for translating it to whatever id the server knows
+/// the session by, because this class only ever sees the device's own.
+///
+/// Returns **the ids the server has settled** — accepted or permanently
+/// rejected. Those, and only those, leave the queue; anything unmentioned was
+/// not received and is sent again. Returning an empty set is a legitimate
+/// answer meaning "nothing could be settled yet" (typically the session is not
+/// open server-side), and leaves the queue untouched without claiming the
+/// device is offline.
+///
+/// Throwing is how a network failure is reported, and is the only evidence
+/// this class has that the device is offline.
+///
+/// The real implementation is `POST /tracking/locations` via
+/// `TrackingRepository` — it belongs in the repository layer, not here,
 /// because nothing under `lib/services/` is allowed to talk HTTP.
-typedef LocationUploader = Future<void> Function(List<LocationLog> batch);
+typedef LocationUploader = Future<Set<String>> Function(
+  String sessionId,
+  List<LocationLog> batch,
+);
 
 /// Real device GPS, backed by the `geolocator` plugin.
 ///
@@ -191,10 +206,14 @@ typedef LocationUploader = Future<void> Function(List<LocationLog> batch);
 ///   process is killed. [requestPermission] therefore treats "while in use" as
 ///   sufficient and never reports [LocationHealth.backgroundDenied].
 /// * The offline queue below is real — it holds the actual fixes captured on
-///   this device — but it is **not connected to an uploader yet**. Attach one
-///   with [attachUploader] once the repository exposes
-///   `POST /tracking/locations`. Until then [flushQueue] reports the queue as
-///   it truly is instead of pretending it drained.
+///   this device. It drains through the [LocationUploader] attached with
+///   [attachUploader] (`main.dart` wires it to `POST /tracking/locations` via
+///   `TrackingRepository`). With no uploader attached — the `USE_MOCKS` build,
+///   or a test — [flushQueue] reports the queue as it truly is instead of
+///   pretending it drained.
+/// * The queue is in memory only. A dropped network loses nothing; the process
+///   being killed does. Persisting it is the next step, and it belongs here
+///   rather than in the controller.
 ///
 /// Platform declarations: Android is done (see
 /// `android/app/src/main/AndroidManifest.xml`). This repo has no `ios/` folder
@@ -232,6 +251,7 @@ class GeoLocationService implements LocationService {
 
   StreamSubscription<Position>? _positions;
   Timer? _retry;
+  Timer? _drain;
 
   String? _sessionId;
   int _seq = 0;
@@ -247,10 +267,12 @@ class GeoLocationService implements LocationService {
   /// so that state is only ever reported off real rejected fixes.
   DateTime? _lastAccuracyReject;
 
-  /// Wire the uploader once `POST /tracking/locations` exists. Feature code
-  /// keeps talking to [LocationService]; only the composition root changes.
+  /// Point the queue at `POST /tracking/locations`. Feature code keeps talking
+  /// to [LocationService]; only the composition root knows this exists.
   void attachUploader(LocationUploader uploader) {
     _uploader = uploader;
+    // Anything captured before the wiring landed is still owed to the server.
+    if (_queue.isNotEmpty) unawaited(flushQueue());
   }
 
   /// Real backlog size, for callers that want it without listening to
@@ -390,15 +412,30 @@ class GeoLocationService implements LocationService {
     _sessionId = sessionId;
     _emitSync();
     _subscribe();
+
+    // A steady drain matters more than a big one: the admin's live map is only
+    // as current as the last batch that landed, and a session that uploads
+    // every half minute survives a mid-day crash with almost nothing lost.
+    // Batches also go up on their own once the queue reaches syncBatchSize.
+    _drain = Timer.periodic(
+      Duration(seconds: max(30, config.locationIntervalSeconds)),
+      (_) => unawaited(flushQueue()),
+    );
   }
 
+  /// Stops collecting. The queue is deliberately **not** cleared: fixes from a
+  /// closed session still have to reach the server, and the session close is
+  /// what tells the server they were the last of it.
   @override
   Future<void> stopTracking() async {
     _retry?.cancel();
     _retry = null;
+    _drain?.cancel();
+    _drain = null;
     await _positions?.cancel();
     _positions = null;
     _sessionId = null;
+    unawaited(flushQueue());
   }
 
   void _subscribe() {
@@ -571,13 +608,19 @@ class GeoLocationService implements LocationService {
     yield* _sync.stream;
   }
 
+  /// Drains the queue, oldest first, one session at a time.
+  ///
+  /// The split by session is not cosmetic: `POST /tracking/locations` takes a
+  /// single `sessionId` for the whole batch, and a day has several sessions —
+  /// a pause that happens before the queue drains leaves fixes from two of
+  /// them side by side.
   @override
   Future<void> flushQueue() async {
     final LocationUploader? uploader = _uploader;
     if (uploader == null) {
-      // No uploader attached yet: `POST /tracking/locations` is not wired to
-      // this class. Re-emitting the queue unchanged is the honest answer —
-      // clearing it here would claim a sync of data that never left the phone.
+      // No uploader attached: the mock build, or a test. Re-emitting the queue
+      // unchanged is the honest answer — clearing it here would claim a sync
+      // of data that never left the phone.
       _emitSync();
       return;
     }
@@ -588,29 +631,63 @@ class GeoLocationService implements LocationService {
 
     _flushing = true;
     try {
-      while (_queue.isNotEmpty) {
-        final List<LocationLog> batch =
-            _queue.take(config.syncBatchSize).toList(growable: false);
+      // Sessions that answered "nothing settled" are parked for this round.
+      // Without this the loop would re-send the same undeliverable batch until
+      // the network finally failed for a different reason.
+      final Set<String> parked = <String>{};
+
+      while (true) {
+        final List<LocationLog> batch = _nextBatch(parked);
+        if (batch.isEmpty) break;
+
+        final String sessionId = batch.first.sessionId;
+        final Set<String> settled;
+
         try {
-          await uploader(batch);
+          settled = await uploader(sessionId, batch);
         } catch (e) {
           // The one thing a failed upload proves: this device cannot reach the
-          // server right now.
+          // server right now. Everything stays queued.
           debugPrint('[location] flush failed: $e');
           _online = false;
           _emitSync();
           return;
         }
-        for (int i = 0; i < batch.length && _queue.isNotEmpty; i++) {
-          _queue.removeFirst();
-        }
+
+        // Reaching the server at all is what "online" means here, whether or
+        // not it had anything to settle.
         _online = true;
+
+        if (settled.isEmpty) {
+          parked.add(sessionId);
+          _emitSync();
+          continue;
+        }
+
+        _queue.removeWhere((LocationLog fix) => settled.contains(fix.id));
         _lastSyncedAt = DateTime.now();
         _emitSync();
       }
     } finally {
       _flushing = false;
     }
+  }
+
+  /// Oldest fix that is not parked, plus every later fix of the same session,
+  /// up to `syncBatchSize` — the server refuses a bigger batch outright.
+  List<LocationLog> _nextBatch(Set<String> parked) {
+    String? sessionId;
+    final List<LocationLog> batch = <LocationLog>[];
+
+    for (final LocationLog fix in _queue) {
+      if (parked.contains(fix.sessionId)) continue;
+      sessionId ??= fix.sessionId;
+      if (fix.sessionId != sessionId) continue;
+      batch.add(fix);
+      if (batch.length >= config.syncBatchSize) break;
+    }
+
+    return batch;
   }
 
   SyncSnapshot _snapshot() => SyncSnapshot(
