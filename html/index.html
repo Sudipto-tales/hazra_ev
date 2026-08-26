@@ -13,6 +13,9 @@
 <body>
 
 <!-- ══════════ HERO ══════════ -->
+<!-- .scroll is the tall driver; .stage sticks inside it, so scrolling
+     feeds the zoom instead of moving to another section -->
+<div class="scroll" id="scroll">
 <section class="stage">
   <div class="stage__bg"></div>
   <div class="stage__veil"></div>
@@ -21,11 +24,10 @@
 
     <!-- photo sits underneath; white plates notch into it -->
     <figure class="photo">
-      <img class="photo__img" src="assets/scooter.png" alt="Vespa Matic"
-           onerror="this.src='https://images.unsplash.com/photo-1558981285-6f0c94958bb6?auto=format&fit=crop&q=80&w=1400'">
+      <img class="photo__img photo__img--light" src="assets/scutie_light.png" alt="Vespa Matic in daylight">
+      <img class="photo__img photo__img--dark"  src="assets/dark_scutie.png"  alt="Vespa Matic at night" aria-hidden="true">
       <div class="photo__shade"></div>
 
-      <div class="pill pill--a reveal-pop"><i data-lucide="wind"></i><span>Soft&nbsp;/&nbsp;Touch</span></div>
       <div class="pill pill--b reveal-pop"><i data-lucide="gauge"></i><span>120&nbsp;km/hour</span></div>
 
       <div class="vtag">
@@ -40,12 +42,15 @@
       </div>
     </figure>
 
+    <!-- floats outside the photo mask so it can straddle the edge -->
+    <div class="pill pill--a reveal-pop"><i data-lucide="wind"></i><span>Soft&nbsp;/&nbsp;Touch</span></div>
+
     <!-- ── white plate: top-left nav ── -->
     <header class="topbar">
       <nav class="nav">
         <a href="#" class="nav__i is-on">Home</a>
-        <a href="#" class="nav__i">Product</a>
-        <a href="#" class="nav__i">About</a>
+        <a href="#collection" class="nav__i">Product</a>
+        <a href="#about" class="nav__i">About</a>
         <a href="#" class="nav__i">Pricing</a>
       </nav>
       <button class="theme" id="theme" aria-label="Toggle theme">
@@ -90,28 +95,13 @@
 
     <!-- ── white plate: bottom shelf (notches the photo) ── -->
     <footer class="shelf">
-      <div class="pager"><b>2</b><span>/15</span></div>
+      <div class="pager"><b>01</b><span>/02</span></div>
 
-      <div class="deck">
-        <button class="thumb" data-name="Classic">
-          <img src="https://images.unsplash.com/photo-1591533036499-52e04e0e564d?auto=format&fit=crop&q=60&w=300" alt="">
-          <em>Classic</em>
-        </button>
-        <button class="thumb is-on" data-name="Retro">
-          <img src="https://images.unsplash.com/photo-1558981285-6f0c94958bb6?auto=format&fit=crop&q=60&w=300" alt="">
-          <em>Retro</em>
-          <span class="thumb__ic"><i data-lucide="info"></i></span>
-        </button>
-        <button class="thumb" data-name="Manual">
-          <img src="https://images.unsplash.com/photo-1512413316925-fd4b93f31521?auto=format&fit=crop&q=60&w=300" alt="">
-          <em>Manual</em>
-          <span class="thumb__ic"><i data-lucide="plus"></i></span>
-        </button>
-      </div>
+      <p class="shelf__meta"><i class="shelf__sq"></i>DAY &amp; NIGHT FINISH</p>
 
       <div class="arrows">
-        <button class="arrow" data-dir="-1"><i data-lucide="arrow-left"></i></button>
-        <button class="arrow" data-dir="1"><i data-lucide="arrow-right"></i></button>
+        <button class="arrow" data-dir="-1" aria-label="Previous finish"><i data-lucide="arrow-left"></i></button>
+        <button class="arrow" data-dir="1" aria-label="Next finish"><i data-lucide="arrow-right"></i></button>
       </div>
     </footer>
 
@@ -119,7 +109,303 @@
     <i class="fillet fillet--tab"></i>
     <i class="fillet fillet--shelf"></i>
 
+    <!-- ── scroll cue ── -->
+    <div class="cue"><span>SCROLL TO ZOOM</span><i data-lucide="chevrons-down"></i></div>
+
   </main>
+</section>
+</div>
+
+
+<!-- ══════════ ABOUT ══════════
+     Left: a video hidden behind a mosaic of poster tiles. Each tile is one
+     slice of --bg-img; they flip away on a staggered diagonal to uncover the
+     footage. Right: copy + counters that run once on entry. -->
+<section class="about" id="about">
+  <div class="wrap">
+
+    <header class="sec__head">
+      <p class="eyebrow"><i class="sq"></i>ABOUT VESPA MATIC</p>
+      <h2 class="sec__title reveal-up">
+        Built in the city,<br><span class="hl">tuned for the long way home.</span>
+      </h2>
+    </header>
+
+    <div class="about__grid">
+
+      <figure class="mosaic" id="mosaic">
+        <video class="mosaic__v" id="mosaicVideo"
+               muted loop playsinline preload="none"
+               aria-label="Vespa Matic on the road">
+          <source src="assets/about.mp4" type="video/mp4">
+        </video>
+
+        <!-- tiles injected by script.js -->
+        <div class="mosaic__grid" aria-hidden="true"></div>
+
+        <button class="mosaic__play" id="mosaicPlay" aria-label="Play reel">
+          <i data-lucide="play"></i>
+        </button>
+        <figcaption class="mosaic__cap"><i class="sq"></i>THE 2026 REEL &mdash; 01:12</figcaption>
+      </figure>
+
+      <div class="about__copy">
+        <p class="about__lead reveal-up">
+          Vespa Matic started as one frame, one battery and a stubborn idea &mdash;
+          that an electric scooter should feel like something you <em>want</em> to
+          ride, not something you settle for.
+        </p>
+        <p class="about__text reveal-up">
+          Every model shares the same spine: a swappable pack, a torque map written
+          for stop&#8209;start traffic, and a body pressed in one piece so there is
+          nothing to rattle loose. We build them a few hundred at a time, we service
+          what we sell, and we publish the range figures we actually measured.
+        </p>
+
+        <ul class="stats">
+          <li class="stat"><b class="stat__n" data-to="12">0</b><span>Years on the road</span></li>
+          <li class="stat"><b class="stat__n" data-to="48" data-suffix="+">0</b><span>Service points</span></li>
+          <li class="stat"><b class="stat__n" data-to="26" data-suffix="k">0</b><span>Riders delivered</span></li>
+          <li class="stat"><b class="stat__n" data-to="130" data-suffix=" km">0</b><span>Best-case range</span></li>
+        </ul>
+
+        <a class="btn btn--ink" href="#collection">
+          <span>See the collection</span><i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════ COLLECTION ══════════
+     Card grid. Markup is uniform; script.js only handles the scroll-in
+     stagger, the swatch retint and the pointer-tracked shine. -->
+<section class="coll" id="collection">
+  <div class="wrap">
+
+    <header class="sec__head sec__head--row">
+      <div>
+        <p class="eyebrow"><i class="sq"></i>THE COLLECTION</p>
+        <h2 class="sec__title reveal-up">Where the range<br><span class="hl">meets the road.</span></h2>
+      </div>
+      <a class="link" href="#">View complete collection<i data-lucide="arrow-up-right"></i></a>
+    </header>
+
+    <div class="coll__grid" id="collGrid">
+
+      <article class="card" style="--c:#d3ff45">
+        <div class="card__media">
+          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
+          <span class="card__360">360&deg;</span>
+          <img class="card__img" src="assets/scutie_light.png" alt="Matic S1">
+          <i class="card__wash"></i>
+          <i class="card__shine"></i>
+        </div>
+        <div class="card__body">
+          <div class="card__rate"><i data-lucide="star"></i><b>4.8</b><span>· 212 reviews</span></div>
+          <h3 class="card__name">Matic S1</h3>
+          <div class="card__chips">
+            <span><i data-lucide="battery-charging"></i>100 km Range</span>
+            <span><i data-lucide="zap"></i>High Speed</span>
+          </div>
+          <div class="card__colors" role="group" aria-label="Available colours">
+            <button class="sw is-on" style="--c:#d3ff45" aria-label="Lime"></button>
+            <button class="sw" style="--c:#2b6cff" aria-label="Blue"></button>
+            <button class="sw" style="--c:#e8443a" aria-label="Red"></button>
+          </div>
+          <div class="card__price">
+            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
+            <div class="card__vars">
+              <button class="var"><b>&#8377;61,062</b><span>60V / 32AH Graphene</span></button>
+              <button class="var"><b>&#8377;72,679</b><span>60V / 25AH Li&#8209;ion</span></button>
+            </div>
+            <p class="card__note">*Without GST</p>
+          </div>
+          <div class="card__acts">
+            <a class="btn btn--ghost" href="#">Explore</a>
+            <a class="btn btn--ink" href="#"><span>Test Ride</span><i data-lucide="bike"></i></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card" style="--c:#1b1b1e">
+        <div class="card__media">
+          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
+          <img class="card__img" src="assets/dark_scutie.png" alt="Matic Pro">
+          <i class="card__wash"></i>
+          <i class="card__shine"></i>
+        </div>
+        <div class="card__body">
+          <div class="card__rate"><i data-lucide="star"></i><b>4.9</b><span>· 388 reviews</span></div>
+          <h3 class="card__name">Matic Pro</h3>
+          <div class="card__chips">
+            <span><i data-lucide="battery-charging"></i>120 km Range</span>
+            <span><i data-lucide="zap"></i>High Speed</span>
+          </div>
+          <div class="card__colors" role="group" aria-label="Available colours">
+            <button class="sw is-on" style="--c:#1b1b1e" aria-label="Graphite"></button>
+            <button class="sw" style="--c:#c9a227" aria-label="Sand"></button>
+            <button class="sw" style="--c:#3f8f6a" aria-label="Moss"></button>
+          </div>
+          <div class="card__price">
+            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
+            <div class="card__vars">
+              <button class="var"><b>&#8377;79,400</b><span>72V / 40AH Li&#8209;ion</span></button>
+              <button class="var"><b>&#8377;88,150</b><span>72V / 45AH Li&#8209;ion</span></button>
+            </div>
+            <p class="card__note">*Without GST</p>
+          </div>
+          <div class="card__acts">
+            <a class="btn btn--ghost" href="#">Explore</a>
+            <a class="btn btn--ink" href="#"><span>Test Ride</span><i data-lucide="bike"></i></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card" style="--c:#e8443a">
+        <div class="card__media">
+          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
+          <img class="card__img" src="assets/scutie_light.png" alt="Matic Eco">
+          <i class="card__wash"></i>
+          <i class="card__shine"></i>
+        </div>
+        <div class="card__body">
+          <div class="card__rate"><i data-lucide="star"></i><b>4.7</b><span>· 156 reviews</span></div>
+          <h3 class="card__name">Matic Eco</h3>
+          <div class="card__chips">
+            <span><i data-lucide="battery-charging"></i>130 km Range</span>
+            <span><i data-lucide="feather"></i>Low Speed</span>
+          </div>
+          <div class="card__colors" role="group" aria-label="Available colours">
+            <button class="sw is-on" style="--c:#e8443a" aria-label="Red"></button>
+            <button class="sw" style="--c:#f2efe6" aria-label="Bone"></button>
+            <button class="sw" style="--c:#2b6cff" aria-label="Blue"></button>
+          </div>
+          <div class="card__price">
+            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
+            <div class="card__vars">
+              <button class="var"><b>&#8377;54,900</b><span>60V / 32AH Graphene</span></button>
+              <button class="var"><b>&#8377;66,300</b><span>60V / 25AH Li&#8209;ion</span></button>
+            </div>
+            <p class="card__note">*Without GST</p>
+          </div>
+          <div class="card__acts">
+            <a class="btn btn--ghost" href="#">Explore</a>
+            <a class="btn btn--ink" href="#"><span>Test Ride</span><i data-lucide="bike"></i></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card" style="--c:#3f8f6a">
+        <div class="card__media">
+          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
+          <img class="card__img" src="assets/dark_scutie.png" alt="Matic City">
+          <i class="card__wash"></i>
+          <i class="card__shine"></i>
+        </div>
+        <div class="card__body">
+          <div class="card__rate"><i data-lucide="star"></i><b>4.6</b><span>· 94 reviews</span></div>
+          <h3 class="card__name">Matic City</h3>
+          <div class="card__chips">
+            <span><i data-lucide="battery-charging"></i>85 km Range</span>
+            <span><i data-lucide="feather"></i>Low Speed</span>
+          </div>
+          <div class="card__colors" role="group" aria-label="Available colours">
+            <button class="sw is-on" style="--c:#3f8f6a" aria-label="Moss"></button>
+            <button class="sw" style="--c:#1b1b1e" aria-label="Graphite"></button>
+            <button class="sw" style="--c:#d3ff45" aria-label="Lime"></button>
+          </div>
+          <div class="card__price">
+            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
+            <div class="card__vars">
+              <button class="var"><b>&#8377;49,750</b><span>48V / 28AH Graphene</span></button>
+              <button class="var"><b>&#8377;58,900</b><span>48V / 24AH Li&#8209;ion</span></button>
+            </div>
+            <p class="card__note">*Without GST</p>
+          </div>
+          <div class="card__acts">
+            <a class="btn btn--ghost" href="#">Explore</a>
+            <a class="btn btn--ink" href="#"><span>Test Ride</span><i data-lucide="bike"></i></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card" style="--c:#c9a227">
+        <div class="card__media">
+          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
+          <img class="card__img" src="assets/scutie_light.png" alt="Matic Lite">
+          <i class="card__wash"></i>
+          <i class="card__shine"></i>
+        </div>
+        <div class="card__body">
+          <div class="card__rate"><i data-lucide="star"></i><b>4.5</b><span>· 61 reviews</span></div>
+          <h3 class="card__name">Matic Lite</h3>
+          <div class="card__chips">
+            <span><i data-lucide="battery-charging"></i>50 km Range</span>
+            <span><i data-lucide="feather"></i>Low Speed</span>
+          </div>
+          <div class="card__colors" role="group" aria-label="Available colours">
+            <button class="sw is-on" style="--c:#c9a227" aria-label="Sand"></button>
+            <button class="sw" style="--c:#f2efe6" aria-label="Bone"></button>
+            <button class="sw" style="--c:#e8443a" aria-label="Red"></button>
+          </div>
+          <div class="card__price">
+            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
+            <div class="card__vars">
+              <button class="var"><b>&#8377;42,400</b><span>48V / 24AH Graphene</span></button>
+              <button class="var"><b>&#8377;51,100</b><span>48V / 20AH Li&#8209;ion</span></button>
+            </div>
+            <p class="card__note">*Without GST</p>
+          </div>
+          <div class="card__acts">
+            <a class="btn btn--ghost" href="#">Explore</a>
+            <a class="btn btn--ink" href="#"><span>Test Ride</span><i data-lucide="bike"></i></a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card" style="--c:#f2efe6">
+        <div class="card__media">
+          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
+          <img class="card__img" src="assets/dark_scutie.png" alt="Matic X">
+          <i class="card__wash"></i>
+          <i class="card__shine"></i>
+        </div>
+        <div class="card__body">
+          <div class="card__rate"><i data-lucide="star"></i><b>5.0</b><span>· 28 reviews</span></div>
+          <h3 class="card__name">Matic X</h3>
+          <div class="card__chips">
+            <span><i data-lucide="battery-charging"></i>140 km Range</span>
+            <span><i data-lucide="zap"></i>High Speed</span>
+          </div>
+          <div class="card__colors" role="group" aria-label="Available colours">
+            <button class="sw is-on" style="--c:#f2efe6" aria-label="Bone"></button>
+            <button class="sw" style="--c:#1b1b1e" aria-label="Graphite"></button>
+            <button class="sw" style="--c:#2b6cff" aria-label="Blue"></button>
+          </div>
+          <div class="card__price">
+            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
+            <div class="card__vars">
+              <button class="var"><b>&#8377;1,04,900</b><span>72V / 45AH Li&#8209;ion</span></button>
+              <button class="var"><b>&#8377;1,19,500</b><span>72V / 60AH Li&#8209;ion</span></button>
+            </div>
+            <p class="card__note">*Without GST</p>
+          </div>
+          <div class="card__acts">
+            <a class="btn btn--ghost" href="#">Explore</a>
+            <a class="btn btn--ink" href="#"><span>Test Ride</span><i data-lucide="bike"></i></a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <p class="coll__foot"><i class="sq"></i>
+      Prices are indicative and vary by configuration and location.
+    </p>
+  </div>
 </section>
 
 <script src="script.js"></script>
