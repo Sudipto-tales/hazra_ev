@@ -29,6 +29,12 @@ class MockEmployeeRepository implements EmployeeRepository {
 
   final List<VisitReport> _extraReports = <VisitReport>[];
   int _draftSeq = 0;
+  int _imageSeq = 0;
+
+  /// Device preferences, held for the run. `USE_MOCKS=true` has no server, so
+  /// this is the whole store — [SettingsController] still has its own
+  /// `shared_preferences` cache underneath, which is what survives a restart.
+  DevicePreferences _preferences = DevicePreferences.defaults;
 
   /// Shared with `MockAdminRepository` — see [DayLockStore]. This is what
   /// makes an admin reopen show up on the employee's Home.
@@ -178,6 +184,10 @@ class MockEmployeeRepository implements EmployeeRepository {
     return _delayed(null);
   }
 
+  /// Files the text only, with `imageCount: 0`, exactly like `POST /reports`.
+  /// The pictures arrive in [uploadReportImages] or they do not arrive at all
+  /// — pretending otherwise here would hide the very failure mode the two-step
+  /// flow exists to expose.
   @override
   Future<VisitReport> submitReport(ReportDraft draft) async {
     await Future<void>.delayed(latency);
@@ -191,7 +201,7 @@ class MockEmployeeRepository implements EmployeeRepository {
       sessionId: MockData.todaySessions.last.id,
       title: draft.title,
       body: draft.body,
-      imageCount: draft.imageCount,
+      imageCount: 0,
       submittedAt: DateTime.now(),
       latitude: MockData.lastFix.latitude,
       longitude: MockData.lastFix.longitude,
@@ -203,6 +213,112 @@ class MockEmployeeRepository implements EmployeeRepository {
     );
     _extraReports.insert(0, report);
     return report;
+  }
+
+  /// Nothing leaves the device, and nothing claims it did: the "stored" url is
+  /// the local path the picture already lives at. What this does reproduce
+  /// faithfully is the server's validation — an oversized or unsupported file
+  /// throws after the acceptable prefix has been stored, so the caller's
+  /// partial-upload path is a real code path in mock builds too.
+  @override
+  Future<List<ReportImage>> uploadReportImages(
+    String reportId,
+    List<ReportAttachment> images,
+  ) async {
+    await Future<void>.delayed(latency);
+
+    if (images.isEmpty) {
+      return const <ReportImage>[];
+    }
+
+    final List<ReportImage> stored = <ReportImage>[];
+
+    for (final ReportAttachment a in images) {
+      final String? rejection = a.rejection;
+      if (rejection != null) {
+        _bumpImageCount(reportId, stored.length);
+        throw StateError(rejection);
+      }
+
+      stored.add(
+        ReportImage(
+          id: 'img_local_${_imageSeq++}',
+          reportId: reportId,
+          url: a.path,
+          byteSize: a.byteSize,
+        ),
+      );
+    }
+
+    _bumpImageCount(reportId, stored.length);
+    return stored;
+  }
+
+  /// Rewrites the stored report with the images it now has. `VisitReport` is
+  /// immutable and has no `copyWith`, and adding one to a shared model for the
+  /// mock's benefit is not worth it — this is the only caller.
+  void _bumpImageCount(String reportId, int added) {
+    if (added == 0) return;
+
+    final int i =
+        _extraReports.indexWhere((VisitReport r) => r.id == reportId);
+    if (i < 0) return;
+
+    final VisitReport r = _extraReports[i];
+
+    _extraReports[i] = VisitReport(
+      id: r.id,
+      companyName: r.companyName,
+      branchName: r.branchName,
+      companyId: r.companyId,
+      branchId: r.branchId,
+      visitId: r.visitId,
+      sessionId: r.sessionId,
+      title: r.title,
+      body: r.body,
+      imageCount: r.imageCount + added,
+      submittedAt: r.submittedAt,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      status: r.status,
+      dealValue: r.dealValue,
+      followUpOn: r.followUpOn,
+      sales: r.sales,
+      paymentReceived: r.paymentReceived,
+    );
+  }
+
+  @override
+  Future<DevicePreferences> preferences() => _delayed(_preferences);
+
+  /// Partial, like the endpoint. No `TrackingConfig` ceiling to clamp against
+  /// offline, so the last three flags come back exactly as sent — against the
+  /// real server they may not, which is why callers adopt the return value.
+  @override
+  Future<DevicePreferences> savePreferences({
+    String? themeMode,
+    String? language,
+    bool? notificationsEnabled,
+    bool? reportReminders,
+    bool? sessionReminders,
+    bool? systemNotifications,
+    bool? highAccuracyMode,
+    bool? syncOnMobileData,
+    bool? batterySaver,
+  }) {
+    _preferences = _preferences.copyWith(
+      themeMode: themeMode,
+      language: language,
+      notificationsEnabled: notificationsEnabled,
+      reportReminders: reportReminders,
+      sessionReminders: sessionReminders,
+      systemNotifications: systemNotifications,
+      highAccuracyMode: highAccuracyMode,
+      syncOnMobileData: syncOnMobileData,
+      batterySaver: batterySaver,
+    );
+
+    return _delayed(_preferences);
   }
 
   @override

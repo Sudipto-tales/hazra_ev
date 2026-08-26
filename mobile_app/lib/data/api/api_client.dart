@@ -52,6 +52,11 @@ class ApiClient {
 
   static const Duration _timeout = Duration(seconds: 20);
 
+  /// Uploads get their own budget. Eight megabytes of photos over a field
+  /// team's mobile data does not finish in 20 seconds, and timing out a
+  /// half-sent multipart body is how attachments get lost.
+  static const Duration _uploadTimeout = Duration(minutes: 3);
+
   AuthSession? get session => _tokens.session;
 
   bool get isSignedIn => _tokens.isSignedIn;
@@ -156,40 +161,80 @@ class ApiClient {
 
   /// `POST /reports/{id}/images`. A report submits while its images are still
   /// queued, so this is deliberately a separate call from the report itself.
+  ///
+  /// Returns the stored image objects the server echoes back, in order. The
+  /// caller compares that count against what it sent: the server writes each
+  /// part as it validates it and aborts on the first bad one, so a short list
+  /// is a partial upload.
   Future<List<Map<String, dynamic>>> uploadReportImages(
     String reportId,
-    List<String> filePaths,
-  ) async {
+    List<String> filePaths, {
+    bool allowRetry = true,
+  }) async {
     if (filePaths.isEmpty) {
       return <Map<String, dynamic>>[];
     }
 
     final Uri uri = _uri('/reports/$reportId/images', null);
-    final http.MultipartRequest request = http.MultipartRequest('POST', uri);
 
-    request.headers.addAll(await _headers(authenticated: true, json: false));
-
+    // A picked file the OS has since reclaimed (the camera cache is not ours
+    // to keep) used to be skipped here, which let a request with nothing in it
+    // return an empty list — indistinguishable, to the caller, from a clean
+    // upload of zero images. Fail loudly instead: the seller picked it, so
+    // losing it silently is the one outcome that must not happen.
     for (final String path in filePaths) {
       if (!File(path).existsSync()) {
-        continue;
+        throw ApiException(
+          code: 'ATTACHMENT_MISSING',
+          message: 'A picked image is no longer on this device: $path',
+        );
       }
-      request.files.add(await http.MultipartFile.fromPath('images[]', path));
     }
 
-    if (request.files.isEmpty) {
-      return <Map<String, dynamic>>[];
+    // `MultipartRequest` streams its files and cannot be sent twice, so the
+    // request is built per attempt. That is what lets the 401 path below
+    // replay the way every JSON verb in `_send` already does.
+    Future<http.MultipartRequest> build() async {
+      final http.MultipartRequest request = http.MultipartRequest('POST', uri);
+
+      request.headers.addAll(await _headers(authenticated: true, json: false));
+
+      for (final String path in filePaths) {
+        // `images[]` is the wire name PHP folds into `$_FILES['images']` with
+        // array-shaped members, which is exactly what
+        // `ReportsController::images` reads (it handles both the array and the
+        // single-file shape). Content type is left to `http` to infer from the
+        // extension — the server ignores the declared type and sniffs the
+        // bytes with `getimagesize` regardless.
+        request.files.add(await http.MultipartFile.fromPath('images[]', path));
+      }
+
+      return request;
     }
+
+    http.Response response;
 
     try {
       final http.StreamedResponse streamed =
-          await request.send().timeout(_timeout);
-      final http.Response response =
-          await http.Response.fromStream(streamed);
-
-      return _decode(response, uri).list;
+          await (await build()).send().timeout(_uploadTimeout);
+      response = await http.Response.fromStream(streamed);
     } on SocketException catch (e) {
       throw ApiException.network(e, uri.toString());
+    } on TimeoutException catch (e) {
+      throw ApiException.network(e, uri.toString());
+    } on http.ClientException catch (e) {
+      throw ApiException.network(e, uri.toString());
     }
+
+    if (response.statusCode == 401 && allowRetry) {
+      if (await refresh()) {
+        return uploadReportImages(reportId, filePaths, allowRetry: false);
+      }
+
+      onSessionExpired?.call();
+    }
+
+    return _decode(response, uri).list;
   }
 
   // ------------------------------------------------------------- internals

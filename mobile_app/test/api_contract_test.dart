@@ -186,7 +186,6 @@ void main() {
           branchName: 'Test branch',
           title: 'Contract test',
           body: 'Filed by test/api_contract_test.dart',
-          imageCount: 0,
           dealValue: 'approx 1.5L',
           paymentReceived: '10% advance',
           sales: <ProductSaleLine>[

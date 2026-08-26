@@ -82,7 +82,6 @@ void main() {
           branchName: 'Mirpur 10',
           title: 'Walk-in dealer visit',
           body: 'Unlisted shop, wants to stock high-speed scooters.',
-          imageCount: 1,
         ),
       );
 
@@ -106,7 +105,6 @@ void main() {
           branchName: null,
           title: 'Three units delivered',
           body: 'Handed over three units and collected a part payment.',
-          imageCount: 2,
           sales: <ProductSaleLine>[
             ProductSaleLine(
               productId: p.id,
@@ -137,12 +135,69 @@ void main() {
           visitId: 'vis_1',
           title: 'Stock review',
           body: 'Reviewed shelf movement and placed a reorder.',
-          imageCount: 0,
         ),
       );
 
       expect(saved.companyId, 'co_abc');
       expect(saved.visitId, 'vis_1');
+    });
+
+    test('files the report with no images, then attaches them', () async {
+      final MockEmployeeRepository r = repo();
+
+      const ReportAttachment shot = ReportAttachment(
+        path: '/tmp/hazra-ev-test/shopfront.jpg',
+        name: 'shopfront.jpg',
+        byteSize: 512 * 1024,
+      );
+
+      final VisitReport saved = await r.submitReport(
+        const ReportDraft(
+          companyName: 'Uttara EV Hub',
+          branchName: null,
+          title: 'Shopfront photos',
+          body: 'Photographed the display and the stock room.',
+          images: <ReportAttachment>[shot],
+        ),
+      );
+
+      // POST /reports carries text only — the pictures are a second call, and
+      // a report that never reaches that call has none.
+      expect(saved.imageCount, 0);
+
+      final List<ReportImage> stored =
+          await r.uploadReportImages(saved.id, <ReportAttachment>[shot]);
+
+      expect(stored, hasLength(1));
+      expect(stored.single.reportId, saved.id);
+      expect((await r.reportById(saved.id)).imageCount, 1);
+    });
+
+    test('an attachment the server would refuse never counts as uploaded',
+        () async {
+      final MockEmployeeRepository r = repo();
+
+      final VisitReport saved = await r.submitReport(
+        const ReportDraft(
+          companyName: 'Savar Motors',
+          branchName: null,
+          title: 'Oversized attachment',
+          body: 'The camera produced a frame larger than the server accepts.',
+        ),
+      );
+
+      await expectLater(
+        r.uploadReportImages(saved.id, <ReportAttachment>[
+          const ReportAttachment(
+            path: '/tmp/hazra-ev-test/huge.png',
+            name: 'huge.png',
+            byteSize: ReportAttachment.maxBytes + 1,
+          ),
+        ]),
+        throwsStateError,
+      );
+
+      expect((await r.reportById(saved.id)).imageCount, 0);
     });
   });
 
