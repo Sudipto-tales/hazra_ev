@@ -19,6 +19,15 @@ import '../models/models.dart';
 abstract class EmployeeRepository {
   Future<Employee> profile();
 
+  /// `PATCH /me`. Self-service edits, and the server is strict about which:
+  /// `avatarUrl` and `phone` are the only fields it accepts, and it rejects a
+  /// body containing anything else. Name, designation, department and address
+  /// are changed by an admin through `PATCH /employees/{id}`, not from here.
+  ///
+  /// Passing neither argument is a programming error, not a no-op request —
+  /// the server answers an empty patch with a validation failure.
+  Future<Employee> updateProfile({String? phone, String? avatarUrl});
+
   Future<HomeSnapshot> home();
 
   Future<List<ActivityEvent>> activity({DateTime? date});

@@ -30,7 +30,8 @@ class HttpAdminRepository implements AdminRepository {
   /// TeamOverview aggregate rides in `meta.totals`.
   @override
   Future<TeamOverview> overview({DateTime? date}) async {
-    final ApiResult result = await _api.get('/employees', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/employees', query: <String, dynamic>{
       'include': 'liveStatus,summary',
       'date': date == null ? 'today' : Wire.day(date),
       'limit': 200,
@@ -45,7 +46,8 @@ class HttpAdminRepository implements AdminRepository {
   /// `query` matches name / employeeCode / region / department — all four.
   @override
   Future<List<TeamMember>> team({String? query, WorkStatus? status}) async {
-    final ApiResult result = await _api.get('/employees', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/employees', query: <String, dynamic>{
       'include': 'liveStatus,summary',
       'date': 'today',
       if (query != null && query.isNotEmpty) 'query': query,
@@ -72,7 +74,8 @@ class HttpAdminRepository implements AdminRepository {
     required String employeeId,
     required DateTime date,
   }) async {
-    final ApiResult result = await _api.get('/days/$employeeId', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/days/$employeeId', query: <String, dynamic>{
       'date': Wire.day(date),
       'include': _dayIncludes,
     });
@@ -148,7 +151,8 @@ class HttpAdminRepository implements AdminRepository {
     String employeeId, {
     DateTime? date,
   }) async {
-    final ApiResult result = await _api.get('/reports', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/reports', query: <String, dynamic>{
       'subject': employeeId,
       if (date != null) 'date': Wire.day(date),
       'limit': 100,
@@ -197,7 +201,8 @@ class HttpAdminRepository implements AdminRepository {
     DateTime? date,
     String? query,
   }) async {
-    final ApiResult result = await _api.get('/reports', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/reports', query: <String, dynamic>{
       'subject': employeeId ?? 'all',
       'include': 'employee,review',
       if (decision != null) 'decision': decision.name,
@@ -243,7 +248,8 @@ class HttpAdminRepository implements AdminRepository {
   /// `limit=0` returns meta.total with an empty data array. That is the badge.
   @override
   Future<int> pendingReviewCount() async {
-    final ApiResult result = await _api.get('/reports', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/reports', query: <String, dynamic>{
       'subject': 'all',
       'decision': 'pending',
       'limit': 0,
@@ -258,7 +264,8 @@ class HttpAdminRepository implements AdminRepository {
     ProductCategory? category,
     String? query,
   }) async {
-    final ApiResult result = await _api.get('/products', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/products', query: <String, dynamic>{
       'includeDelisted': true,
       if (category != null) 'category': category.name,
       if (query != null && query.isNotEmpty) 'query': query,
@@ -279,7 +286,8 @@ class HttpAdminRepository implements AdminRepository {
   /// route that no longer exists.
   @override
   Future<Set<String>> delistedProductIds() async {
-    final ApiResult result = await _api.get('/products', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/products', query: <String, dynamic>{
       'includeDelisted': true,
       'limit': 200,
     });

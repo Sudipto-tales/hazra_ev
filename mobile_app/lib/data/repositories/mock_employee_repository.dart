@@ -40,16 +40,27 @@ class MockEmployeeRepository implements EmployeeRepository {
   /// makes an admin reopen show up on the employee's Home.
   final DayLockStore _dayLock;
 
+  /// Mutable so [updateProfile] is observable across calls, the way the real
+  /// endpoint is. Seeded from the fixture.
+  Employee _me = MockData.employee;
+
   DayCloseout? get _closeout => _dayLock.closeout;
 
-  Future<T> _delayed<T>(T value) =>
-      Future<T>.delayed(latency, () => value);
+  Future<T> _delayed<T>(T value) => Future<T>.delayed(latency, () => value);
 
   List<VisitReport> get _reports =>
       <VisitReport>[..._extraReports, ...MockData.allReports];
 
   @override
-  Future<Employee> profile() => _delayed(MockData.employee);
+  Future<Employee> profile() => _delayed(_me);
+
+  /// Mirrors the server's field whitelist: everything else on the record is
+  /// admin-owned and stays put.
+  @override
+  Future<Employee> updateProfile({String? phone, String? avatarUrl}) {
+    _me = _me.copyWith(phone: phone, avatarUrl: avatarUrl);
+    return _delayed(_me);
+  }
 
   @override
   Future<HomeSnapshot> home() {
@@ -143,9 +154,8 @@ class MockEmployeeRepository implements EmployeeRepository {
   Future<List<Product>> products({ProductCategory? category, String? query}) {
     final String q = (query ?? '').trim().toLowerCase();
     // Delisted products are invisible to the seller.
-    List<Product> rows = category == null
-        ? _products.active
-        : _products.byCategory(category);
+    List<Product> rows =
+        category == null ? _products.active : _products.byCategory(category);
     if (q.isNotEmpty) {
       rows = rows
           .where((Product p) =>
@@ -260,8 +270,7 @@ class MockEmployeeRepository implements EmployeeRepository {
   void _bumpImageCount(String reportId, int added) {
     if (added == 0) return;
 
-    final int i =
-        _extraReports.indexWhere((VisitReport r) => r.id == reportId);
+    final int i = _extraReports.indexWhere((VisitReport r) => r.id == reportId);
     if (i < 0) return;
 
     final VisitReport r = _extraReports[i];
@@ -351,8 +360,8 @@ class MockEmployeeRepository implements EmployeeRepository {
     final (DateTime start, DateTime end) = _resolveRange(range, from, to);
 
     final List<Attendance> rows = MockData.attendanceHistory
-        .where((Attendance a) =>
-            !a.date.isBefore(start) && !a.date.isAfter(end))
+        .where(
+            (Attendance a) => !a.date.isBefore(start) && !a.date.isAfter(end))
         .toList()
       ..sort((Attendance a, Attendance b) => a.date.compareTo(b.date));
 
@@ -375,18 +384,19 @@ class MockEmployeeRepository implements EmployeeRepository {
         ? 0
         : worked
                 .map((Attendance a) =>
-                    (a.joiningTime?.hour ?? 0) * 60 + (a.joiningTime?.minute ?? 0))
+                    (a.joiningTime?.hour ?? 0) * 60 +
+                    (a.joiningTime?.minute ?? 0))
                 .reduce((int a, int b) => a + b) ~/
             n;
 
     final int totalWorkedMinutes = worked.fold<int>(
         0, (int sum, Attendance a) => sum + a.workedDuration.inMinutes);
-    final double totalDistance =
-        worked.fold<double>(0, (double sum, Attendance a) => sum + a.distanceKm);
-    final int totalVisits =
-        worked.fold<int>(0, (int sum, Attendance a) => sum + a.companiesVisited);
-    final int totalReports =
-        worked.fold<int>(0, (int sum, Attendance a) => sum + a.reportsSubmitted);
+    final double totalDistance = worked.fold<double>(
+        0, (double sum, Attendance a) => sum + a.distanceKm);
+    final int totalVisits = worked.fold<int>(
+        0, (int sum, Attendance a) => sum + a.companiesVisited);
+    final int totalReports = worked.fold<int>(
+        0, (int sum, Attendance a) => sum + a.reportsSubmitted);
     final int absentDays = countable
         .where((Attendance a) => a.status == AttendanceStatus.absent)
         .length;
@@ -446,7 +456,8 @@ class MockEmployeeRepository implements EmployeeRepository {
 
   String _rangeLabel(StatsRange range, DateTime start, DateTime end) =>
       switch (range) {
-        StatsRange.thisWeek => 'This week · ${Fmt.monthDay(start)} – ${Fmt.monthDay(end)}',
+        StatsRange.thisWeek =>
+          'This week · ${Fmt.monthDay(start)} – ${Fmt.monthDay(end)}',
         StatsRange.thisMonth => Fmt.monthYear(start),
         StatsRange.lastMonth => Fmt.monthYear(start),
         StatsRange.custom =>

@@ -228,7 +228,8 @@ class CopyableRow extends StatelessWidget {
   }
 }
 
-Future<void> _copy(BuildContext context, String text, String confirmation) async {
+Future<void> _copy(
+    BuildContext context, String text, String confirmation) async {
   await Clipboard.setData(ClipboardData(text: text));
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(

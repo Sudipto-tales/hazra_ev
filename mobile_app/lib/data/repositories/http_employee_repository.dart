@@ -11,6 +11,7 @@ import 'employee_repository.dart';
 /// Method → route follows the map in `docs/02-API-PLAN.md` §4:
 ///
 ///   profile()      GET  /me
+///   updateProfile() PATCH /me
 ///   home()         GET  /days/me?include=…
 ///   activity()     GET  /days/me?include=activity
 ///   reports()      GET  /reports?subject=me
@@ -34,11 +35,25 @@ class HttpEmployeeRepository implements EmployeeRepository {
     return Wire.employee(result.map);
   }
 
+  @override
+  Future<Employee> updateProfile({String? phone, String? avatarUrl}) async {
+    // Only send what changed. The endpoint treats an absent key as "leave it",
+    // and rejects a body with no recognised key at all.
+    final Map<String, dynamic> body = <String, dynamic>{
+      if (phone != null) 'phone': phone,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
+    };
+
+    final ApiResult result = await _api.patch('/me', body: body);
+    return Wire.employee(result.map);
+  }
+
   /// Home is one request. `status`, `movement` and `locationHealth` come back
   /// whether or not they were asked for — they are the payload's reason to exist.
   @override
   Future<HomeSnapshot> home() async {
-    final ApiResult result = await _api.get('/days/me', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/days/me', query: <String, dynamic>{
       'include': 'sessions,summary,activity,visits,stops,lastFix,sync,closeout',
     });
 
@@ -47,7 +62,8 @@ class HttpEmployeeRepository implements EmployeeRepository {
 
   @override
   Future<List<ActivityEvent>> activity({DateTime? date}) async {
-    final ApiResult result = await _api.get('/days/me', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/days/me', query: <String, dynamic>{
       'include': 'activity',
       if (date != null) 'date': Wire.day(date),
     });
@@ -58,7 +74,8 @@ class HttpEmployeeRepository implements EmployeeRepository {
   /// Omit [date] for the full history, newest first.
   @override
   Future<List<VisitReport>> reports({DateTime? date}) async {
-    final ApiResult result = await _api.get('/reports', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/reports', query: <String, dynamic>{
       'subject': 'me',
       if (date != null) 'date': Wire.day(date),
       'limit': 100,
@@ -136,7 +153,8 @@ class HttpEmployeeRepository implements EmployeeRepository {
     ProductCategory? category,
     String? query,
   }) async {
-    final ApiResult result = await _api.get('/products', query: <String, dynamic>{
+    final ApiResult result =
+        await _api.get('/products', query: <String, dynamic>{
       if (category != null) 'category': category.name,
       if (query != null && query.isNotEmpty) 'query': query,
       'limit': 200,
@@ -153,8 +171,8 @@ class HttpEmployeeRepository implements EmployeeRepository {
 
   @override
   Future<List<AppNotification>> notifications() async {
-    final ApiResult result =
-        await _api.get('/notifications', query: <String, dynamic>{'limit': 100});
+    final ApiResult result = await _api
+        .get('/notifications', query: <String, dynamic>{'limit': 100});
 
     return result.list.map(Wire.notification).toList();
   }

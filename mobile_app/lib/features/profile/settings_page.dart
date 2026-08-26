@@ -11,6 +11,7 @@ import '../../widgets/settings_tile.dart';
 import '../auth/role_select_page.dart';
 import '../home/widgets/tracking_sheet.dart';
 import 'app_info.dart';
+import 'edit_profile_page.dart';
 import 'info_pages.dart';
 import 'personal_info_page.dart';
 import 'support_page.dart';
@@ -51,18 +52,18 @@ class SettingsPage extends StatelessWidget {
                 SettingsGroup(
                   title: 'Account',
                   tiles: <Widget>[
-                    // Deliberately not tappable, and the subtitle says why.
-                    // `PATCH /api/v1/me` does accept a new phone number, but
-                    // nothing in EmployeeRepository exposes it yet, so the
-                    // app genuinely cannot write this — and a row that opens
-                    // an apology is worse than a row that answers the
-                    // question. Remove the tile once the repository grows a
-                    // self-update call.
-                    const SettingsTile(
+                    // `PATCH /me` accepts phone and avatarUrl and nothing
+                    // else, so the page offers exactly those two and says who
+                    // owns the rest. Anything wider would be refused.
+                    SettingsTile(
                       icon: Icons.person_outline_rounded,
                       title: 'Edit profile',
-                      subtitle: 'Your admin changes your name, phone '
-                          'and address',
+                      subtitle: 'Phone and photo',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const EditProfilePage(),
+                        ),
+                      ),
                     ),
                     // "Change password" used to live here. There is no
                     // password endpoint in the API at all, so the row could
@@ -213,7 +214,8 @@ class SettingsPage extends StatelessWidget {
                       icon: Icons.help_outline_rounded,
                       title: 'Help',
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const HelpPage()),
+                        MaterialPageRoute<void>(
+                            builder: (_) => const HelpPage()),
                       ),
                     ),
                     SettingsTile(
@@ -245,7 +247,8 @@ class SettingsPage extends StatelessWidget {
                       // came up.
                       subtitle: AppInfo.labelFor(live: scope.isLive),
                       onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const AboutPage()),
+                        MaterialPageRoute<void>(
+                            builder: (_) => const AboutPage()),
                       ),
                     ),
                   ],
@@ -276,7 +279,8 @@ class SettingsPage extends StatelessWidget {
                 (ThemeMode m) => ListTile(
                   title: Text(_themeLabel(m)),
                   trailing: s.themeMode == m
-                      ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                      ? const Icon(Icons.check_rounded,
+                          color: AppColors.primary)
                       : null,
                   onTap: () => Navigator.pop(context, m),
                 ),
@@ -301,7 +305,8 @@ class SettingsPage extends StatelessWidget {
                 (String l) => ListTile(
                   title: Text(l),
                   trailing: s.language == l
-                      ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                      ? const Icon(Icons.check_rounded,
+                          color: AppColors.primary)
                       : null,
                   onTap: () => Navigator.pop(context, l),
                 ),
@@ -335,7 +340,8 @@ class SettingsPage extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: service.simulatedHealth == h
-                      ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                      ? const Icon(Icons.check_rounded,
+                          color: AppColors.primary)
                       : null,
                   onTap: () => Navigator.pop(context, h),
                 ),
