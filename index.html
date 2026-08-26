@@ -1,139 +1,127 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vespa Matic - Follow Elegant</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
-    <!-- Lucide Icons (via CDN) -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vespa Matic — Follow Elegant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
-    <div class="hero-wrapper">
-        <!-- Main Background Image (Blurry/Atmospheric) -->
-        <div class="bg-overlay"></div>
-        
-        <main class="main-canvas">
-            <!-- Left Side: Content & Controls -->
-            <section class="content-panel">
-                <nav class="navbar">
-                    <div class="nav-links">
-                        <a href="#" class="nav-item active">Home</a>
-                        <a href="#" class="nav-item">Product</a>
-                        <a href="#" class="nav-item">About</a>
-                        <a href="#" class="nav-item">Pricing</a>
-                    </div>
-                </nav>
 
-                <div class="hero-text">
-                    <h1 class="reveal-text">
-                        Feel True <br>
-                        <span class="inline-avatars">
-                            <img src="https://i.pravatar.cc/100?u=1" alt="User">
-                            <img src="https://i.pravatar.cc/100?u=2" alt="User">
-                            <img src="https://i.pravatar.cc/100?u=3" alt="User">
-                        </span>
-                        Comfort With <br>
-                        Vespa Matic - <br>
-                        Follow Elegant
-                    </h1>
-                    
-                    <div class="stats-counter">
-                        <span class="dot-line"></span>
-                        <div class="counter-box">0</div>
-                        <span class="dot-line"></span>
-                    </div>
+<!-- ══════════ HERO ══════════ -->
+<section class="stage">
+  <div class="stage__bg"></div>
+  <div class="stage__veil"></div>
 
-                    <div class="description">
-                        <span class="accent-dot"></span>
-                        <p>VESPA MATIC IS AN ENVIRONMENTALLY FRIENDLY CHOICE WITH AN ENGINE THAT IS EFFICIENT IN FUEL CONSUMPTION.</p>
-                    </div>
-                </div>
+  <main class="canvas" id="canvas">
 
-                <div class="bottom-controls">
-                    <div class="pagination">2/<span>15</span></div>
-                    <div class="product-cards">
-                        <div class="p-card">
-                            <img src="https://images.unsplash.com/photo-1591533036499-52e04e0e564d?auto=format&fit=crop&q=60&w=400" alt="Classic">
-                            <span>Classic</span>
-                        </div>
-                        <div class="p-card active">
-                            <img src="https://images.unsplash.com/photo-1558981285-6f0c94958bb6?auto=format&fit=crop&q=60&w=400" alt="Retro">
-                            <span>Retro</span>
-                            <div class="card-icon"><i data-lucide="info"></i></div>
-                        </div>
-                        <div class="p-card">
-                            <img src="https://images.unsplash.com/photo-1512413316925-fd4b93f31521?auto=format&fit=crop&q=60&w=400" alt="Manual">
-                            <span>Manual</span>
-                            <div class="card-icon"><i data-lucide="plus"></i></div>
-                        </div>
-                    </div>
-                    <div class="nav-arrows">
-                        <button class="arrow-btn"><i data-lucide="arrow-left"></i></button>
-                        <button class="arrow-btn"><i data-lucide="arrow-right"></i></button>
-                    </div>
-                </div>
+    <!-- photo sits underneath; white plates notch into it -->
+    <figure class="photo">
+      <img class="photo__img" src="assets/scooter.png" alt="Vespa Matic"
+           onerror="this.src='https://images.unsplash.com/photo-1558981285-6f0c94958bb6?auto=format&fit=crop&q=80&w=1400'">
+      <div class="photo__shade"></div>
 
-                <!-- Custom Corner Interlock (Top Right) -->
-                <div class="interlock-corner tr"></div>
-                <!-- Custom Corner Interlock (Bottom Right) -->
-                <div class="interlock-corner br"></div>
-            </section>
+      <div class="pill pill--a reveal-pop"><i data-lucide="wind"></i><span>Soft&nbsp;/&nbsp;Touch</span></div>
+      <div class="pill pill--b reveal-pop"><i data-lucide="gauge"></i><span>120&nbsp;km/hour</span></div>
 
-            <!-- Right Side: Visual Image Window -->
-            <section class="visual-panel">
-                <div class="image-container">
-                    <img src="https://images.unsplash.com/photo-1591533036499-52e04e0e564d?auto=format&fit=crop&q=80&w=1200" alt="Vespa Matic" class="hero-img">
-                    
-                    <!-- Floating Info Pills -->
-                    <div class="info-pill top reveal-item">
-                        <i data-lucide="wind"></i>
-                        <span>Soft/Touch</span>
-                    </div>
-                    <div class="info-pill bottom reveal-item">
-                        <i data-lucide="gauge"></i>
-                        <span>120km/hour</span>
-                    </div>
+      <div class="vtag">
+        <span class="vtag__txt">VESPA MATIC</span>
+        <span class="vtag__dot"><i data-lucide="arrow-up-right"></i></span>
+      </div>
 
-                    <!-- Side Branding -->
-                    <div class="side-tag">
-                        <span>VESPA MATIC</span>
-                        <div class="tag-arrow"><i data-lucide="arrow-up-right"></i></div>
-                    </div>
-                </div>
+      <div class="glass">
+        <div class="glass__row"><b>Vespa</b><b>Matic</b></div>
+        <div class="glass__row"><b>Retro</b><b>Elegant</b></div>
+        <div class="glass__row"><b>Energy</b><b>Speed</b></div>
+      </div>
+    </figure>
 
-                <!-- Contact Header -->
-                <div class="header-actions">
-                    <button class="cart-btn"><i data-lucide="shopping-cart"></i></button>
-                    <button class="contact-btn">CONTACT US</button>
-                </div>
+    <!-- ── white plate: top-left nav ── -->
+    <header class="topbar">
+      <nav class="nav">
+        <a href="#" class="nav__i is-on">Home</a>
+        <a href="#" class="nav__i">Product</a>
+        <a href="#" class="nav__i">About</a>
+        <a href="#" class="nav__i">Pricing</a>
+      </nav>
+      <button class="theme" id="theme" aria-label="Toggle theme">
+        <i data-lucide="sun-medium" class="theme__sun"></i>
+        <i data-lucide="moon" class="theme__moon"></i>
+      </button>
+    </header>
 
-                <!-- Glassmorphic Tags Overlay -->
-                <div class="glass-tags">
-                    <div class="tag-row">
-                        <span class="glass-tag">Vespa</span>
-                        <span class="glass-tag">Matic</span>
-                    </div>
-                    <div class="tag-row">
-                        <span class="glass-tag">Retro</span>
-                        <span class="glass-tag">Elegant</span>
-                    </div>
-                    <div class="tag-row">
-                        <span class="glass-tag">Energy</span>
-                        <span class="glass-tag">Speed</span>
-                    </div>
-                </div>
-            </section>
-        </main>
+    <!-- ── white plate: top-right tab (notches the photo) ── -->
+    <div class="tab">
+      <button class="cart"><i data-lucide="shopping-bag"></i></button>
+      <button class="contact">CONTACT US</button>
     </div>
 
-    <script src="script.js"></script>
-    <script>
-        lucide.createIcons();
-    </script>
+    <!-- ── headline ── -->
+    <div class="copy">
+      <h1 class="title reveal-up">
+        <span class="l">Feel True</span>
+        <span class="l">
+          <span class="faces">
+            <img src="https://i.pravatar.cc/80?u=11" alt="">
+            <img src="https://i.pravatar.cc/80?u=22" alt="">
+            <img src="https://i.pravatar.cc/80?u=33" alt="">
+          </span>
+          Comfort With
+        </span>
+        <span class="l">Vespa Matic &mdash;</span>
+        <span class="l">Follow Elegant</span>
+      </h1>
+
+      <div class="meter">
+        <span class="meter__rule"></span>
+        <span class="meter__n" id="count">00</span>
+        <span class="meter__rule meter__rule--long"></span>
+      </div>
+
+      <p class="blurb"><i class="blurb__sq"></i>
+        VESPA MATIC IS AN ENVIRONMENTALLY FRIENDLY CHOICE WITH AN
+        ENGINE THAT IS EFFICIENT IN FUEL CONSUMPTION.
+      </p>
+    </div>
+
+    <!-- ── white plate: bottom shelf (notches the photo) ── -->
+    <footer class="shelf">
+      <div class="pager"><b>2</b><span>/15</span></div>
+
+      <div class="deck">
+        <button class="thumb" data-name="Classic">
+          <img src="https://images.unsplash.com/photo-1591533036499-52e04e0e564d?auto=format&fit=crop&q=60&w=300" alt="">
+          <em>Classic</em>
+        </button>
+        <button class="thumb is-on" data-name="Retro">
+          <img src="https://images.unsplash.com/photo-1558981285-6f0c94958bb6?auto=format&fit=crop&q=60&w=300" alt="">
+          <em>Retro</em>
+          <span class="thumb__ic"><i data-lucide="info"></i></span>
+        </button>
+        <button class="thumb" data-name="Manual">
+          <img src="https://images.unsplash.com/photo-1512413316925-fd4b93f31521?auto=format&fit=crop&q=60&w=300" alt="">
+          <em>Manual</em>
+          <span class="thumb__ic"><i data-lucide="plus"></i></span>
+        </button>
+      </div>
+
+      <div class="arrows">
+        <button class="arrow" data-dir="-1"><i data-lucide="arrow-left"></i></button>
+        <button class="arrow" data-dir="1"><i data-lucide="arrow-right"></i></button>
+      </div>
+    </footer>
+
+    <!-- ── inverse fillets: the interlock ── -->
+    <i class="fillet fillet--tab"></i>
+    <i class="fillet fillet--shelf"></i>
+
+  </main>
+</section>
+
+<script src="script.js"></script>
 </body>
 </html>
