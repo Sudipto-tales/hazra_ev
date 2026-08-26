@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/utils/formatters.dart';
-import '../../data/mock/mock_data.dart';
 import '../../data/models/models.dart';
 import '../../state/app_scope.dart';
 import '../../widgets/app_card.dart';
@@ -57,6 +56,11 @@ class _ReportsPageState extends State<ReportsPage> {
     }
   }
 
+  /// The day the "today / previous" split is drawn against. Read from the
+  /// clock rather than captured in [initState] so a phone left on this tab
+  /// overnight rolls over instead of filing new reports under "previous".
+  DateTime get _todayDate => Fmt.dayOnly(DateTime.now());
+
   /// Company is free text now, so the filter matches on the name the seller
   /// typed rather than on an id.
   bool _matches(VisitReport r) {
@@ -83,14 +87,14 @@ class _ReportsPageState extends State<ReportsPage> {
 
   List<VisitReport> get _today => _all
       .where((VisitReport r) =>
-          Fmt.isSameDay(r.submittedAt, MockData.today) && _matches(r))
+          Fmt.isSameDay(r.submittedAt, _todayDate) && _matches(r))
       .toList(growable: false);
 
   Map<DateTime, List<VisitReport>> get _previous {
     final Map<DateTime, List<VisitReport>> grouped =
         <DateTime, List<VisitReport>>{};
     for (final VisitReport r in _all) {
-      if (Fmt.isSameDay(r.submittedAt, MockData.today)) continue;
+      if (Fmt.isSameDay(r.submittedAt, _todayDate)) continue;
       if (!_matches(r)) continue;
       final DateTime key = Fmt.dayOnly(r.submittedAt);
       grouped.putIfAbsent(key, () => <VisitReport>[]).add(r);
@@ -215,7 +219,7 @@ class _ReportsPageState extends State<ReportsPage> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    Fmt.longDate(MockData.today),
+                    Fmt.longDate(_todayDate),
                     style: theme.textTheme.bodySmall,
                   ),
                   const SizedBox(height: Insets.md),

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/utils/formatters.dart';
-import '../../data/mock/mock_data.dart';
 import '../../data/models/models.dart';
 import '../../state/app_scope.dart';
 import '../../widgets/app_card.dart';
@@ -13,6 +12,18 @@ import '../../widgets/states.dart';
 import '../../widgets/status_badge.dart';
 import 'widgets/month_grid.dart';
 
+/// Today, and the month today falls in.
+///
+/// Read from the clock on every call rather than captured once at start-up:
+/// the calendar is a long-lived tab, and an app left open past midnight must
+/// not keep insisting yesterday is the last selectable day.
+DateTime _today() => Fmt.dayOnly(DateTime.now());
+
+DateTime _currentMonth() {
+  final DateTime now = DateTime.now();
+  return DateTime(now.year, now.month);
+}
+
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
 
@@ -21,8 +32,8 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  DateTime _month = DateTime(MockData.today.year, MockData.today.month);
-  DateTime? _selected = MockData.today;
+  DateTime _month = _currentMonth();
+  DateTime? _selected = _today();
 
   bool _loadingMonth = true;
   bool _loadingStats = true;
@@ -139,8 +150,8 @@ class _CalendarPageState extends State<CalendarPage> {
                 if (r == StatsRange.custom) {
                   final DateTimeRange? picked = await showDateRangePicker(
                     context: context,
-                    firstDate: MockData.today.subtract(const Duration(days: 180)),
-                    lastDate: MockData.today,
+                    firstDate: _today().subtract(const Duration(days: 180)),
+                    lastDate: _today(),
                     initialDateRange: _customRange,
                   );
                   if (picked == null) return;
@@ -186,9 +197,7 @@ class _AttendanceTab extends StatelessWidget {
 
     if (error != null) return ErrorState(onRetry: onRetry);
 
-    final bool canGoForward = month.isBefore(
-      DateTime(MockData.today.year, MockData.today.month),
-    );
+    final bool canGoForward = month.isBefore(_currentMonth());
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(

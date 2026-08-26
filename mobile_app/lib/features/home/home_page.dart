@@ -4,7 +4,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/theme/theme_ext.dart';
 import '../../core/utils/formatters.dart';
-import '../../data/mock/mock_data.dart';
 import '../../data/models/models.dart';
 import '../../state/app_scope.dart';
 import '../../state/tracking_controller.dart';
@@ -24,8 +23,67 @@ import 'widgets/session_card.dart';
 import 'widgets/tracking_sheet.dart';
 import 'widgets/visit_tile.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  bool _loading = true;
+  Employee? _me;
+  Map<String, String> _reportTitles = const <String, String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  /// Everything on this screen that [TrackingController] does not already
+  /// carry: who the employee is, the company directory the visit tiles read
+  /// ids against, and today's report titles so a tile can label its rows.
+  ///
+  /// Kept separate from the tracking load on purpose. The session card and the
+  /// summary grid are the reason this tab exists and must not sit behind a
+  /// profile fetch, so a failure here costs a name in the header — not the
+  /// day's tracking.
+  Future<void> _load() async {
+    setState(() => _loading = true);
+
+    final AppScope scope = AppScope.of(context);
+    try {
+      // The tiles look names up synchronously in `build`, so the directory has
+      // to be warm before the first visit renders. It caches, so a second call
+      // on refresh is free. It also swallows its own errors — an unresolved id
+      // shows a placeholder rather than taking Home down.
+      await scope.companies.ensureLoaded();
+
+      final Employee me = await scope.repository.profile();
+      final List<VisitReport> todaysReports =
+          await scope.repository.reports(date: DateTime.now());
+      if (!mounted) return;
+
+      setState(() {
+        _me = me;
+        _reportTitles = <String, String>{
+          for (final VisitReport r in todaysReports)
+            r.id: '${r.title} · ${Fmt.time(r.submittedAt)}',
+        };
+        _loading = false;
+      });
+    } catch (_) {
+      // A null [_me] with [_loading] false *is* the failure: the header
+      // renders its own retry strip for it. There is no separate error field
+      // because nothing else on this screen keys off one.
+      if (!mounted) return;
+      setState(() {
+        _me = null;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +118,9 @@ class HomePage extends StatelessWidget {
             }
 
             return RefreshIndicator(
-              onRefresh: c.refresh,
+              // Pull-to-refresh means the whole screen, not just tracking.
+              onRefresh: () =>
+                  Future.wait<void>(<Future<void>>[c.refresh(), _load()]),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(
                   Insets.lg,
@@ -69,7 +129,11 @@ class HomePage extends StatelessWidget {
                   Insets.xxxl,
                 ),
                 children: <Widget>[
-                  const _HomeHeader(),
+                  _HomeHeader(
+                    employee: _me,
+                    loading: _loading,
+                    onRetry: _load,
+                  ),
                   const SizedBox(height: Insets.lg),
                   if (c.locationHealth != LocationHealth.ok ||
                       c.status.isDegraded) ...<Widget>[
@@ -122,7 +186,7 @@ class HomePage extends StatelessWidget {
                     subtitle: '${c.snapshot?.visits.length ?? 0} today',
                     padding: const EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
                   ),
-                  _VisitsBlock(controller: c),
+                  _VisitsBlock(controller: c, reportTitles: _reportTitles),
                   SectionHeader(
                     title: 'Activity',
                     subtitle: 'Where you went and what you submitted',
@@ -264,8 +328,21 @@ class HomePage extends StatelessWidget {
   }
 }
 
+/// Greeting, date and the notification bell.
+///
+/// Carries its own loading and error state rather than gating the whole tab:
+/// the profile call is the only thing on Home that this strip depends on.
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader();
+  const _HomeHeader({
+    required this.employee,
+    required this.loading,
+    required this.onRetry,
+  });
+
+  /// Null while [loading], and after a failed load.
+  final Employee? employee;
+  final bool loading;
+  final VoidCallback onRetry;
 
   String get _greeting {
     final int h = DateTime.now().hour;
@@ -277,31 +354,72 @@ class _HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Employee me = MockData.employee;
+    final Employee? me = employee;
 
     return Row(
       children: <Widget>[
-        ProfileAvatar(
-          initials: me.initials,
-          imageUrl: me.avatarUrl,
-          size: Sizes.avatarMd,
-          statusColor: AppColors.success,
-        ),
+        if (loading)
+          const SkeletonBox(
+            width: Sizes.avatarMd,
+            height: Sizes.avatarMd,
+            radius: Sizes.avatarMd / 2,
+          )
+        else
+          ProfileAvatar(
+            // '?' rather than a stale name: the header would sooner admit it
+            // does not know who you are than show the wrong person.
+            initials: me?.initials ?? '?',
+            imageUrl: me?.avatarUrl,
+            size: Sizes.avatarMd,
+            statusColor: me == null ? null : AppColors.success,
+          ),
         const SizedBox(width: Insets.md),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                '$_greeting, ${me.firstName}',
-                style: theme.textTheme.titleLarge,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(Fmt.longDate(DateTime.now()), style: theme.textTheme.bodySmall),
-            ],
-          ),
+          child: loading
+              ? const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SkeletonBox(width: 150, height: 15),
+                    SizedBox(height: 8),
+                    SkeletonBox(width: 110, height: 11),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      me == null ? _greeting : '$_greeting, ${me.firstName}',
+                      style: theme.textTheme.titleLarge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    if (me == null)
+                      // The only failure the strip can report, and the only
+                      // one it can fix.
+                      InkWell(
+                        onTap: onRetry,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            const Icon(Icons.refresh_rounded,
+                                size: 13, color: AppColors.danger),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Profile did not load · tap to retry',
+                              style: theme.textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.danger),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Text(
+                        Fmt.longDate(DateTime.now()),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                  ],
+                ),
         ),
         IconButton(
           onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
@@ -460,9 +578,13 @@ class _SummaryGrid extends StatelessWidget {
 }
 
 class _VisitsBlock extends StatelessWidget {
-  const _VisitsBlock({required this.controller});
+  const _VisitsBlock({required this.controller, required this.reportTitles});
 
   final TrackingController controller;
+
+  /// Report id → label for every report filed today, loaded once by the page.
+  /// A tile holds ids only, and must not fetch a body of its own.
+  final Map<String, String> reportTitles;
 
   @override
   Widget build(BuildContext context) {
@@ -488,6 +610,7 @@ class _VisitsBlock extends StatelessWidget {
               child: VisitTile(
                 visit: v,
                 now: controller.now,
+                reportTitles: reportTitles,
                 onReportTap: (String id) => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => ReportDetailPage(reportId: id),

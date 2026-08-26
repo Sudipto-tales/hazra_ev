@@ -3,31 +3,49 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../data/company_directory.dart';
 import '../../../data/models/models.dart';
+import '../../../state/app_scope.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/status_badge.dart';
 
 /// One company visit: arrival, departure, dwell time and attached reports.
+///
+/// A [CompanyVisit] travels as ids only, so the two labels this tile cannot
+/// read off it are resolved elsewhere:
+///
+///  * company and branch names come from [AppScope.companies]. The tile only
+///    reads; the screen that owns it must call `companies.ensureLoaded()` on
+///    its load path. It still listens to the directory, so a load that lands
+///    after the first frame fills the labels in instead of leaving a
+///    placeholder frozen on screen.
+///  * report titles come from [reportTitles], passed down by the parent that
+///    already fetched the day's reports. Fetching them here would be one
+///    request per visit on every build.
 class VisitTile extends StatelessWidget {
   const VisitTile({
     super.key,
     required this.visit,
     required this.now,
+    this.reportTitles = const <String, String>{},
     this.onReportTap,
     this.onAddReport,
   });
 
   final CompanyVisit visit;
   final DateTime now;
+
+  /// Report id → label, for the ids in [CompanyVisit.reportIds]. Anything
+  /// missing falls back to a neutral "Report n" — never to a guessed title.
+  final Map<String, String> reportTitles;
+
   final void Function(String reportId)? onReportTap;
   final VoidCallback? onAddReport;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final String company = MockData.companyName(visit.companyId);
-    final String? branch = MockData.branchName(visit.companyId, visit.branchId);
+    final CompanyDirectory directory = AppScope.of(context).companies;
 
     return AppCard(
       child: Column(
@@ -51,18 +69,33 @@ class VisitTile extends StatelessWidget {
               ),
               const SizedBox(width: Insets.md),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      company,
-                      style: theme.textTheme.titleMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (branch != null)
-                      Text(branch, style: theme.textTheme.bodySmall),
-                  ],
+                child: ListenableBuilder(
+                  listenable: directory,
+                  builder: (BuildContext context, _) {
+                    // Null means "not in the directory" — shown as such. It
+                    // must never fall through to another company's name.
+                    final String? company =
+                        directory.companyName(visit.companyId);
+                    final String? branch =
+                        directory.branchName(visit.companyId, visit.branchId);
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          company ?? 'Unknown company',
+                          style: company != null
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.titleMedium
+                                  ?.copyWith(color: AppColors.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (branch != null)
+                          Text(branch, style: theme.textTheme.bodySmall),
+                      ],
+                    );
+                  },
                 ),
               ),
               StatusBadge(
@@ -153,9 +186,11 @@ class VisitTile extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: Insets.sm),
-                ...visit.reportIds.map(
-                  (String id) => InkWell(
-                    onTap: onReportTap == null ? null : () => onReportTap!(id),
+                for (int i = 0; i < visit.reportIds.length; i++)
+                  InkWell(
+                    onTap: onReportTap == null
+                        ? null
+                        : () => onReportTap!(visit.reportIds[i]),
                     borderRadius: BorderRadius.circular(Radii.sm),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 7),
@@ -166,7 +201,7 @@ class VisitTile extends StatelessWidget {
                           const SizedBox(width: Insets.sm),
                           Expanded(
                             child: Text(
-                              _reportTitle(id),
+                              _reportLabel(i),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodyLarge
@@ -178,7 +213,6 @@ class VisitTile extends StatelessWidget {
                       ),
                     ),
                   ),
-                ),
               ],
             ),
         ],
@@ -186,11 +220,16 @@ class VisitTile extends StatelessWidget {
     );
   }
 
-  String _reportTitle(String id) {
-    for (final VisitReport r in MockData.allReports) {
-      if (r.id == id) return '${r.title} · ${Fmt.time(r.submittedAt)}';
-    }
-    return 'Report';
+  /// Label for the report at [index] of [CompanyVisit.reportIds].
+  ///
+  /// The parent supplies real titles when it has them. When it does not — the
+  /// admin screens reuse this tile without loading report bodies — the row
+  /// still has to read as something, so it is numbered off the ids the visit
+  /// already holds rather than guessed at.
+  String _reportLabel(int index) {
+    final String? title = reportTitles[visit.reportIds[index]];
+    if (title != null && title.isNotEmpty) return title;
+    return visit.reportIds.length == 1 ? 'Report' : 'Report ${index + 1}';
   }
 }
 
