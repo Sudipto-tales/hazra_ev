@@ -1,5 +1,12 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:math';
+
+import 'package:flutter/foundation.dart';
+// `ActivityType` is also a model in this app (activity_event.dart); the
+// geolocator/iOS one is not used here, so it is hidden to keep the import
+// unambiguous.
+import 'package:geolocator/geolocator.dart' hide ActivityType;
 
 import '../core/config/tracking_config.dart';
 import '../data/models/models.dart';
@@ -158,5 +165,469 @@ class MockLocationService implements LocationService {
   void dispose() {
     _timer?.cancel();
     _sync.close();
+  }
+}
+
+/// Uploads one batch of queued fixes. Returns normally on success and throws
+/// on failure — that throw is the only evidence this class has that the device
+/// is offline.
+///
+/// The real implementation is `POST /tracking/locations` (see
+/// `docs/02-API-PLAN.md`); it belongs in the repository layer, not here,
+/// because nothing under `lib/services/` is allowed to talk HTTP.
+typedef LocationUploader = Future<void> Function(List<LocationLog> batch);
+
+/// Real device GPS, backed by the `geolocator` plugin.
+///
+/// This is the implementation used whenever the app runs against the live API;
+/// [MockLocationService] stays behind `USE_MOCKS=true` and the tests.
+///
+/// Scope, stated plainly so nothing here reads as more than it is:
+///
+/// * Tracking is **foreground / while-in-use**. On Android the position stream
+///   runs as a foreground service (persistent notification) so a session keeps
+///   recording with the screen off, but the app does not request
+///   `ACCESS_BACKGROUND_LOCATION` and does not resurrect itself after the
+///   process is killed. [requestPermission] therefore treats "while in use" as
+///   sufficient and never reports [LocationHealth.backgroundDenied].
+/// * The offline queue below is real — it holds the actual fixes captured on
+///   this device — but it is **not connected to an uploader yet**. Attach one
+///   with [attachUploader] once the repository exposes
+///   `POST /tracking/locations`. Until then [flushQueue] reports the queue as
+///   it truly is instead of pretending it drained.
+///
+/// Platform declarations: Android is done (see
+/// `android/app/src/main/AndroidManifest.xml`). This repo has no `ios/` folder
+/// yet — when one is generated, `ios/Runner/Info.plist` needs:
+///
+/// * `NSLocationWhenInUseUsageDescription` — "Your location is recorded while
+///   a work session is open, so your route, stops and customer visits appear
+///   on your day's record."
+/// * `NSLocationAlwaysAndWhenInUseUsageDescription` — "Allow location while a
+///   work session is open so your route keeps recording when the app is in the
+///   background or the screen is off. Nothing is recorded once you end the
+///   session."
+class GeoLocationService implements LocationService {
+  GeoLocationService({
+    this.config = TrackingConfig.defaults,
+    LocationUploader? uploader,
+    this.queueCapacity = 5000,
+  }) : _uploader = uploader;
+
+  final TrackingConfig config;
+
+  /// Hard ceiling on the in-memory queue so a long offline stretch cannot grow
+  /// without bound. At the default 30 s interval this is ~41 hours of fixes.
+  /// Overflow drops the oldest fix and is reported as `failed`, because a fix
+  /// dropped here is a fix that will never reach the server.
+  final int queueCapacity;
+
+  LocationUploader? _uploader;
+
+  final Queue<LocationLog> _queue = Queue<LocationLog>();
+  final StreamController<LocationLog> _fixes =
+      StreamController<LocationLog>.broadcast();
+  final StreamController<SyncSnapshot> _sync =
+      StreamController<SyncSnapshot>.broadcast();
+
+  StreamSubscription<Position>? _positions;
+  Timer? _retry;
+
+  String? _sessionId;
+  int _seq = 0;
+  int _failed = 0;
+  bool _online = true;
+  bool _flushing = false;
+  DateTime? _lastSyncedAt;
+
+  LocationLog? _lastAccepted;
+
+  /// When a fix was last thrown away for being less accurate than
+  /// [TrackingConfig.minAccuracyMetres]. Drives [LocationHealth.poorAccuracy],
+  /// so that state is only ever reported off real rejected fixes.
+  DateTime? _lastAccuracyReject;
+
+  /// Wire the uploader once `POST /tracking/locations` exists. Feature code
+  /// keeps talking to [LocationService]; only the composition root changes.
+  void attachUploader(LocationUploader uploader) {
+    _uploader = uploader;
+  }
+
+  /// Real backlog size, for callers that want it without listening to
+  /// [syncState].
+  int get queuedCount => _queue.length;
+
+  // ------------------------------------------------------------------ health
+
+  @override
+  Future<LocationHealth> health() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return LocationHealth.serviceDisabled;
+      }
+      final LocationHealth? denied =
+          _denialFor(await Geolocator.checkPermission());
+      if (denied != null) return denied;
+      // Only reported when an upload actually failed — this class has no
+      // connectivity plugin and will not guess at the network.
+      if (!_online) return LocationHealth.noInternet;
+      if (_accuracyIsPoor) return LocationHealth.poorAccuracy;
+      return LocationHealth.ok;
+    } catch (e) {
+      // A dead platform channel is indistinguishable, from up here, from a
+      // device with location switched off. Never let it escape as an
+      // unhandled error — the UI has a dialog for serviceDisabled.
+      debugPrint('[location] health check failed: $e');
+      return LocationHealth.serviceDisabled;
+    }
+  }
+
+  @override
+  Future<LocationHealth> requestPermission({bool background = false}) async {
+    // [background] is accepted for interface compatibility. Always-on tracking
+    // is not implemented (no ACCESS_BACKGROUND_LOCATION is declared), so the
+    // flag cannot change what is asked for; foreground permission is what the
+    // foreground-service stream needs.
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.unableToDetermine) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        // The OS will not show the prompt again, so the settings page is the
+        // only route left — "Enable" has to lead there or it does nothing.
+        await Geolocator.openAppSettings();
+        return LocationHealth.permissionDeniedForever;
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.unableToDetermine) {
+        return LocationHealth.permissionDenied;
+      }
+
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        await Geolocator.openLocationSettings();
+        return LocationHealth.serviceDisabled;
+      }
+
+      return health();
+    } catch (e) {
+      debugPrint('[location] permission request failed: $e');
+      return LocationHealth.permissionDenied;
+    }
+  }
+
+  LocationHealth? _denialFor(LocationPermission permission) =>
+      switch (permission) {
+        LocationPermission.denied ||
+        LocationPermission.unableToDetermine =>
+          LocationHealth.permissionDenied,
+        LocationPermission.deniedForever =>
+          LocationHealth.permissionDeniedForever,
+        // While-in-use is enough for foreground-service tracking, so it is not
+        // reported as backgroundDenied — that would block Start Day over a
+        // capability this build does not use.
+        LocationPermission.whileInUse || LocationPermission.always => null,
+      };
+
+  bool get _accuracyIsPoor {
+    final DateTime? rejected = _lastAccuracyReject;
+    if (rejected == null) return false;
+    // One bad fix is weather; bad fixes inside the last few intervals are a
+    // signal worth showing.
+    return DateTime.now().difference(rejected) <=
+        Duration(seconds: config.locationIntervalSeconds * 3);
+  }
+
+  // ------------------------------------------------------------------- fixes
+
+  @override
+  Future<LocationLog?> currentFix({required String sessionId}) async {
+    if ((await health()).blocksStart) return null;
+    try {
+      final Position position = await Geolocator.getCurrentPosition(
+        locationSettings: _settings(
+          timeLimit: const Duration(seconds: 25),
+          stream: false,
+        ),
+      );
+      // Deliberately not accuracy-filtered: a weak start fix is still where
+      // the employee is, and health() already reports poorAccuracy (which does
+      // not block the day) rather than refusing to open a session at all.
+      if (position.accuracy > config.minAccuracyMetres) {
+        _lastAccuracyReject = DateTime.now();
+      }
+      return _toLog(position, sessionId);
+    } catch (e) {
+      debugPrint('[location] currentFix failed: $e');
+      // One fallback, to the cached fix, and only while it is fresh enough to
+      // still describe where the phone is. Its own timestamp is kept, so the
+      // session is never stamped with a time that did not happen.
+      try {
+        final Position? last = await Geolocator.getLastKnownPosition();
+        if (last == null) return null;
+        if (DateTime.now().difference(last.timestamp) >
+            const Duration(minutes: 2)) {
+          return null;
+        }
+        return _toLog(last, sessionId);
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  /// Fixes for [sessionId], off the single underlying position stream that
+  /// [startTracking] opens. Yields nothing until tracking has been started.
+  @override
+  Stream<LocationLog> track({required String sessionId}) =>
+      _fixes.stream.where((LocationLog fix) => fix.sessionId == sessionId);
+
+  @override
+  Future<void> startTracking({required String sessionId}) async {
+    await stopTracking();
+    _sessionId = sessionId;
+    _emitSync();
+    _subscribe();
+  }
+
+  @override
+  Future<void> stopTracking() async {
+    _retry?.cancel();
+    _retry = null;
+    await _positions?.cancel();
+    _positions = null;
+    _sessionId = null;
+  }
+
+  void _subscribe() {
+    if (_sessionId == null) return;
+    try {
+      _positions = Geolocator.getPositionStream(
+        locationSettings: _settings(stream: true),
+      ).listen(
+        _onPosition,
+        onError: _onStreamError,
+        cancelOnError: false,
+      );
+    } catch (e) {
+      _onStreamError(e);
+    }
+  }
+
+  void _onStreamError(Object error) {
+    // Permission revoked mid-session, location switched off, provider crash.
+    // None of these may surface as an unhandled error: the controller polls
+    // health() every 15 s and reads the real cause straight from the OS.
+    debugPrint('[location] position stream error: $error');
+    _positions?.cancel();
+    _positions = null;
+    _retry?.cancel();
+    // Re-arm instead of giving up — the user may switch location back on
+    // without ever returning to the app.
+    _retry = Timer(
+      Duration(seconds: config.locationIntervalSeconds.clamp(5, 60)),
+      () {
+        if (_sessionId != null && _positions == null) _subscribe();
+      },
+    );
+  }
+
+  void _onPosition(Position position) {
+    final String? sessionId = _sessionId;
+    if (sessionId == null) return;
+
+    if (position.accuracy > config.minAccuracyMetres) {
+      // TrackingConfig says fixes worse than this are dropped. Dropped means
+      // dropped: not queued, not emitted, not counted as a location point.
+      _lastAccuracyReject = DateTime.now();
+      return;
+    }
+
+    final LocationLog fix = _toLog(position, sessionId);
+
+    final LocationLog? previous = _lastAccepted;
+    if (previous != null && _isImplausibleJump(previous, fix)) {
+      debugPrint('[location] dropped implausible jump');
+      return;
+    }
+
+    _lastAccuracyReject = null;
+    _lastAccepted = fix;
+    _enqueue(fix);
+    if (!_fixes.isClosed) _fixes.add(fix);
+    _emitSync();
+
+    if (_uploader != null && _queue.length >= config.syncBatchSize) {
+      unawaited(flushQueue());
+    }
+  }
+
+  bool _isImplausibleJump(LocationLog from, LocationLog to) {
+    final double seconds =
+        to.recordedAt.difference(from.recordedAt).inMilliseconds / 1000;
+    if (seconds <= 0) return false;
+    final double metres = Geolocator.distanceBetween(
+      from.latitude,
+      from.longitude,
+      to.latitude,
+      to.longitude,
+    );
+    return metres / seconds * 3.6 > config.maxJumpKmh;
+  }
+
+  LocationLog _toLog(Position position, String sessionId) {
+    return LocationLog(
+      // Device-local id. The server assigns the real one when the fix syncs.
+      id: 'loc_local_${position.timestamp.millisecondsSinceEpoch}_${_seq++}',
+      sessionId: sessionId,
+      latitude: position.latitude,
+      longitude: position.longitude,
+      accuracy: position.accuracy,
+      speedKmh: _speedKmh(position),
+      recordedAt: position.timestamp,
+      // Nothing is synced until an uploader confirms it, so this is the only
+      // truthful state for a fresh fix.
+      syncState: SyncState.queued,
+    );
+  }
+
+  /// Some devices report a negative or absent speed. Falling back to the
+  /// distance between the last two real fixes keeps the value measured rather
+  /// than invented; with nothing to measure against it stays 0.
+  double _speedKmh(Position position) {
+    if (position.speed.isFinite && position.speed >= 0) {
+      return position.speed * 3.6;
+    }
+    final LocationLog? previous = _lastAccepted;
+    if (previous == null) return 0;
+    final double seconds =
+        position.timestamp.difference(previous.recordedAt).inMilliseconds /
+            1000;
+    if (seconds <= 0) return 0;
+    final double metres = Geolocator.distanceBetween(
+      previous.latitude,
+      previous.longitude,
+      position.latitude,
+      position.longitude,
+    );
+    return metres / seconds * 3.6;
+  }
+
+  /// Accuracy and cadence come from [TrackingConfig], the same source the mock
+  /// reads, so changing the rule changes both implementations.
+  LocationSettings _settings({Duration? timeLimit, required bool stream}) {
+    const LocationAccuracy accuracy = LocationAccuracy.high;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: accuracy,
+        intervalDuration: Duration(seconds: config.locationIntervalSeconds),
+        timeLimit: timeLimit,
+        // Only the session stream runs as a foreground service — a one-shot
+        // fix has no business posting a persistent notification.
+        foregroundNotificationConfig: stream
+            ? const ForegroundNotificationConfig(
+                notificationTitle: 'Work session running',
+                notificationText:
+                    'Your route is being recorded until you end the session.',
+                notificationChannelName: 'Work session tracking',
+                enableWakeLock: true,
+                setOngoing: true,
+              )
+            : null,
+      );
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      return AppleSettings(
+        accuracy: accuracy,
+        timeLimit: timeLimit,
+        pauseLocationUpdatesAutomatically: false,
+        // No always-on permission is requested, so this stays false: it would
+        // advertise a capability the app has not declared.
+        showBackgroundLocationIndicator: false,
+      );
+    }
+    return LocationSettings(accuracy: accuracy, timeLimit: timeLimit);
+  }
+
+  // ----------------------------------------------------------- offline queue
+
+  void _enqueue(LocationLog fix) {
+    if (_queue.length >= queueCapacity) {
+      _queue.removeFirst();
+      // Counted as failed because it is: that fix will never reach the server.
+      _failed++;
+    }
+    _queue.add(fix);
+  }
+
+  @override
+  Stream<SyncSnapshot> syncState() async* {
+    // New listeners get the queue as it stands before any further change, so
+    // the status sheet is never blank waiting for the next fix.
+    yield _snapshot();
+    yield* _sync.stream;
+  }
+
+  @override
+  Future<void> flushQueue() async {
+    final LocationUploader? uploader = _uploader;
+    if (uploader == null) {
+      // No uploader attached yet: `POST /tracking/locations` is not wired to
+      // this class. Re-emitting the queue unchanged is the honest answer —
+      // clearing it here would claim a sync of data that never left the phone.
+      _emitSync();
+      return;
+    }
+    if (_flushing || _queue.isEmpty) {
+      _emitSync();
+      return;
+    }
+
+    _flushing = true;
+    try {
+      while (_queue.isNotEmpty) {
+        final List<LocationLog> batch =
+            _queue.take(config.syncBatchSize).toList(growable: false);
+        try {
+          await uploader(batch);
+        } catch (e) {
+          // The one thing a failed upload proves: this device cannot reach the
+          // server right now.
+          debugPrint('[location] flush failed: $e');
+          _online = false;
+          _emitSync();
+          return;
+        }
+        for (int i = 0; i < batch.length && _queue.isNotEmpty; i++) {
+          _queue.removeFirst();
+        }
+        _online = true;
+        _lastSyncedAt = DateTime.now();
+        _emitSync();
+      }
+    } finally {
+      _flushing = false;
+    }
+  }
+
+  SyncSnapshot _snapshot() => SyncSnapshot(
+        queued: _queue.length,
+        failed: _failed,
+        lastSyncedAt: _lastSyncedAt,
+        isOnline: _online,
+      );
+
+  void _emitSync() {
+    if (_sync.isClosed) return;
+    _sync.add(_snapshot());
+  }
+
+  Future<void> dispose() async {
+    await stopTracking();
+    await _fixes.close();
+    await _sync.close();
   }
 }

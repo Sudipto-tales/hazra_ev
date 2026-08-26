@@ -84,7 +84,11 @@ Future<void> main() async {
   final CompanyDirectory companies =
       CompanyDirectory(() => repository.companies());
 
-  final LocationService locationService = MockLocationService();
+  // Real device GPS against the live API; simulated fixes only behind
+  // USE_MOCKS. Tracking is the one feature where a mock left switched on would
+  // silently invent the whole record of the day.
+  final LocationService locationService =
+      ApiConfig.useMocks ? MockLocationService() : GeoLocationService();
   final TrackingController tracking = TrackingController(
     repository: repository,
     locationService: locationService,
