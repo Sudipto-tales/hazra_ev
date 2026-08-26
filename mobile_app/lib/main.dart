@@ -93,7 +93,11 @@ Future<void> main() async {
     repository: repository,
     locationService: locationService,
   );
-  final SettingsController settings = await SettingsController.open();
+  // The repository is what makes preferences server-backed: open() pulls
+  // GET /me/preferences and every later setter flushes a partial PATCH.
+  // Without it the controller is a local cache and nothing more.
+  final SettingsController settings =
+      await SettingsController.open(repository: repository);
 
   runApp(
     AppScope(
