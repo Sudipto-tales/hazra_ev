@@ -1,84 +1,93 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const mainCanvas = document.querySelector('.main-canvas');
-    const revealText = document.querySelector('.reveal-text');
-    const revealItems = document.querySelectorAll('.reveal-item');
-    const pCards = document.querySelectorAll('.p-card');
-    const navLinks = document.querySelector('.nav-links');
-    const heroImg = document.querySelector('.hero-img');
+(() => {
+  'use strict';
 
-    // 1. Initial State
-    mainCanvas.style.opacity = '0';
-    mainCanvas.style.transform = 'translateY(50px) scale(0.95)';
-    mainCanvas.style.transition = 'all 1.2s cubic-bezier(0.23, 1, 0.32, 1)';
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-    // 2. Entrance Sequence
+  /* ── theme ─────────────────────────────────── */
+  const root = document.documentElement;
+  const saved = localStorage.getItem('vm-theme');
+  const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = saved || (sysDark ? 'dark' : 'light');
+
+  $('#theme')?.addEventListener('click', () => {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('vm-theme', root.dataset.theme);
+  });
+
+  /* ── icons ─────────────────────────────────── */
+  const drawIcons = () => window.lucide && window.lucide.createIcons();
+  drawIcons();
+
+  /* ── entrance ──────────────────────────────── */
+  const canvas = $('#canvas');
+  const step = (el, d) => el && setTimeout(() => el.classList.add('is-in'), d);
+
+  requestAnimationFrame(() => {
+    step(canvas, 60);
+    step($('.title'), 460);
+    $$('.reveal-pop').forEach((el, i) => step(el, 760 + i * 180));
+    setTimeout(() => { const im = $('.photo__img'); if (im) im.style.transform = 'scale(1)'; }, 200);
+    countTo(2, 900);
+  });
+
+  /* ── counter ───────────────────────────────── */
+  function countTo(target, delay) {
+    const el = $('#count');
+    if (!el) return;
     setTimeout(() => {
-        // Show Canvas
-        mainCanvas.style.opacity = '1';
-        mainCanvas.style.transform = 'translateY(0) scale(1)';
+      let n = 0;
+      const tick = setInterval(() => {
+        n += 1;
+        el.textContent = String(n).padStart(2, '0');
+        if (n >= target) clearInterval(tick);
+      }, 130);
+    }, delay);
+  }
 
-        // Reveal Text
-        setTimeout(() => {
-            revealText.style.opacity = '1';
-            revealText.style.transform = 'translateY(0)';
-            revealText.style.transition = 'all 0.8s cubic-bezier(0.23, 1, 0.32, 1)';
-        }, 400);
+  /* ── deck ──────────────────────────────────── */
+  const thumbs = $$('.thumb');
+  const hero   = $('.photo__img');
+  const pager  = $('.pager b');
+  let idx = thumbs.findIndex(t => t.classList.contains('is-on'));
+  if (idx < 0) idx = 0;
 
-        // Reveal Floating Items
-        revealItems.forEach((item, index) => {
-            setTimeout(() => {
-                item.style.opacity = '1';
-                item.style.transform = 'scale(1)';
-                item.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-            }, 600 + (index * 200));
-        });
+  const select = i => {
+    idx = (i + thumbs.length) % thumbs.length;
+    thumbs.forEach((t, k) => t.classList.toggle('is-on', k === idx));
+    if (pager) pager.textContent = String(idx + 1).padStart(2, '0').slice(-2);
 
-        // Reveal Product Cards
-        pCards.forEach((card, index) => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-                card.style.transition = 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
-            }, 800 + (index * 150));
-        });
+    const src = thumbs[idx].querySelector('img')?.src;
+    if (hero && src) {
+      hero.style.opacity = '0';
+      hero.style.transform = 'scale(1.06)';
+      setTimeout(() => {
+        hero.src = src.replace(/w=\d+/, 'w=1400');
+        hero.style.opacity = '1';
+        hero.style.transform = 'scale(1)';
+      }, 280);
+    }
+    drawIcons();
+  };
 
-        // Suble Image Zoom
-        heroImg.style.transform = 'scale(1.1)';
-        heroImg.style.transition = 'transform 10s ease-out';
-        setTimeout(() => {
-            heroImg.style.transform = 'scale(1)';
-        }, 100);
+  thumbs.forEach((t, i) => t.addEventListener('click', () => select(i)));
+  $$('.arrow').forEach(b =>
+    b.addEventListener('click', () => select(idx + Number(b.dataset.dir)))
+  );
 
-    }, 300);
+  if (hero) hero.style.transition = 'opacity .28s ease, transform 1.4s cubic-bezier(.22,1,.36,1)';
 
-    // 3. Hover Effects for Cards
-    pCards.forEach(card => {
-        card.addEventListener('mouseenter', () => {
-            if (!card.classList.contains('active')) {
-                card.style.transform = 'translateY(-10px) scale(1.05)';
-            }
-        });
-        card.addEventListener('mouseleave', () => {
-            if (!card.classList.contains('active')) {
-                card.style.transform = 'translateY(0) scale(1)';
-            }
-        });
-        card.addEventListener('click', () => {
-            pCards.forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-        });
+  /* ── parallax on the photo ─────────────────── */
+  const photo = $('.photo');
+  if (photo && window.matchMedia('(min-width:1025px)').matches) {
+    canvas?.addEventListener('mousemove', e => {
+      const r = canvas.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width - .5;
+      const y = (e.clientY - r.top) / r.height - .5;
+      hero.style.transform = `scale(1.05) translate3d(${x * -18}px, ${y * -14}px, 0)`;
     });
-
-    // 4. Parallax effect on mouse move (Subtle)
-    mainCanvas.addEventListener('mousemove', (e) => {
-        const xAxis = (window.innerWidth / 2 - e.pageX) / 50;
-        const yAxis = (window.innerHeight / 2 - e.pageY) / 50;
-        
-        // Only apply if viewport is large enough
-        if (window.innerWidth > 1024) {
-            // Subtle tilt could be added here, but keep it clean as per the reference
-        }
+    canvas?.addEventListener('mouseleave', () => {
+      hero.style.transform = 'scale(1)';
     });
-});
+  }
+})();
