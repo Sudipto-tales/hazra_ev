@@ -4,6 +4,26 @@
          tooling's own connection. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Field-visit tracking. Fine location is what the route, stops and
+         visit detection are built on; coarse is declared so the app still
+         functions if the user grants approximate location only.
+
+         ACCESS_BACKGROUND_LOCATION is deliberately NOT declared: the app only
+         tracks while a work session is open and the session stream runs as a
+         foreground service, which while-in-use permission covers. Add it only
+         when always-on tracking is actually implemented. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- The position stream runs as a location foreground service so an open
+         session keeps recording with the screen off. FOREGROUND_SERVICE_LOCATION
+         is required from API 34; the service itself is declared by the
+         geolocator_android plugin. WAKE_LOCK backs enableWakeLock on that
+         service so fixes arrive on time instead of in a burst on wake. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
     <application
         android:label="employeetracking_mobile_app"
         android:name="${applicationName}"

@@ -3,32 +3,90 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/utils/formatters.dart';
-import '../../data/mock/mock_data.dart';
 import '../../data/models/models.dart';
 import '../../state/app_scope.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/avatar.dart';
 import '../../widgets/settings_tile.dart';
 import '../../widgets/stat_tile.dart';
+import '../../widgets/states.dart';
 import '../auth/role_select_page.dart';
 import '../home/widgets/tracking_sheet.dart';
 import 'info_pages.dart';
 import 'personal_info_page.dart';
 import 'settings_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  bool _loading = true;
+  Object? _error;
+  Employee? _me;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  /// `GET /api/employee/profile` — `?subject=me`, resolved from the token, so
+  /// the app never sends an employee id on this route.
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final Employee me = await AppScope.of(context).repository.profile();
+      if (!mounted) return;
+      setState(() {
+        _me = me;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final Employee me = MockData.employee;
+    // The header *is* the identity, so there is nothing below it worth showing
+    // until the profile has landed — the page waits rather than popping in
+    // around an empty banner.
+    if (_loading) {
+      return const Scaffold(
+        body: Padding(
+          padding: EdgeInsets.all(Insets.lg),
+          child: LoadingCards(count: 4),
+        ),
+      );
+    }
+    if (_error != null || _me == null) {
+      return Scaffold(
+        body: ErrorState(
+          onRetry: _load,
+          message: 'Your profile could not be loaded. Anything you recorded '
+              'today is still safe on this device.',
+        ),
+      );
+    }
+
     final AppScope scope = AppScope.of(context);
 
     return Scaffold(
       body: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
-          _ProfileHeader(employee: me),
+          _ProfileHeader(employee: _me!),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               Insets.lg,
@@ -232,7 +290,8 @@ class _ProfileHeader extends StatelessWidget {
                         builder: (_) => const SettingsPage(),
                       ),
                     ),
-                    icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                    icon: const Icon(Icons.settings_outlined,
+                        color: Colors.white),
                   ),
                 ),
               ),

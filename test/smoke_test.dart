@@ -1,4 +1,5 @@
 import 'package:employeetracking_mobile_app/app.dart';
+import 'package:employeetracking_mobile_app/data/company_directory.dart';
 import 'package:employeetracking_mobile_app/data/mock/product_store.dart';
 import 'package:employeetracking_mobile_app/data/repositories/admin_repository.dart';
 import 'package:employeetracking_mobile_app/data/repositories/employee_repository.dart';
@@ -73,6 +74,7 @@ _Harness buildApp() {
     app: AppScope(
       repository: repository,
       adminRepository: adminRepository,
+      companies: CompanyDirectory(() => repository.companies()),
       locationService: location,
       tracking: tracking,
       settings: SettingsController(),

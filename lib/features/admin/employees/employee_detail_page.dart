@@ -50,6 +50,13 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
     });
     try {
       final AppScope scope = AppScope.of(context);
+
+      // The VisitTile rows below resolve company and branch names through
+      // CompanyDirectory, and those lookups are synchronous. Warm it here or
+      // every visit on this screen reads 'Unknown company' unless the employee
+      // Home tab happened to load it first.
+      await scope.companies.ensureLoaded();
+
       final EmployeeDay day = await scope.adminRepository.employeeDay(
         employeeId: widget.employeeId,
         date: _date,
@@ -245,7 +252,6 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
           ),
         ],
       ),
-
       const SizedBox(height: Insets.xl),
       SizedBox(
         height: Sizes.primaryActionHeight,
@@ -262,7 +268,6 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
           label: const Text('View route on map'),
         ),
       ),
-
       SectionHeader(
         title: 'Visits',
         subtitle: '${day.visits.length} on this day',
@@ -281,11 +286,17 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
             child: VisitTile(
               visit: v,
               now: now,
+              // The admin mirror of what Home passes: the day's reports are
+              // already loaded here, so a visit row can name its reports
+              // instead of numbering them.
+              reportTitles: <String, String>{
+                for (final VisitReport r in day.reports)
+                  r.id: '${r.title} · ${Fmt.time(r.submittedAt)}',
+              },
               onReportTap: _openReport,
             ),
           ),
         ),
-
       const SectionHeader(
         title: 'Activity timeline',
         padding: EdgeInsets.fromLTRB(0, Insets.xxl, 0, Insets.md),
@@ -397,9 +408,8 @@ Future<String?> _askReopenReason(BuildContext context) {
                   labelText: 'Reason',
                   hintText: 'Why is this day being reopened?',
                 ),
-                validator: (String? v) => (v ?? '').trim().isEmpty
-                    ? 'A reason is required'
-                    : null,
+                validator: (String? v) =>
+                    (v ?? '').trim().isEmpty ? 'A reason is required' : null,
               ),
             ],
           ),

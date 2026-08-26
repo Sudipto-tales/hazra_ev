@@ -44,8 +44,7 @@ class MockAdminRepository implements AdminRepository {
   /// How far back the inbox and the "recent reports" views look.
   static const int _inboxDays = 14;
 
-  Future<T> _delayed<T>(T value) =>
-      Future<T>.delayed(latency, () => value);
+  Future<T> _delayed<T>(T value) => Future<T>.delayed(latency, () => value);
 
   // ----------------------------------------------------------------- roster
 
@@ -89,9 +88,8 @@ class MockAdminRepository implements AdminRepository {
   @override
   Future<TeamOverview> overview({DateTime? date}) async {
     final DateTime day = Fmt.dayOnly(date ?? MockData.today);
-    final List<TeamMember> members = _roster
-        .map((Employee e) => _member(e, day))
-        .toList();
+    final List<TeamMember> members =
+        _roster.map((Employee e) => _member(e, day)).toList();
 
     double distance = 0;
     int visits = 0;
@@ -133,9 +131,11 @@ class MockAdminRepository implements AdminRepository {
       if (m.isLongStop(_config.longStopThresholdMinutes)) longStop++;
     }
 
-    final int pending = _inboxItems().where(
-      (ReportInboxItem i) => i.decision == ReviewDecision.pending,
-    ).length;
+    final int pending = _inboxItems()
+        .where(
+          (ReportInboxItem i) => i.decision == ReviewDecision.pending,
+        )
+        .length;
 
     return _delayed(
       TeamOverview(
@@ -168,18 +168,17 @@ class MockAdminRepository implements AdminRepository {
       employee: employee,
       status: day.status,
       movement: day.movement,
-      locationHealth: isToday
-          ? AdminMockData.todayHealth(employee.id)
-          : LocationHealth.ok,
+      locationHealth:
+          isToday ? AdminMockData.todayHealth(employee.id) : LocationHealth.ok,
       summary: day.summary,
-      attendanceStatus:
-          day.attendance?.status ?? AttendanceStatus.noData,
+      attendanceStatus: day.attendance?.status ?? AttendanceStatus.noData,
       active: !_inactive.contains(employee.id),
       lastFix: day.lastFix,
       activeSince: open?.startTime ?? day.summary.joiningTime,
       openStopDuration: dwell,
-      openStopCompanyId:
-          dwell == null || day.visits.isEmpty ? null : day.visits.last.companyId,
+      openStopCompanyId: dwell == null || day.visits.isEmpty
+          ? null
+          : day.visits.last.companyId,
     );
   }
 
@@ -188,9 +187,8 @@ class MockAdminRepository implements AdminRepository {
   @override
   Future<List<TeamMember>> team({String? query, WorkStatus? status}) async {
     final String q = (query ?? '').trim().toLowerCase();
-    List<TeamMember> members = _roster
-        .map((Employee e) => _member(e, MockData.today))
-        .toList();
+    List<TeamMember> members =
+        _roster.map((Employee e) => _member(e, MockData.today)).toList();
 
     if (q.isNotEmpty) {
       members = members.where((TeamMember m) {
@@ -272,7 +270,8 @@ class MockAdminRepository implements AdminRepository {
       out.addAll(_day(employee, date).reports);
     } else {
       for (int i = 0; i < _inboxDays * 3; i++) {
-        out.addAll(_day(employee, MockData.today.subtract(Duration(days: i))).reports);
+        out.addAll(
+            _day(employee, MockData.today.subtract(Duration(days: i))).reports);
       }
     }
     out.sort(
@@ -413,8 +412,7 @@ class MockAdminRepository implements AdminRepository {
           reports: reports,
           presentDays: present,
           absentDays: absent,
-          attendancePercent:
-              countable == 0 ? 0 : present * 100 / countable,
+          attendancePercent: countable == 0 ? 0 : present * 100 / countable,
           averageWorkedDuration:
               Duration(minutes: days == 0 ? 0 : minutes ~/ days),
         ),
@@ -530,7 +528,8 @@ class MockAdminRepository implements AdminRepository {
     List<ReportInboxItem> items = _inboxItems();
 
     if (decision != null) {
-      items = items.where((ReportInboxItem i) => i.decision == decision).toList();
+      items =
+          items.where((ReportInboxItem i) => i.decision == decision).toList();
     }
     if (employeeId != null) {
       items = items
@@ -539,7 +538,8 @@ class MockAdminRepository implements AdminRepository {
     }
     if (date != null) {
       items = items
-          .where((ReportInboxItem i) => Fmt.isSameDay(i.report.submittedAt, date))
+          .where(
+              (ReportInboxItem i) => Fmt.isSameDay(i.report.submittedAt, date))
           .toList();
     }
     if (q.isNotEmpty) {
