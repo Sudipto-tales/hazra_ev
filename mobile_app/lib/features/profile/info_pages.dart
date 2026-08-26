@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/config/api_config.dart';
 import '../../core/config/tracking_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
+import '../../state/app_scope.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/stat_tile.dart';
 import 'app_info.dart';
@@ -212,6 +214,12 @@ class AboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppScope scope = AppScope.of(context);
+
+    // This block is the first thing anyone reads when a bug report says
+    // "the numbers are wrong", so it has to describe the build that is
+    // actually running rather than the one it was written against.
+    final bool live = scope.isLive;
 
     return Scaffold(
       appBar: AppBar(title: const Text('About')),
@@ -249,19 +257,21 @@ class AboutPage extends StatelessWidget {
           AppCard(
             child: Column(
               children: <Widget>[
-                const KeyValueRow(
+                KeyValueRow(
                   label: 'Data source',
-                  value: 'Static demo data',
+                  value: live ? 'Live server' : 'Static demo data',
                   icon: Icons.dataset_outlined,
                 ),
-                const KeyValueRow(
+                KeyValueRow(
                   label: 'Backend',
-                  value: 'Not connected',
-                  icon: Icons.cloud_off_outlined,
+                  value: live ? ApiConfig.baseUrl : 'Not connected',
+                  icon: live
+                      ? Icons.cloud_done_outlined
+                      : Icons.cloud_off_outlined,
                 ),
-                const KeyValueRow(
+                KeyValueRow(
                   label: 'Tracking engine',
-                  value: 'Mock location service',
+                  value: live ? 'Device GPS' : 'Mock location service',
                   icon: Icons.my_location_rounded,
                 ),
                 KeyValueRow(

@@ -10,6 +10,7 @@ import '../../../widgets/settings_tile.dart';
 import '../../../widgets/stat_tile.dart';
 import '../../../widgets/states.dart';
 import '../../auth/role_select_page.dart';
+import '../../profile/app_info.dart';
 import '../employees/employees_page.dart';
 import '../manage/tracking_rules_page.dart';
 import '../products/products_page.dart';
@@ -231,7 +232,8 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                 const SizedBox(height: Insets.xl),
                 Center(
                   child: Text(
-                    'Admin console 0.1.0 · Static demo data',
+                    'Admin console · '
+                    '${AppInfo.labelFor(live: AppScope.of(context).isLive)}',
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
