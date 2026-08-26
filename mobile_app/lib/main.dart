@@ -5,6 +5,7 @@ import 'app.dart';
 import 'core/config/api_config.dart';
 import 'data/api/api_client.dart';
 import 'data/api/token_store.dart';
+import 'data/company_directory.dart';
 import 'data/mock/day_lock_store.dart';
 import 'data/mock/product_store.dart';
 import 'data/repositories/admin_repository.dart';
@@ -78,17 +79,23 @@ Future<void> main() async {
     adminRepository = HttpAdminRepository(api);
   }
 
+  // Id → name for companies and branches, backed by `GET /companies`. Built
+  // from whichever repository is live so the mock build resolves names too.
+  final CompanyDirectory companies =
+      CompanyDirectory(() => repository.companies());
+
   final LocationService locationService = MockLocationService();
   final TrackingController tracking = TrackingController(
     repository: repository,
     locationService: locationService,
   );
-  final SettingsController settings = SettingsController();
+  final SettingsController settings = await SettingsController.open();
 
   runApp(
     AppScope(
       repository: repository,
       adminRepository: adminRepository,
+      companies: companies,
       locationService: locationService,
       tracking: tracking,
       settings: settings,

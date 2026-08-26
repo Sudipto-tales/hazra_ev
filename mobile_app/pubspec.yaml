@@ -27,6 +27,14 @@ dependencies:
   # The hand-painted RoutePainter stays as the offline fallback.
   flutter_map: ^8.3.1
 
+  # Real device location. Wraps the platform location APIs and owns the
+  # permission prompts, so no separate permission plugin is needed.
+  geolocator: ^13.0.2
+
+  # Camera / gallery picker for report attachments. The bytes go up as
+  # multipart to POST /reports/{id}/images.
+  image_picker: ^1.1.2
+
   # LatLng type flutter_map speaks. The app's own models stay plain doubles;
   # conversion happens at the map boundary only.
   latlong2: ^0.10.1
