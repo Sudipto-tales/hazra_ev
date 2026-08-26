@@ -5,6 +5,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/stat_tile.dart';
+import 'app_info.dart';
+import 'support_page.dart';
 
 /// Simple content pages reached from Profile → Support / Privacy.
 
@@ -187,12 +189,12 @@ class HelpPage extends StatelessWidget {
                 const SizedBox(height: Insets.sm),
                 const KeyValueRow(
                   label: 'Support email',
-                  value: 'support@company.com',
+                  value: SupportContacts.email,
                   icon: Icons.mail_outline_rounded,
                 ),
                 const KeyValueRow(
                   label: 'Support hotline',
-                  value: '+880 9600 123456',
+                  value: SupportContacts.hotline,
                   icon: Icons.phone_outlined,
                 ),
               ],
@@ -239,8 +241,7 @@ class AboutPage extends StatelessWidget {
                 const SizedBox(height: Insets.lg),
                 Text('Field Tracker', style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 4),
-                Text('Version 0.1.0 · build 1',
-                    style: theme.textTheme.bodySmall),
+                Text(AppInfo.label, style: theme.textTheme.bodySmall),
               ],
             ),
           ),
@@ -265,7 +266,7 @@ class AboutPage extends StatelessWidget {
                 ),
                 KeyValueRow(
                   label: 'Support',
-                  value: 'support@company.com',
+                  value: SupportContacts.email,
                   icon: Icons.mail_outline_rounded,
                   valueColor: theme.colorScheme.primary,
                 ),
