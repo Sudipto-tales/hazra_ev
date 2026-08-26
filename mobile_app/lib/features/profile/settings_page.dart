@@ -10,7 +10,10 @@ import '../../state/settings_controller.dart';
 import '../../widgets/settings_tile.dart';
 import '../auth/role_select_page.dart';
 import '../home/widgets/tracking_sheet.dart';
+import 'app_info.dart';
 import 'info_pages.dart';
+import 'personal_info_page.dart';
+import 'support_page.dart';
 
 enum SettingsSection { all, notifications }
 
@@ -48,22 +51,32 @@ class SettingsPage extends StatelessWidget {
                 SettingsGroup(
                   title: 'Account',
                   tiles: <Widget>[
-                    SettingsTile(
+                    // Deliberately not tappable, and the subtitle says why.
+                    // `PATCH /api/v1/me` does accept a new phone number, but
+                    // nothing in EmployeeRepository exposes it yet, so the
+                    // app genuinely cannot write this — and a row that opens
+                    // an apology is worse than a row that answers the
+                    // question. Remove the tile once the repository grows a
+                    // self-update call.
+                    const SettingsTile(
                       icon: Icons.person_outline_rounded,
                       title: 'Edit profile',
-                      subtitle: 'Photo, phone, address',
-                      onTap: () => _todo(context),
+                      subtitle: 'Your admin changes your name, phone '
+                          'and address',
                     ),
-                    SettingsTile(
-                      icon: Icons.password_rounded,
-                      title: 'Change password',
-                      onTap: () => _todo(context),
-                    ),
+                    // "Change password" used to live here. There is no
+                    // password endpoint in the API at all, so the row could
+                    // never do anything; a password reset goes through the
+                    // admin. Do not add it back without an endpoint.
                     SettingsTile(
                       icon: Icons.badge_outlined,
                       title: 'Account information',
-                      subtitle: 'EMP-1042 · Field Sales — North Zone',
-                      onTap: () => _todo(context),
+                      subtitle: 'ID, designation and reporting line',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const PersonalInfoPage(),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -160,29 +173,24 @@ class SettingsPage extends StatelessWidget {
                       subtitle: s.language,
                       onTap: () => _pickLanguage(context, s),
                     ),
-                    SettingsTile(
-                      icon: Icons.storage_outlined,
-                      title: 'Data preferences',
-                      subtitle: 'Cache, offline queue, image quality',
-                      onTap: () => _todo(context),
-                    ),
+                    // "Data preferences" used to sit here promising cache,
+                    // offline queue and image-quality controls. None of the
+                    // three exist as a setting anywhere in the app, and the
+                    // two knobs that do — mobile-data sync and accuracy — are
+                    // already in the Tracking group above.
                   ],
                 ),
                 const SizedBox(height: Insets.xl),
                 SettingsGroup(
                   title: 'Security',
                   tiles: <Widget>[
-                    SettingsTile(
-                      icon: Icons.lock_outline_rounded,
-                      title: 'Change password',
-                      onTap: () => _todo(context),
-                    ),
-                    SettingsTile(
-                      icon: Icons.devices_rounded,
-                      title: 'Device & sessions',
-                      subtitle: 'This device · signed in today',
-                      onTap: () => _todo(context),
-                    ),
+                    // Two rows are gone from this group. "Change password"
+                    // had no endpoint to call, and "Device & sessions"
+                    // claimed a session list the API does not keep:
+                    // `PUT /me/device` only re-registers this phone's push
+                    // token, and sign-out already revokes every refresh token
+                    // the account holds. Showing "This device · signed in
+                    // today" was a guess printed as a fact.
                     SettingsTile(
                       icon: Icons.logout_rounded,
                       title: 'Log out',
@@ -211,18 +219,31 @@ class SettingsPage extends StatelessWidget {
                     SettingsTile(
                       icon: Icons.support_agent_rounded,
                       title: 'Contact support',
-                      subtitle: 'support@company.com',
-                      onTap: () => _todo(context),
+                      subtitle: SupportContacts.email,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ContactSupportPage(),
+                        ),
+                      ),
                     ),
                     SettingsTile(
                       icon: Icons.bug_report_outlined,
                       title: 'Report a problem',
-                      onTap: () => _todo(context),
+                      subtitle: 'Details support will ask for, ready to send',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ReportProblemPage(),
+                        ),
+                      ),
                     ),
                     SettingsTile(
                       icon: Icons.info_outline_rounded,
                       title: 'App version',
-                      subtitle: '0.1.0 (static demo data)',
+                      // Real build identity, and whether this build is
+                      // talking to a server — the old string hard-coded both
+                      // and was wrong about the second one the moment the API
+                      // came up.
+                      subtitle: AppInfo.labelFor(live: scope.isLive),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(builder: (_) => const AboutPage()),
                       ),
@@ -242,12 +263,6 @@ class SettingsPage extends StatelessWidget {
         ThemeMode.light => 'Light',
         ThemeMode.dark => 'Dark',
       };
-
-  void _todo(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Not wired up in this design build')),
-    );
-  }
 
   Future<void> _pickTheme(BuildContext context, SettingsController s) async {
     final ThemeMode? mode = await showModalBottomSheet<ThemeMode>(

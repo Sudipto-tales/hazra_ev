@@ -5,7 +5,7 @@ import '../../../core/config/tracking_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../data/mock/mock_data.dart';
+import '../../../data/company_directory.dart';
 import '../../../data/models/models.dart';
 import '../../../state/app_scope.dart';
 import '../../../widgets/app_card.dart';
@@ -67,6 +67,12 @@ class _RouteMapPageState extends State<RouteMapPage> {
     });
     try {
       final AppScope scope = AppScope.of(context);
+      // The visit card resolves companyId/branchId to names synchronously
+      // inside build(), so the directory has to be warm before that card can
+      // exist. It loads once per app run, shares one request between callers,
+      // and swallows its own failure — a directory that could not be fetched
+      // degrades the card to a placeholder instead of failing the whole map.
+      await scope.companies.ensureLoaded();
       final RouteTrack track = await scope.adminRepository.route(
         employeeId: widget.employee.id,
         date: _date,
@@ -87,6 +93,10 @@ class _RouteMapPageState extends State<RouteMapPage> {
     }
   }
 
+  /// Midnight today. Read per build rather than cached in a field so a page
+  /// left open across midnight still offers the new day.
+  DateTime get _today => Fmt.dayOnly(DateTime.now());
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,8 +111,8 @@ class _RouteMapPageState extends State<RouteMapPage> {
         children: <Widget>[
           DateScrubber(
             date: _date,
-            firstDate: MockData.today.subtract(const Duration(days: 120)),
-            lastDate: MockData.today,
+            firstDate: _today.subtract(const Duration(days: 120)),
+            lastDate: _today,
             onChanged: (DateTime d) {
               setState(() => _date = d);
               _load();
@@ -497,17 +507,27 @@ class _SelectionCard extends StatelessWidget {
 
     if (visit != null) {
       final Duration dwell = visit.durationAt(DateTime.now());
+
+      // Names come from the directory, never from a "nearest match". The old
+      // mock lookup fell through to `companies.first` for an unknown id, so a
+      // live visit could render a real but wrong company name. A placeholder
+      // is the only honest answer when the id is not in the directory.
+      final CompanyDirectory directory = AppScope.of(context).companies;
+      final String companyLabel = directory.displayCompany(
+        visit.companyId,
+        fallback: directory.isLoaded
+            ? 'Unknown company'
+            : 'Company name unavailable',
+      );
+
       return AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              MockData.companyName(visit.companyId),
-              style: theme.textTheme.titleMedium,
-            ),
+            Text(companyLabel, style: theme.textTheme.titleMedium),
             const SizedBox(height: 2),
             Text(
-              MockData.branchName(visit.companyId, visit.branchId) ?? '—',
+              directory.displayBranch(visit.companyId, visit.branchId),
               style: theme.textTheme.bodySmall,
             ),
             const Divider(height: Insets.xl),
