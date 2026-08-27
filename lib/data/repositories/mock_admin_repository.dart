@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import '../../core/config/tracking_config.dart';
 import '../../core/utils/formatters.dart';
 import '../../state/notification_center.dart';
@@ -662,7 +664,7 @@ class MockAdminRepository implements AdminRepository {
   // ------------------------------------------------------------- management
 
   @override
-  Future<Employee> saveEmployee(EmployeeDraft draft) async {
+  Future<EmployeeSaveResult> saveEmployee(EmployeeDraft draft) async {
     final Employee employee;
     if (draft.isCreate) {
       employee = Employee(
@@ -703,8 +705,37 @@ class MockAdminRepository implements AdminRepository {
     // A created employee has no generated history yet, and an edited one may
     // have changed something the generator reads — drop their caches.
     AdminMockData.invalidate(employee.id);
-    return _delayed(employee);
+
+    // Mirrors the server: a create with no password in the draft comes back
+    // with a generated one, an edit never does.
+    final String? temporary = draft.isCreate && (draft.password ?? '').isEmpty
+        ? _fakeGeneratedPassword()
+        : null;
+
+    return _delayed(
+      EmployeeSaveResult(employee, temporaryPassword: temporary),
+    );
   }
+
+  /// Same shape and length as Password::generate on the server, so the reveal
+  /// dialog is exercised with something realistic. Not secure, and does not
+  /// need to be — nothing authenticates against the mock backend.
+  String _fakeGeneratedPassword() {
+    const String alphabet =
+        'ABCDEFGHJKMNPQRTUVWXYZabcdefghijkmnpqrtuvwxyz2346789';
+    final Random random = Random(_seq * 7919);
+    return List<String>.generate(
+      12,
+      (int _) => alphabet[random.nextInt(alphabet.length)],
+    ).join();
+  }
+
+  @override
+  Future<String?> resetEmployeePassword(
+    String employeeId, {
+    String? password,
+  }) =>
+      _delayed((password ?? '').isEmpty ? _fakeGeneratedPassword() : null);
 
   @override
   Future<void> reopenDay({

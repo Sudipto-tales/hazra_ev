@@ -12,6 +12,7 @@ import '../../widgets/stat_tile.dart';
 import '../../widgets/states.dart';
 import '../auth/role_select_page.dart';
 import '../home/widgets/tracking_sheet.dart';
+import 'change_password_page.dart';
 import 'info_pages.dart';
 import 'personal_info_page.dart';
 import 'settings_page.dart';
@@ -96,6 +97,30 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             child: Column(
               children: <Widget>[
+                // The account is still on a password the server generated —
+                // nobody has chosen one. Advisory, not a gate: the app works
+                // fine either way, and locking someone out of their own day
+                // over a password prompt would be worse than the prompt.
+                if (_me!.mustChangePassword) ...<Widget>[
+                  AlertBanner(
+                    icon: Icons.key_rounded,
+                    title: 'Set your own password',
+                    message: 'You are signed in with the password your admin '
+                        'gave you. Pick one only you know.',
+                    tone: AppColors.warning,
+                    actionLabel: 'Change password',
+                    onAction: () async {
+                      final bool? changed =
+                          await Navigator.of(context).push<bool>(
+                        MaterialPageRoute<bool>(
+                          builder: (_) => const ChangePasswordPage(),
+                        ),
+                      );
+                      if (changed == true && mounted) _load();
+                    },
+                  ),
+                  const SizedBox(height: Insets.lg),
+                ],
                 ListenableBuilder(
                   listenable: scope.tracking,
                   builder: (BuildContext context, _) {

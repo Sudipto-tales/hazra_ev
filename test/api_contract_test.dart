@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:employeetracking_mobile_app/core/config/tracking_config.dart';
 import 'package:employeetracking_mobile_app/data/api/api_client.dart';
+import 'package:employeetracking_mobile_app/data/api/api_exception.dart';
+import 'package:employeetracking_mobile_app/data/api/wire.dart';
 import 'package:employeetracking_mobile_app/data/api/token_store.dart';
 import 'package:employeetracking_mobile_app/data/models/models.dart';
 import 'package:employeetracking_mobile_app/data/repositories/admin_repository.dart';
@@ -375,6 +377,203 @@ void main() {
       expect(saved.maxJumpKmh, 190);
 
       await repo.saveConfig(original);
+    });
+  });
+
+  // The two gaps that used to make this pair unreachable: End Day had no server
+  // side at all, and a created employee had a password hash nobody had ever
+  // seen. Both are wire-level, so they belong here rather than in a mock test.
+  group('day closeout', () {
+    late EmployeeRepository employee;
+    late AdminRepository admin;
+    late String employeeId;
+
+    setUp(() async {
+      if (!serverUp) return;
+      final ApiClient employeeApi = await signIn(employeeEmail);
+      employee = HttpEmployeeRepository(employeeApi);
+      admin = HttpAdminRepository(await signIn(adminEmail));
+      employeeId = (await employee.profile()).id;
+    });
+
+    test('a closeout stores the claim beside the measurement', () async {
+      if (!serverUp) return markTestSkipped('API unreachable');
+
+      // The day may already be closed from an earlier run of this suite.
+      // Reopening is idempotent enough for a fixture: it either clears a lock
+      // or reports there was nothing to clear.
+      try {
+        await admin.reopenDay(
+          employeeId: employeeId,
+          date: DateTime.now(),
+          reason: 'Contract test fixture',
+        );
+      } on ApiException catch (e) {
+        if (e.code != 'DAY_NOT_CLOSED') rethrow;
+      }
+
+      final String clientId = 'contract-${DateTime.now().microsecondsSinceEpoch}';
+      final DayCloseout stored = await employee.submitDayCloseout(
+        DayCloseoutDraft(
+          clientId: clientId,
+          endedAt: DateTime.now(),
+          declaredDistanceKm: 41.5,
+          declaredVisits: 4,
+          rating: 4,
+          tags: const <DayFeedbackTag>[
+            DayFeedbackTag.traffic,
+            DayFeedbackTag.vehicleIssue,
+          ],
+          feedback: 'Contract test',
+        ),
+      );
+
+      expect(stored.id, isNotEmpty);
+      expect(stored.declaredDistanceKm, 41.5);
+      expect(stored.declaredVisits, 4);
+      // Declared never overwrites measured — the gap is the whole point.
+      expect(stored.measuredDistanceKm, isNot(41.5));
+      // Enums survive the snake_case round trip in both directions.
+      expect(stored.tags, contains(DayFeedbackTag.vehicleIssue));
+
+      // Same clientId replays rather than closing the day twice.
+      final DayCloseout replay = await employee.submitDayCloseout(
+        DayCloseoutDraft(
+          clientId: clientId,
+          endedAt: DateTime.now(),
+          declaredDistanceKm: 41.5,
+          declaredVisits: 4,
+          rating: 4,
+        ),
+      );
+      expect(replay.id, stored.id);
+
+      // dayState is unconditional, and the lock survives a reload.
+      final HomeSnapshot locked = await employee.home();
+      expect(locked.dayState, DayState.closedByEmployee);
+      expect(locked.dayState.isLocked, isTrue);
+      expect(locked.closeout?.declaredVisits, 4);
+
+      await admin.reopenDay(
+        employeeId: employeeId,
+        date: DateTime.now(),
+        reason: 'Contract test cleanup',
+      );
+
+      // Reopened: workable again, but the declaration is kept.
+      final HomeSnapshot reopened = await employee.home();
+      expect(reopened.dayState, DayState.open);
+      expect(reopened.closeout, isNotNull);
+    });
+  });
+
+  group('credentials', () {
+    late AdminRepository admin;
+
+    setUp(() async {
+      if (!serverUp) return;
+      admin = HttpAdminRepository(await signIn(adminEmail));
+    });
+
+    test('a created employee can actually sign in', () async {
+      if (!serverUp) return markTestSkipped('API unreachable');
+
+      final int seq = DateTime.now().millisecondsSinceEpoch % 90000 + 10000;
+      final String email = 'contract.$seq@hazra-ev.test';
+
+      final EmployeeSaveResult created = await admin.saveEmployee(
+        EmployeeDraft(
+          name: 'Contract Test',
+          employeeCode: 'EMP-$seq',
+          designation: 'Field Executive',
+          department: '',
+          email: email,
+          phone: '+8801700000000',
+          region: '',
+          reportingTo: '',
+          joinedOn: DateTime(2026, 1, 10),
+        ),
+      );
+
+      // No password in the draft, so the server generated one and this is the
+      // only response that will ever carry it.
+      final String? temporary = created.temporaryPassword;
+      expect(temporary, isNotNull);
+
+      final TokenStore tokens = await TokenStore.open();
+      final ApiClient fresh = ApiClient(tokens: tokens);
+      final Employee principal =
+          Wire.employee((await fresh.login(email: email, password: temporary!)).principal);
+
+      expect(principal.email, email);
+      // Generated, so nobody has chosen this password yet.
+      expect(principal.mustChangePassword, isTrue);
+
+      // Self change: the wrong current password is a 403, not a 401 — the
+      // token is fine, so ApiClient must not treat it as a session problem.
+      final EmployeeRepository self = HttpEmployeeRepository(fresh);
+      await expectLater(
+        self.changePassword(current: 'not-my-password', next: 'a-new-password'),
+        throwsA(isA<ApiException>().having((ApiException e) => e.isForbidden, 'isForbidden', isTrue)),
+      );
+
+      await self.changePassword(current: temporary, next: 'a-new-password');
+
+      // The old one is dead and the new one carries no must-change flag.
+      final ApiClient after = ApiClient(tokens: await TokenStore.open());
+      await expectLater(
+        after.login(email: email, password: temporary),
+        throwsA(isA<ApiException>()),
+      );
+
+      final Employee changed = Wire.employee(
+        (await after.login(email: email, password: 'a-new-password')).principal,
+      );
+      expect(changed.mustChangePassword, isFalse);
+    });
+
+    test('a chosen password is accepted and not echoed back', () async {
+      if (!serverUp) return markTestSkipped('API unreachable');
+
+      final int seq = DateTime.now().millisecondsSinceEpoch % 90000 + 10000;
+      final String email = 'chosen.$seq@hazra-ev.test';
+
+      final EmployeeSaveResult created = await admin.saveEmployee(
+        EmployeeDraft(
+          name: 'Chosen Password',
+          employeeCode: 'EMP-${seq + 1}',
+          designation: 'Field Executive',
+          department: '',
+          email: email,
+          phone: '+8801700000001',
+          region: '',
+          reportingTo: '',
+          joinedOn: DateTime(2026, 1, 10),
+          password: 'chosen-by-the-admin',
+        ),
+      );
+
+      expect(created.temporaryPassword, isNull);
+
+      final ApiClient fresh = ApiClient(tokens: await TokenStore.open());
+      final Employee principal = Wire.employee(
+        (await fresh.login(email: email, password: 'chosen-by-the-admin')).principal,
+      );
+      expect(principal.mustChangePassword, isFalse);
+
+      // An admin reset issues a new one and invalidates what came before.
+      final String? reset = await admin.resetEmployeePassword(created.employee.id);
+      expect(reset, isNotNull);
+
+      final ApiClient afterReset = ApiClient(tokens: await TokenStore.open());
+      await expectLater(
+        afterReset.login(email: email, password: 'chosen-by-the-admin'),
+        throwsA(isA<ApiException>()),
+      );
+      final Employee back = Wire.employee(
+        (await afterReset.login(email: email, password: reset!)).principal,
+      );
+      expect(back.mustChangePassword, isTrue);
     });
   });
 }

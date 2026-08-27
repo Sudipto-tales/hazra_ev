@@ -315,14 +315,35 @@ class HttpAdminRepository implements AdminRepository {
       _api.patch('/products/$id', body: <String, dynamic>{'active': active});
 
   @override
-  Future<Employee> saveEmployee(EmployeeDraft draft) async {
+  Future<EmployeeSaveResult> saveEmployee(EmployeeDraft draft) async {
     final Map<String, dynamic> body = Wire.employeeDraftToJson(draft);
 
     final ApiResult result = draft.isCreate
         ? await _api.post('/employees', body: body)
         : await _api.patch('/employees/${draft.id}', body: body);
 
-    return Wire.employee(result.map);
+    // `temporaryPassword` rides on the create response and nowhere else. It is
+    // not stored in plaintext and no route returns it again, so if the caller
+    // drops it the only way back is a reset.
+    return EmployeeSaveResult(
+      Wire.employee(result.map),
+      temporaryPassword: result.map['temporaryPassword'] as String?,
+    );
+  }
+
+  @override
+  Future<String?> resetEmployeePassword(
+    String employeeId, {
+    String? password,
+  }) async {
+    final ApiResult result = await _api.post(
+      '/employees/$employeeId/password',
+      body: <String, dynamic>{
+        if (password != null && password.isNotEmpty) 'password': password,
+      },
+    );
+
+    return result.map['temporaryPassword'] as String?;
   }
 
   @override

@@ -509,6 +509,7 @@ class EmployeeDraft {
     this.id,
     this.bloodGroup = '',
     this.address = '',
+    this.password,
   });
 
   /// Seeds the edit form from an existing record.
@@ -542,7 +543,26 @@ class EmployeeDraft {
   final String bloodGroup;
   final String address;
 
+  /// First-login credential, create only. Null means "let the server generate
+  /// one" — it comes back on the create response as
+  /// [EmployeeSaveResult.temporaryPassword] and is readable exactly once.
+  /// Never populated from an existing record: a password cannot be read back.
+  final String? password;
+
   bool get isCreate => id == null;
+}
+
+/// What a save returns. A bare [Employee] cannot carry the generated
+/// credential, and the credential has nowhere else to live: it is not a field
+/// of the record and no route will hand it back a second time.
+class EmployeeSaveResult {
+  const EmployeeSaveResult(this.employee, {this.temporaryPassword});
+
+  final Employee employee;
+
+  /// Non-null only when the server generated the password — a create with no
+  /// `password` in the draft. Show it once, then it is gone.
+  final String? temporaryPassword;
 }
 
 /// One employee's contribution to the team numbers over a range.

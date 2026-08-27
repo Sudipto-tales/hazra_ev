@@ -144,7 +144,7 @@ void main() {
   group('write side', () {
     test('a created employee immediately has history and a route', () async {
       final MockAdminRepository r = repo();
-      final Employee created = await r.saveEmployee(
+      final EmployeeSaveResult saved = await r.saveEmployee(
         EmployeeDraft(
           name: 'Test Person',
           employeeCode: 'EMP-9001',
@@ -158,9 +158,36 @@ void main() {
         ),
       );
 
+      final Employee created = saved.employee;
+
+      // No password in the draft, so the backend generated one and it is
+      // readable exactly once, here.
+      expect(saved.temporaryPassword, isNotNull);
+      expect(saved.temporaryPassword!.length, 12);
+
       final List<TeamMember> team = await r.team();
       expect(team.first.employee.id, created.id);
       expect(AdminMockData.attendanceFor(created.id).length, 121);
+    });
+
+    test('a chosen password is not echoed back as a temporary one', () async {
+      final MockAdminRepository r = repo();
+      final EmployeeSaveResult saved = await r.saveEmployee(
+        EmployeeDraft(
+          name: 'Chosen Password',
+          employeeCode: 'EMP-9002',
+          designation: 'Sales Executive',
+          department: 'Key Accounts',
+          email: 'chosen@company.com',
+          phone: '+880 1700 000 001',
+          region: 'Bardhaman North',
+          reportingTo: 'Imran Kabir (Zonal Manager)',
+          joinedOn: DateTime(2024, 1, 10),
+          password: 'admin-chose-this',
+        ),
+      );
+
+      expect(saved.temporaryPassword, isNull);
     });
 
     test('an employee itinerary is stable across reads', () async {

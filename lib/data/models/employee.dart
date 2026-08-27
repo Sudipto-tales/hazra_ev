@@ -15,6 +15,7 @@ class Employee {
     required this.region,
     required this.bloodGroup,
     required this.address,
+    this.mustChangePassword = false,
   });
 
   final String id;
@@ -35,6 +36,11 @@ class Employee {
   final String region;
   final String bloodGroup;
   final String address;
+
+  /// Set only on the signed-in principal (`GET /me`, login), and only when
+  /// the account is still on a password the server generated rather than one
+  /// anybody chose. Roster rows never carry it, so they read false.
+  final bool mustChangePassword;
 
   String get initials {
     final List<String> parts =
@@ -62,6 +68,7 @@ class Employee {
     String? region,
     String? bloodGroup,
     String? address,
+    bool? mustChangePassword,
   }) {
     return Employee(
       id: id,
@@ -78,6 +85,7 @@ class Employee {
       region: region ?? this.region,
       bloodGroup: bloodGroup ?? this.bloodGroup,
       address: address ?? this.address,
+      mustChangePassword: mustChangePassword ?? this.mustChangePassword,
     );
   }
 }

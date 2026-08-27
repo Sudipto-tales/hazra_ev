@@ -86,6 +86,8 @@ class Wire {
         region: str(j['region']),
         bloodGroup: str(j['bloodGroup']),
         address: str(j['address']),
+        // Absent on a roster row; present on the principal. Defaults false.
+        mustChangePassword: boolean(j['mustChangePassword']),
       );
 
   static AdminUser admin(Map<String, dynamic> j) => AdminUser(
@@ -402,6 +404,9 @@ class Wire {
         'joinedOn': d.joinedOn.toIso8601String().split('T').first,
         'bloodGroup': d.bloodGroup,
         'address': d.address,
+        // Omitted entirely when blank, which is what tells the server to
+        // generate one. Sending '' would be a password eight characters short.
+        if (d.password != null && d.password!.isNotEmpty) 'password': d.password,
       };
 
   // ------------------------------------------------------- timeline and feed

@@ -10,6 +10,7 @@ import '../../../widgets/app_card.dart';
 import '../../../widgets/select_field.dart';
 import '../../../widgets/stat_tile.dart';
 import '../../../widgets/states.dart';
+import '../widgets/credential_dialog.dart';
 
 /// Add or edit a field employee. One page for both — a null [employee] means
 /// create, mirroring how [EmployeeDraft] treats a null id.
@@ -39,6 +40,11 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
       TextEditingController(text: widget.employee?.phone ?? '');
   late final TextEditingController _address =
       TextEditingController(text: widget.employee?.address ?? '');
+
+  /// Create only, and always empty. A password cannot be read back, so there is
+  /// nothing to pre-fill an edit with — the edit form does not show this field
+  /// at all, and a reset lives on the employee detail page instead.
+  final TextEditingController _password = TextEditingController();
 
   /// Department and region are free text and optional: a new hire is often
   /// added before the org placement is decided, and the zone names are not a
@@ -121,6 +127,7 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
     _address.dispose();
     _department.dispose();
     _region.dispose();
+    _password.dispose();
     super.dispose();
   }
 
@@ -134,8 +141,10 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
       _saveError = null;
     });
 
+    final EmployeeSaveResult saved;
+
     try {
-      await AppScope.of(context).adminRepository.saveEmployee(
+      saved = await AppScope.of(context).adminRepository.saveEmployee(
             EmployeeDraft(
               id: widget.employee?.id,
               name: _name.text.trim(),
@@ -155,6 +164,11 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
               joinedOn: _joinedOn,
               bloodGroup: _bloodGroup ?? '',
               address: _address.text.trim(),
+              // Blank means "generate one" — the field is omitted from the
+              // request entirely and the server answers with the credential.
+              password: _isCreate && _password.text.trim().isNotEmpty
+                  ? _password.text.trim()
+                  : null,
             ),
           );
     } on ApiException catch (e) {
@@ -174,11 +188,26 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
     }
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(_isCreate ? 'Employee added' : 'Employee updated'),
-      ),
-    );
+
+    // The generated password is on this one response and nowhere else, so it
+    // gets a modal the admin has to dismiss — not a snackbar that leaves before
+    // it can be written down. Only then does the page pop.
+    if (saved.temporaryPassword != null) {
+      await showCredentialDialog(
+        context,
+        name: saved.employee.name,
+        email: saved.employee.email,
+        password: saved.temporaryPassword!,
+      );
+      if (!mounted) return;
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isCreate ? 'Employee added' : 'Employee updated'),
+        ),
+      );
+    }
+
     Navigator.of(context).pop(true);
   }
 
@@ -381,6 +410,40 @@ class _EmployeeFormPageState extends State<EmployeeFormPage> {
               ],
             ),
           ),
+          // Create only. An existing employee's password cannot be read or
+          // edited here — "Reset password" on their detail page issues a new
+          // one, which is the only thing the API supports.
+          if (_isCreate) ...<Widget>[
+            const SizedBox(height: Insets.lg),
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _field(
+                    controller: _password,
+                    label: 'Password (optional)',
+                    icon: Icons.lock_outline_rounded,
+                    helper: 'Leave blank and one will be generated for you',
+                    validator: (String? v) {
+                      final String value = (v ?? '').trim();
+                      // Empty is the generate case, not a mistake. Anything
+                      // typed has to clear the server's floor or the save is
+                      // refused after the form has already been filled in.
+                      if (value.isEmpty || value.length >= 8) return null;
+                      return 'At least 8 characters, or leave blank';
+                    },
+                  ),
+                  Text(
+                    'The employee signs in with their email and this password. '
+                    'A generated one is shown once, right after you save.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
