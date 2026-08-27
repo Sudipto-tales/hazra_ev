@@ -33,6 +33,13 @@ final class TrackingController extends V1Controller
             Envelope::ok(Present::session($existing));
         }
 
+        // Checked after the clientId replay, not before: a retry of a session
+        // opened while the day was still open must keep succeeding. Only a
+        // genuinely new session is refused.
+        if (Engine::dayLock(Ctx::id(), Ctx::today())['state'] !== 'open') {
+            Envelope::conflict('DAY_CLOSED', 'Today is closed. An admin has to reopen it before you can work it.');
+        }
+
         $fix = $this->input('fix');
 
         if (!is_array($fix) || !isset($fix['latitude'], $fix['longitude'])) {

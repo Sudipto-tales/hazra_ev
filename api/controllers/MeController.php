@@ -90,4 +90,49 @@ final class MeController extends V1Controller
 
         Envelope::ok(Present::preferences(Users::preferences(Ctx::id())));
     }
+
+    /**
+     * POST /me/password — the account holder changes their own password.
+     *
+     * Knowing the current one is the whole authorisation: a stolen access token
+     * must not be enough to lock the owner out of their own account.
+     *
+     * The optional `refreshToken` is the caller's own. Passing it keeps this
+     * device signed in while every other one is cut loose — the same body field
+     * `POST /auth/logout` already takes. Omit it and all sessions end, including
+     * this one, which is the right default for "I think someone has my phone".
+     */
+    public function changePassword(): never
+    {
+        $body = ApiRequest::body();
+        $user = Users::byId(Ctx::id());
+
+        $current = (string) ($body['currentPassword'] ?? '');
+
+        if ($current === '') {
+            Envelope::invalid('currentPassword is required', 'currentPassword');
+        }
+
+        // 403, not 401. ApiClient refreshes and replays the request once on any
+        // 401, so a 401 here would burn a refresh and fail again identically —
+        // and the token is fine. It is the password that is wrong.
+        if (!password_verify($current, $user['password_hash'])) {
+            Envelope::forbidden('Current password is incorrect');
+        }
+
+        $next = Password::validate($body['newPassword'] ?? null, 'newPassword');
+
+        if ($next === $current) {
+            Envelope::invalid('newPassword must be different from the current one', 'newPassword');
+        }
+
+        Password::set(Ctx::id(), $next, mustChange: false);
+
+        $keep = Wire::text($body['refreshToken'] ?? null);
+        Password::revokeSessions(Ctx::id(), $keep ? hash('sha256', $keep) : null);
+
+        Ctx::audit('user', Ctx::id(), 'password_change', null, null);
+
+        Envelope::ok(['changed' => true, 'mustChangePassword' => false]);
+    }
 }

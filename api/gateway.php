@@ -38,15 +38,19 @@ class ApiGatewayProvider extends RouteProvider
             'PATCH:api/v1/me'              => ['MeController', 'update',            'auth'],
             'GET:api/v1/me/preferences'    => ['MeController', 'preferences',       'auth'],
             'PATCH:api/v1/me/preferences'  => ['MeController', 'updatePreferences', 'auth'],
+            'POST:api/v1/me/password'      => ['MeController', 'changePassword',    'auth'],
 
             // --- Employees: roster, dashboard and member-by-id -------------- §3.3
             'GET:api/v1/employees'         => ['EmployeesController', 'index',  'auth'],
             'POST:api/v1/employees'        => ['EmployeesController', 'store',  'auth'],
             'GET:api/v1/employees/{id}'    => ['EmployeesController', 'show',   'auth'],
             'PATCH:api/v1/employees/{id}'  => ['EmployeesController', 'update', 'auth'],
+            'POST:api/v1/employees/{id}/password' => ['EmployeesController', 'password', 'auth'],
 
             // --- Days: employee Home and the admin day view ----------------- §3.4
-            'GET:api/v1/days/{subject}'    => ['DaysController', 'show', 'auth'],
+            'GET:api/v1/days/{subject}'           => ['DaysController', 'show',     'auth'],
+            'POST:api/v1/days/{subject}/closeout' => ['DaysController', 'closeout', 'auth'],
+            'POST:api/v1/days/{id}/reopen'        => ['DaysController', 'reopen',   'auth'],
 
             // --- Attendance: both calendars and the team matrix -------------- §3.5
             'GET:api/v1/attendance'        => ['AttendanceController', 'index', 'auth'],

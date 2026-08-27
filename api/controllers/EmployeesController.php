@@ -15,6 +15,14 @@ require_once __DIR__ . '/../support/Users.php';
  * So the admin dashboard is this endpoint, not a separate /dashboard. PATCH
  * covers both the edit form and the active toggle, so setEmployeeActive is not
  * its own route either.
+ *
+ * Credentials are the exception and do get their own route, because a password
+ * is not a field of the record: it is never readable, PATCH cannot round-trip
+ * it, and setting one has a side effect (killing sessions) that no other edit
+ * has.
+ *
+ *   POST /employees                  -> optional `password`, else generated
+ *   POST /employees/{id}/password    -> admin reset
  */
 final class EmployeesController extends V1Controller
 {
@@ -107,14 +115,25 @@ final class EmployeesController extends V1Controller
         $id = Uuid::v4();
         $now = Wire::now();
 
+        // The account has to be reachable. `password` is optional: type one, or
+        // let the server make one and read it off the response exactly once.
+        // Previously neither happened — the fallback hashed random bytes nobody
+        // ever saw, so every account created here was active and unloggable.
+        $generated = !isset($body['password']) || $body['password'] === '';
+        $password = $generated
+            ? Password::generate()
+            : Password::validate($body['password']);
+
         try {
             db_execute(
-                "INSERT INTO users (id, org_id, role, name, email, phone, avatar_url, password_hash, active, created_at, updated_at)
-                 VALUES (?, ?, 'employee', ?, ?, ?, '', ?, 1, ?, ?)",
+                "INSERT INTO users (id, org_id, role, name, email, phone, avatar_url, password_hash,
+                                    must_change_password, active, created_at, updated_at)
+                 VALUES (?, ?, 'employee', ?, ?, ?, '', ?, ?, 1, ?, ?)",
                 [
                     $id, Ctx::orgId(), (string) $body['name'], (string) $body['email'],
                     (string) ($body['phone'] ?? ''),
-                    password_hash($body['password'] ?? bin2hex(random_bytes(8)), PASSWORD_BCRYPT),
+                    Password::hash($password),
+                    $generated ? 1 : 0,
                     $now, $now,
                 ],
             );
@@ -149,9 +168,59 @@ final class EmployeesController extends V1Controller
         db_execute("INSERT INTO user_preferences (user_id) VALUES (?)", [$id]);
 
         $created = Present::employee(Users::byId($id));
+
+        // Audit the record, never the credential. `$created` is the clean
+        // presenter output; the password is bolted onto the response below and
+        // goes nowhere near audit_log.
         Ctx::audit('employee', $id, 'create', null, $created);
 
+        if ($generated) {
+            // The only time this value is ever readable. It is not stored in
+            // plaintext and no route will hand it back — a lost one is reset,
+            // not recovered.
+            $created['temporaryPassword'] = $password;
+        }
+
         Envelope::created($created);
+    }
+
+    /**
+     * POST /employees/{id}/password — admin reset.
+     *
+     * The recovery path for a forgotten password: there is no email flow, so an
+     * admin issues a new credential and passes it on. Every existing session
+     * dies with the old password, which is the point of a reset.
+     */
+    public function password(): never
+    {
+        $this->requireAdmin();
+
+        $id = (string) $this->param('id');
+        $employee = Users::byId($id);
+
+        if (!$employee || $employee['org_id'] !== Ctx::orgId() || $employee['role'] !== 'employee') {
+            Envelope::notFound('EMPLOYEE_NOT_FOUND', 'No such employee');
+        }
+
+        $body = ApiRequest::body();
+
+        $generated = !isset($body['password']) || $body['password'] === '';
+        $password = $generated
+            ? Password::generate()
+            : Password::validate($body['password']);
+
+        Password::set($id, $password, mustChange: $generated);
+        Password::revokeSessions($id);
+
+        // Action only. A before/after pair here would put the credential — or
+        // its hash — in a table built to be read by people.
+        Ctx::audit('employee', $id, 'password_reset', null, null);
+
+        Envelope::ok([
+            'id'                 => $id,
+            'temporaryPassword'  => $generated ? $password : null,
+            'mustChangePassword' => $generated,
+        ]);
     }
 
     /** Covers the edit form and `{"active": false}` alike. */

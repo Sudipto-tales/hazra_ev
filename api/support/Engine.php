@@ -700,6 +700,34 @@ final class Engine
         );
     }
 
+    // ------------------------------------------------------------- day lock
+
+    /**
+     * The day's lock, and the declaration behind it.
+     *
+     * `row` is the latest closeout whether or not it is still the active lock,
+     * because the admin's declared-versus-tracked card outlives the lock.
+     * `state` is `open` unless that latest row has never been reopened.
+     *
+     * Lives here rather than in DaysController because the tracking write path
+     * has to honour the same lock — one a client alone respects is not a lock.
+     */
+    public static function dayLock(string $employeeId, string $workDate): array
+    {
+        $row = db_fetch_one(
+            "SELECT * FROM day_closeouts
+              WHERE employee_id = ? AND work_date = ?
+              ORDER BY submitted_at DESC LIMIT 1",
+            [$employeeId, $workDate],
+        );
+
+        if (!$row || $row['reopened_at'] !== null) {
+            return ['state' => 'open', 'row' => $row ?: null];
+        }
+
+        return ['state' => Wire::enum($row['state']), 'row' => $row];
+    }
+
     // ----------------------------------------------------------- live status
 
     /**
