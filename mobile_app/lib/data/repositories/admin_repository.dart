@@ -31,6 +31,7 @@ import '../models/models.dart';
 ///   saveProduct()        → POST  /api/admin/products  |  PATCH .../{id}
 ///   setProductActive()   → PATCH /api/admin/products/{id}
 ///   saveEmployee()       → POST  /api/admin/employees  |  PATCH .../{id}
+///   resetEmployeePassword() → POST /employees/{id}/password
 ///   setEmployeeActive()  → PATCH /api/admin/employees/{id}
 ///   config()/saveConfig()→ GET/PUT /api/admin/config
 abstract class AdminRepository {
@@ -129,7 +130,19 @@ abstract class AdminRepository {
   Future<void> setProductActive(String id, bool active);
 
   /// Creates when [EmployeeDraft.id] is null, otherwise updates.
-  Future<Employee> saveEmployee(EmployeeDraft draft);
+  ///
+  /// Returns [EmployeeSaveResult] rather than a bare [Employee] because a
+  /// create may hand back a generated first-login credential, and that value
+  /// exists only in this one response.
+  Future<EmployeeSaveResult> saveEmployee(EmployeeDraft draft);
+
+  /// Issues a new password for an employee who cannot get in.
+  ///
+  /// There is no email reset flow, so this is the recovery path: the admin
+  /// issues a credential and passes it on. Every existing session of that
+  /// account dies. Returns the generated password when [password] was null,
+  /// and null when the admin chose one — there is nothing to reveal then.
+  Future<String?> resetEmployeePassword(String employeeId, {String? password});
 
   Future<void> setEmployeeActive(String employeeId, bool active);
 

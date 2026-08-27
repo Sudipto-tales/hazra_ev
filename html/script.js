@@ -57,6 +57,71 @@
     b.addEventListener('click', () =>
       setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark')));
 
+  /* ── navbar ────────────────────────────────────
+     Desktop opens a dropdown on hover AND on click (a click still works for
+     touch laptops and keyboards); ≤1024 the same .is-open class drives the
+     accordion, so there is one state to reason about, not two. */
+  const nav    = $('#nav');
+  const burger = $('#burger');
+  const groups = $$('.nav__grp');
+  const touch  = window.matchMedia('(hover:none)');
+  const wide   = window.matchMedia('(min-width:1025px)');
+
+  const openGrp = (g, on) => {
+    g.classList.toggle('is-open', on);
+    $('.nav__i--t', g)?.setAttribute('aria-expanded', String(on));
+  };
+  const closeAll = except => groups.forEach(g => g !== except && openGrp(g, false));
+
+  groups.forEach(g => {
+    const trigger = $('.nav__i--t', g);
+
+    trigger?.addEventListener('click', e => {
+      e.preventDefault();
+      const on = !g.classList.contains('is-open');
+      closeAll(g);
+      openGrp(g, on);
+    });
+
+    /* hover only where there is a real pointer and room for a layer */
+    g.addEventListener('pointerenter', () => {
+      if (touch.matches || !wide.matches) return;
+      closeAll(g);
+      openGrp(g, true);
+    });
+    g.addEventListener('pointerleave', () => {
+      if (touch.matches || !wide.matches) return;
+      openGrp(g, false);
+    });
+  });
+
+  const setMenu = on => {
+    nav?.classList.toggle('is-open', on);
+    burger?.classList.toggle('is-on', on);
+    burger?.setAttribute('aria-expanded', String(on));
+    burger?.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
+    if (!on) closeAll();
+  };
+
+  burger?.addEventListener('click', () => setMenu(!nav.classList.contains('is-open')));
+
+  /* picking a destination closes everything behind you */
+  $$('a[href]', nav).forEach(a =>
+    a.addEventListener('click', () => { closeAll(); setMenu(false); }));
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.topbar')) { closeAll(); setMenu(false); }
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    closeAll();
+    setMenu(false);
+  });
+
+  /* crossing the breakpoint leaves stale open state behind — clear it */
+  wide.addEventListener('change', () => { closeAll(); setMenu(false); });
+
   /* ══════════ SCROLL ZOOM ══════════
      .scroll is taller than the viewport; .stage is sticky inside it. The
      surplus scroll maps to --p (0…1), and every geometry/colour rule in the
@@ -232,8 +297,16 @@
   once($('.stats'), list => $$('.stat__n', list).forEach(runCount), .4);
 
   /* ══════════ SECTION COPY REVEAL ══════════ */
-  $$('.about .reveal-up, .coll .reveal-up').forEach(el =>
+  $$('.about .reveal-up, .coll .reveal-up, .why .reveal-up').forEach(el =>
     once(el, e => e.classList.add('is-in'), .25));
+
+  /* ══════════ WHY CHOOSE ══════════
+     Same stagger contract as .card — JS writes the index, CSS owns the
+     transition-delay. Rows reveal in reading order, not in one slab. */
+  $$('.why__item').forEach((row, i) => {
+    row.style.setProperty('--i', i);
+    once(row, el => el.classList.add('is-in'), .2);
+  });
 
   /* ══════════ CARDS ══════════ */
   const cards = $$('.card');

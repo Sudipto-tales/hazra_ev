@@ -16,6 +16,7 @@ import '../../home/widgets/visit_tile.dart';
 import '../manage/employee_form_page.dart';
 import '../map/route_map_page.dart';
 import '../reports/admin_report_detail_page.dart';
+import '../widgets/credential_dialog.dart';
 import '../widgets/date_scrubber.dart';
 
 /// One employee's day, as the admin sees it: status, numbers, route entry
@@ -113,6 +114,8 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
                       ),
                     );
                     if (saved == true && mounted) _load();
+                  case 'password':
+                    await _resetPassword(employee);
                 }
               },
               itemBuilder: (BuildContext context) =>
@@ -120,6 +123,10 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
                 PopupMenuItem<String>(
                   value: 'edit',
                   child: Text('Edit employee'),
+                ),
+                PopupMenuItem<String>(
+                  value: 'password',
+                  child: Text('Reset password'),
                 ),
               ],
             ),
@@ -150,6 +157,66 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
             ..._content(_day!),
         ],
       ),
+    );
+  }
+
+  /// Issues a new password. There is no email reset flow, so this is how an
+  /// employee who cannot get in gets back in: the admin generates a credential
+  /// and passes it on.
+  ///
+  /// Confirmed first because it is not reversible in the direction people
+  /// expect — the old password stops working immediately and every device that
+  /// account is signed in on is signed out.
+  Future<void> _resetPassword(Employee employee) async {
+    final bool confirmed = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            title: const Text('Reset password?'),
+            content: Text(
+              '${employee.name} will be signed out everywhere and their '
+              'current password will stop working. You will get a new one to '
+              'pass on, shown once.',
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Reset'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed || !mounted) return;
+
+    final String? temporary;
+    try {
+      temporary =
+          await AppScope.of(context).adminRepository.resetEmployeePassword(
+                employee.id,
+              );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppColors.danger,
+          content: Text('Could not reset the password. Try again.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted || temporary == null) return;
+
+    await showCredentialDialog(
+      context,
+      name: employee.name,
+      email: employee.email,
+      password: temporary,
     );
   }
 

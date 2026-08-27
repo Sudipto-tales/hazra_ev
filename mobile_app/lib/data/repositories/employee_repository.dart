@@ -94,6 +94,18 @@ abstract class EmployeeRepository {
   /// Idempotent on `draft.clientId`; a retry returns the existing record.
   Future<DayCloseout> submitDayCloseout(DayCloseoutDraft draft);
 
+  /// Changes the signed-in account's own password.
+  ///
+  /// Knowing [current] is the authorisation — an access token alone must not
+  /// be enough to lock the owner out. Every *other* device is signed out;
+  /// this one is not, because the caller's refresh token is passed through.
+  ///
+  /// Throws [ApiException] with a 403 when [current] is wrong.
+  Future<void> changePassword({
+    required String current,
+    required String next,
+  });
+
   /// `GET /me/preferences`. The nine values behind the Settings screen.
   Future<DevicePreferences> preferences();
 

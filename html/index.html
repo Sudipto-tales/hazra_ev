@@ -47,12 +47,74 @@
 
     <!-- ── white plate: top-left nav ── -->
     <header class="topbar">
-      <nav class="nav">
+      <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav class="nav" id="nav">
         <a href="#" class="nav__i is-on">Home</a>
-        <a href="#collection" class="nav__i">Product</a>
-        <a href="#about" class="nav__i">About</a>
-        <a href="#" class="nav__i">Pricing</a>
+
+        <div class="nav__grp">
+          <button class="nav__i nav__i--t" aria-expanded="false">
+            About <i data-lucide="chevron-down" class="nav__cv"></i>
+          </button>
+          <div class="nav__menu">
+            <a href="#our-story" class="nav__s">Our Story</a>
+            <a href="#career"    class="nav__s">Career</a>
+            <a href="#faq"       class="nav__s">FAQ</a>
+          </div>
+        </div>
+
+        <div class="nav__grp">
+          <button class="nav__i nav__i--t" aria-expanded="false">
+            Products <i data-lucide="chevron-down" class="nav__cv"></i>
+          </button>
+          <div class="nav__menu nav__menu--wide">
+            <a href="#chalo-1000-v2" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+            <a href="#chalo-smart-pro"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
+            <a href="#chalo-smart-plus" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
+            <a href="#chalo-smart-eco"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
+            <a href="#chalo-neo"        class="nav__s">CHALO NEO <em>Low Speed</em></a>
+            <a href="#nja-7"            class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+          </div>
+        </div>
+
+        <div class="nav__grp">
+          <button class="nav__i nav__i--t" aria-expanded="false">
+            Social <i data-lucide="chevron-down" class="nav__cv"></i>
+          </button>
+          <div class="nav__menu">
+            <a href="#contest"     class="nav__s">Contest <em>Reels Contest</em></a>
+            <a href="#blog"        class="nav__s">Blog</a>
+            <a href="#news"        class="nav__s">News</a>
+            <a href="#battery-use" class="nav__s">Battery Use</a>
+            <a href="#ev-future"   class="nav__s">EV Future</a>
+          </div>
+        </div>
+
+        <div class="nav__grp">
+          <button class="nav__i nav__i--t" aria-expanded="false">
+            Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
+          </button>
+          <div class="nav__menu">
+            <a href="#dealer-locator"  class="nav__s">Dealer Locator</a>
+            <a href="#become-a-dealer" class="nav__s">Become a Dealer</a>
+          </div>
+        </div>
+
+        <div class="nav__grp">
+          <button class="nav__i nav__i--t" aria-expanded="false">
+            Service <i data-lucide="chevron-down" class="nav__cv"></i>
+          </button>
+          <div class="nav__menu nav__menu--wide">
+            <a href="#free-warranty-registration" class="nav__s">Free Warranty Registration</a>
+            <a href="#paid-warranty-registration" class="nav__s">Paid Warranty Registration</a>
+          </div>
+        </div>
+
+        <a href="#contact" class="nav__i">Contact</a>
       </nav>
+
       <button class="theme" id="theme" aria-label="Toggle theme">
         <i data-lucide="sun-medium" class="theme__sun"></i>
         <i data-lucide="moon" class="theme__moon"></i>
@@ -405,6 +467,106 @@
     <p class="coll__foot"><i class="sq"></i>
       Prices are indicative and vary by configuration and location.
     </p>
+  </div>
+</section>
+
+
+
+<!-- ══════════ WHY CHOOSE ══════════
+     Split rail: the pitch sticks on the left while six reasons scroll past
+     on the right. Each reason is a hairline row, not a box — the lime rule
+     and the number are the only chrome. A keyword ticker closes the block. -->
+<section class="why" id="why">
+  <div class="wrap">
+
+    <div class="why__grid">
+
+      <header class="why__rail">
+        <p class="eyebrow"><i class="sq"></i>WHY VESPA MATIC</p>
+        <h2 class="sec__title reveal-up">
+          Premium where<br><span class="hl">it matters most.</span>
+        </h2>
+        <p class="why__lead reveal-up">
+          Clean design, stable range, quiet power and service confidence &mdash;
+          tuned for everyday Indian riding, not for a spec sheet.
+        </p>
+        <a class="btn btn--ink why__cta" href="#collection">
+          <span>Start with a test ride</span><i data-lucide="bike"></i>
+        </a>
+      </header>
+
+      <ol class="why__list">
+
+        <li class="why__item">
+          <span class="why__n">01</span>
+          <div class="why__body">
+            <h3 class="why__t"><i data-lucide="wind"></i>Smooth Control</h3>
+            <p class="why__d">Quiet riding tuned for city traffic and everyday control.</p>
+          </div>
+        </li>
+
+        <li class="why__item">
+          <span class="why__n">02</span>
+          <div class="why__body">
+            <h3 class="why__t"><i data-lucide="battery-charging"></i>Range Confidence</h3>
+            <p class="why__d">Li&#8209;ion and lead&#8209;graphene packs, both charged from a wall socket.</p>
+          </div>
+        </li>
+
+        <li class="why__item">
+          <span class="why__n">03</span>
+          <div class="why__body">
+            <h3 class="why__t"><i data-lucide="shield-check"></i>Built Tough</h3>
+            <p class="why__d">Durable frame, confident braking, dealer&#8209;backed service readiness.</p>
+          </div>
+        </li>
+
+        <li class="why__item">
+          <span class="why__n">04</span>
+          <div class="why__body">
+            <h3 class="why__t"><i data-lucide="armchair"></i>Daily Comfort</h3>
+            <p class="why__d">Comfortable ergonomics and simple controls across the model family.</p>
+          </div>
+        </li>
+
+        <li class="why__item">
+          <span class="why__n">05</span>
+          <div class="why__body">
+            <h3 class="why__t"><i data-lucide="map-pin"></i>Dealer Network</h3>
+            <p class="why__d">City&#8209;wise test rides and a dealership structure that keeps growing.</p>
+          </div>
+        </li>
+
+        <li class="why__item">
+          <span class="why__n">06</span>
+          <div class="why__body">
+            <h3 class="why__t"><i data-lucide="sparkles"></i>Premium Finish</h3>
+            <p class="why__d">Projector LED, hydraulic suspension, modern city&#8209;ready detailing.</p>
+          </div>
+        </li>
+
+      </ol>
+    </div>
+  </div>
+
+  <!-- keyword ticker — the track is duplicated so the loop has no seam -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker__track">
+      <span>Easy charging</span><i class="sq"></i>
+      <span>Dealer network</span><i class="sq"></i>
+      <span>Warranty support</span><i class="sq"></i>
+      <span>Test ride</span><i class="sq"></i>
+      <span>Everyday range</span><i class="sq"></i>
+      <span>Quiet power</span><i class="sq"></i>
+    </div>
+    <div class="ticker__track">
+      <span>Easy charging</span><i class="sq"></i>
+      <span>Dealer network</span><i class="sq"></i>
+      <span>Warranty support</span><i class="sq"></i>
+      <span>Test ride</span><i class="sq"></i>
+      <span>Everyday range</span><i class="sq"></i>
+      <span>Quiet power</span><i class="sq"></i>
+    </div>
   </div>
 </section>
 

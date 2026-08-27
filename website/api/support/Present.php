@@ -54,10 +54,19 @@ final class Present
         ];
     }
 
-    /** `principal.type` decides which shell boots — the client does not pick. */
+    /**
+     * `principal.type` decides which shell boots — the client does not pick.
+     *
+     * `mustChangePassword` is added here and not in employee()/admin() so a
+     * roster row stays exactly what it was: this is a fact about the signed-in
+     * session, not a field of the record.
+     */
     public static function principal(array $r): array
     {
-        return $r['role'] === 'admin' ? self::admin($r) : self::employee($r);
+        $principal = $r['role'] === 'admin' ? self::admin($r) : self::employee($r);
+        $principal['mustChangePassword'] = (bool) ($r['must_change_password'] ?? 0);
+
+        return $principal;
     }
 
     public static function preferences(array $r): array
@@ -104,6 +113,33 @@ final class Present
             'date'    => Wire::date($r['work_date']),
             'status'  => Wire::enum($r['status'] ?? 'no_data'),
             'summary' => self::daySummary($r),
+        ];
+    }
+
+    /**
+     * The end-of-day declaration. Carries the measured figures next to the
+     * declared ones so the admin card can show the gap without a second call —
+     * and so the gap survives even if the day is later recomputed.
+     */
+    public static function closeout(array $r): array
+    {
+        $tags = Wire::json($r['tags'] ?? null, []);
+
+        return [
+            'id'                   => $r['id'],
+            'date'                 => Wire::date($r['work_date']),
+            'submittedAt'          => Wire::ts($r['submitted_at']),
+            'declaredDistanceKm'   => Wire::float($r['declared_distance_km'] ?? 0),
+            'declaredVisits'       => Wire::int($r['declared_visits'] ?? 0),
+            'measuredDistanceKm'   => Wire::float($r['measured_distance_km'] ?? 0),
+            'measuredVisits'       => Wire::int($r['measured_visits'] ?? 0),
+            'rating'               => Wire::int($r['rating'] ?? 0),
+            // Stored snake_case, sent camelCase: vehicle_issue -> vehicleIssue.
+            'tags'                 => array_values(array_map(
+                [Wire::class, 'enum'],
+                is_array($tags) ? $tags : [],
+            )),
+            'feedback'             => Wire::text($r['feedback'] ?? null),
         ];
     }
 

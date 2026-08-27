@@ -22,6 +22,7 @@ import 'employee_repository.dart';
 ///   submitReport() POST /reports          (Idempotency-Key)
 ///   uploadReportImages() POST /reports/{id}/images   (multipart)
 ///   submitDayCloseout() POST /days/me/closeout  (Idempotency-Key)
+///   changePassword()   POST  /me/password
 ///   preferences()      GET   /me/preferences
 ///   savePreferences()  PATCH /me/preferences
 class HttpEmployeeRepository implements EmployeeRepository {
@@ -355,6 +356,28 @@ class HttpEmployeeRepository implements EmployeeRepository {
     );
 
     return Wire.dayCloseout(result.map);
+  }
+
+  /// `POST /me/password`. The caller's own refresh token goes in the body so
+  /// this device survives the change while every other one is cut loose — the
+  /// same field `POST /auth/logout` takes.
+  @override
+  Future<void> changePassword({
+    required String current,
+    required String next,
+  }) async {
+    await _api.post(
+      '/me/password',
+      body: <String, dynamic>{
+        'currentPassword': current,
+        'newPassword': next,
+        // Omitted when there is nothing to preserve, in which case the server
+        // revokes everything — including this device. That is the right way to
+        // fail: signed out beats silently still signed in.
+        if ((_api.session?.refreshToken ?? '').isNotEmpty)
+          'refreshToken': _api.session!.refreshToken,
+      },
+    );
   }
 
   static String _clientId() {

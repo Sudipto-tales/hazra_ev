@@ -1,4 +1,5 @@
 import '../../core/utils/formatters.dart';
+import '../api/api_exception.dart';
 import '../../state/notification_center.dart';
 import '../mock/day_lock_store.dart';
 import '../mock/mock_data.dart';
@@ -349,6 +350,25 @@ class MockEmployeeRepository implements EmployeeRepository {
     );
     // Idempotent, like the endpoint: a retry gets the record already on file.
     return _dayLock.close(stored);
+  }
+
+  /// The mock has no credential store, so this only enforces the one rule the
+  /// UI has to handle: the current password must be right. `password123` is
+  /// what every demo account uses.
+  @override
+  Future<void> changePassword({
+    required String current,
+    required String next,
+  }) async {
+    await Future<void>.delayed(latency);
+
+    if (current != 'password123') {
+      throw const ApiException(
+        status: 403,
+        code: 'FORBIDDEN',
+        message: 'Current password is incorrect',
+      );
+    }
   }
 
   @override

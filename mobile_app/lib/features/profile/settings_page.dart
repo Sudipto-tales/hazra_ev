@@ -11,6 +11,7 @@ import '../../widgets/settings_tile.dart';
 import '../auth/role_select_page.dart';
 import '../home/widgets/tracking_sheet.dart';
 import 'app_info.dart';
+import 'change_password_page.dart';
 import 'edit_profile_page.dart';
 import 'info_pages.dart';
 import 'personal_info_page.dart';
@@ -65,10 +66,8 @@ class SettingsPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // "Change password" used to live here. There is no
-                    // password endpoint in the API at all, so the row could
-                    // never do anything; a password reset goes through the
-                    // admin. Do not add it back without an endpoint.
+                    // "Change password" lives under Security, not here —
+                    // this group is the record, that one is the credential.
                     SettingsTile(
                       icon: Icons.badge_outlined,
                       title: 'Account information',
@@ -185,9 +184,21 @@ class SettingsPage extends StatelessWidget {
                 SettingsGroup(
                   title: 'Security',
                   tiles: <Widget>[
-                    // Two rows are gone from this group. "Change password"
-                    // had no endpoint to call, and "Device & sessions"
-                    // claimed a session list the API does not keep:
+                    // "Change password" is back: `POST /me/password` exists
+                    // now. It takes the current password as its authorisation
+                    // and signs out every other device.
+                    SettingsTile(
+                      icon: Icons.lock_outline_rounded,
+                      title: 'Change password',
+                      subtitle: 'Signs out your other devices',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ChangePasswordPage(),
+                        ),
+                      ),
+                    ),
+                    // "Device & sessions" is still gone, and stays gone: it
+                    // claimed a session list the API does not keep.
                     // `PUT /me/device` only re-registers this phone's push
                     // token, and sign-out already revokes every refresh token
                     // the account holds. Showing "This device · signed in

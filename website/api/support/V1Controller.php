@@ -6,6 +6,7 @@ require_once __DIR__ . '/Geo.php';
 require_once __DIR__ . '/Polyline.php';
 require_once __DIR__ . '/MapMatch.php';
 require_once __DIR__ . '/Envelope.php';
+require_once __DIR__ . '/Password.php';
 require_once __DIR__ . '/Cursor.php';
 require_once __DIR__ . '/Ctx.php';
 require_once __DIR__ . '/Present.php';
@@ -151,9 +152,11 @@ abstract class V1Controller extends ApiController
     {
         $key = ApiRequest::header('Idempotency-Key');
 
+        // No key means no replay protection, not a refusal. The caller still
+        // gets its record — previously this ran the handler and then 500'd,
+        // so the write landed while the client was told it had failed.
         if ($key === null || $key === '') {
-            $handler();
-            Envelope::fail('HANDLER_RETURNED', 'Handler did not send a response', 500);
+            Envelope::ok($handler());
         }
 
         $existing = db_fetch_one(
