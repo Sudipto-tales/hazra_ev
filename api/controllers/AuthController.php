@@ -151,10 +151,21 @@ final class AuthController extends V1Controller
         $platform  = (string) $device['platform'];
         $pushToken = $device['pushToken'] ?? null;
 
-        $existing = db_fetch_one(
-            "SELECT id FROM devices WHERE user_id = ? AND platform = ? AND (id = ? OR push_token IS ?)",
-            [$userId, $platform, $device['id'] ?? '', $pushToken],
-        );
+        // `push_token IS ?` parses on SQLite but is a syntax error on MySQL —
+        // `IS` there only takes NULL/TRUE/FALSE, so every login carrying a
+        // device.platform 500ed against the server. Branch instead of relying
+        // on one engine's tolerance.
+        $existing = $pushToken === null
+            ? db_fetch_one(
+                "SELECT id FROM devices
+                  WHERE user_id = ? AND platform = ? AND (id = ? OR push_token IS NULL)",
+                [$userId, $platform, $device['id'] ?? ''],
+            )
+            : db_fetch_one(
+                "SELECT id FROM devices
+                  WHERE user_id = ? AND platform = ? AND (id = ? OR push_token = ?)",
+                [$userId, $platform, $device['id'] ?? '', $pushToken],
+            );
 
         $now = Wire::now();
 

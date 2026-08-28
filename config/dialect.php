@@ -318,6 +318,15 @@ final class Dialect
 
         $out = $sql;
 
+        // `col IS ?` is SQLite's null-safe equality against a bound value.
+        // MySQL spells it `col <=> ?` and lets IS take only NULL/TRUE/FALSE,
+        // so the SQLite form is a 1064 there rather than a wrong answer. This
+        // shipped once already, in AuthController::registerDevice().
+        // `IS NOT ?` is deliberately left alone: its MySQL equivalent is
+        // NOT (col <=> ?), which needs the left operand, and a rewrite that
+        // guessed wrong would invert a condition silently. A 1064 is better.
+        $out = preg_replace('/\bIS\s+\?/i', '<=> ?', $out);
+
         // INSERT OR IGNORE -> INSERT IGNORE
         $out = preg_replace('/\bINSERT\s+OR\s+IGNORE\s+INTO\b/i', 'INSERT IGNORE INTO', $out);
 
