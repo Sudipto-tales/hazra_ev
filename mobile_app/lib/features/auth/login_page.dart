@@ -79,6 +79,14 @@ class _LoginPageState extends State<LoginPage> {
         _busy = false;
         _error = e.message;
       });
+    } catch (e) {
+      // Same guard as the admin form: an Error rather than an Exception must
+      // not leave the button spinning with nothing said.
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'Sign-in failed unexpectedly. $e';
+      });
     }
   }
 

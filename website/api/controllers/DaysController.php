@@ -112,8 +112,12 @@ final class DaysController extends V1Controller
             $payload['activity'] = array_map(
                 [Present::class, 'activity'],
                 db_fetch_all(
+                    // rowid is SQLite's implicit key; MySQL has no such column
+                    // and answers 1054. id is a uuid rather than an insertion
+                    // counter, but this only breaks ties between two events at
+                    // the same instant, and it has to be stable on both engines.
                     "SELECT * FROM activity_events WHERE employee_id = ? AND work_date = ?
-                      ORDER BY occurred_at, rowid",
+                      ORDER BY occurred_at, id",
                     [$employeeId, $date],
                 ),
             );

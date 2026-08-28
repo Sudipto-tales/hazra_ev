@@ -471,6 +471,123 @@
 </section>
 
 
+<!-- ══════════ FEATURES ══════════
+     Scroll-scrubbed model window. .feat__drive is a tall driver; .feat__pin
+     is sticky inside it, so scrolling never leaves the section — it only
+     feeds --fi (0 → N-1), the fractional slide index.
+
+     Every slide, rail value, arc name and dot reads its own --n against --fi
+     and positions itself off that one number. JS writes --fi; nothing else.
+     Squared distance (--d * --d) does the fade, so the active item is the
+     only one at full opacity and neighbours trail off symmetrically. -->
+<section class="feat" id="features">
+  <div class="feat__drive" id="featDrive">
+    <div class="feat__pin">
+      <div class="feat__window">
+
+        <header class="feat__head">
+          <p class="eyebrow"><i class="sq"></i>THE FEATURE WINDOW</p>
+          <h2 class="feat__title reveal-up">One frame,<br><span class="hl">four ways to ride.</span></h2>
+        </header>
+
+        <!-- left rail: label is fixed, the value swaps with the slide -->
+        <ul class="feat__rail" aria-hidden="true">
+          <li class="rail">
+            <span class="rail__k">RANGE</span>
+            <span class="rail__vs">
+              <b style="--n:0">100 km</b><b style="--n:1">120 km</b><b style="--n:2">90 km</b><b style="--n:3">80 km</b>
+            </span>
+          </li>
+          <li class="rail">
+            <span class="rail__k">TOP SPEED</span>
+            <span class="rail__vs">
+              <b style="--n:0">65 km/h</b><b style="--n:1">75 km/h</b><b style="--n:2">70 km/h</b><b style="--n:3">55 km/h</b>
+            </span>
+          </li>
+          <li class="rail">
+            <span class="rail__k">BATTERY</span>
+            <span class="rail__vs">
+              <b style="--n:0">60V 32AH</b><b style="--n:1">72V 40AH</b><b style="--n:2">60V 30AH</b><b style="--n:3">48V 24AH</b>
+            </span>
+          </li>
+        </ul>
+
+        <!-- the product deck -->
+        <div class="feat__deck" id="featDeck">
+
+          <article class="fslide" style="--n:0;--c:#d3ff45;--fx:none">
+            <div class="fslide__media">
+              <img class="fslide__img" src="assets/scutie_light.png" alt="Matic S1" loading="lazy" decoding="async">
+            </div>
+            <div class="fslide__body">
+              <h3 class="fslide__name">Matic S1</h3>
+              <p class="fslide__chips"><span>100 km</span><span>65 km/h</span><span>60V 32AH</span></p>
+            </div>
+          </article>
+
+          <article class="fslide" style="--n:1;--c:#1b1b1e;--fx:none">
+            <div class="fslide__media">
+              <img class="fslide__img" src="assets/dark_scutie.png" alt="Matic Pro" loading="lazy" decoding="async">
+            </div>
+            <div class="fslide__body">
+              <h3 class="fslide__name">Matic Pro</h3>
+              <p class="fslide__chips"><span>120 km</span><span>75 km/h</span><span>72V 40AH</span></p>
+            </div>
+          </article>
+
+          <!-- placeholder finish: real render swaps in at src, --fx goes to none -->
+          <article class="fslide" style="--n:2;--c:#e8443a;--fx:hue-rotate(258deg) saturate(1.5)">
+            <div class="fslide__media">
+              <img class="fslide__img" src="assets/scutie_light.png" alt="Matic X" loading="lazy" decoding="async">
+            </div>
+            <div class="fslide__body">
+              <h3 class="fslide__name">Matic X</h3>
+              <p class="fslide__chips"><span>90 km</span><span>70 km/h</span><span>60V 30AH</span></p>
+            </div>
+          </article>
+
+          <article class="fslide" style="--n:3;--c:#e9e6df;--fx:saturate(.15) brightness(1.28)">
+            <div class="fslide__media">
+              <img class="fslide__img" src="assets/dark_scutie.png" alt="Matic Air" loading="lazy" decoding="async">
+            </div>
+            <div class="fslide__body">
+              <h3 class="fslide__name">Matic Air</h3>
+              <p class="fslide__chips"><span>80 km</span><span>55 km/h</span><span>48V 24AH</span></p>
+            </div>
+          </article>
+
+        </div>
+
+        <!-- right edge pagination -->
+        <ol class="feat__dots" id="featDots">
+          <li><button class="fdot" style="--n:0" data-go="0" aria-label="Matic S1"></button></li>
+          <li><button class="fdot" style="--n:1" data-go="1" aria-label="Matic Pro"></button></li>
+          <li><button class="fdot" style="--n:2" data-go="2" aria-label="Matic X"></button></li>
+          <li><button class="fdot" style="--n:3" data-go="3" aria-label="Matic Air"></button></li>
+        </ol>
+
+        <!-- bottom-left SKU / bottom-right finish, both swap on --fi -->
+        <p class="feat__item"><span class="swap" style="--n:0">ITEM: 10009601</span><span class="swap" style="--n:1">ITEM: 10009602</span><span class="swap" style="--n:2">ITEM: 10009603</span><span class="swap" style="--n:3">ITEM: 10009604</span></p>
+        <p class="feat__finish"><span class="swap" style="--n:0">LIME GLOSS</span><span class="swap" style="--n:1">MATTE GRAPHITE</span><span class="swap" style="--n:2">SIGNAL RED</span><span class="swap" style="--n:3">CHALK WHITE</span></p>
+
+        <!-- arc dial: ticks sit still, the name ring rotates under the cursor -->
+        <div class="feat__arc" aria-hidden="true">
+          <i class="arc__cursor"></i>
+          <div class="arc__ticks" id="arcTicks"></div>
+          <div class="arc__ring">
+            <b class="arc__name" style="--n:0">Matic S1</b>
+            <b class="arc__name" style="--n:1">Matic Pro</b>
+            <b class="arc__name" style="--n:2">Matic X</b>
+            <b class="arc__name" style="--n:3">Matic Air</b>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+
 
 <!-- ══════════ WHY CHOOSE ══════════
      Split rail: the pitch sticks on the left while six reasons scroll past
