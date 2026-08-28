@@ -1,4 +1,4 @@
-package com.example.employeetracking_mobile_app
+package com.hazraelectricalbike.app
 
 import io.flutter.embedding.android.FlutterActivity
 

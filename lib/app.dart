@@ -19,7 +19,7 @@ class TrackingApp extends StatelessWidget {
       listenable: scope.settings,
       builder: (BuildContext context, _) {
         return MaterialApp(
-          title: 'Field Tracker',
+          title: 'Hazra EV',
           navigatorKey: appNavigatorKey,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light(),

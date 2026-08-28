@@ -368,8 +368,24 @@ class ApiClient {
 
   ApiResult _decode(http.Response response, Uri uri) {
     // 204 is a real success with no body — POST /tracking/health uses it.
-    if (response.statusCode == 204 || response.body.isEmpty) {
+    //
+    // An empty body on a 4xx/5xx is NOT success. A PHP fatal returns 500 with
+    // content-length 0, and treating that as an empty result handed callers a
+    // null `data`, which then blew up as a TypeError inside ApiResult.map —
+    // an Error, not an Exception, so `on ApiException` never caught it and the
+    // caller's spinner ran forever. Fail loudly instead.
+    if (response.statusCode == 204 ||
+        (response.body.isEmpty && response.statusCode < 400)) {
       return const ApiResult(null, <String, dynamic>{});
+    }
+
+    if (response.body.isEmpty) {
+      throw ApiException(
+        code: 'HTTP_${response.statusCode}',
+        status: response.statusCode,
+        message: 'The server returned ${response.statusCode} with an empty '
+            'body for $uri.',
+      );
     }
 
     Map<String, dynamic> envelope;

@@ -82,6 +82,15 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         _busy = false;
         _error = e.message;
       });
+    } catch (e) {
+      // Anything that is not an ApiException — a TypeError from a malformed
+      // payload, a platform channel failure — used to leave _busy true and the
+      // button spinning with no explanation. Never hang on an unknown fault.
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'Sign-in failed unexpectedly. $e';
+      });
     }
   }
 
