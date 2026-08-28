@@ -59,3 +59,9 @@ Thumbs.db
 *.tmp
 *.temp
 *.bak
+
+# ── Build artifacts too big for GitHub ───────────────────
+# A debug APK is ~160 MB — over GitHub's hard 100 MB per-file limit, so a
+# single one blocks every push on the branch. Release APKs and the .aab are
+# well under and stay tracked.
+outputs/**/app-debug.apk
