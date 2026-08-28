@@ -297,7 +297,7 @@
   once($('.stats'), list => $$('.stat__n', list).forEach(runCount), .4);
 
   /* ══════════ SECTION COPY REVEAL ══════════ */
-  $$('.about .reveal-up, .coll .reveal-up, .why .reveal-up').forEach(el =>
+  $$('.about .reveal-up, .coll .reveal-up, .feat .reveal-up, .why .reveal-up').forEach(el =>
     once(el, e => e.classList.add('is-in'), .25));
 
   /* ══════════ WHY CHOOSE ══════════
@@ -353,4 +353,90 @@
 
   /* the new markup arrived after the hero's first createIcons() pass */
   window.lucide && window.lucide.createIcons();
+})();
+
+
+/* ════════════════════════════════════════════════
+   FEATURE WINDOW — writes --fi, nothing else
+
+   Same shape as the hero driver: .feat__drive is taller than the viewport,
+   .feat__pin is sticky inside it, and the surplus scroll maps to a single
+   number — here the fractional slide index rather than a 0…1 ramp. Every
+   position, fade and rotation in the stylesheet is a calc() off it.
+
+   Below the pin breakpoint the CSS turns the deck into a snap carousel, so
+   this block only keeps the dots in sync and does no scroll work at all.
+   ════════════════════════════════════════════════ */
+(() => {
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  const sect  = $('#features');
+  const drive = $('#featDrive');
+  const deck  = $('#featDeck');
+  if (!sect || !drive || !deck) return;
+
+  const slides = $$('.fslide', deck);
+  const last   = Math.max(slides.length - 1, 1);
+  const pin    = window.matchMedia('(min-width:901px)');
+
+  /* ── arc ticks ────────────────────────────────
+     Drawn here rather than in markup: the count is a function of the arc
+     geometry, not of the content, so it has no business in the HTML. */
+  const ticks = $('#arcTicks');
+  if (ticks && !ticks.children.length) {
+    const SPAN = 34, STEP = 2;               /* degrees each side, degrees apart */
+    let html = '';
+    for (let a = -SPAN; a <= SPAN; a += STEP) html += `<i style="--a:${a}deg"></i>`;
+    ticks.innerHTML = html;
+  }
+
+  /* ── scroll → --fi ────────────────────────────
+     HOLD reserves the last slice of the driver so the final slide gets a
+     beat centred before the pin releases. */
+  const HOLD = .88;
+  let ticking = false;
+
+  const read = () => {
+    if (!pin.matches) { sect.style.setProperty('--fi', '0'); return; }
+    const span = drive.offsetHeight - window.innerHeight;
+    const gone = Math.min(Math.max(-drive.getBoundingClientRect().top, 0), span);
+    const p    = span > 0 ? Math.min(gone / span / HOLD, 1) : 0;
+    sect.style.setProperty('--fi', (p * last).toFixed(4));
+  };
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { read(); ticking = false; });
+  };
+
+  read();
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', read);
+  pin.addEventListener('change', read);
+
+  /* ── dots ─────────────────────────────────────
+     Pinned: scroll the driver to the offset that yields that index.
+     Snap carousel: just scroll the deck. Same button, two contexts. */
+  $$('.fdot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const i = +dot.dataset.go;
+
+      if (!pin.matches) {
+        slides[i]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        return;
+      }
+      const span = drive.offsetHeight - window.innerHeight;
+      const top  = drive.offsetTop + (i / last) * HOLD * span;
+      scrollTo({ top, behavior: 'smooth' });
+    });
+  });
+
+  /* carousel scroll keeps the dot row honest on narrow screens */
+  deck.addEventListener('scroll', () => {
+    if (pin.matches) return;
+    const i = Math.round(deck.scrollLeft / (deck.scrollWidth / slides.length));
+    sect.style.setProperty('--fi', String(Math.min(i, last)));
+  }, { passive: true });
 })();

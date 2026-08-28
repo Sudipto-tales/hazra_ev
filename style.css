@@ -1060,3 +1060,291 @@ html[data-theme="dark"] .theme__moon{display:block}
   .why__item{opacity:1;transform:none}
   .ticker__track{animation:none}
 }
+
+
+/* ════════════════════════════════════════════════
+   FEATURE WINDOW — scroll-scrubbed model deck
+
+   One number drives the whole block: --fi, the fractional slide index
+   (0 → N-1), written by script.js off the .feat__drive scroll position.
+
+   Every child carries its own --n and derives --d (its signed distance
+   from --fi). Position is linear in --d; opacity and scale are quadratic
+   in --d, which makes the active item the only crisp one and lets the
+   neighbours fall away evenly on both sides. No per-slide classes, no
+   state toggling — the same three calc() lines cover any slide count.
+   ════════════════════════════════════════════════ */
+
+.feat{
+  position:relative;z-index:1;
+  background:var(--surface-0);
+  color:var(--ink-0);
+  border-top:1px solid var(--hair-0);
+  --fi:0;                 /* fractional index, written by script.js */
+  --arc-r:460px;          /* arc dial radius            */
+  --arc-step:23deg;       /* angle between model names  */
+  --travel:78%;           /* slide horizontal spacing   */
+  --arc-lift:clamp(74px,10vh,124px);  /* arc crown above window floor */
+}
+
+/* driver + pin. 100vh of viewport per slide, plus a beat to land on. */
+.feat__drive{position:relative;height:420vh}
+.feat__pin{
+  position:sticky;top:0;
+  height:100vh;height:100svh;
+  display:grid;place-items:center;
+  padding:clamp(14px,2vw,30px);
+}
+.feat__window{
+  position:relative;
+  width:100%;height:100%;
+  border-radius:clamp(20px,2.4vw,46px);
+  background:rgb(var(--chip-rgb) / .55);
+  border:1px solid var(--hair-0);
+  overflow:hidden;
+  isolation:isolate;
+}
+
+/* ── head ─────────────────────────────────────── */
+.feat__head{
+  position:absolute;z-index:3;
+  top:clamp(22px,3.2vw,52px);
+  left:clamp(78px,7vw,132px);   /* clears the spec rail */
+  right:clamp(58px,5vw,96px);   /* clears the dot column */
+  pointer-events:none;
+}
+.feat__title{
+  margin-top:16px;
+  font-family:'Montserrat',sans-serif;
+  font-weight:800;
+  font-size:clamp(24px,2.4vw,42px);
+  line-height:1.06;
+  letter-spacing:-.035em;
+}
+
+/* ── left rail: fixed key, swapping value ─────── */
+.feat__rail{
+  position:absolute;z-index:3;
+  left:clamp(18px,2.4vw,40px);
+  top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:clamp(26px,3.4vw,54px);
+  list-style:none;
+  pointer-events:none;
+}
+.rail{
+  display:flex;align-items:center;gap:10px;
+  writing-mode:vertical-rl;
+  transform:rotate(180deg);
+}
+.rail__k{
+  font-size:9.5px;font-weight:800;letter-spacing:.2em;
+  color:var(--ink-soft-0);
+}
+/* the four values are stacked in one cell; only the active one is opaque */
+.rail__vs{position:relative;display:block;height:58px;width:14px}
+.rail__vs b{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;letter-spacing:.06em;
+  white-space:nowrap;
+  --d:calc(var(--n) - var(--fi));
+  opacity:calc(1 - var(--d) * var(--d) * 2.4);
+  transform:translateY(calc(var(--d) * 11px));
+}
+
+/* ── deck ─────────────────────────────────────── */
+.feat__deck{
+  position:absolute;inset:0;
+  display:grid;place-items:center;
+  z-index:1;
+}
+.fslide{
+  position:absolute;
+  width:min(42%,560px);
+  display:grid;place-items:center;
+  --d:calc(var(--n) - var(--fi));
+  transform:
+    translateX(calc(var(--d) * var(--travel)))
+    scale(calc(1 - var(--d) * var(--d) * .12));
+  opacity:calc(1 - var(--d) * var(--d) * 1.35);
+  will-change:transform,opacity;
+}
+/* the shots are scene photos, not cutouts — frame them the way .card__media
+   does so the window reads as one product plate, not a full-bleed backdrop */
+.fslide__media{
+  width:100%;
+  aspect-ratio:4/3;
+  overflow:hidden;
+  border-radius:clamp(12px,1.2vw,22px);
+  background:#1a1a19;
+  box-shadow:0 42px 70px rgba(0,0,0,calc(var(--sh-a) * .55));
+  outline:1px solid var(--hair-0);
+  outline-offset:-1px;
+}
+.fslide__img{
+  width:100%;height:100%;display:block;
+  object-fit:cover;object-position:62% 60%;
+  filter:var(--fx) saturate(1.06);
+  transform:scale(1.02);
+}
+/* the arc + rail carry the copy on desktop, so the inline body is mobile-only */
+.fslide__body{display:none}
+
+/* ── right edge dots ──────────────────────────── */
+.feat__dots{
+  position:absolute;z-index:4;
+  right:clamp(18px,2.4vw,44px);
+  top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:16px;
+  list-style:none;
+}
+.fdot{
+  --d:calc(var(--n) - var(--fi));
+  width:22px;height:22px;
+  display:grid;place-items:center;
+  border:0;background:none;cursor:pointer;
+  border-radius:50%;
+  position:relative;
+}
+.fdot::before{
+  content:'';
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid var(--ink-0);
+  opacity:max(0, calc(1 - var(--d) * var(--d)));
+}
+.fdot::after{
+  content:'';
+  width:7px;height:7px;border-radius:50%;
+  background:var(--ink-0);
+  opacity:calc(.34 + max(0, 1 - var(--d) * var(--d)) * .66);
+}
+
+/* ── corner meta ──────────────────────────────── */
+.feat__item,.feat__finish{
+  position:absolute;z-index:3;
+  bottom:clamp(20px,2.6vw,42px);
+  height:1.2em;
+  font-size:11px;font-weight:700;letter-spacing:.14em;
+  color:var(--ink-soft-0);
+  pointer-events:none;
+}
+.feat__item{left:clamp(22px,3.2vw,58px)}
+.feat__finish{right:clamp(22px,3.2vw,58px);color:var(--ink-0)}
+.swap{
+  position:absolute;top:0;white-space:nowrap;
+  --d:calc(var(--n) - var(--fi));
+  opacity:calc(1 - var(--d) * var(--d) * 2.4);
+  transform:translateY(calc(var(--d) * -10px));
+}
+.feat__item .swap{left:0}
+.feat__finish .swap{right:0}
+
+/* ── arc dial ─────────────────────────────────── */
+.feat__arc{
+  position:absolute;z-index:2;
+  left:50%;
+  bottom:calc(-1 * (var(--arc-r) * 2 - var(--arc-lift)));
+  width:calc(var(--arc-r) * 2);
+  height:calc(var(--arc-r) * 2);
+  transform:translateX(-50%);
+  border-radius:50%;
+  border-top:1px solid var(--hair-0);
+  pointer-events:none;
+}
+.arc__cursor{
+  position:absolute;left:50%;top:0;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--ink-0);
+  transform:translate(-50%,-50%);
+}
+/* ticks stay put so the ring visibly travels along a fixed track */
+.arc__ticks,.arc__ring{position:absolute;inset:0}
+.arc__ticks i{
+  position:absolute;left:50%;top:50%;
+  width:1px;height:9px;
+  margin:0 0 0 -.5px;
+  background:var(--hair-0);
+  transform-origin:0 0;
+  transform:rotate(var(--a)) translate(-.5px,calc(var(--arc-r) * -1));
+}
+.arc__ring{
+  transform:rotate(calc(var(--fi) * -1 * var(--arc-step)));
+  transition:transform .05s linear;
+}
+.arc__name{
+  position:absolute;left:50%;top:50%;
+  --d:calc(var(--n) - var(--fi));
+  font-family:'Montserrat',sans-serif;
+  font-weight:800;
+  letter-spacing:-.02em;
+  white-space:nowrap;
+  transform-origin:0 0;
+  transform:
+    rotate(calc(var(--n) * var(--arc-step)))
+    translate(-50%,calc(var(--arc-r) * -1 - 34px));
+  font-size:clamp(17px,1.5vw,26px);
+  color:var(--ink-0);
+  opacity:calc(.26 + max(0, 1 - var(--d) * var(--d)) * .74);
+}
+
+/* ── narrow: no pin, no arc, plain snap carousel ── */
+@media (max-width:900px){
+  .feat__drive{height:auto}
+  .feat__pin{position:static;height:auto;padding:0}
+  .feat__window{
+    height:auto;
+    padding:clamp(30px,7vw,56px) 0 clamp(26px,6vw,44px);
+    border-radius:0;border:0;background:none;
+  }
+  .feat__head{position:static;padding:0 6vw clamp(26px,6vw,44px)}
+  .feat__rail,.feat__arc{display:none}
+  .feat__deck{
+    position:static;inset:auto;
+    display:flex;gap:0;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .feat__deck::-webkit-scrollbar{display:none}
+  .fslide{
+    position:relative;
+    flex:0 0 86vw;
+    width:auto;
+    scroll-snap-align:center;
+    padding:0 3vw;
+    transform:none;opacity:1;
+  }
+  .fslide__body{display:block;text-align:center;margin-top:18px}
+  .fslide__name{
+    font-family:'Montserrat',sans-serif;
+    font-weight:800;font-size:clamp(22px,6vw,32px);
+    letter-spacing:-.03em;
+  }
+  .fslide__chips{
+    display:flex;justify-content:center;flex-wrap:wrap;gap:8px;
+    margin-top:12px;
+  }
+  .fslide__chips span{
+    padding:7px 12px;
+    border:1px solid var(--hair-0);border-radius:999px;
+    font-size:11px;font-weight:700;letter-spacing:.06em;
+    color:var(--ink-soft-0);
+  }
+  .feat__dots{
+    position:static;transform:none;
+    flex-direction:row;justify-content:center;
+    margin-top:clamp(22px,5vw,34px);
+  }
+  .fdot{--d:0}
+  .feat__item,.feat__finish{
+    position:static;height:auto;display:none;
+  }
+}
+
+/* reduced motion: the deck still steps, it just doesn't travel */
+@media (prefers-reduced-motion:reduce){
+  .fslide{transform:none;transition:opacity .3s linear}
+  .rail__vs b,.swap{transform:none}
+  .arc__ring{transition:none}
+}
