@@ -397,12 +397,25 @@
   const HOLD = .88;
   let ticking = false;
 
+  /* --fi is the number; .is-live is the nearest slide to it. The stylesheet
+     reads --fi for position and .is-live for the float loop, so only one
+     bike is ever animating. */
+  let live = -1;
+  const setFi = fi => {
+    sect.style.setProperty('--fi', fi.toFixed(4));
+    const near = Math.round(fi);
+    if (near === live) return;
+    slides[live]?.classList.remove('is-live');
+    slides[near]?.classList.add('is-live');
+    live = near;
+  };
+
   const read = () => {
-    if (!pin.matches) { sect.style.setProperty('--fi', '0'); return; }
+    if (!pin.matches) { setFi(0); return; }
     const span = drive.offsetHeight - window.innerHeight;
     const gone = Math.min(Math.max(-drive.getBoundingClientRect().top, 0), span);
     const p    = span > 0 ? Math.min(gone / span / HOLD, 1) : 0;
-    sect.style.setProperty('--fi', (p * last).toFixed(4));
+    setFi(p * last);
   };
 
   const onScroll = () => {
@@ -437,6 +450,153 @@
   deck.addEventListener('scroll', () => {
     if (pin.matches) return;
     const i = Math.round(deck.scrollLeft / (deck.scrollWidth / slides.length));
-    sect.style.setProperty('--fi', String(Math.min(i, last)));
+    setFi(Math.min(i, last));
   }, { passive: true });
+})();
+
+
+/* ════════════════════════════════════════════════
+   PERFORMANCE · NEWS · TEST RIDE · FAQ · INSIGHTS · FOOTER
+
+   All six blocks share one contract with the stylesheet: JS adds `is-in` or
+   `is-open` and writes a stagger index; every transition, delay and easing
+   lives in CSS. Nothing here measures a height — the FAQ panel animates on
+   grid-template-rows, so the content sizes itself.
+   ════════════════════════════════════════════════ */
+(() => {
+  'use strict';
+
+  const $  = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  const once = (el, cb, ratio = .25) => {
+    if (!el) return;
+    if (reduce || !('IntersectionObserver' in window)) { cb(el); return; }
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      cb(el);
+    }, { threshold: ratio });
+    io.observe(el);
+  };
+
+  /* copy reveal for the new blocks — same class the older sections use */
+  $$('.perf .reveal-up, .news .reveal-up, .ride .reveal-up, .faq .reveal-up, .ins .reveal-up')
+    .forEach(el => once(el, e => e.classList.add('is-in'), .2));
+
+  /* ── performance cells + count-up ──────────────
+     The cell reveals on its own threshold; the number only starts once its
+     cell is in, so a fast scroll never lands on a half-run counter. */
+  $$('.perf__cell').forEach((cell, i) => {
+    cell.style.setProperty('--i', i);
+    once(cell, el => {
+      el.classList.add('is-in');
+      $$('.perf__v', el).forEach(run);
+    }, .35);
+  });
+
+  function run(el) {
+    const to  = Number(el.dataset.to || 0);
+    const pre = el.dataset.prefix || '';
+    const sfx = el.dataset.suffix || '';
+    const paint = n => { el.textContent = pre + n + sfx; };
+
+    if (reduce) { paint(to); return; }
+
+    const dur = 1300;
+    let t0 = null;
+    const frame = ts => {
+      if (t0 === null) t0 = ts;
+      const k = Math.min((ts - t0) / dur, 1);
+      paint(Math.round(to * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
+
+  /* ── bento + insight cards: index in, CSS owns the delay ── */
+  $$('.bento__c').forEach((c, i) => {
+    c.style.setProperty('--i', i);
+    once(c, el => el.classList.add('is-in'), .18);
+  });
+  $$('.post').forEach(p => once(p, el => el.classList.add('is-in'), .18));
+
+  /* ── FAQ accordion ────────────────────────────
+     One open at a time. aria-expanded is the source of truth for assistive
+     tech; the class is what the stylesheet reads. */
+  const items = $$('.faq__item');
+  items.forEach(item => {
+    const q = $('.faq__q', item);
+    q?.addEventListener('click', () => {
+      const open = item.classList.contains('is-open');
+      items.forEach(o => {
+        o.classList.remove('is-open');
+        $('.faq__q', o)?.setAttribute('aria-expanded', 'false');
+      });
+      if (!open) {
+        item.classList.add('is-open');
+        q.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  /* ── test ride form ───────────────────────────
+     No endpoint is wired yet: this validates, then prints the receipt the
+     backend will replace. Nothing leaves the page. */
+  const form = $('#rideForm');
+  const ok   = $('#rideOk');
+  form?.addEventListener('submit', e => {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+    const name = new FormData(form).get('name')?.toString().trim().split(' ')[0] || 'there';
+    ok.textContent = `Thanks ${name} — a dealer will call you within one working day.`;
+    form.reset();
+  });
+
+  /* ── floating action dock ─────────────────────
+     Two of the four items are in-page anchors. #test-ride exists; #dealership
+     is a future form, so its click is swallowed rather than letting the
+     browser fall back to jumping to the top of the document. tel: and wa.me
+     are plain links and are left alone. */
+  $$('.dock__i[data-dock]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = $(a.getAttribute('href'));
+      if (!target) { e.preventDefault(); return; }
+      e.preventDefault();
+      target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      target.querySelector('input, select, textarea')?.focus({ preventScroll: true });
+    });
+  });
+
+  /* On phones the dock lies down into a bottom-centre pill (see style.css), so
+     it floats over whatever the reader is scrolling through. Tuck it away on
+     scroll-down, bring it straight back on scroll-up. Desktop keeps the dock
+     pinned at all times — the class is cleared whenever the query stops
+     matching, so a rotate or resize never leaves it stuck off screen. */
+  const dock = $('.dock');
+  const phone = matchMedia('(max-width:640px)');
+  if (dock) {
+    let lastY = window.scrollY;
+    const tuck = () => {
+      const y = window.scrollY;
+      if (!phone.matches) { dock.classList.remove('is-tucked'); lastY = y; return; }
+      if (Math.abs(y - lastY) < 10) return;      /* ignore rubber-band jitter */
+      dock.classList.toggle('is-tucked', y > lastY && y > 140);
+      lastY = y;
+    };
+    addEventListener('scroll', tuck, { passive: true });
+    phone.addEventListener('change', () => dock.classList.remove('is-tucked'));
+  }
+
+  /* ── footer reel ──────────────────────────────
+     Decoration only: play while on screen, pause when it is not, and stay
+     silent if the file is missing. */
+  const fv = $('.foot__v');
+  if (fv && !reduce && 'IntersectionObserver' in window) {
+    new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) fv.play().catch(() => {});
+      else fv.pause();
+    }, { threshold: .15 }).observe($('.foot'));
+  }
 })();
