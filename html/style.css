@@ -613,6 +613,130 @@ html[data-theme="dark"] .theme__moon{display:block}
 
 
 /* ════════════════════════════════════════════════
+   CONSISTENCY PASSES — Animation Enhancements (Phase 1)
+   ════════════════════════════════════════════════
+   Unified micro-interactions across the page:
+   · Gradient border animations on cards
+   · Icon rotation & scale standardization
+   · Button micro-interaction enhancements
+   · Floating object improvements with GPU acceleration
+   ════════════════════════════════════════════════ */
+
+/* ── Gradient border animation for cards ─────────
+   Animates gradient position from left to right on hover,
+   creating a shimmer effect that draws attention. */
+@keyframes gradient-border-shimmer{
+  0%{background-position:0% 50%}
+  100%{background-position:100% 50%}
+}
+
+.card{
+  position:relative;
+}
+.card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(96deg,
+    var(--brand-violet) 0%,
+    var(--brand-magenta) 30%,
+    var(--brand-flame) 66%,
+    var(--brand-orange) 100%);
+  background-size:180% 100%;
+  background-position:0% 50%;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .6s var(--ease);
+  z-index:-1;
+}
+.card:hover::after{
+  animation:gradient-border-shimmer .6s var(--ease) forwards;
+  opacity:.12;
+}
+
+/* ── Icon rotation and scale standardization classes ─
+   Utility classes for consistent icon animations across
+   FAQ chevrons, Why section icons, and SVG elements. */
+
+/* 180° rotation on hover (e.g., FAQ accordion toggle) */
+.icon--rotate-hover{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;flex:none;
+  transition:transform .4s var(--ease);
+  will-change:transform;
+}
+.icon--rotate-hover:hover,
+.icon--rotate-hover.is-active{
+  transform:rotate(180deg);
+}
+
+/* 1.12x scale on hover (e.g., Why section feature icons) */
+.icon--scale-hover{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;flex:none;
+  transition:transform .3s var(--ease),color .3s var(--ease);
+  will-change:transform;
+}
+.icon--scale-hover:hover{
+  transform:scale(1.12);
+  color:var(--accent);
+}
+
+/* ── Enhanced button micro-interactions ──────────
+   Unified hover states with lift, gradient shift, and shadow warmth.
+   Features: .btn--ink (lift + gradient shift + warm shadow + icon slide)
+            .btn--ghost (lift + border brighten)
+   Note: Full implementation in main button styles (lines ~816-832) ─────────────────── */
+
+/* ── Floating object improvements ────────────────
+   Standardized 5s floating animation with -8px translateY
+   applied to floating elements across the page.
+   GPU-accelerated with transform and opacity only. */
+
+@keyframes float{
+  50%{transform:translateY(-8px)}
+}
+
+.pill{
+  animation:float 5s ease-in-out infinite;
+  will-change:transform;
+}
+
+.card__360{
+  animation:float 5s ease-in-out infinite;
+  will-change:transform;
+}
+
+.card__badge{
+  animation:float 5s ease-in-out infinite var(--delay,0s);
+  will-change:transform;
+}
+
+/* Offer badges and CTAs with floating effect */
+.badge--floating{
+  animation:float 5s ease-in-out infinite;
+  will-change:transform;
+}
+
+/* Reduced motion support across all enhancements */
+@media (prefers-reduced-motion:reduce){
+  .card,
+  .icon--rotate-hover,
+  .icon--scale-hover,
+  .btn--ink,
+  .btn--ghost,
+  .pill,
+  .card__360,
+  .card__badge,
+  .badge--floating{
+    animation:none !important;
+    transition-duration:.01ms !important;
+  }
+}
+
+
+/* ════════════════════════════════════════════════
    BELOW THE FOLD — About + Collection
 
    The hero owns --p; nothing down here reads it. These sections use the
@@ -681,16 +805,26 @@ html[data-theme="dark"] .theme__moon{display:block}
   color:#fff;
   box-shadow:0 10px 26px -12px rgba(123,47,247,.6);
   transition:transform .35s var(--ease),background-position .55s var(--ease),
-             box-shadow .35s var(--ease);
+             box-shadow .35s var(--ease),filter .35s var(--ease);
 }
 .btn--ink:hover{
   transform:translateY(-2px);
   background-position:100% 50%;
   box-shadow:0 16px 34px -12px rgba(240,83,43,.55);
+  filter:brightness(1.1);
 }
 .btn--ink:hover svg{transform:translateX(4px)}
-.btn--ghost{background:none;border-color:var(--hair-0);color:var(--ink-0)}
-.btn--ghost:hover{border-color:var(--ink-0);transform:translateY(-2px)}
+.btn--ghost{
+  background:none;
+  border-color:var(--hair-0);
+  color:var(--ink-0);
+  transition:transform .35s var(--ease),border-color .35s var(--ease),background .35s var(--ease);
+}
+.btn--ghost:hover{
+  border-color:var(--ink-0);
+  transform:translateY(-2px);
+  background:rgba(var(--surface-rgb) / .08);
+}
 
 /* ══════════ ABOUT ══════════ */
 .about__grid{
@@ -2150,6 +2284,208 @@ html[data-theme="dark"] .theme__moon{display:block}
 
 
 /* ════════════════════════════════════════════════
+   PHASE 2 ADVANCED EFFECTS
+
+   Four progressive enhancement animation systems:
+   1. Staggered text reveal for headlines — per-word entrance
+   2. Enhanced scroll-triggered counters — reusable across sections
+   3. Background gradient shift on hover — dynamic gradient animation
+   4. 3D card tilt effects — cursor-tracked depth perception
+
+   All GPU-accelerated, respects prefers-reduced-motion, brand-aligned.
+   ════════════════════════════════════════════════ */
+
+/* ── STAGGERED TEXT REVEAL ───────────────────────
+   Headline spans wrapped individually. Each gets a CSS variable --word-index
+   (set via script.js or inline style="--word-index: N") for staggered timing.
+   Entrance: opacity 0→1, translateY 20px→0, 700ms ease-out.
+   Example markup:
+   <h2 class="reveal-headline">
+     <span style="--word-index:0">First</span>
+     <span style="--word-index:1">Second</span>
+     <span style="--word-index:2">Word</span>
+   </h2>
+*/
+.reveal-headline{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.3em;
+  line-height:1.2;
+}
+.reveal-headline span{
+  display:inline-block;
+  opacity:0;
+  transform:translateY(20px);
+  will-change:opacity,transform;
+  transition:opacity 700ms var(--ease),
+             transform 700ms var(--ease);
+}
+.reveal-headline.is-in span{
+  opacity:1;
+  transform:none;
+  transition-delay:calc(var(--word-index,0) * 80ms);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .reveal-headline span{
+    opacity:1;transform:none;
+    transition-delay:0 !important;
+  }
+}
+
+
+/* ── ENHANCED SCROLL-TRIGGERED COUNTERS ──────────
+   Extends beyond .stats to any section: performance cells, insight cards.
+   Counter elements get .counter-value class; increment from 0→target on scroll-in.
+   Custom properties: --count-target (final value), --count-duration (default 1300ms).
+   Support prefix/suffix via data attributes.
+   Example:
+   <div class="counter-value" data-target="2500" data-suffix="ms">0</div>
+   <div class="counter-value" data-prefix="+" data-target="42" data-suffix="%">0</div>
+*/
+.counter-value{
+  font-variant-numeric:tabular-nums;
+  transition:none;
+  will-change:contents;
+}
+/* When marked .is-counting, the script.js counter loop animates the text content */
+.counter-value.is-counting{
+  animation:none;
+}
+
+/* For sections that use CSS animation fallback (if JS unavailable),
+   scale the counter-value in via opacity with the section's entrance */
+.perf__cell.is-in .counter-value,
+.stat.is-in .counter-value,
+.post.is-in .counter-value{
+  /* animated by script.js via .is-counting class and incrementing textContent */
+  animation:none;
+}
+
+/* Gradient variant for performance section numbers */
+.perf__n .counter-value{
+  background:var(--brand-grad);
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;
+}
+
+
+/* ── BACKGROUND GRADIENT SHIFT HOVER ────────────
+   Cards and section backgrounds animate gradient angle on hover.
+   Applies var(--grad-angle) shift from 0deg to 180deg over 1s.
+   Use on card backgrounds, performance cells, insights containers.
+   Example class: .gradient-shift-hover
+*/
+.gradient-shift-hover{
+  position:relative;
+  --grad-angle:0deg;
+  --grad-color-1:var(--brand-violet);
+  --grad-color-2:var(--brand-magenta);
+  will-change:transform;
+}
+/* Pseudo-element for the animated gradient background */
+.gradient-shift-hover::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(var(--grad-angle),
+    color-mix(in srgb, var(--grad-color-1) 12%, transparent),
+    color-mix(in srgb, var(--grad-color-2) 8%, transparent));
+  opacity:0;
+  pointer-events:none;
+  z-index:-1;
+  transition:opacity 1s var(--ease);
+}
+.gradient-shift-hover:hover{
+  --grad-angle:180deg;
+}
+.gradient-shift-hover:hover::before{
+  opacity:1;
+  transition:opacity 1s var(--ease), --grad-angle 1s var(--ease);
+}
+
+/* Variant for section backgrounds (perf cells, insight cards) */
+.perf__cell.gradient-shift-hover,
+.post.gradient-shift-hover{
+  position:relative;
+  overflow:hidden;
+}
+.perf__cell.gradient-shift-hover::before,
+.post.gradient-shift-hover::before{
+  border-radius:inherit;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .gradient-shift-hover::before{
+    opacity:0;
+    transition:none;
+  }
+  .gradient-shift-hover:hover::before{
+    opacity:0;
+  }
+}
+
+
+/* ── 3D PERSPECTIVE DEPTH EFFECTS ────────────────
+   Interactive cards tilt based on cursor position.
+   Apply .card--3d-tilt to premium/featured cards.
+   Script.js writes --rx (rotateX, -8 to 8deg) and --ry (rotateY, -8 to 8deg)
+   on mousemove. Fallback for no-JS: static perspective.
+   Example markup:
+   <div class="card card--3d-tilt" style="--rx:0deg; --ry:0deg;">
+     [card content]
+   </div>
+*/
+.card--3d-tilt{
+  --rx:0deg;
+  --ry:0deg;
+  perspective:1200px;
+  will-change:transform;
+  transform-style:preserve-3d;
+}
+.card--3d-tilt{
+  transform:rotateX(var(--rx)) rotateY(var(--ry));
+  transition:transform .15s cubic-bezier(.22,1,.36,1);
+}
+
+/* Child elements inherit 3D context */
+.card--3d-tilt .card__media,
+.card--3d-tilt .card__body{
+  transform-style:preserve-3d;
+}
+
+/* Lift the media layer slightly on tilt */
+.card--3d-tilt .card__media{
+  transform:translateZ(40px);
+}
+
+/* Shadow responds to tilt angle for depth cue */
+.card--3d-tilt{
+  box-shadow:0 40px 70px -34px rgba(0,0,0,
+    calc(var(--sh-a) + (abs(var(--rx)) + abs(var(--ry))) * 0.02));
+  transition:box-shadow .15s cubic-bezier(.22,1,.36,1),
+             transform .15s cubic-bezier(.22,1,.36,1);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .card--3d-tilt{
+    --rx:0deg !important;
+    --ry:0deg !important;
+    transform:none !important;
+    transition:none;
+  }
+}
+
+/* Disable 3D on touch devices (pointer tracking unreliable) */
+@media (hover:none){
+  .card--3d-tilt{
+    transform:none;
+    --rx:0deg;
+    --ry:0deg;
+  }
+}
+
+
+/* ════════════════════════════════════════════════
    FLOATING ACTION DOCK
 
    Fixed capsule on the right edge, vertically centred, alive on every
@@ -2249,4 +2585,106 @@ body:has(.nav.is-open) .dock{opacity:0;pointer-events:none}
 @media (prefers-reduced-motion:reduce){
   .dock,.dock__i,.dock__lb{transition:none}
   .dock__i:hover,.dock__i:focus-visible{transform:none}
+}
+
+
+/* ════════════════════════════════════════════════
+   PHASE 3: POLISH & REFINEMENT
+
+   Advanced motion effects layer on core functionality: parallax depth,
+   skeleton loading states, interactive form feedback, and success confirmations.
+   These enhancements elevate micro-interactions while maintaining accessibility
+   and performance (GPU-accelerated transforms, sparingly used will-change).
+   ════════════════════════════════════════════════ */
+
+/* ── Parallax enhancement on scroll ──────────────
+   Applies subtle depth to images as the page scrolls. The --scroll-y
+   variable is written by script.js (0 → viewport height). Use on
+   bento cards, news section images, collection photos for subtle
+   depth without cognitive load.
+
+   Example: <img class="image-parallax" src="..." /> */
+.image-parallax{
+  transform:translateY(calc(var(--scroll-y,0) * 0.5px));
+  will-change:transform;
+}
+
+/* ── Skeleton/placeholder animations ─────────────
+   Pulse effect for loading states, image placeholders, and content
+   skeletons. Gentle breathe between 0.6 and 1.0 opacity over 1.5s.
+   Use on placeholder elements while content loads.
+
+   Example: <div class="image-loading"><!-- placeholder --></div> */
+@keyframes pulse{
+  0%, 100%{opacity:.6}
+  50%{opacity:1}
+}
+
+.image-loading{
+  animation:pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Interactive gradient animations on form ────
+   Form inputs with gradient shift on focus. The gradient travels left
+   to right (100% → 0) over 600ms on focus, creating visual energy.
+   Use on .field__i elements or any form input that needs interaction cue.
+
+   Example: <input class="field__i field-gradient-shift" /> */
+@keyframes gradientShift{
+  from{background-position:100% 0}
+  to{background-position:0% 0}
+}
+
+.field-gradient-shift{
+  position:relative;
+  background:linear-gradient(90deg,
+    rgb(var(--surface-rgb) / .6) 0%,
+    color-mix(in srgb, var(--brand-blue) 6%, transparent) 50%,
+    rgb(var(--surface-rgb) / .6) 100%);
+  background-size:200% 100%;
+  background-position:100% 0;
+  transition:background-position .6s ease-in-out,
+             border-color .35s var(--ease),
+             box-shadow .35s var(--ease);
+}
+
+.field-gradient-shift:focus{
+  background-position:0% 0;
+  border-color:var(--brand-violet);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--brand-violet) 22%, transparent);
+}
+
+/* ── Success state animations ────────────────────
+   Elastic pulse for form submission confirmation. Scales from 0.8 to
+   1.1 (overshoot) then settles to 1.0, with a matching opacity fade-in.
+   Uses cubic-bezier(.34,1.56,.64,1) for bounce. Duration: 600ms.
+   Apply to confirmation message or success icon after form submit.
+
+   Example: <div class="success-state">✓ Submitted!</div> */
+@keyframes successPulse{
+  0%{
+    transform:scale(.8);
+    opacity:0;
+  }
+  50%{
+    transform:scale(1.1);
+  }
+  100%{
+    transform:scale(1);
+    opacity:1;
+  }
+}
+
+.success-state{
+  animation:successPulse .6s cubic-bezier(.34,1.56,.64,1) forwards;
+  will-change:transform,opacity;
+}
+
+/* respects prefers-reduced-motion for all Phase 3 animations */
+@media (prefers-reduced-motion:reduce){
+  .image-parallax{transform:none;will-change:auto}
+  .image-loading{animation:none;opacity:1}
+  .field-gradient-shift{background-position:100% 0}
+  .field-gradient-shift:focus{background-position:100% 0}
+  .success-state{animation:none;transform:none;opacity:1;will-change:auto}
 }
