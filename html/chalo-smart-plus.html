@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHALO SMART PLUS — Premium Low-Speed | Hazra</title>
+  <link rel="icon" href="assets/hazraev.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/hazraev.png">
+  <meta name="description" content="CHALO SMART PLUS: Premium features for discerning riders. 130 km range, smooth control, luxury comfort.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --brand-indigo:  #3a1a6b;
+      --brand-violet:  #7b2ff7;
+      --brand-magenta: #a41fbf;
+      --brand-blue:    #12a5e0;
+      --brand-orange:  #f7941d;
+      --brand-flame:   #f0532b;
+      --brand-grad: linear-gradient(96deg, var(--brand-violet) 0%, var(--brand-magenta) 30%, var(--brand-flame) 66%, var(--brand-orange) 100%);
+      --ink-0:        #180f2c;
+      --ink-soft-0:   #6b6480;
+      --hair-0:       #e3ddec;
+      --surface-0:    #faf8fd;
+      --surface-rgb:  250 248 253;
+      --chip-rgb:     240 235 249;
+      --sh-a:         .45;
+      --ease: cubic-bezier(.22,1,.36,1);
+    }
+
+    html[data-theme="dark"] {
+      --ink-0:        #f6f3fb;
+      --ink-soft-0:   #9a93ad;
+      --hair-0:       #2f2743;
+      --surface-0:    #120e1c;
+      --surface-rgb:  18 14 28;
+      --chip-rgb:     33 26 50;
+      --sh-a:         .8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--surface-0);
+      color: var(--ink-0);
+    }
+
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgb(var(--surface-rgb) / .92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--hair-0);
+      padding: 20px 0;
+    }
+
+    .header__top {
+      display: flex; align-items: center; justify-content: space-between;
+      width: min(1520px, 93vw); margin: 0 auto; padding: 0 26px;
+    }
+
+    .brand {
+      display: inline-flex; align-items: center; gap: 9px;
+      text-decoration: none;
+    }
+
+    .brand__mark { width: 32px; height: 32px; object-fit: contain; }
+    .brand__txt { font-family: 'Montserrat', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--ink-soft-0); }
+
+    .theme {
+      display: grid; place-items: center;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: none; border: 1px solid var(--hair-0);
+      cursor: pointer; color: var(--ink-0);
+    }
+
+    .theme svg { width: 17px; height: 17px; position: absolute; }
+    .theme__moon { display: none; }
+    html[data-theme="dark"] .theme__sun { display: none; }
+    html[data-theme="dark"] .theme__moon { display: block; }
+
+    .hero {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(30px, 5vw, 60px); align-items: center;
+      padding: clamp(60px, 8vw, 120px) 26px;
+      background: var(--surface-0); min-height: 70vh;
+    }
+
+    .hero__img {
+      position: relative; perspective: 1000px;
+      opacity: 0; transform: scale(.95);
+      animation: reveal-up 1s var(--ease) .2s forwards;
+    }
+
+    .hero__product {
+      width: 100%; max-width: 500px; height: auto; aspect-ratio: 1;
+      background: radial-gradient(120% 90% at 50% 10%, color-mix(in srgb, var(--brand-magenta) 12%, transparent) 0%, transparent 68%);
+      border-radius: 20px; padding: 30px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .hero__product img {
+      width: 100%; height: auto; object-fit: contain;
+      filter: drop-shadow(0 30px 50px rgba(164, 31, 191, .25));
+    }
+
+    .hero__copy {
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up 1s var(--ease) .3s forwards;
+    }
+
+    .hero__tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
+      color: var(--ink-soft-0); margin-bottom: 16px;
+    }
+
+    .hero__tag::before { content: ''; width: 10px; height: 10px; background: var(--brand-grad); }
+
+    .hero__title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(32px, 3.5vw, 56px);
+      font-weight: 900; line-height: 1.05; letter-spacing: -.035em; margin-bottom: 24px;
+    }
+
+    .hero__lead {
+      font-size: 15px; line-height: 1.7;
+      color: var(--ink-soft-0); margin-bottom: 28px; max-width: 500px;
+    }
+
+    .hero__cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 26px; background: var(--brand-grad);
+      color: #fff; border: none; border-radius: 999px;
+      font-size: 12px; font-weight: 700; letter-spacing: .06em;
+      cursor: pointer; transition: all .35s var(--ease);
+    }
+
+    .hero__cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
+    }
+
+    .features {
+      padding: clamp(60px, 9vw, 140px) 26px;
+      background: rgb(var(--chip-rgb) / .35);
+      border-top: 1px solid var(--hair-0);
+    }
+
+    .features__in { width: min(1200px, 93vw); margin: 0 auto; }
+
+    .features__head {
+      margin-bottom: clamp(50px, 6vw, 80px);
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) .1s forwards;
+    }
+
+    .features__title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(28px, 3vw, 48px);
+      font-weight: 800; letter-spacing: -.035em;
+    }
+
+    .features__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: clamp(24px, 2.5vw, 40px);
+    }
+
+    .feature__card {
+      padding: clamp(28px, 3vw, 40px);
+      background: var(--surface-0);
+      border: 1px solid var(--hair-0);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all .35s var(--ease);
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 100ms) forwards;
+    }
+
+    .feature__card:hover {
+      border-color: var(--brand-magenta);
+      box-shadow: 0 30px 60px -20px rgba(164, 31, 191, .25);
+      transform: translateY(-6px);
+    }
+
+    .feature__icon {
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: var(--brand-grad);
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .feature__icon svg { width: 24px; height: 24px; }
+
+    .feature__title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 18px; font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .feature__desc {
+      font-size: 13px; line-height: 1.7;
+      color: var(--ink-soft-0);
+    }
+
+    .footer {
+      padding: clamp(50px, 7vw, 100px) 26px;
+      background: var(--surface-0);
+      border-top: 1px solid var(--hair-0);
+      text-align: center;
+    }
+
+    .footer__link {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 26px; background: var(--brand-grad);
+      color: #fff; border: none; border-radius: 999px;
+      text-decoration: none;
+      font-size: 12px; font-weight: 700; letter-spacing: .06em;
+      cursor: pointer; transition: all .35s var(--ease);
+      opacity: 0; transform: scale(.95);
+      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) .5s forwards;
+    }
+
+    .footer__link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
+    }
+
+    @keyframes reveal-up {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.html">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero__img">
+    <div class="hero__product">
+      <img src="assets/scutie_light.png" alt="CHALO SMART PLUS">
+    </div>
+  </div>
+  <div class="hero__copy">
+    <p class="hero__tag">Premium Comfort</p>
+    <h1 class="hero__title">CHALO SMART PLUS</h1>
+    <p class="hero__lead">
+      For riders who demand more. Premium build quality, extended range, and features
+      that make every ride a joy. 130 km range, absolute comfort.
+    </p>
+    <button class="hero__cta">
+      <span>Experience Premium</span>
+      <i data-lucide="arrow-right"></i>
+    </button>
+  </div>
+</section>
+
+<section class="features">
+  <div class="features__in">
+    <div class="features__head">
+      <h2 class="features__title">Premium Features</h2>
+    </div>
+
+    <div class="features__grid">
+      <div class="feature__card" style="--i: 0">
+        <div class="feature__icon">
+          <i data-lucide="wind"></i>
+        </div>
+        <h3 class="feature__title">Smooth Control</h3>
+        <p class="feature__desc">Hydraulic suspension and intelligent torque mapping for the smoothest ride in the city.</p>
+      </div>
+
+      <div class="feature__card" style="--i: 1">
+        <div class="feature__icon">
+          <i data-lucide="battery-charging"></i>
+        </div>
+        <h3 class="feature__title">Extended Range</h3>
+        <p class="feature__desc">130 km of real-world range means fewer stops, more freedom to explore.</p>
+      </div>
+
+      <div class="feature__card" style="--i: 2">
+        <div class="feature__icon">
+          <i data-lucide="lightbulb"></i>
+        </div>
+        <h3 class="feature__title">LED Lighting</h3>
+        <p class="feature__desc">Premium projector LED headlight for safe night riding and striking aesthetics.</p>
+      </div>
+
+      <div class="feature__card" style="--i: 3">
+        <div class="feature__icon">
+          <i data-lucide="shield-check"></i>
+        </div>
+        <h3 class="feature__title">Dual Braking</h3>
+        <p class="feature__desc">Regenerative and friction braking for maximum safety and energy efficiency.</p>
+      </div>
+
+      <div class="feature__card" style="--i: 4">
+        <div class="feature__icon">
+          <i data-lucide="cpu"></i>
+        </div>
+        <h3 class="feature__title">Smart Systems</h3>
+        <p class="feature__desc">Connected diagnostics and app integration for complete control.</p>
+      </div>
+
+      <div class="feature__card" style="--i: 5">
+        <div class="feature__icon">
+          <i data-lucide="star"></i>
+        </div>
+        <h3 class="feature__title">Premium Finish</h3>
+        <p class="feature__desc">Hand-crafted details and premium paint options exclusive to SMART PLUS.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="footer">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px; font-size: 14px;">
+    Ride the difference. Premium features, premium experience.
+  </p>
+  <a class="footer__link" href="index.html#collection">
+    <span>View all models</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+
+  const themeBtn = document.getElementById('theme');
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  });
+
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+</script>
+
+</body>
+</html>

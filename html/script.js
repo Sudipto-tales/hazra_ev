@@ -122,6 +122,31 @@
   /* crossing the breakpoint leaves stale open state behind — clear it */
   wide.addEventListener('change', () => { closeAll(); setMenu(false); });
 
+  /* ── sticky bar menu (same logic as topbar) ─────
+     The sticky nav groups are picked up by the same groups selector,
+     so hover/click already works. Only the burger needs its own handler. */
+  const stickyNav = $('#stickyNav');
+  const stickyBurger = $('#stickyBurger');
+
+  const setStickyMenu = on => {
+    stickyNav?.classList.toggle('is-open', on);
+    stickyBurger?.classList.toggle('is-on', on);
+    stickyBurger?.setAttribute('aria-expanded', String(on));
+    stickyBurger?.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
+  };
+
+  stickyBurger?.addEventListener('click', () =>
+    setStickyMenu(!stickyNav?.classList.contains('is-open')));
+
+  /* picking a destination closes everything */
+  $$('a[href]', stickyNav).forEach(a =>
+    a.addEventListener('click', () => { closeAll(); setMenu(false); setStickyMenu(false); }));
+
+  /* clicking outside sticky bar also closes it */
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.sticky-bar')) { setStickyMenu(false); }
+  });
+
   /* ══════════ SCROLL ZOOM ══════════
      .scroll is taller than the viewport; .stage is sticky inside it. The
      surplus scroll maps to --p (0…1), and every geometry/colour rule in the
@@ -158,6 +183,55 @@
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', () => { measure(); readScroll(); });
   desktop.addEventListener('change', () => { measure(); readScroll(); });
+
+  /* ── sticky navbar: hide on scroll-down, show on scroll-up/stop ────
+     Appears after the hero section ends; hidden by default, slides in
+     with spring animation when scrolling up or idle. Glass morphism. */
+  const stickyBar = $('#stickyBar');
+  let lastStickyY = 0;
+  let stickyTimer = null;
+
+  const HERO_THRESHOLD = () => {
+    const scroll = $('#scroll');
+    return scroll?.offsetHeight || window.innerHeight * 2.5;
+  };
+
+  const showStickyBar = () => {
+    stickyBar?.classList.add('is-visible');
+    stickyBar?.setAttribute('aria-hidden', 'false');
+  };
+
+  const hideStickyBar = () => {
+    stickyBar?.classList.remove('is-visible');
+    stickyBar?.setAttribute('aria-hidden', 'true');
+  };
+
+  const onStickyScroll = () => {
+    const y = window.scrollY;
+    const threshold = HERO_THRESHOLD();
+
+    if (y < threshold) {
+      hideStickyBar();
+      lastStickyY = y;
+      return;
+    }
+
+    if (y < lastStickyY) {
+      showStickyBar();
+    } else if (y > lastStickyY) {
+      hideStickyBar();
+    }
+    lastStickyY = y;
+
+    clearTimeout(stickyTimer);
+    stickyTimer = setTimeout(showStickyBar, 400);
+  };
+
+  addEventListener('scroll', onStickyScroll, { passive: true });
+
+  /* wire sticky bar theme toggle to the same theme logic */
+  $('#stickyTheme')?.addEventListener('click', () =>
+    setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
 
   /* ── mouse parallax on the photo ───────────────
      Writes offsets as numbers; the transform itself lives in CSS so it can
