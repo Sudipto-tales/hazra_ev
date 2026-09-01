@@ -1,24 +1,2871 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    background: #f8f9fa;
-    color: #1a1a1a;
+/* ════════════════════════════════════════════════
+   Hazra Electrical Bike — hero
+   Product shot: assets/scutie_light.png (light) / assets/dark_scutie.png (dark)
+
+   SCROLL ZOOM
+   ───────────
+   .scroll is a tall driver; .stage is sticky inside it, so the page never
+   advances to another section — scrolling only feeds --p (0 → 1) which:
+     · grows .canvas from the inset card to the full viewport
+     · dissolves every surface plate (canvas bg, nav chip, tab, shelf, fillets)
+     · expands .photo from the right column to full bleed
+     · un-blurs .stage__bg behind it
+     · ramps ink toward white so the copy survives on top of the photo
+   Everything is one calc() chain off --p. JS only writes the number.
+   ════════════════════════════════════════════════ */
+
+:root{
+  /* scroll progress — written by script.js, 0…1 */
+  --p:0;
+  /* viewport, written by script.js (avoids 100vw scrollbar overflow) */
+  --vw:100vw;
+  --vh:100vh;
+  /* image zoom base — entrance settles this 1.06 → 1 */
+  --iz:1.06;
+  --px:0;  --py:0;   /* mouse parallax offsets, in px */
+
+  /* ── brand palette, lifted from the Hazra EV mark ──
+     the H is an indigo → violet → magenta ramp, the bolt is orange → flame,
+     the swoosh tail is cyan. Everything accent-coloured pulls from here. */
+  --brand-indigo:  #3a1a6b;
+  --brand-violet:  #7b2ff7;
+  --brand-magenta: #a41fbf;
+  --brand-blue:    #12a5e0;
+  --brand-orange:  #f7941d;
+  --brand-flame:   #f0532b;
+  --brand-grad: linear-gradient(96deg,
+      var(--brand-violet) 0%,
+      var(--brand-magenta) 30%,
+      var(--brand-flame) 66%,
+      var(--brand-orange) 100%);
+
+  /* palette — light. "-0" = the resting value; .canvas ramps the live token. */
+  --ink-0:        #180f2c;
+  --ink-soft-0:   #6b6480;
+  --hair-0:       #e3ddec;
+  --surface-0:    #faf8fd;
+  --surface-rgb:  250 248 253;
+  --chip-rgb:     240 235 249;
+  --accent:       var(--brand-orange);
+  --accent-ink:   #180f2c;
+  --glass-bd:     rgba(255,255,255,.28);
+  --glass-bg:     rgba(255,255,255,.16);
+  --veil:         rgba(26,14,48,.32);
+  --sh-a:         .45;
+  --bg-img:       url('assets/scutie_light.png');
+  --bg-fallback:  radial-gradient(120% 90% at 20% 10%, #cdbfe6 0%, #7d5fa8 45%, #2c1550 100%);
+
+  /* geometry — the whole interlock is driven from here */
+  --pad:      22px;   /* white gutter around the photo        */
+  --r-canvas: 46px;   /* outer card radius                    */
+  --r-photo:  32px;   /* photo radius                         */
+  --r-inv:    34px;   /* inverse (concave) fillet radius      */
+  --tab-h:    94px;   /* top-right white tab height           */
+  --tab-w:    282px;  /* top-right white tab width            */
+  --shelf-h:  124px;  /* bottom-left white shelf height       */
+  --shelf-w:  57%;    /* bottom-left white shelf width        */
+  --photo-w:  45%;    /* photo column width (at --p:0)        */
+
+  /* resting card box */
+  --cw: min(1520px, 93vw);
+  --ch: min(900px, 88vh);
+
+  --ease: cubic-bezier(.22,1,.36,1);
 }
 
-.container {
-    text-align: center;
+html[data-theme="dark"]{
+  --ink-0:        #f6f3fb;
+  --ink-soft-0:   #9a93ad;
+  --hair-0:       #2f2743;
+  --surface-0:    #120e1c;
+  --surface-rgb:  18 14 28;
+  --chip-rgb:     33 26 50;
+  --accent:       #ff8f2e;
+  --accent-ink:   #150c26;
+  --glass-bd:     rgba(255,255,255,.16);
+  --glass-bg:     rgba(255,255,255,.08);
+  --veil:         rgba(9,4,20,.52);
+  --sh-a:         .8;
+  --bg-img:       url('assets/dark_scutie.png');
+  --bg-fallback:  radial-gradient(120% 90% at 25% 8%, #45276e 0%, #221340 48%, #0a0614 100%);
 }
 
-.hero h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:#0b0713;
+  -webkit-font-smoothing:antialiased;
 }
 
-.hero p {
-    color: #6c757d;
+/* ── scroll driver + sticky pin ───────────────── */
+.scroll{position:relative;height:260vh}
+.stage{
+  position:sticky;top:0;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100vh;
+  height:100svh;
+  overflow:hidden;
+}
+.stage__bg{
+  position:absolute;
+  inset:-6%;
+  background-image:var(--bg-img),var(--bg-fallback);
+  background-size:cover;
+  background-position:center;
+  filter:blur(calc(46px * (1 - var(--p)))) saturate(1.05);
+  transform:scale(calc(1.08 + var(--p) * .06));
+  transition:background-image .45s linear;
+}
+.stage__veil{
+  position:absolute;inset:0;
+  background:var(--veil);
+  opacity:calc(1 - var(--p));
+}
+
+/* ── canvas: the card that opens out to full bleed ── */
+.canvas{
+  position:relative;
+  width:calc(var(--cw) + (var(--vw) - var(--cw)) * var(--p));
+  height:calc(var(--ch) + (var(--vh) - var(--ch)) * var(--p));
+  background:rgb(var(--surface-rgb) / calc(1 - var(--p)));
+  border-radius:calc(var(--r-canvas) * (1 - var(--p)));
+  box-shadow:0 60px 120px -30px rgba(0,0,0,calc(var(--sh-a) * (1 - var(--p))));
+  isolation:isolate;
+
+  /* live tokens ramp toward "reads on a photo" as the card dissolves */
+  --ink:      color-mix(in srgb, var(--ink-0),      #fff calc(var(--p) * 100%));
+  --ink-soft: color-mix(in srgb, var(--ink-soft-0), #fff calc(var(--p) *  86%));
+  --hair:     color-mix(in srgb, var(--hair-0),     rgb(255 255 255 / .5) calc(var(--p) * 100%));
+  --surface:  var(--surface-0);
+  color:var(--ink);
+}
+
+/* ── photo (z0, plates notch over it) ─────────── */
+.photo{
+  position:absolute;
+  z-index:0;
+  top:   calc(var(--pad) * (1 - var(--p)));
+  right: calc(var(--pad) * (1 - var(--p)));
+  bottom:calc(var(--pad) * (1 - var(--p)));
+  width: calc(var(--photo-w) + (100% - var(--photo-w)) * var(--p));
+  border-radius:calc(var(--r-photo) * (1 - var(--p)));
+  overflow:hidden;
+  background:#20201f;
+}
+.photo__img{
+  position:absolute;inset:0;
+  width:100%;height:100%;object-fit:cover;display:block;
+  object-position:calc(64% - var(--p) * 14%) 62%;
+  transform:scale(calc(var(--iz) + var(--p) * .14))
+            translate3d(calc(var(--px) * 1px), calc(var(--py) * 1px), 0);
+  transition:opacity .5s var(--ease);
+  will-change:transform,opacity;
+}
+/* one shot for light, one for dark — cross-faded on [data-theme] */
+.photo__img--dark{opacity:0}
+html[data-theme="dark"] .photo__img--light{opacity:0}
+html[data-theme="dark"] .photo__img--dark {opacity:1}
+
+/* base vignette + a left scrim that grows in to carry the headline */
+.photo__shade{
+  position:absolute;inset:0;
+  background:
+    linear-gradient(200deg,rgba(0,0,0,0) 42%,rgba(0,0,0,.42) 100%),
+    linear-gradient(90deg,
+      rgba(0,0,0,calc(.66 * var(--p))) 0%,
+      rgba(0,0,0,calc(.34 * var(--p))) 48%,
+      rgba(0,0,0,0) 80%);
+}
+
+/* floating pills on the photo */
+.pill{
+  position:absolute;z-index:4;
+  display:flex;align-items:center;gap:9px;
+  padding:9px 18px;
+  background:var(--surface-0);
+  color:var(--ink-0);
+  border-radius:999px;
+  box-shadow:0 14px 30px -8px rgba(0,0,0,.4);
+  font-size:12px;font-weight:600;white-space:nowrap;
+  animation:bob 5s ease-in-out infinite;
+}
+.pill svg{width:15px;height:15px}
+.pill--a{top:30%;right:calc(var(--photo-w) + var(--pad) - 62px)}
+.pill--b{bottom:24%;right:34px;animation-delay:-2.5s}
+@keyframes bob{50%{transform:translateY(-9px)}}
+
+/* vertical brand tag */
+.vtag{
+  position:absolute;z-index:4;top:52px;left:24px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  padding:12px 8px;
+  background:var(--surface-0);
+  border-radius:999px;
+}
+.vtag__txt{
+  writing-mode:vertical-rl;
+  /* the full wordmark is twice as long as the placeholder it replaced —
+     tighter tracking keeps it inside the photo instead of running past it */
+  font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--ink-0);
+  white-space:nowrap;
+}
+.vtag__dot{
+  display:grid;place-items:center;
+  width:26px;height:26px;border-radius:50%;
+  background:var(--ink-0);color:var(--surface-0);
+}
+.vtag__dot svg{width:13px;height:13px}
+
+/* .pill--a is canvas-anchored and .vtag would collide with the nav once the
+   photo is full bleed — both retire early. filter:opacity() so it composes
+   with the .reveal-pop entrance opacity instead of fighting it. */
+.pill--a,.vtag{filter:opacity(calc(1 - min(1, var(--p) * 2.6)))}
+
+/* glass chips */
+.glass{
+  position:absolute;z-index:4;right:26px;bottom:26px;
+  display:flex;flex-direction:column;align-items:flex-end;gap:7px;
+}
+.glass__row{display:flex;gap:7px}
+.glass b{
+  padding:7px 16px;border-radius:999px;
+  background:var(--glass-bg);
+  border:1px solid var(--glass-bd);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.02em;
+  transition:transform .35s var(--ease),background .35s var(--ease);
+}
+.glass b:hover{transform:translateY(-3px);background:rgba(255,255,255,.3)}
+
+/* ── white plate: topbar ─────────────────────── */
+.topbar{
+  position:absolute;z-index:3;
+  top:34px;left:44px;
+  display:flex;align-items:center;gap:14px;
+}
+.brand{
+  display:inline-flex;align-items:center;gap:9px;
+  text-decoration:none;flex:none;
+  transition:opacity .35s var(--ease);
+}
+.brand:hover{opacity:.78}
+.brand__mark{
+  width:38px;height:38px;flex:none;
+  object-fit:contain;border-radius:11px;
+  filter:drop-shadow(0 4px 14px rgba(0,0,0,calc(var(--p) * .55)));
+}
+.brand__txt{
+  display:inline-flex;flex-direction:column;line-height:1.08;
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:12.5px;font-weight:700;letter-spacing:.02em;
+  color:var(--ink-soft);
+  text-shadow:0 2px 16px rgba(0,0,0,calc(var(--p) * .8));
+}
+.brand__txt b{font-size:11px;font-weight:800;color:var(--ink);letter-spacing:.06em;text-transform:uppercase}
+
+.nav{
+  display:flex;align-items:center;gap:2px;
+  padding:6px;
+  background:rgb(var(--chip-rgb) / calc(1 - var(--p)));
+  border-radius:999px;
+  text-shadow:0 2px 16px rgba(0,0,0,calc(var(--p) * .8));
+}
+.nav__i{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:9px 15px;border-radius:999px;
+  text-decoration:none;white-space:nowrap;
+  font-family:inherit;background:none;border:0;cursor:pointer;
+  font-size:13px;font-weight:500;color:var(--ink-soft);
+  transition:color .35s var(--ease),background .35s var(--ease);
+}
+.nav__i:hover{color:var(--ink)}
+.nav__i.is-on{
+  background:var(--ink-0);color:var(--surface-0);font-weight:600;
+  box-shadow:0 8px 22px -6px rgba(0,0,0,calc(var(--p) * .5));
+}
+
+/* ── dropdowns ────────────────────────────────
+   The trigger and its panel share one .nav__grp so hover never falls
+   through the gap between them — the panel's top padding IS the bridge. */
+.nav__grp{position:relative}
+.nav__cv{
+  width:13px;height:13px;flex:none;
+  transition:transform .3s var(--ease);
+}
+.nav__grp.is-open > .nav__i{color:var(--ink);background:rgb(255 255 255 / calc(.14 * var(--p)))}
+.nav__grp.is-open .nav__cv{transform:rotate(180deg)}
+
+.nav__menu{
+  position:absolute;z-index:5;
+  top:calc(100% + 10px);left:50%;
+  min-width:196px;
+  padding:7px;
+  transform:translate(-50%,-6px);
+  background:var(--surface-0);
+  border:1px solid var(--hair-0);
+  border-radius:18px;
+  box-shadow:0 26px 54px -18px rgba(0,0,0,.36);
+  text-shadow:none;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .26s var(--ease),transform .26s var(--ease),visibility .26s;
+}
+.nav__menu--wide{min-width:250px}
+/* invisible bridge across the 10px gap so the pointer can travel down */
+.nav__menu::before{content:'';position:absolute;left:0;right:0;top:-12px;height:12px}
+.nav__grp.is-open > .nav__menu{
+  opacity:1;visibility:visible;pointer-events:auto;
+  transform:translate(-50%,0);
+}
+.nav__s{
+  display:flex;align-items:baseline;gap:7px;
+  padding:9px 13px;border-radius:12px;
+  text-decoration:none;white-space:nowrap;
+  font-size:12.5px;font-weight:500;color:var(--ink-0);
+  transition:background .2s var(--ease),color .2s var(--ease);
+}
+.nav__s em{
+  font-style:normal;font-size:10.5px;font-weight:500;
+  color:var(--ink-soft-0);margin-left:auto;
+}
+.nav__s:hover{background:rgb(var(--chip-rgb));color:var(--ink-0)}
+.nav__s:hover em{color:var(--ink-0)}
+
+/* ── burger (mobile only) ─────────────────────── */
+.burger{
+  display:none;
+  position:relative;
+  width:40px;height:40px;border-radius:50%;
+  background:rgb(var(--chip-rgb) / calc(1 - var(--p)));
+  border:1px solid var(--hair);
+  cursor:pointer;color:var(--ink);
+}
+/* absolute spans so both bars rotate about the SAME point — a grid row
+   offset plus a translate is one arithmetic slip away from a lopsided X */
+.burger span{
+  position:absolute;left:50%;top:50%;
+  width:15px;height:1.6px;border-radius:2px;
+  background:currentColor;
+  transform:translate(-50%,-50%) translateY(var(--y,0));
+  transition:transform .3s var(--ease),opacity .2s var(--ease);
+}
+.burger span:nth-child(1){--y:-5.6px}
+.burger span:nth-child(3){--y:5.6px}
+.burger.is-on span:nth-child(1){transform:translate(-50%,-50%) rotate(45deg)}
+.burger.is-on span:nth-child(2){opacity:0}
+.burger.is-on span:nth-child(3){transform:translate(-50%,-50%) rotate(-45deg)}
+
+.theme{
+  display:grid;place-items:center;
+  width:40px;height:40px;border-radius:50%;
+  background:rgb(var(--chip-rgb) / calc(1 - var(--p)));
+  border:1px solid var(--hair);
+  cursor:pointer;color:var(--ink);
+}
+.theme:hover{border-color:var(--ink)}
+.theme svg{width:17px;height:17px;position:absolute}
+.theme__moon{display:none}
+html[data-theme="dark"] .theme__sun{display:none}
+html[data-theme="dark"] .theme__moon{display:block}
+
+/* ── sticky glass bar (full-width, appears after hero) ──── */
+.sticky-bar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  transform:translateY(-100%);
+  transition:transform 0.42s cubic-bezier(0.34,1.2,0.64,1),opacity 0.32s;
+  opacity:0;pointer-events:none;
+  background:rgb(var(--surface-rgb) / .72);
+  backdrop-filter:blur(24px) saturate(1.6);
+  -webkit-backdrop-filter:blur(24px) saturate(1.6);
+  border-bottom:1px solid var(--hair-0);
+}
+.sticky-bar.is-visible{
+  transform:translateY(0);opacity:1;pointer-events:auto;
+}
+[data-theme="dark"] .sticky-bar{
+  background:rgba(16,10,28,.72);
+  border-bottom-color:rgba(255,255,255,.10);
+}
+/* inner flex container */
+.sticky-bar__inner{
+  display:flex;align-items:center;gap:0;
+  width:min(1520px,96vw);margin:0 auto;padding:0 26px;height:56px;
+}
+/* brand: left side */
+.sticky-bar__brand{flex:none;margin-right:18px}
+/* nav: center */
+.sticky-bar .nav{
+  background:transparent;flex:1;gap:0;
+  padding:0;border-radius:0;
+  text-shadow:none;
+}
+.sticky-bar .nav__i{padding:6px 12px;font-size:12.5px}
+.sticky-bar .nav__i.is-on{
+  background:var(--ink-0);color:var(--surface-0);font-weight:600;
+  box-shadow:0 4px 14px -4px rgba(0,0,0,.28);
+}
+/* right end: theme + CTA */
+.sticky-bar__end{
+  display:flex;align-items:center;gap:10px;flex:none;margin-left:auto;
+}
+.sticky-bar .theme{
+  background:none;border-color:var(--hair-0);width:36px;height:36px;
+}
+.sticky-bar .burger{display:none}
+/* Contact Us CTA button */
+.sticky-bar__cta{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 18px 8px 10px;border-radius:999px;
+  background:var(--ink-0);color:var(--surface-0);
+  text-decoration:none;font-size:11px;font-weight:700;
+  letter-spacing:.06em;white-space:nowrap;
+  transition:opacity .25s;
+}
+.sticky-bar__cta:hover{opacity:.82}
+.sticky-bar__cta svg{width:16px;height:16px}
+/* sticky bar burger button (hidden by default, shown on mobile) */
+.sticky-bar .burger{
+  display:none;
+  width:36px;height:36px;border-radius:8px;
+  background:none;border:1px solid var(--hair-0);
+  cursor:pointer;color:var(--ink);
+  margin-right:12px;
+}
+
+/* ── white plate: top-right tab ──────────────── */
+.tab{
+  position:absolute;z-index:3;
+  top:0;right:0;
+  width:var(--tab-w);height:var(--tab-h);
+  background:rgb(var(--surface-rgb) / calc(1 - var(--p)));
+  border-top-right-radius:calc(var(--r-canvas) * (1 - var(--p)));
+  border-bottom-left-radius:calc(var(--r-inv) * (1 - var(--p)));
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  padding-right:8px;
+  text-shadow:0 1px 3px rgba(0,0,0,calc(var(--p) * .95)),
+              0 2px 18px rgba(0,0,0,calc(var(--p) * .8));
+}
+/* the top-right corner of the photo is the sky — a moon or a hot cloud can
+   sit straight under CONTACT US once the plate dissolves. Fade a soft scrim
+   in as the plate fades out so the label always has something to sit on. */
+.tab::before{
+  content:'';
+  position:absolute;
+  /* box is far larger than the label so the gradient reaches full
+     transparency well inside it — otherwise the box edge shows as a
+     rectangle over a bright sky */
+  inset:-70px -46px -132px -168px;
+  background:radial-gradient(58% 46% at 74% 62%,
+             rgba(0,0,0,.5) 0%, rgba(0,0,0,.34) 34%,
+             rgba(0,0,0,.14) 60%, transparent 82%);
+  opacity:var(--p);
+  pointer-events:none;
+  z-index:-1;
+}
+.cart{
+  display:grid;place-items:center;
+  width:46px;height:46px;border-radius:50%;
+  background:var(--ink-0);color:var(--surface-0);
+  border:0;cursor:pointer;
+  box-shadow:0 8px 22px -6px rgba(0,0,0,calc(var(--p) * .5));
+  transition:transform .35s var(--ease);
+}
+.cart:hover{transform:scale(1.08)}
+.cart svg{width:18px;height:18px}
+.contact{
+  background:none;border:0;cursor:pointer;
+  color:var(--ink);
+  font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.09em;
+}
+
+/* ── headline ────────────────────────────────── */
+.copy{
+  position:absolute;z-index:2;
+  left:44px;
+  top:132px;
+  width:min(720px,52%);
+  text-shadow:0 2px 28px rgba(0,0,0,calc(var(--p) * .55));
+}
+.title{
+  font-family:'Montserrat',sans-serif;
+  font-weight:800;
+  font-size:clamp(34px,3.55vw,62px);
+  line-height:1.06;
+  letter-spacing:-.035em;
+  color:var(--ink);
+}
+.title .l{display:block}
+.faces{display:inline-flex;vertical-align:-.16em;margin-right:.06em}
+.faces img{
+  width:.92em;height:.92em;border-radius:50%;
+  border:3px solid var(--surface-0);object-fit:cover;
+  margin-left:-.3em;
+}
+.faces img:first-child{margin-left:0}
+
+.meter{display:flex;align-items:center;gap:16px;margin:34px 0 26px}
+.meter__rule{
+  width:52px;height:0;
+  border-top:2px dotted var(--hair);
+}
+.meter__rule--long{width:120px}
+.meter__n{
+  font-family:'Montserrat',sans-serif;
+  font-size:22px;font-weight:700;color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+}
+.blurb{
+  display:flex;gap:14px;
+  max-width:360px;
+  font-size:10.5px;font-weight:700;line-height:1.85;letter-spacing:.055em;
+  color:var(--ink-soft);
+}
+.blurb__sq{
+  flex:0 0 auto;
+  width:10px;height:10px;margin-top:6px;
+  background:var(--brand-grad);
+}
+
+/* ── white plate: bottom shelf ───────────────── */
+.shelf{
+  position:absolute;z-index:3;
+  left:0;bottom:0;
+  width:var(--shelf-w);height:var(--shelf-h);
+  background:rgb(var(--surface-rgb) / calc(1 - var(--p)));
+  border-bottom-left-radius:calc(var(--r-canvas) * (1 - var(--p)));
+  border-top-right-radius:calc(var(--r-inv) * (1 - var(--p)));
+  display:flex;align-items:center;gap:30px;
+  padding:0 40px 0 44px;
+  text-shadow:0 2px 18px rgba(0,0,0,calc(var(--p) * .8));
+}
+.pager{
+  font-family:'Montserrat',sans-serif;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.shelf__meta{
+  display:flex;align-items:center;gap:12px;
+  font-size:10.5px;font-weight:700;letter-spacing:.14em;
+  color:var(--ink-soft);
+}
+.shelf__sq{flex:0 0 auto;width:10px;height:10px;background:var(--brand-grad)}
+.pager b{font-size:26px;font-weight:800}
+.pager span{font-size:15px;font-weight:700;color:var(--ink-soft)}
+
+.arrows{display:flex;gap:10px;margin-left:auto}
+.arrow{
+  display:grid;place-items:center;
+  width:42px;height:42px;border-radius:50%;
+  background:none;border:1px solid var(--hair);
+  color:var(--ink);cursor:pointer;
+  box-shadow:0 6px 18px -4px rgba(0,0,0,calc(var(--p) * .45));
+  transition:background .35s var(--ease),color .35s var(--ease);
+}
+.arrow:hover{background:var(--ink-0);color:var(--surface-0);border-color:var(--ink-0)}
+.arrow svg{width:16px;height:16px}
+
+/* ── the interlock: inverse (concave) fillets ──
+   Each is a square of surface colour with a quarter-disc
+   bitten out, parked where a plate steps back into the gutter.
+   They dissolve with the plates they belong to. */
+.fillet{
+  position:absolute;z-index:3;
+  width:var(--r-inv);height:var(--r-inv);
+  background:rgb(var(--surface-rgb) / calc(1 - var(--p)));
+  pointer-events:none;
+}
+/* junction: top gutter  ↔  top-right tab */
+.fillet--tab{
+  top:calc(var(--pad) * (1 - var(--p)));
+  right:var(--tab-w);
+  -webkit-mask:radial-gradient(circle var(--r-inv) at 0 100%,transparent 98%,#000 100%);
+          mask:radial-gradient(circle var(--r-inv) at 0 100%,transparent 98%,#000 100%);
+}
+/* junction: bottom gutter ↔ bottom-left shelf */
+.fillet--shelf{
+  bottom:calc(var(--pad) * (1 - var(--p)));
+  left:var(--shelf-w);
+  -webkit-mask:radial-gradient(circle var(--r-inv) at 100% 0,transparent 98%,#000 100%);
+          mask:radial-gradient(circle var(--r-inv) at 100% 0,transparent 98%,#000 100%);
+}
+
+/* ── scroll cue ──────────────────────────────── */
+.cue{
+  position:absolute;z-index:5;
+  left:50%;bottom:26px;
+  transform:translateX(-50%);
+  display:flex;align-items:center;gap:9px;
+  font-size:9.5px;font-weight:800;letter-spacing:.22em;
+  color:#fff;
+  opacity:calc(1 - min(1, var(--p) * 4));
+  pointer-events:none;
+  mix-blend-mode:difference;
+}
+.cue svg{width:14px;height:14px;animation:cue 1.9s ease-in-out infinite}
+@keyframes cue{50%{transform:translateY(5px)}}
+
+/* ── entrance ────────────────────────────────── */
+.canvas{opacity:0;transform:translateY(46px) scale(.965)}
+.canvas.is-in{opacity:1;transform:none;transition:opacity 1s var(--ease),transform 1.15s var(--ease)}
+.reveal-up{opacity:0;transform:translateY(26px)}
+.reveal-up.is-in{opacity:1;transform:none;transition:all .85s var(--ease)}
+.reveal-pop{opacity:0;transform:scale(.82)}
+.reveal-pop.is-in{opacity:1;transform:none;transition:all .7s cubic-bezier(.18,.9,.32,1.28)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition-duration:.01ms!important}
+  .canvas,.reveal-up,.reveal-pop{opacity:1;transform:none}
+}
+
+/* ── responsive ──────────────────────────────── */
+@media (max-width:1280px){
+  :root{--tab-w:250px;--shelf-w:60%;--photo-w:42%;--shelf-h:112px}
+  .pill--a{right:calc(var(--photo-w) + var(--pad) - 46px)}
+  .topbar{left:26px}
+  .nav__i{padding:9px 11px;font-size:12.5px}
+  /* seven nav items + a wordmark do not both fit — the mark carries it */
+  .brand__txt{display:none}
+}
+@media (max-width:1024px){
+  /* no zoom on small screens — the card is already the page */
+  :root{--p:0!important;--photo-w:auto;--shelf-w:100%;--tab-w:220px;--tab-h:84px;--shelf-h:auto}
+  .scroll{height:auto}
+  .stage{position:static;height:auto;padding:26px 0}
+  .canvas{width:auto;height:auto;min-height:0;padding-bottom:0;margin:0 auto;max-width:93vw}
+  .photo{position:relative;top:0;right:0;bottom:0;width:auto;height:320px;margin:var(--pad) var(--pad) 0}
+  .topbar,.copy,.tab,.shelf{position:static}
+  .topbar{padding:26px 26px 0;order:-1;flex-wrap:wrap;justify-content:flex-start}
+  /* nav has collapsed into the burger, so the wordmark comes back */
+  .brand{margin-right:auto}
+  .brand__txt{display:inline-flex}
+
+  /* the pill becomes a full-width collapsible panel below the bar */
+  .burger{display:block}
+  .nav{
+    order:3;flex-basis:100%;
+    flex-direction:column;align-items:stretch;gap:0;
+    border-radius:22px;
+    max-height:0;padding:0 7px;overflow:hidden;
+    transition:max-height .4s var(--ease),padding .4s var(--ease),margin .4s var(--ease);
+  }
+  .nav.is-open{max-height:70vh;overflow-y:auto;padding:7px;margin-top:16px}
+  .nav__i{padding:12px 14px;font-size:14px;border-radius:14px;justify-content:space-between}
+  .nav__i.is-on{background:none;color:var(--ink);box-shadow:none}
+  .nav__grp{position:static}
+
+  /* dropdowns turn into inline accordions — no absolute layer on a phone */
+  .nav__menu{
+    position:static;transform:none;
+    min-width:0;padding:0 0 0 14px;
+    background:none;border:0;border-radius:0;box-shadow:none;
+    max-height:0;overflow:hidden;
+    opacity:0;visibility:visible;pointer-events:auto;
+    transition:max-height .34s var(--ease),opacity .24s var(--ease);
+  }
+  .nav__menu::before{display:none}
+  .nav__grp.is-open > .nav__menu{max-height:340px;opacity:1;transform:none}
+  .nav__s{padding:10px 12px;font-size:13px}
+  .nav__s em{margin-left:auto}
+
+  /* sticky bar responsive */
+  .sticky-bar__inner{
+    width:100%;padding:0 26px;height:52px;
+  }
+  .sticky-bar .nav{
+    order:3;flex-basis:100%;
+    flex-direction:column;align-items:stretch;gap:0;
+    max-height:0;overflow:hidden;border-radius:0;
+    transition:max-height .4s var(--ease),padding .4s var(--ease),margin .4s var(--ease);
+  }
+  .sticky-bar .nav.is-open{
+    max-height:calc(100vh - 52px);overflow-y:auto;
+    padding:0;margin-top:0;
+  }
+  .sticky-bar .burger{display:block;width:36px;height:36px}
+  .sticky-bar__brand{display:none}
+  .sticky-bar__end{margin-left:auto;gap:8px}
+  .sticky-bar__cta{padding:6px 14px;font-size:10.5px}
+  .sticky-bar__cta span{display:none}
+
+  .copy{width:auto;padding:24px 26px 0}
+  .tab{display:none}
+  .shelf{border-radius:0;height:auto;padding:26px;flex-wrap:wrap}
+  .fillet,.cue{display:none}
+  .canvas{display:flex;flex-direction:column}
+  .vtag,.pill--a{display:none}
+}
+
+
+/* ════════════════════════════════════════════════
+   CONSISTENCY PASSES — Animation Enhancements (Phase 1)
+   ════════════════════════════════════════════════
+   Unified micro-interactions across the page:
+   · Gradient border animations on cards
+   · Icon rotation & scale standardization
+   · Button micro-interaction enhancements
+   · Floating object improvements with GPU acceleration
+   ════════════════════════════════════════════════ */
+
+/* ── Gradient border animation for cards ─────────
+   Animates gradient position from left to right on hover,
+   creating a shimmer effect that draws attention. */
+@keyframes gradient-border-shimmer{
+  0%{background-position:0% 50%}
+  100%{background-position:100% 50%}
+}
+
+.card{
+  position:relative;
+}
+.card::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(96deg,
+    var(--brand-violet) 0%,
+    var(--brand-magenta) 30%,
+    var(--brand-flame) 66%,
+    var(--brand-orange) 100%);
+  background-size:180% 100%;
+  background-position:0% 50%;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .6s var(--ease);
+  z-index:-1;
+}
+.card:hover::after{
+  animation:gradient-border-shimmer .6s var(--ease) forwards;
+  opacity:.12;
+}
+
+/* ── Icon rotation and scale standardization classes ─
+   Utility classes for consistent icon animations across
+   FAQ chevrons, Why section icons, and SVG elements. */
+
+/* 180° rotation on hover (e.g., FAQ accordion toggle) */
+.icon--rotate-hover{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;flex:none;
+  transition:transform .4s var(--ease);
+  will-change:transform;
+}
+.icon--rotate-hover:hover,
+.icon--rotate-hover.is-active{
+  transform:rotate(180deg);
+}
+
+/* 1.12x scale on hover (e.g., Why section feature icons) */
+.icon--scale-hover{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;flex:none;
+  transition:transform .3s var(--ease),color .3s var(--ease);
+  will-change:transform;
+}
+.icon--scale-hover:hover{
+  transform:scale(1.12);
+  color:var(--accent);
+}
+
+/* ── Enhanced button micro-interactions ──────────
+   Unified hover states with lift, gradient shift, and shadow warmth.
+   Features: .btn--ink (lift + gradient shift + warm shadow + icon slide)
+            .btn--ghost (lift + border brighten)
+   Note: Full implementation in main button styles (lines ~816-832) ─────────────────── */
+
+/* ── Floating object improvements ────────────────
+   Standardized 5s floating animation with -8px translateY
+   applied to floating elements across the page.
+   GPU-accelerated with transform and opacity only. */
+
+@keyframes float{
+  50%{transform:translateY(-8px)}
+}
+
+.pill{
+  animation:float 5s ease-in-out infinite;
+  will-change:transform;
+}
+
+.card__360{
+  animation:float 5s ease-in-out infinite;
+  will-change:transform;
+}
+
+.card__badge{
+  animation:float 5s ease-in-out infinite var(--delay,0s);
+  will-change:transform;
+}
+
+/* Offer badges and CTAs with floating effect */
+.badge--floating{
+  animation:float 5s ease-in-out infinite;
+  will-change:transform;
+}
+
+/* Reduced motion support across all enhancements */
+@media (prefers-reduced-motion:reduce){
+  .card,
+  .icon--rotate-hover,
+  .icon--scale-hover,
+  .btn--ink,
+  .btn--ghost,
+  .pill,
+  .card__360,
+  .card__badge,
+  .badge--floating{
+    animation:none !important;
+    transition-duration:.01ms !important;
+  }
+}
+
+
+/* ════════════════════════════════════════════════
+   BELOW THE FOLD — About + Collection
+
+   The hero owns --p; nothing down here reads it. These sections use the
+   resting "-0" tokens directly (--ink-0, --surface-0, --hair-0) so they
+   flip cleanly with [data-theme] and never inherit the hero's white ramp.
+   ════════════════════════════════════════════════ */
+
+.about,.coll,.why,.perf,.news,.ride,.faq,.ins{
+  position:relative;z-index:1;
+  background:var(--surface-0);
+  color:var(--ink-0);
+}
+.wrap{
+  width:min(1520px,93vw);
+  margin-inline:auto;
+  padding:clamp(72px,9vw,150px) 0;
+}
+
+/* ── shared section furniture ────────────────── */
+.sq{flex:0 0 auto;width:10px;height:10px;background:var(--brand-grad)}
+.eyebrow{
+  display:flex;align-items:center;gap:12px;
+  font-size:10.5px;font-weight:800;letter-spacing:.18em;
+  color:var(--ink-soft-0);
+}
+.sec__head{margin-bottom:clamp(38px,4.5vw,70px)}
+.sec__head--row{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:32px;flex-wrap:wrap;
+}
+.sec__title{
+  margin-top:20px;
+  font-family:'Montserrat',sans-serif;
+  font-weight:800;
+  font-size:clamp(30px,3.3vw,58px);
+  line-height:1.06;
+  letter-spacing:-.035em;
+}
+.hl{color:var(--ink-soft-0)}
+.link{
+  display:inline-flex;align-items:center;gap:8px;
+  padding-bottom:4px;
+  border-bottom:1px solid var(--hair-0);
+  color:var(--ink-0);text-decoration:none;
+  font-size:12px;font-weight:700;letter-spacing:.06em;
+  transition:border-color .35s var(--ease),gap .35s var(--ease);
+}
+.link:hover{border-color:var(--ink-0);gap:14px}
+.link svg{width:14px;height:14px}
+
+/* ── buttons ─────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:14px 26px;border-radius:999px;
+  border:1px solid transparent;
+  font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.06em;
+  text-decoration:none;cursor:pointer;white-space:nowrap;
+  transition:transform .35s var(--ease),background .35s var(--ease),
+             color .35s var(--ease),border-color .35s var(--ease);
+}
+.btn svg{width:15px;height:15px;transition:transform .35s var(--ease)}
+.btn--ink{
+  background:var(--brand-grad);
+  background-size:180% 100%;
+  background-position:0% 50%;
+  color:#fff;
+  box-shadow:0 10px 26px -12px rgba(123,47,247,.6);
+  transition:transform .35s var(--ease),background-position .55s var(--ease),
+             box-shadow .35s var(--ease),filter .35s var(--ease);
+}
+.btn--ink:hover{
+  transform:translateY(-2px);
+  background-position:100% 50%;
+  box-shadow:0 16px 34px -12px rgba(240,83,43,.55);
+  filter:brightness(1.1);
+}
+.btn--ink:hover svg{transform:translateX(4px)}
+.btn--ghost{
+  background:none;
+  border-color:var(--hair-0);
+  color:var(--ink-0);
+  transition:transform .35s var(--ease),border-color .35s var(--ease),background .35s var(--ease);
+}
+.btn--ghost:hover{
+  border-color:var(--ink-0);
+  transform:translateY(-2px);
+  background:rgba(var(--surface-rgb) / .08);
+}
+
+/* ══════════ ABOUT ══════════ */
+.about__grid{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:clamp(34px,4.4vw,80px);
+  align-items:center;
+}
+
+/* ── mosaic reveal ────────────────────────────
+   The video sits at the bottom of the stack. Over it, script.js lays a
+   --cols × --rows grid of .tile, each one carrying its own slice of
+   --bg-img (one shared background, offset per cell — so the tiles read as
+   a single photo, not 40 thumbnails). On enter, each tile flips on X and
+   fades with a diagonal delay, so the photo shatters into the footage. */
+.mosaic{
+  position:relative;
+  aspect-ratio:4/3;
+  border-radius:var(--r-photo);
+  overflow:hidden;
+  background:#20201f;
+  box-shadow:0 50px 90px -40px rgba(0,0,0,var(--sh-a));
+}
+.mosaic__v{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;display:block;
+  /* doubles as the poster: if assets/about.mp4 is missing the still shows
+     through, and it tracks [data-theme] the way the hero shot does */
+  background:var(--bg-img),var(--bg-fallback);
+  background-size:cover;
+  background-position:center;
+  transform:scale(1.04);
+  transition:transform 1.6s var(--ease);
+}
+.mosaic.is-open .mosaic__v{transform:scale(1)}
+
+.mosaic__grid{
+  position:absolute;inset:0;z-index:2;
+  display:grid;
+  grid-template-columns:repeat(var(--cols,8),1fr);
+  grid-template-rows:repeat(var(--rows,5),1fr);
+  perspective:900px;
+  pointer-events:none;
+}
+.tile{
+  background-image:var(--bg-img),var(--bg-fallback);
+  background-size:calc(var(--cols,8) * 100%) calc(var(--rows,5) * 100%);
+  background-position:var(--bx) var(--by);
+  /* a hair of overlap kills the sub-pixel seams between cells */
+  outline:1px solid transparent;
+  transform-origin:50% 50%;
+  will-change:transform,opacity;
+}
+.mosaic.is-open .tile{
+  opacity:0;
+  transform:rotateX(82deg) scale(.6);
+  transition:opacity .62s var(--ease) var(--d),
+             transform .72s cubic-bezier(.5,0,.2,1) var(--d);
+}
+
+.mosaic__play{
+  position:absolute;z-index:3;
+  left:50%;top:50%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;
+  width:74px;height:74px;border-radius:50%;
+  background:var(--surface-0);color:var(--ink-0);
+  border:0;cursor:pointer;
+  opacity:0;
+  box-shadow:0 18px 44px -12px rgba(0,0,0,.55);
+  transition:opacity .5s var(--ease) .9s,transform .35s var(--ease);
+}
+.mosaic.is-open .mosaic__play{opacity:1}
+.mosaic__play:hover{transform:translate(-50%,-50%) scale(1.09)}
+.mosaic__play svg{width:22px;height:22px;margin-left:3px}
+.mosaic.is-playing .mosaic__play{opacity:0;pointer-events:none}
+
+.mosaic__cap{
+  position:absolute;z-index:3;left:22px;bottom:20px;
+  display:flex;align-items:center;gap:10px;
+  padding:9px 16px 9px 12px;border-radius:999px;
+  background:var(--glass-bg);
+  border:1px solid var(--glass-bd);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.16em;
+  opacity:0;transform:translateY(10px);
+  transition:opacity .6s var(--ease) 1s,transform .6s var(--ease) 1s;
+}
+.mosaic.is-open .mosaic__cap{opacity:1;transform:none}
+
+/* ── about copy ──────────────────────────────── */
+.about__lead{
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(17px,1.42vw,23px);
+  font-weight:600;line-height:1.5;letter-spacing:-.015em;
+}
+.about__lead em{
+  font-style:normal;
+  background:var(--brand-grad);
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;
+}
+.about__text{
+  margin-top:20px;
+  max-width:52ch;
+  font-size:14px;line-height:1.85;color:var(--ink-soft-0);
+}
+
+/* counters — script.js runs them once on entry */
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:22px 14px;
+  margin:clamp(30px,3vw,46px) 0;
+  padding:26px 0;
+  border-block:1px solid var(--hair-0);
+  list-style:none;
+}
+.stat{display:flex;flex-direction:column;gap:7px}
+.stat__n{
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(26px,2.5vw,40px);
+  font-weight:800;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;
+  color:var(--ink-0);
+}
+.stat span{
+  font-size:9.5px;font-weight:700;letter-spacing:.13em;
+  line-height:1.5;color:var(--ink-soft-0);
+}
+
+/* ══════════ COLLECTION ══════════ */
+.coll{border-top:1px solid var(--hair-0)}
+.coll__grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(18px,1.6vw,26px);
+}
+.coll__foot{
+  display:flex;align-items:center;gap:12px;
+  margin-top:34px;
+  font-size:10.5px;font-weight:700;letter-spacing:.1em;
+  color:var(--ink-soft-0);
+}
+
+/* ── card ─────────────────────────────────────
+   --c is the finish colour, set per card in the markup and rewritten by the
+   swatches. It grades the shot through .card__wash on soft-light, which keeps
+   the photo's luminance and only moves its hue — a hue-rotate on the whole
+   frame drags the sky and the grass with it. */
+.card{
+  position:relative;
+  display:flex;flex-direction:column;
+  border:1px solid var(--hair-0);
+  border-radius:26px;
+  background:rgb(var(--chip-rgb) / .55);
+  overflow:hidden;
+  /* scroll-in: script.js writes --i, the stagger index */
+  opacity:0;transform:translateY(38px);
+}
+.card.is-in{
+  opacity:1;transform:none;
+  transition:opacity .8s var(--ease) calc(var(--i,0) * 90ms),
+             transform .9s var(--ease) calc(var(--i,0) * 90ms),
+             border-color .4s var(--ease),box-shadow .4s var(--ease);
+}
+.card:hover{
+  border-color:var(--ink-0);
+  box-shadow:0 40px 70px -34px rgba(0,0,0,var(--sh-a));
+}
+
+.card__media{
+  position:relative;
+  aspect-ratio:16/11;
+  overflow:hidden;
+  background:#1a1a19;
+}
+.card__img{
+  width:100%;height:100%;object-fit:cover;display:block;
+  object-position:62% 60%;
+  filter:saturate(1.06);
+  transform:scale(1.02);
+  transition:transform 1.1s var(--ease);
+}
+
+/* the finish grade */
+.card__wash{
+  position:absolute;inset:0;
+  background:var(--c,var(--brand-violet));
+  mix-blend-mode:soft-light;
+  opacity:.78;
+  transition:background .55s var(--ease);
+  pointer-events:none;
+}
+.card:hover .card__img{transform:scale(1.09)}
+
+/* pointer-tracked sheen; --mx/--my written by script.js on move */
+.card__shine{
+  position:absolute;inset:0;
+  background:radial-gradient(46% 46% at var(--mx,50%) var(--my,50%),
+             rgba(255,255,255,.24),transparent 70%);
+  opacity:0;
+  transition:opacity .45s var(--ease);
+  pointer-events:none;
+}
+.card:hover .card__shine{opacity:1}
+
+.card__badge{
+  position:absolute;z-index:2;top:14px;left:14px;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 13px;border-radius:999px;
+  background:var(--surface-0);color:var(--ink-0);
+  font-size:9.5px;font-weight:800;letter-spacing:.08em;
+  box-shadow:0 10px 24px -8px rgba(0,0,0,.45);
+}
+.card__badge svg{width:13px;height:13px;color:var(--ink-0)}
+.card__360{
+  position:absolute;z-index:2;top:14px;right:14px;
+  display:grid;place-items:center;
+  width:42px;height:42px;border-radius:50%;
+  background:var(--brand-grad);color:#fff;
+  font-size:10px;font-weight:800;letter-spacing:.02em;
+  animation:bob 5s ease-in-out infinite;
+}
+
+.card__body{
+  display:flex;flex-direction:column;
+  gap:14px;
+  padding:22px 22px 24px;
+}
+.card__rate{
+  display:flex;align-items:center;gap:7px;
+  font-size:11px;color:var(--ink-soft-0);
+}
+.card__rate svg{width:14px;height:14px;color:var(--accent);fill:var(--accent)}
+.card__rate b{color:var(--ink-0);font-size:12px;font-weight:800}
+
+.card__name{
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(21px,1.7vw,27px);
+  font-weight:800;letter-spacing:-.035em;
+  transition:transform .4s var(--ease);
+}
+.card:hover .card__name{transform:translateX(4px)}
+
+.card__chips{display:flex;flex-wrap:wrap;gap:8px}
+.card__chips span{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px;border-radius:999px;
+  border:1px solid var(--hair-0);
+  font-size:10.5px;font-weight:700;letter-spacing:.03em;
+  color:var(--ink-soft-0);
+}
+.card__chips svg{width:13px;height:13px;color:var(--ink-0)}
+
+.card__colors{display:flex;gap:9px}
+.sw{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--c);
+  border:2px solid transparent;
+  /* ring is mixed off the ink, not the hairline: a near-black finish on the
+     dark surface is otherwise invisible and the swatch stops being countable */
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--ink-0) 38%, var(--surface-0));
+  cursor:pointer;padding:0;
+  outline-offset:3px;
+  transition:transform .3s var(--ease),border-color .3s var(--ease);
+}
+.sw:hover{transform:scale(1.16)}
+.sw.is-on{border-color:var(--surface-0);box-shadow:0 0 0 2px var(--ink-0)}
+
+.card__price{
+  margin-top:2px;padding-top:16px;
+  border-top:1px dashed var(--hair-0);
+}
+.card__plabel{
+  font-size:9.5px;font-weight:800;letter-spacing:.14em;
+  color:var(--ink-soft-0);
+}
+.card__vars{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0 9px}
+.var{
+  display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+  padding:11px 13px;border-radius:14px;
+  background:var(--surface-0);
+  border:1px solid var(--hair-0);
+  font-family:inherit;text-align:left;cursor:pointer;
+  transition:border-color .3s var(--ease),transform .3s var(--ease);
+}
+.var:hover{border-color:var(--ink-0);transform:translateY(-2px)}
+.var b{font-family:'Montserrat',sans-serif;font-size:15px;font-weight:800;
+  letter-spacing:-.02em;color:var(--ink-0)}
+.var span{font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--ink-soft-0)}
+.card__note{font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--ink-soft-0)}
+
+.card__acts{display:flex;gap:9px;margin-top:4px}
+.card__acts .btn{flex:1;padding:13px 16px}
+
+/* ── below-fold responsive ───────────────────── */
+@media (max-width:1100px){
+  .about__grid{grid-template-columns:1fr;gap:38px}
+  .coll__grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:720px){
+  .coll__grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card__vars{grid-template-columns:1fr}
+  .mosaic{aspect-ratio:3/2}
+  .sec__head--row{align-items:flex-start}
+}
+
+@media (prefers-reduced-motion:reduce){
+  /* no shatter — the tiles are simply never laid down (see script.js),
+     and the cards arrive already placed */
+  .card{opacity:1;transform:none}
+  .mosaic__play,.mosaic__cap{opacity:1;transform:none}
+  .mosaic__play{transform:translate(-50%,-50%)}
+}
+
+/* ══════════ WHY CHOOSE ══════════
+   Two columns: a sticky pitch rail and a list of six reasons. The list has
+   no cards — a hairline between rows, a ghosted number in the gutter, and
+   a brand rule that draws in from the left on hover. Rows arrive on a
+   stagger driven by --i (set in script.js), same pattern as .card. */
+.why__grid{
+  display:grid;
+  grid-template-columns:.86fr 1.14fr;
+  gap:clamp(38px,5vw,96px);
+  align-items:start;
+}
+
+/* ── left rail ───────────────────────────────── */
+.why__rail{position:sticky;top:clamp(80px,12vh,140px)}
+.why__lead{
+  margin-top:22px;max-width:38ch;
+  font-size:clamp(14px,1.05vw,16px);line-height:1.65;
+  color:var(--ink-soft-0);
+}
+.why__cta{margin-top:32px}
+
+/* ── list ────────────────────────────────────── */
+.why__list{list-style:none;border-top:1px solid var(--hair-0)}
+.why__item{
+  position:relative;
+  display:grid;
+  grid-template-columns:64px 1fr;
+  gap:clamp(14px,1.6vw,28px);
+  padding:clamp(22px,2.4vw,34px) 0;
+  border-bottom:1px solid var(--hair-0);
+  opacity:0;transform:translateY(24px);
+}
+.why__item.is-in{
+  opacity:1;transform:none;
+  transition:opacity .7s var(--ease),transform .7s var(--ease);
+  transition-delay:calc(var(--i,0) * 90ms);
+}
+
+/* the brand rule: a 2px bar that grows out of the left edge on hover */
+.why__item::before{
+  content:'';position:absolute;left:0;bottom:-1px;
+  width:0;height:2px;background:var(--brand-grad);
+  transition:width .55s var(--ease);
+}
+.why__item:hover::before{width:100%}
+
+.why__n{
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(15px,1.3vw,19px);font-weight:800;
+  letter-spacing:-.02em;line-height:1.2;
+  color:var(--ink-soft-0);
+  -webkit-text-stroke:0;
+  opacity:.55;
+  transition:color .4s var(--ease),opacity .4s var(--ease);
+}
+.why__item:hover .why__n{color:var(--brand-magenta);opacity:1}
+
+.why__t{
+  display:flex;align-items:center;gap:11px;
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(17px,1.55vw,25px);font-weight:800;
+  letter-spacing:-.025em;line-height:1.15;
+  color:var(--ink-0);
+}
+.why__t svg{
+  width:18px;height:18px;flex:0 0 auto;
+  color:var(--ink-soft-0);
+  transition:color .4s var(--ease),transform .4s var(--ease);
+}
+.why__item:hover .why__t svg{color:var(--brand-flame);transform:translateX(2px)}
+
+.why__d{
+  margin-top:9px;max-width:46ch;
+  font-size:clamp(12.5px,.92vw,14.5px);line-height:1.6;
+  color:var(--ink-soft-0);
+}
+
+/* ── keyword ticker ──────────────────────────── */
+.ticker{
+  display:flex;overflow:hidden;
+  padding:clamp(18px,2vw,26px) 0;
+  border-top:1px solid var(--hair-0);
+  border-bottom:1px solid var(--hair-0);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+}
+.ticker__track{
+  display:flex;align-items:center;gap:clamp(22px,2.6vw,44px);
+  padding-right:clamp(22px,2.6vw,44px);
+  flex:0 0 auto;white-space:nowrap;
+  animation:ticker 26s linear infinite;
+}
+.ticker:hover .ticker__track{animation-play-state:paused}
+.ticker__track span{
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(15px,1.7vw,28px);font-weight:800;
+  letter-spacing:-.02em;color:var(--ink-0);
+}
+.ticker .sq{width:8px;height:8px;border-radius:50%}
+@keyframes ticker{to{transform:translateX(-100%)}}
+
+/* ── why responsive ──────────────────────────── */
+@media (max-width:1024px){
+  .why__grid{grid-template-columns:1fr;gap:44px}
+  .why__rail{position:static}
+}
+@media (max-width:560px){
+  .why__item{grid-template-columns:1fr;gap:8px}
+  .why__n{opacity:1;color:var(--ink-0)}
+}
+@media (prefers-reduced-motion:reduce){
+  .why__item{opacity:1;transform:none}
+  .ticker__track{animation:none}
+}
+
+
+/* ════════════════════════════════════════════════
+   FEATURE WINDOW — scroll-scrubbed model deck
+
+   One number drives the whole block: --fi, the fractional slide index
+   (0 → N-1), written by script.js off the .feat__drive scroll position.
+
+   Every child carries its own --n and derives --d (its signed distance
+   from --fi). Position is linear in --d; opacity and scale are quadratic
+   in --d, which makes the active item the only crisp one and lets the
+   neighbours fall away evenly on both sides. No per-slide classes, no
+   state toggling — the same three calc() lines cover any slide count.
+   ════════════════════════════════════════════════ */
+
+.feat{
+  position:relative;z-index:1;
+  background:var(--surface-0);
+  color:var(--ink-0);
+  border-top:1px solid var(--hair-0);
+  --fi:0;                 /* fractional index, written by script.js */
+  --arc-r:460px;          /* arc dial radius            */
+  --arc-step:23deg;       /* angle between model names  */
+  --travel:78%;           /* slide horizontal spacing   */
+  --arc-lift:clamp(74px,10vh,124px);  /* arc crown above window floor */
+}
+
+/* driver + pin. 100vh of viewport per slide, plus a beat to land on. */
+.feat__drive{position:relative;height:420vh}
+.feat__pin{
+  position:sticky;top:0;
+  height:100vh;height:100svh;
+  display:grid;place-items:center;
+  padding:clamp(14px,2vw,30px);
+}
+.feat__window{
+  position:relative;
+  width:100%;height:100%;
+  border-radius:clamp(20px,2.4vw,46px);
+  background:
+    radial-gradient(120% 78% at 50% 112%,
+      color-mix(in srgb, var(--brand-violet) 12%, transparent) 0%, transparent 62%),
+    radial-gradient(88% 64% at 50% 18%,
+      color-mix(in srgb, var(--brand-blue) 9%, transparent) 0%, transparent 70%),
+    rgb(var(--chip-rgb) / .55);
+  border:1px solid var(--hair-0);
+  overflow:hidden;
+  isolation:isolate;
+}
+
+/* ── head ─────────────────────────────────────── */
+.feat__head{
+  position:absolute;z-index:3;
+  top:clamp(22px,3.2vw,52px);
+  left:clamp(182px,17.2vw,266px);  /* clears the spec badges */
+  right:clamp(58px,5vw,96px);   /* clears the dot column */
+  pointer-events:none;
+}
+.feat__title{
+  margin-top:16px;
+  font-family:'Montserrat',sans-serif;
+  font-weight:800;
+  font-size:clamp(24px,2.4vw,42px);
+  line-height:1.06;
+  letter-spacing:-.035em;
+}
+
+/* ── left rail: three spec badges ──────────────
+   The icon, the label and the badge itself never move — only the number
+   inside swaps. Each badge is a glass plate with a gradient edge and a
+   gradient icon disc, so the specs read as instrumentation rather than as
+   caption text floating on the window. */
+.feat__rail{
+  position:absolute;z-index:3;
+  left:clamp(18px,2.4vw,40px);
+  top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:clamp(10px,1.1vw,16px);
+  list-style:none;
+  pointer-events:none;
+}
+.spec{
+  position:relative;
+  display:flex;align-items:center;gap:clamp(10px,.9vw,14px);
+  width:clamp(148px,13.6vw,208px);
+  padding:clamp(11px,1vw,15px) clamp(13px,1.2vw,18px);
+  border-radius:16px;
+  background:rgb(var(--surface-rgb) / .74);
+  border:1px solid var(--hair-0);
+  -webkit-backdrop-filter:blur(14px) saturate(1.1);
+  backdrop-filter:blur(14px) saturate(1.1);
+  box-shadow:0 20px 40px -26px rgba(12,6,24,calc(var(--sh-a) * .9));
+  overflow:hidden;
+}
+/* gradient edge — the badge's only chrome */
+.spec::before{
+  content:'';
+  position:absolute;left:0;top:0;bottom:0;
+  width:2px;background:var(--brand-grad);
+}
+.spec__ico,
+.spec > svg:first-child{
+  flex:0 0 auto;
+  width:clamp(30px,2.6vw,38px);height:clamp(30px,2.6vw,38px);
+  padding:8px;border-radius:11px;
+  background:var(--brand-grad);
+  color:#fff;
+  box-shadow:0 8px 18px -10px color-mix(in srgb, var(--brand-violet) 80%, transparent);
+}
+.spec__co{display:flex;flex-direction:column;gap:3px;min-width:0}
+.spec__k{
+  font-size:8.5px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;
+  color:var(--ink-soft-0);
+}
+
+/* the four values are stacked in one cell; only the active one is opaque */
+.spec__vs{
+  position:relative;display:block;
+  height:clamp(20px,1.8vw,26px);
+}
+.spec__vs b{
+  position:absolute;left:0;top:0;
+  display:flex;align-items:baseline;gap:4px;
+  white-space:nowrap;
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(15px,1.35vw,21px);
+  font-weight:800;letter-spacing:-.03em;line-height:1.25;
+  font-variant-numeric:tabular-nums;
+  color:var(--ink-0);
+  --d:calc(var(--n) - var(--fi));
+  opacity:calc(1 - var(--d) * var(--d) * 2.4);
+  transform:translateY(calc(var(--d) * -10px));
+}
+.spec__vs em{
+  font-style:normal;
+  font-size:clamp(9px,.72vw,11px);font-weight:800;letter-spacing:.08em;
+  color:var(--ink-soft-0);
+}
+
+/* ── deck ─────────────────────────────────────── */
+.feat__deck{
+  position:absolute;inset:0;
+  display:grid;place-items:center;
+  z-index:1;
+  perspective:1600px;
+  perspective-origin:50% 46%;
+}
+.fslide{
+  position:absolute;
+  width:min(46%,620px);
+  display:grid;place-items:center;
+  --d:calc(var(--n) - var(--fi));
+  transform:
+    translateX(calc(var(--d) * var(--travel)))
+    rotateY(calc(var(--d) * -17deg))
+    scale(calc(1 - var(--d) * var(--d) * .12));
+  opacity:calc(1 - var(--d) * var(--d) * 1.35);
+  will-change:transform,opacity;
+}
+
+/* the shot is a cutout, so there is no plate — the stage is three stacked
+   layers instead: a brand halo behind, a contact shadow on the floor, and
+   the scooter itself carrying its own drop-shadow. All three read off --d,
+   so a neighbour loses its glow and flattens its shadow as it falls back. */
+.fslide__media{
+  position:relative;
+  width:100%;
+  aspect-ratio:1 / .97;
+  display:grid;place-items:center;
+  transform-style:preserve-3d;
+}
+
+/* halo: the colourway bleeding into the air behind the bike */
+.fslide__halo{
+  position:absolute;z-index:0;
+  width:86%;aspect-ratio:1;
+  border-radius:50%;
+  background:radial-gradient(circle,
+    color-mix(in srgb, var(--c) 52%, transparent) 0%,
+    color-mix(in srgb, var(--c) 16%, transparent) 42%,
+    transparent 68%);
+  filter:blur(26px);
+  opacity:calc((1 - var(--d) * var(--d) * 2.2) * .9);
+  transform:translateZ(-40px) scale(calc(1 - var(--d) * var(--d) * .2));
+}
+
+/* contact shadow: an ellipse under the wheels, squashed as the slide leaves */
+.fslide__floor{
+  position:absolute;z-index:1;
+  left:50%;bottom:5%;
+  width:74%;height:8%;
+  transform:translateX(-50%) scaleX(calc(1 - var(--d) * var(--d) * .28));
+  border-radius:50%;
+  background:radial-gradient(ellipse at center,
+    rgba(12,6,24,calc(var(--sh-a) * .82)) 0%,
+    rgba(12,6,24,calc(var(--sh-a) * .3)) 46%,
+    transparent 72%);
+  filter:blur(11px);
+  opacity:calc(1 - var(--d) * var(--d) * 1.9);
+}
+
+.fslide__img{
+  position:relative;z-index:2;
+  width:100%;height:100%;display:block;
+  object-fit:contain;object-position:center 46%;
+  filter:var(--fx) drop-shadow(0 26px 30px rgba(10,5,20,calc(var(--sh-a) * .45)));
+  transform:translateZ(30px);
+}
+
+/* Only the bike in front breathes — the neighbours hold still so the eye has
+   an anchor, and three idle loops stay off the compositor. script.js owns
+   .is-live (nearest slide to --fi); the motion lives here. */
+.fslide__media{animation:bikefloat 6.5s ease-in-out infinite paused}
+.fslide.is-live .fslide__media{animation-play-state:running}
+@keyframes bikefloat{
+  0%,100%{transform:translateY(0)}
+  50%    {transform:translateY(-2.2%)}
+}
+
+/* a soft lift on the one in front, so the deck has a clear subject */
+.fslide.is-live .fslide__halo{filter:blur(30px)}
+.fslide.is-live .fslide__img{
+  filter:var(--fx) drop-shadow(0 30px 38px rgba(10,5,20,calc(var(--sh-a) * .5)));
+}
+
+@media (prefers-reduced-motion:reduce){
+  .fslide__media{animation:none}
+}
+/* The arc and the badges carry the copy on desktop, so the inline body is
+   clipped rather than removed — the rail is aria-hidden, and this stays the
+   one place a screen reader gets each model's numbers. */
+.fslide__body{
+  position:absolute;
+  width:1px;height:1px;overflow:hidden;
+  clip-path:inset(50%);
+  white-space:nowrap;
+}
+
+/* ── right edge dots ──────────────────────────── */
+.feat__dots{
+  position:absolute;z-index:4;
+  right:clamp(18px,2.4vw,44px);
+  top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:16px;
+  list-style:none;
+}
+.fdot{
+  --d:calc(var(--n) - var(--fi));
+  width:22px;height:22px;
+  display:grid;place-items:center;
+  border:0;background:none;cursor:pointer;
+  border-radius:50%;
+  position:relative;
+}
+.fdot::before{
+  content:'';
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid var(--brand-violet);
+  opacity:max(0, calc(1 - var(--d) * var(--d)));
+}
+.fdot::after{
+  content:'';
+  width:7px;height:7px;border-radius:50%;
+  background:var(--brand-violet);
+  opacity:calc(.34 + max(0, 1 - var(--d) * var(--d)) * .66);
+}
+
+/* ── corner meta ──────────────────────────────── */
+.feat__item,.feat__finish{
+  position:absolute;z-index:3;
+  bottom:clamp(20px,2.6vw,42px);
+  height:1.2em;
+  font-size:11px;font-weight:700;letter-spacing:.14em;
+  color:var(--ink-soft-0);
+  pointer-events:none;
+}
+.feat__item{left:clamp(22px,3.2vw,58px)}
+.feat__finish{right:clamp(22px,3.2vw,58px);color:var(--ink-0)}
+.swap{
+  position:absolute;top:0;white-space:nowrap;
+  --d:calc(var(--n) - var(--fi));
+  opacity:calc(1 - var(--d) * var(--d) * 2.4);
+  transform:translateY(calc(var(--d) * -10px));
+}
+.feat__item .swap{left:0}
+.feat__finish .swap{right:0}
+
+/* ── arc dial ─────────────────────────────────── */
+.feat__arc{
+  position:absolute;z-index:2;
+  left:50%;
+  bottom:calc(-1 * (var(--arc-r) * 2 - var(--arc-lift)));
+  width:calc(var(--arc-r) * 2);
+  height:calc(var(--arc-r) * 2);
+  transform:translateX(-50%);
+  border-radius:50%;
+  border-top:1px solid var(--hair-0);
+  pointer-events:none;
+}
+.arc__cursor{
+  position:absolute;left:50%;top:0;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--ink-0);
+  transform:translate(-50%,-50%);
+}
+/* ticks stay put so the ring visibly travels along a fixed track */
+.arc__ticks,.arc__ring{position:absolute;inset:0}
+.arc__ticks i{
+  position:absolute;left:50%;top:50%;
+  width:1px;height:9px;
+  margin:0 0 0 -.5px;
+  background:var(--hair-0);
+  transform-origin:0 0;
+  transform:rotate(var(--a)) translate(-.5px,calc(var(--arc-r) * -1));
+}
+.arc__ring{
+  transform:rotate(calc(var(--fi) * -1 * var(--arc-step)));
+  transition:transform .05s linear;
+}
+.arc__name{
+  position:absolute;left:50%;top:50%;
+  --d:calc(var(--n) - var(--fi));
+  font-family:'Montserrat',sans-serif;
+  font-weight:800;
+  letter-spacing:-.02em;
+  white-space:nowrap;
+  transform-origin:0 0;
+  transform:
+    rotate(calc(var(--n) * var(--arc-step)))
+    translate(-50%,calc(var(--arc-r) * -1 - 34px));
+  font-size:clamp(17px,1.5vw,26px);
+  color:var(--ink-0);
+  opacity:calc(.26 + max(0, 1 - var(--d) * var(--d)) * .74);
+}
+
+/* ── narrow: no pin, no arc, plain snap carousel ── */
+@media (max-width:900px){
+  .feat__drive{height:auto}
+  .feat__pin{position:static;height:auto;padding:0}
+  .feat__window{
+    height:auto;
+    padding:clamp(30px,7vw,56px) 0 clamp(26px,6vw,44px);
+    border-radius:0;border:0;background:none;
+  }
+  .feat__head{position:static;padding:0 6vw clamp(26px,6vw,44px)}
+  .feat__rail,.feat__arc{display:none}
+  .feat__deck{
+    position:static;inset:auto;
+    display:flex;gap:0;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .feat__deck::-webkit-scrollbar{display:none}
+  .fslide{
+    position:relative;
+    flex:0 0 86vw;
+    width:auto;
+    scroll-snap-align:center;
+    padding:0 3vw;
+    transform:none;opacity:1;
+    /* the carousel pins --fi at 0, so zero --d here too — otherwise every
+       slide but the first would compute its halo and floor away */
+    --d:0;
+  }
+  .fslide__body{
+    position:static;
+    width:auto;height:auto;overflow:visible;
+    clip-path:none;white-space:normal;
+    text-align:center;margin-top:18px;
+  }
+  .fslide__name{
+    font-family:'Montserrat',sans-serif;
+    font-weight:800;font-size:clamp(22px,6vw,32px);
+    letter-spacing:-.03em;
+  }
+  .fslide__chips{
+    display:flex;justify-content:center;flex-wrap:wrap;gap:8px;
+    margin-top:12px;
+  }
+  .fslide__chips span{
+    padding:7px 12px;
+    border:1px solid var(--hair-0);border-radius:999px;
+    font-size:11px;font-weight:700;letter-spacing:.06em;
+    color:var(--ink-soft-0);
+  }
+  .feat__dots{
+    position:static;transform:none;
+    flex-direction:row;justify-content:center;
+    margin-top:clamp(22px,5vw,34px);
+  }
+  .fdot{--d:0}
+  .feat__item,.feat__finish{
+    position:static;height:auto;display:none;
+  }
+}
+
+/* reduced motion: the deck still steps, it just doesn't travel */
+@media (prefers-reduced-motion:reduce){
+  .fslide{transform:none;transition:opacity .3s linear}
+  .spec__vs b,.swap{transform:none}
+  .arc__ring{transition:none}
+}
+
+
+/* ════════════════════════════════════════════════
+   PERFORMANCE STATS
+   Four cells on one hairline grid. The gradient rule under each cell is a
+   scaleX(0) bar — it draws on entry off --i, then re-draws on hover, so the
+   row reads as "measured" rather than decorated.
+   ════════════════════════════════════════════════ */
+.perf{border-top:1px solid var(--hair-0)}
+.perf__lead{
+  max-width:44ch;
+  font-size:clamp(13px,1vw,15px);line-height:1.75;
+  color:var(--ink-soft-0);
+}
+
+.perf__grid{
+  list-style:none;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:0;
+  border-top:1px solid var(--hair-0);
+}
+.perf__cell{
+  position:relative;
+  padding:clamp(28px,3vw,46px) clamp(20px,2.2vw,38px) clamp(30px,3.2vw,50px) 0;
+  opacity:0;transform:translateY(26px);
+}
+.perf__cell + .perf__cell{
+  padding-left:clamp(20px,2.2vw,38px);
+  border-left:1px solid var(--hair-0);
+}
+.perf__cell.is-in{
+  opacity:1;transform:none;
+  transition:opacity .75s var(--ease),transform .75s var(--ease);
+  transition-delay:calc(var(--i,0) * 110ms);
+}
+/* the measured rule */
+.perf__cell::after{
+  content:'';
+  position:absolute;left:0;bottom:-1px;right:clamp(20px,2.2vw,38px);
+  height:2px;background:var(--brand-grad);
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .9s var(--ease);
+}
+.perf__cell + .perf__cell::after{left:clamp(20px,2.2vw,38px)}
+.perf__cell.is-in::after{
+  transform:scaleX(1);
+  transition-delay:calc(var(--i,0) * 110ms + 220ms);
+}
+.perf__cell:hover::after{transform:scaleX(1) scaleY(2)}
+
+.perf__n{
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(34px,4vw,68px);
+  font-weight:900;letter-spacing:-.05em;line-height:1;
+  font-variant-numeric:tabular-nums;
+  background:var(--brand-grad);
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;
+}
+.perf__n em{
+  font-style:normal;
+  font-size:clamp(13px,1.05vw,17px);font-weight:800;letter-spacing:.06em;
+  -webkit-text-fill-color:var(--ink-soft-0);color:var(--ink-soft-0);
+}
+.perf__t{
+  margin-top:16px;
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(14px,1.15vw,18px);font-weight:800;letter-spacing:-.02em;
+  color:var(--ink-0);
+}
+.perf__d{
+  margin-top:8px;max-width:26ch;
+  font-size:clamp(12px,.86vw,13.5px);line-height:1.65;
+  color:var(--ink-soft-0);
+}
+
+@media (max-width:1080px){
+  .perf__grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .perf__cell:nth-child(odd){padding-left:0;border-left:0}
+  .perf__cell:nth-child(odd)::after{left:0}
+  .perf__cell:nth-child(n+3){border-top:1px solid var(--hair-0)}
+}
+@media (max-width:560px){
+  .perf__grid{grid-template-columns:1fr}
+  .perf__cell{padding-left:0;border-left:0}
+  .perf__cell::after{left:0;right:0}
+  .perf__cell + .perf__cell{border-top:1px solid var(--hair-0)}
+}
+
+
+/* ════════════════════════════════════════════════
+   NEWS — bento
+   One lead tile spanning both rows, one wide tile, two halves. The photo
+   scales under a fixed scrim so nothing reflows on hover; --pos regrades
+   the crop per tile and --tint colours the wash so one shot reads as four.
+   ════════════════════════════════════════════════ */
+.news{border-top:1px solid var(--hair-0)}
+.bento{
+  display:grid;
+  grid-template-columns:1.06fr .78fr .78fr;
+  grid-template-rows:repeat(2,minmax(210px,1fr));
+  gap:clamp(12px,1.1vw,18px);
+  height:clamp(480px,52vw,720px);
+}
+.bento__c--lead{grid-column:1;grid-row:1 / span 2}
+.bento__c--wide{grid-column:2 / span 2;grid-row:1}
+
+.bento__c{
+  position:relative;
+  overflow:hidden;
+  border-radius:clamp(14px,1.2vw,22px);
+  background:#100a1c;
+  isolation:isolate;
+  opacity:0;transform:translateY(28px) scale(.985);
+}
+.bento__c.is-in{
+  opacity:1;transform:none;
+  transition:opacity .8s var(--ease),transform .8s var(--ease);
+  transition-delay:calc(var(--i,0) * 100ms);
+}
+.bento__img{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:var(--pos,50% 50%);
+  transform:scale(1.04);
+  transition:transform 1.1s var(--ease),filter .6s var(--ease);
+  filter:saturate(1.05) contrast(1.04);
+}
+.bento__c:hover .bento__img{transform:scale(1.1)}
+
+/* fixed scrim: a vertical black ramp plus a brand tint that warms on hover */
+.bento__scrim{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(to top, rgba(9,5,18,.92) 0%, rgba(9,5,18,.55) 34%, rgba(9,5,18,.06) 70%),
+    linear-gradient(122deg, color-mix(in srgb, var(--tint,#7b2ff7) 34%, transparent), transparent 62%);
+  opacity:.94;
+  transition:opacity .55s var(--ease);
+}
+.bento__c:hover .bento__scrim{opacity:1}
+
+.bento__tag{
+  position:absolute;z-index:3;top:clamp(14px,1.2vw,22px);left:clamp(14px,1.2vw,22px);
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 13px;border-radius:999px;
+  background:rgba(255,255,255,.13);
+  border:1px solid rgba(255,255,255,.24);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+}
+.bento__tag svg{width:13px;height:13px}
+
+.bento__body{
+  position:absolute;z-index:3;
+  left:clamp(16px,1.5vw,30px);right:clamp(16px,1.5vw,30px);
+  bottom:clamp(16px,1.5vw,28px);
+  transform:translateY(6px);
+  transition:transform .6s var(--ease);
+}
+.bento__c:hover .bento__body{transform:none}
+.bento__t{
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(19px,1.9vw,34px);
+  font-weight:800;letter-spacing:-.03em;line-height:1.1;
+  color:#fff;
+}
+.bento__c--lead .bento__t{font-size:clamp(24px,2.5vw,44px)}
+.bento__d{
+  margin-top:9px;max-width:38ch;
+  font-size:clamp(11.5px,.85vw,14px);line-height:1.6;
+  color:rgba(255,255,255,.76);
+}
+
+@media (max-width:1080px){
+  .bento{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:repeat(3,minmax(190px,1fr));
+    height:auto;
+  }
+  .bento__c--lead{grid-column:1 / span 2;grid-row:1}
+  .bento__c--wide{grid-column:1 / span 2;grid-row:2}
+}
+@media (max-width:620px){
+  .bento{grid-template-columns:1fr;grid-template-rows:none}
+  .bento__c{min-height:230px}
+  .bento__c--lead,.bento__c--wide{grid-column:1;grid-row:auto}
+  .bento__c--lead{min-height:320px}
+}
+
+
+/* ════════════════════════════════════════════════
+   BOOK A TEST RIDE
+   ════════════════════════════════════════════════ */
+.ride{border-top:1px solid var(--hair-0)}
+.ride__grid{
+  display:grid;
+  grid-template-columns:1.02fr .84fr;
+  gap:clamp(28px,3.4vw,68px);
+  align-items:center;
+}
+.ride__media{
+  position:relative;
+  border-radius:clamp(18px,1.6vw,30px);
+  overflow:hidden;
+  aspect-ratio:4 / 3.1;
+  background:var(--brand-grad);
+  opacity:0;transform:translateY(26px);
+}
+.ride__media.is-in,.ride__panel.is-in{
+  opacity:1;transform:none;
+  transition:opacity .8s var(--ease),transform .8s var(--ease);
+}
+.ride__panel{opacity:0;transform:translateY(26px)}
+.ride__panel.is-in{transition-delay:.12s}
+.ride__img{
+  width:100%;height:100%;display:block;
+  object-fit:cover;object-position:56% 62%;
+  transform:scale(1.03);
+  transition:transform 1.2s var(--ease);
+}
+.ride__media:hover .ride__img{transform:scale(1.08)}
+.ride__wash{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(148deg,
+    color-mix(in srgb, var(--brand-violet) 30%, transparent),
+    transparent 46%,
+    color-mix(in srgb, var(--brand-flame) 26%, transparent));
+  mix-blend-mode:soft-light;
+}
+.ride__offer{
+  position:absolute;left:clamp(14px,1.4vw,24px);bottom:clamp(14px,1.4vw,24px);
+  display:flex;flex-direction:column;gap:3px;
+  padding:13px 20px;border-radius:14px;
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.26);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  color:#fff;
+}
+.ride__offer b{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.ride__offer span{font-size:11px;color:rgba(255,255,255,.8)}
+
+.ride__title{margin-top:18px;font-size:clamp(27px,2.7vw,46px)}
+.ride__note{
+  margin-top:14px;max-width:40ch;
+  font-size:clamp(12.5px,.92vw,14.5px);line-height:1.7;
+  color:var(--ink-soft-0);
+}
+.ride__form{
+  margin-top:clamp(24px,2.4vw,38px);
+  display:grid;gap:16px;
+  max-width:520px;
+}
+.field{display:flex;flex-direction:column;gap:8px}
+.field__l{
+  font-size:9.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink-soft-0);
+}
+.field__i{
+  width:100%;
+  padding:15px 18px;
+  border:1px solid var(--hair-0);
+  border-radius:12px;
+  background:rgb(var(--chip-rgb) / .6);
+  color:var(--ink-0);
+  font-family:inherit;font-size:14px;
+  transition:border-color .35s var(--ease),box-shadow .35s var(--ease),background .35s var(--ease);
+}
+.field__i::placeholder{color:var(--ink-soft-0);opacity:.7}
+.field__i:focus{
+  outline:0;
+  border-color:var(--brand-violet);
+  background:var(--surface-0);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--brand-violet) 22%, transparent);
+}
+.field__i:user-invalid{
+  border-color:var(--brand-flame);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--brand-flame) 18%, transparent);
+}
+.ride__submit{justify-self:start;margin-top:4px}
+.ride__consent{
+  font-size:11px;line-height:1.6;color:var(--ink-soft-0);max-width:44ch;
+}
+.ride__ok{
+  min-height:1.2em;
+  font-size:12px;font-weight:700;letter-spacing:.02em;
+  color:var(--brand-magenta);
+}
+
+@media (max-width:900px){
+  .ride__grid{grid-template-columns:1fr}
+  .ride__media{aspect-ratio:16 / 10}
+}
+
+
+/* ════════════════════════════════════════════════
+   FAQ
+   The panel is a grid whose single row animates 0fr → 1fr. The content
+   measures itself; nothing here needs a JS height.
+   ════════════════════════════════════════════════ */
+.faq{border-top:1px solid var(--hair-0)}
+.faq__grid{
+  display:grid;
+  grid-template-columns:.82fr 1.18fr;
+  gap:clamp(30px,4vw,90px);
+  align-items:start;
+}
+.faq__rail{position:sticky;top:clamp(80px,12vh,140px)}
+.faq__lead{
+  margin-top:18px;max-width:34ch;
+  font-size:clamp(12.5px,.95vw,14.5px);line-height:1.75;
+  color:var(--ink-soft-0);
+}
+.faq__all{margin-top:26px}
+
+.faq__list{list-style:none;border-top:1px solid var(--hair-0)}
+.faq__item{border-bottom:1px solid var(--hair-0);position:relative}
+.faq__item::before{
+  content:'';position:absolute;left:0;bottom:-1px;
+  width:0;height:2px;background:var(--brand-grad);
+  transition:width .55s var(--ease);
+}
+.faq__item.is-open::before{width:100%}
+
+.faq__q{
+  width:100%;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:clamp(19px,1.9vw,28px) 0;
+  border:0;background:none;cursor:pointer;
+  text-align:left;
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(14.5px,1.25vw,20px);font-weight:800;
+  letter-spacing:-.02em;line-height:1.3;
+  color:var(--ink-0);
+  transition:color .35s var(--ease);
+}
+.faq__q:hover{color:var(--brand-magenta)}
+/* lucide swaps the <i> for an <svg>; match both so the rotate survives */
+.faq__ico,
+.faq__q > svg:last-child{
+  flex:0 0 auto;
+  width:34px;height:34px;padding:8px;
+  border:1px solid var(--hair-0);border-radius:50%;
+  color:var(--ink-soft-0);
+  transition:transform .45s var(--ease),border-color .35s var(--ease),
+             color .35s var(--ease),background .35s var(--ease);
+}
+.faq__item.is-open .faq__ico,
+.faq__item.is-open .faq__q > svg:last-child{
+  transform:rotate(135deg);
+  background:var(--brand-grad);border-color:transparent;color:#fff;
+}
+
+.faq__panel{
+  display:grid;grid-template-rows:0fr;
+  transition:grid-template-rows .55s var(--ease);
+}
+.faq__item.is-open .faq__panel{grid-template-rows:1fr}
+.faq__a{overflow:hidden}
+.faq__a p{
+  padding:0 clamp(48px,5vw,70px) clamp(22px,2.2vw,32px) 0;
+  max-width:64ch;
+  font-size:clamp(12.5px,.92vw,14.5px);line-height:1.8;
+  color:var(--ink-soft-0);
+  opacity:0;transform:translateY(8px);
+  transition:opacity .45s var(--ease) .1s,transform .45s var(--ease) .1s;
+}
+.faq__item.is-open .faq__a p{opacity:1;transform:none}
+
+@media (max-width:900px){
+  .faq__grid{grid-template-columns:1fr}
+  .faq__rail{position:static}
+}
+
+
+/* ════════════════════════════════════════════════
+   INSIGHTS
+   ════════════════════════════════════════════════ */
+.ins{border-top:1px solid var(--hair-0)}
+.ins__grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(16px,1.7vw,30px);
+}
+.post{
+  display:flex;flex-direction:column;
+  text-decoration:none;color:inherit;
+  border:1px solid var(--hair-0);
+  border-radius:clamp(14px,1.2vw,22px);
+  overflow:hidden;
+  background:rgb(var(--chip-rgb) / .45);
+  opacity:0;transform:translateY(28px);
+  transition:border-color .45s var(--ease),transform .5s var(--ease),
+             box-shadow .45s var(--ease),opacity .5s var(--ease);
+}
+.post.is-in{
+  opacity:1;transform:none;
+  transition:opacity .8s var(--ease),transform .8s var(--ease);
+  transition-delay:calc(var(--i,0) * 110ms);
+}
+.post.is-in:hover{
+  transform:translateY(-6px);
+  border-color:color-mix(in srgb, var(--tint,#7b2ff7) 55%, var(--hair-0));
+  box-shadow:0 26px 60px -30px color-mix(in srgb, var(--tint,#7b2ff7) 70%, transparent);
+}
+.post__media{position:relative;aspect-ratio:16 / 10;overflow:hidden}
+.post__img{
+  width:100%;height:100%;display:block;
+  object-fit:cover;object-position:var(--pos,50% 50%);
+  transform:scale(1.03);
+  transition:transform 1.1s var(--ease);
+}
+.post:hover .post__img{transform:scale(1.09)}
+.post__wash{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(150deg,
+    color-mix(in srgb, var(--tint,#7b2ff7) 40%, transparent), transparent 58%);
+  mix-blend-mode:soft-light;
+  opacity:.85;
+}
+.post__body{
+  display:flex;flex-direction:column;gap:11px;
+  padding:clamp(18px,1.6vw,28px);
+  flex:1;
+}
+.post__cat{
+  align-self:flex-start;
+  padding:6px 12px;border-radius:999px;
+  background:color-mix(in srgb, var(--tint,#7b2ff7) 16%, transparent);
+  color:var(--tint,#7b2ff7);
+  font-size:9px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;
+}
+.post__t{
+  font-family:'Montserrat',sans-serif;
+  font-size:clamp(16px,1.25vw,21px);font-weight:800;
+  letter-spacing:-.028em;line-height:1.22;
+  color:var(--ink-0);
+}
+.post__d{
+  font-size:clamp(12px,.86vw,13.5px);line-height:1.7;
+  color:var(--ink-soft-0);
+}
+.post__go{
+  margin-top:auto;padding-top:8px;
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-0);
+  transition:gap .35s var(--ease),color .35s var(--ease);
+}
+.post__go svg{width:14px;height:14px}
+.post:hover .post__go{gap:13px;color:var(--tint,#7b2ff7)}
+
+@media (max-width:1000px){.ins__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:660px){.ins__grid{grid-template-columns:1fr}}
+
+
+/* ════════════════════════════════════════════════
+   FOOTER — video plate
+   The video sits at z-0 under a two-layer veil: a near-black wash for the
+   text contrast and a brand gradient for the colour. Both are opaque enough
+   that a missing file (poster only) still reads correctly.
+   ════════════════════════════════════════════════ */
+/* ══════════ FOOTER ══════════
+   Redesigned with wave cut effect, compact layout, and social media on right.
+   Background support for light/dark themes using webp images. */
+
+.foot{
+  position:relative;z-index:1;
+  overflow:hidden;
+  color:#fff;
+  background:#0b0713;
+  isolation:isolate;
+  padding-top:clamp(48px,6vw,80px);
+}
+
+/* Wave cut effect at the top */
+.foot__wave{
+  position:absolute;top:-1px;left:0;right:0;
+  height:48px;
+  background:var(--surface-0);
+  -webkit-mask-image:url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 48" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,24 Q300,0 600,24 T1200,24 L1200,48 L0,48 Z" fill="black"/></svg>');
+  mask-image:url('data:image/svg+xml;utf8,<svg viewBox="0 0 1200 48" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><path d="M0,24 Q300,0 600,24 T1200,24 L1200,48 L0,48 Z" fill="black"/></svg>');
+  -webkit-mask-size:100% 100%;
+  mask-size:100% 100%;
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+}
+
+/* Background images with theme support */
+.foot__bg{
+  position:absolute;inset:0;z-index:0;
+  width:100%;height:100%;
+  background-size:cover;
+  background-position:center;
+  pointer-events:none;
+}
+.foot__bg--light{
+  background-image:url('assets/footer-lightbg.webp');
+  display:none;
+}
+.foot__bg--dark{
+  background-image:url('assets/footer-darkbg.webp');
+  display:block;
+}
+html[data-theme="light"] .foot__bg--light{display:block}
+html[data-theme="light"] .foot__bg--dark{display:none}
+
+/* Veil overlay for text readability */
+.foot__veil{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(to bottom, rgba(11,7,19,.88) 0%, rgba(11,7,19,.82) 40%, rgba(11,7,19,.92) 100%),
+    linear-gradient(118deg,
+      color-mix(in srgb, var(--brand-indigo) 72%, transparent) 0%,
+      color-mix(in srgb, var(--brand-violet) 36%, transparent) 38%,
+      color-mix(in srgb, var(--brand-flame) 20%, transparent) 100%);
+}
+
+.foot__in{position:relative;z-index:3}
+
+/* Main footer grid: content left, social right */
+.foot__main{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:clamp(40px,5vw,80px);
+  align-items:flex-start;
+  padding-bottom:clamp(28px,3vw,44px);
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+
+/* Content section: Brand + Navigation */
+.foot__content{
+  display:flex;
+  flex-direction:column;
+  gap:clamp(28px,3.5vw,48px);
+}
+
+/* Brand section */
+.foot__brand{
+  max-width:320px;
+}
+.foot__logo{
+  width:clamp(64px,6vw,84px);height:auto;display:block;
+  border-radius:12px;
+}
+.foot__tag{
+  margin-top:14px;max-width:32ch;
+  font-size:12px;line-height:1.65;color:rgba(255,255,255,.72);
+}
+.foot__contact{
+  list-style:none;margin-top:18px;
+  display:flex;flex-direction:column;gap:9px;
+}
+.foot__contact li{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:11.5px;line-height:1.5;color:rgba(255,255,255,.76);
+}
+.foot__contact svg{
+  width:14px;height:14px;flex:0 0 auto;margin-top:2px;
+  color:var(--brand-orange);
+}
+.foot__contact a{color:inherit;text-decoration:none;transition:color .3s var(--ease)}
+.foot__contact a:hover{color:#fff}
+
+/* Navigation columns - compact layout */
+.foot__cols{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:clamp(16px,1.8vw,28px);
+}
+.fcol{display:flex;flex-direction:column;gap:10px}
+.fcol h4{
+  margin-bottom:4px;
+  font-size:8.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,255,255,.48);
+}
+.fcol a{
+  position:relative;
+  align-self:flex-start;
+  font-size:11.5px;color:rgba(255,255,255,.8);text-decoration:none;
+  transition:color .3s var(--ease);
+}
+.fcol a::after{
+  content:'';position:absolute;left:0;bottom:-2px;
+  width:0;height:1px;background:var(--brand-grad);
+  transition:width .4s var(--ease);
+}
+.fcol a:hover{color:#fff}
+.fcol a:hover::after{width:100%}
+
+/* Social media section on right */
+.foot__social-section{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+  text-align:center;
+  padding:12px;
+  min-width:120px;
+}
+.foot__social-title{
+  font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,255,255,.48);
+  margin:0;
+}
+
+/* Social icons with brand colors */
+.foot__socials{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  align-items:center;
+}
+.foot__social-link{
+  display:grid;place-items:center;
+  width:44px;height:44px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.06);
+  color:#fff;
+  transition:transform .35s var(--ease),background .35s var(--ease),
+             border-color .35s var(--ease),box-shadow .35s var(--ease);
+}
+.foot__social-link svg{width:18px;height:18px}
+
+/* Brand-specific social colors */
+.foot__social--instagram:hover{
+  background:linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
+  border-color:transparent;
+  box-shadow:0 8px 18px -8px rgba(240, 147, 251, .5);
+  transform:translateY(-3px);
+}
+
+.foot__social--facebook:hover{
+  background:#1877f2;
+  border-color:#1877f2;
+  box-shadow:0 8px 18px -8px rgba(24, 119, 242, .5);
+  transform:translateY(-3px);
+}
+
+.foot__social--youtube:hover{
+  background:#ff0000;
+  border-color:#ff0000;
+  box-shadow:0 8px 18px -8px rgba(255, 0, 0, .5);
+  transform:translateY(-3px);
+}
+
+.foot__social--whatsapp:hover{
+  background:#25d366;
+  border-color:#25d366;
+  box-shadow:0 8px 18px -8px rgba(37, 211, 102, .5);
+  transform:translateY(-3px);
+}
+
+/* Footer base: Legal and copyright */
+.foot__base{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:18px;flex-wrap:wrap;
+  padding-top:clamp(18px,2vw,26px);
+}
+.foot__base p{font-size:10.5px;line-height:1.6;color:rgba(255,255,255,.5);max-width:70ch}
+.foot__legal{display:flex;gap:16px}
+.foot__legal a{
+  font-size:10.5px;color:rgba(255,255,255,.58);text-decoration:none;
+  transition:color .3s var(--ease);
+}
+.foot__legal a:hover{color:#fff}
+
+/* Responsive layout */
+@media (max-width:1200px){
+  .foot__cols{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:1080px){
+  .foot__main{
+    grid-template-columns:1fr;
+    gap:clamp(32px,4vw,48px);
+  }
+  .foot__social-section{
+    flex-direction:row;
+    justify-content:flex-start;
+    align-items:center;
+    padding:0;
+  }
+  .foot__socials{
+    flex-direction:row;
+    gap:14px;
+  }
+}
+@media (max-width:768px){
+  .foot{padding-top:clamp(40px,5vw,64px)}
+  .foot__cols{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .foot__content{gap:24px}
+  .foot__social-section{
+    flex-direction:row;
+    justify-content:flex-start;
+    gap:12px;
+  }
+  .foot__socials{flex-direction:row;gap:12px}
+  .foot__social-link{width:40px;height:40px}
+  .foot__social-link svg{width:16px;height:16px}
+}
+@media (max-width:620px){
+  .foot{padding-top:clamp(32px,4vw,48px)}
+  .foot__cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .foot__main{flex-direction:column}
+  .foot__social-section{
+    flex-direction:column;
+    width:100%;
+    align-items:center;
+  }
+  .foot__socials{flex-direction:row;gap:12px}
+  .foot__base{flex-direction:column;align-items:flex-start;gap:14px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .foot__social-link{transition:none}
+}
+
+
+/* ════════════════════════════════════════════════
+   PHASE 2 ADVANCED EFFECTS
+
+   Four progressive enhancement animation systems:
+   1. Staggered text reveal for headlines — per-word entrance
+   2. Enhanced scroll-triggered counters — reusable across sections
+   3. Background gradient shift on hover — dynamic gradient animation
+   4. 3D card tilt effects — cursor-tracked depth perception
+
+   All GPU-accelerated, respects prefers-reduced-motion, brand-aligned.
+   ════════════════════════════════════════════════ */
+
+/* ── STAGGERED TEXT REVEAL ───────────────────────
+   Headline spans wrapped individually. Each gets a CSS variable --word-index
+   (set via script.js or inline style="--word-index: N") for staggered timing.
+   Entrance: opacity 0→1, translateY 20px→0, 700ms ease-out.
+   Example markup:
+   <h2 class="reveal-headline">
+     <span style="--word-index:0">First</span>
+     <span style="--word-index:1">Second</span>
+     <span style="--word-index:2">Word</span>
+   </h2>
+*/
+.reveal-headline{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.3em;
+  line-height:1.2;
+}
+.reveal-headline span{
+  display:inline-block;
+  opacity:0;
+  transform:translateY(20px);
+  will-change:opacity,transform;
+  transition:opacity 700ms var(--ease),
+             transform 700ms var(--ease);
+}
+.reveal-headline.is-in span{
+  opacity:1;
+  transform:none;
+  transition-delay:calc(var(--word-index,0) * 80ms);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .reveal-headline span{
+    opacity:1;transform:none;
+    transition-delay:0 !important;
+  }
+}
+
+
+/* ── ENHANCED SCROLL-TRIGGERED COUNTERS ──────────
+   Extends beyond .stats to any section: performance cells, insight cards.
+   Counter elements get .counter-value class; increment from 0→target on scroll-in.
+   Custom properties: --count-target (final value), --count-duration (default 1300ms).
+   Support prefix/suffix via data attributes.
+   Example:
+   <div class="counter-value" data-target="2500" data-suffix="ms">0</div>
+   <div class="counter-value" data-prefix="+" data-target="42" data-suffix="%">0</div>
+*/
+.counter-value{
+  font-variant-numeric:tabular-nums;
+  transition:none;
+  will-change:contents;
+}
+/* When marked .is-counting, the script.js counter loop animates the text content */
+.counter-value.is-counting{
+  animation:none;
+}
+
+/* For sections that use CSS animation fallback (if JS unavailable),
+   scale the counter-value in via opacity with the section's entrance */
+.perf__cell.is-in .counter-value,
+.stat.is-in .counter-value,
+.post.is-in .counter-value{
+  /* animated by script.js via .is-counting class and incrementing textContent */
+  animation:none;
+}
+
+/* Gradient variant for performance section numbers */
+.perf__n .counter-value{
+  background:var(--brand-grad);
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;
+}
+
+
+/* ── BACKGROUND GRADIENT SHIFT HOVER ────────────
+   Cards and section backgrounds animate gradient angle on hover.
+   Applies var(--grad-angle) shift from 0deg to 180deg over 1s.
+   Use on card backgrounds, performance cells, insights containers.
+   Example class: .gradient-shift-hover
+*/
+.gradient-shift-hover{
+  position:relative;
+  --grad-angle:0deg;
+  --grad-color-1:var(--brand-violet);
+  --grad-color-2:var(--brand-magenta);
+  will-change:transform;
+}
+/* Pseudo-element for the animated gradient background */
+.gradient-shift-hover::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(var(--grad-angle),
+    color-mix(in srgb, var(--grad-color-1) 12%, transparent),
+    color-mix(in srgb, var(--grad-color-2) 8%, transparent));
+  opacity:0;
+  pointer-events:none;
+  z-index:-1;
+  transition:opacity 1s var(--ease);
+}
+.gradient-shift-hover:hover{
+  --grad-angle:180deg;
+}
+.gradient-shift-hover:hover::before{
+  opacity:1;
+  transition:opacity 1s var(--ease), --grad-angle 1s var(--ease);
+}
+
+/* Variant for section backgrounds (perf cells, insight cards) */
+.perf__cell.gradient-shift-hover,
+.post.gradient-shift-hover{
+  position:relative;
+  overflow:hidden;
+}
+.perf__cell.gradient-shift-hover::before,
+.post.gradient-shift-hover::before{
+  border-radius:inherit;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .gradient-shift-hover::before{
+    opacity:0;
+    transition:none;
+  }
+  .gradient-shift-hover:hover::before{
+    opacity:0;
+  }
+}
+
+
+/* ── 3D PERSPECTIVE DEPTH EFFECTS ────────────────
+   Interactive cards tilt based on cursor position.
+   Apply .card--3d-tilt to premium/featured cards.
+   Script.js writes --rx (rotateX, -8 to 8deg) and --ry (rotateY, -8 to 8deg)
+   on mousemove. Fallback for no-JS: static perspective.
+   Example markup:
+   <div class="card card--3d-tilt" style="--rx:0deg; --ry:0deg;">
+     [card content]
+   </div>
+*/
+.card--3d-tilt{
+  --rx:0deg;
+  --ry:0deg;
+  perspective:1200px;
+  will-change:transform;
+  transform-style:preserve-3d;
+}
+.card--3d-tilt{
+  transform:rotateX(var(--rx)) rotateY(var(--ry));
+  transition:transform .15s cubic-bezier(.22,1,.36,1);
+}
+
+/* Child elements inherit 3D context */
+.card--3d-tilt .card__media,
+.card--3d-tilt .card__body{
+  transform-style:preserve-3d;
+}
+
+/* Lift the media layer slightly on tilt */
+.card--3d-tilt .card__media{
+  transform:translateZ(40px);
+}
+
+/* Shadow responds to tilt angle for depth cue */
+.card--3d-tilt{
+  box-shadow:0 40px 70px -34px rgba(0,0,0,
+    calc(var(--sh-a) + (abs(var(--rx)) + abs(var(--ry))) * 0.02));
+  transition:box-shadow .15s cubic-bezier(.22,1,.36,1),
+             transform .15s cubic-bezier(.22,1,.36,1);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .card--3d-tilt{
+    --rx:0deg !important;
+    --ry:0deg !important;
+    transform:none !important;
+    transition:none;
+  }
+}
+
+/* Disable 3D on touch devices (pointer tracking unreliable) */
+@media (hover:none){
+  .card--3d-tilt{
+    transform:none;
+    --rx:0deg;
+    --ry:0deg;
+  }
+}
+
+
+/* ════════════════════════════════════════════════
+   FLOATING ACTION DOCK
+
+   Fixed capsule on the right edge, vertically centred, alive on every
+   section. The surface is built from --chip-rgb and --hair-0, so it flips
+   with [data-theme] instead of carrying its own colours. Labels slide out
+   to the LEFT — the dock is already against the right edge, so anything
+   opening rightwards would leave the viewport.
+   ════════════════════════════════════════════════ */
+
+.dock{
+  position:fixed;z-index:40;
+  right:clamp(10px,1.4vw,20px);
+  top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;align-items:center;
+  gap:6px;padding:8px;
+  border-radius:999px;
+  background:rgb(var(--chip-rgb) / .58);
+  border:1px solid color-mix(in srgb, var(--hair-0) 70%, transparent);
+  box-shadow:0 18px 46px -14px rgba(0,0,0,.45), inset 0 1px 0 rgb(255 255 255 / .16);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+}
+
+.dock__i{
+  position:relative;
+  display:grid;place-items:center;
+  width:46px;height:46px;flex:none;
+  border-radius:999px;
+  color:var(--ink-0);text-decoration:none;
+  transition:background .32s var(--ease),color .32s var(--ease),transform .32s var(--ease);
+}
+.dock__i svg{width:20px;height:20px}
+
+.dock__i:hover,
+.dock__i:focus-visible{
+  background:var(--brand-grad);
+  color:#fff;
+  transform:translateX(-2px);
+}
+.dock__i:focus-visible{outline:2px solid var(--brand-violet);outline-offset:3px}
+
+/* ── label: a second glass chip, parked to the left ── */
+.dock__lb{
+  position:absolute;top:50%;right:calc(100% + 12px);
+  transform:translate(8px,-50%);
+  padding:7px 13px;border-radius:999px;
+  white-space:nowrap;
+  font-size:12px;font-weight:600;letter-spacing:.01em;
+  color:var(--ink-0);
+  background:rgb(var(--chip-rgb) / .9);
+  border:1px solid color-mix(in srgb, var(--hair-0) 70%, transparent);
+  box-shadow:0 10px 26px -10px rgba(0,0,0,.5);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  opacity:0;pointer-events:none;
+  transition:opacity .28s var(--ease),transform .28s var(--ease);
+}
+.dock__i:hover .dock__lb,
+.dock__i:focus-visible .dock__lb{opacity:1;transform:translate(0,-50%)}
+
+/* the mobile nav panel is taller than the dock and shares its edge —
+   fold the dock away while that panel is open */
+body:has(.nav.is-open) .dock{opacity:0;pointer-events:none}
+
+/* ── phone ───────────────────────────────────
+   A right-edge column costs ~60px of a 390px viewport and there is no gutter
+   to spend it in: the capsule lands on top of the hero chips, the range badge
+   and the "Test Ride" button. So on phones the same four actions lie down into
+   a bottom-centre pill — off the reading column, inside thumb reach, and out
+   of the way entirely while the reader is scrolling down (see .is-tucked). */
+@media (max-width:640px){
+  .dock{
+    top:auto;right:auto;
+    left:50%;
+    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+    transform:translateX(-50%);
+    flex-direction:row;
+    gap:4px;padding:6px;
+    transition:transform .42s var(--ease), opacity .3s var(--ease);
+  }
+  .dock__i{width:44px;height:44px}
+  .dock__i svg{width:19px;height:19px}
+  /* the base rule nudges left towards the label; there is no label here */
+  .dock__i:hover,
+  .dock__i:focus-visible{transform:translateY(-2px)}
+  /* no hover on touch: the label would only ever flash on tap */
+  .dock__lb{display:none}
+
+  /* scrolling down = reading; drop the pill below the fold until the reader
+     scrolls back up. Set by script.js, phone widths only. */
+  .dock.is-tucked{
+    transform:translate(-50%, calc(100% + 26px));
+    opacity:0;pointer-events:none;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .dock,.dock__i,.dock__lb{transition:none}
+  .dock__i:hover,.dock__i:focus-visible{transform:none}
+}
+
+
+/* ════════════════════════════════════════════════
+   PHASE 3: POLISH & REFINEMENT
+
+   Advanced motion effects layer on core functionality: parallax depth,
+   skeleton loading states, interactive form feedback, and success confirmations.
+   These enhancements elevate micro-interactions while maintaining accessibility
+   and performance (GPU-accelerated transforms, sparingly used will-change).
+   ════════════════════════════════════════════════ */
+
+/* ── Parallax enhancement on scroll ──────────────
+   Applies subtle depth to images as the page scrolls. The --scroll-y
+   variable is written by script.js (0 → viewport height). Use on
+   bento cards, news section images, collection photos for subtle
+   depth without cognitive load.
+
+   Example: <img class="image-parallax" src="..." /> */
+.image-parallax{
+  transform:translateY(calc(var(--scroll-y,0) * 0.5px));
+  will-change:transform;
+}
+
+/* ── Skeleton/placeholder animations ─────────────
+   Pulse effect for loading states, image placeholders, and content
+   skeletons. Gentle breathe between 0.6 and 1.0 opacity over 1.5s.
+   Use on placeholder elements while content loads.
+
+   Example: <div class="image-loading"><!-- placeholder --></div> */
+@keyframes pulse{
+  0%, 100%{opacity:.6}
+  50%{opacity:1}
+}
+
+.image-loading{
+  animation:pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Interactive gradient animations on form ────
+   Form inputs with gradient shift on focus. The gradient travels left
+   to right (100% → 0) over 600ms on focus, creating visual energy.
+   Use on .field__i elements or any form input that needs interaction cue.
+
+   Example: <input class="field__i field-gradient-shift" /> */
+@keyframes gradientShift{
+  from{background-position:100% 0}
+  to{background-position:0% 0}
+}
+
+.field-gradient-shift{
+  position:relative;
+  background:linear-gradient(90deg,
+    rgb(var(--surface-rgb) / .6) 0%,
+    color-mix(in srgb, var(--brand-blue) 6%, transparent) 50%,
+    rgb(var(--surface-rgb) / .6) 100%);
+  background-size:200% 100%;
+  background-position:100% 0;
+  transition:background-position .6s ease-in-out,
+             border-color .35s var(--ease),
+             box-shadow .35s var(--ease);
+}
+
+.field-gradient-shift:focus{
+  background-position:0% 0;
+  border-color:var(--brand-violet);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--brand-violet) 22%, transparent);
+}
+
+/* ── Success state animations ────────────────────
+   Elastic pulse for form submission confirmation. Scales from 0.8 to
+   1.1 (overshoot) then settles to 1.0, with a matching opacity fade-in.
+   Uses cubic-bezier(.34,1.56,.64,1) for bounce. Duration: 600ms.
+   Apply to confirmation message or success icon after form submit.
+
+   Example: <div class="success-state">✓ Submitted!</div> */
+@keyframes successPulse{
+  0%{
+    transform:scale(.8);
+    opacity:0;
+  }
+  50%{
+    transform:scale(1.1);
+  }
+  100%{
+    transform:scale(1);
+    opacity:1;
+  }
+}
+
+.success-state{
+  animation:successPulse .6s cubic-bezier(.34,1.56,.64,1) forwards;
+  will-change:transform,opacity;
+}
+
+/* respects prefers-reduced-motion for all Phase 3 animations */
+@media (prefers-reduced-motion:reduce){
+  .image-parallax{transform:none;will-change:auto}
+  .image-loading{animation:none;opacity:1}
+  .field-gradient-shift{background-position:100% 0}
+  .field-gradient-shift:focus{background-position:100% 0}
+  .success-state{animation:none;transform:none;opacity:1;will-change:auto}
 }
