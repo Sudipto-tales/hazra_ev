@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* Applied before first paint so a dark-mode visitor never sees a light
+   flash. Kept inline and tiny on purpose: an external file would race
+   the paint it exists to prevent. */
+(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+  <title>Battery Care Guide | Hazra</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazra Electrical Bike">
+<meta property="og:title" content="Battery Care Guide | Hazra">
+<meta property="og:description" content="Six simple routines that add years to your battery pack and maximize range on your Hazra electric scooter.">
+<meta property="og:url" content="https://hazraelectricalbike.com/battery-use.html">
+<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://hazraelectricalbike.com/battery-use.html">
+<meta name="description" content="Six simple routines that add years to your battery pack and maximize range on your Hazra electric scooter.">
+  <link rel="icon" href="assets/hazraev.png" type="image/png">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/typography.css">
+<link rel="stylesheet" href="styles/global.css">
+<link rel="stylesheet" href="styles/utilities.css">
+<link rel="stylesheet" href="styles/components/page-chrome.css">
+  <style>
+
+    .guide {
+      padding: clamp(60px, 9vw, 140px) 26px;
+      background: rgb(var(--chip-rgb) / .35);
+      border-top: 1px solid var(--hair-0);
+    }
+
+    .guide__in { width: min(1000px, 93vw); margin: 0 auto; }
+
+    .steps {
+      display: flex; flex-direction: column;
+      gap: clamp(30px, 4vw, 50px);
+    }
+
+    .step {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(30px, 4vw, 60px); align-items: center;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 150ms) forwards;
+    }
+
+    .step:nth-child(even) {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .step:nth-child(even) .step__img {
+      order: 2;
+    }
+
+    .step:nth-child(even) .step__body {
+      order: 1;
+    }
+
+    .step__icon {
+      display: flex; align-items: center; justify-content: center;
+      width: 60px; height: 60px; border-radius: 14px;
+      background: var(--brand-grad); color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .step__icon svg { width: 28px; height: 28px; }
+
+    .step__num {
+      font-family: 'Montserrat'; font-size: 14px;
+      font-weight: 800; color: var(--brand-violet);
+      letter-spacing: .06em; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .step__title {
+      font-family: 'Montserrat'; font-size: 24px;
+      font-weight: 800; margin-bottom: 12px;
+    }
+
+    .step__desc {
+      font-size: 14px; line-height: 1.7;
+      color: var(--ink-soft-0);
+    }
+
+    .step__img {
+      background: var(--surface-0); border: 1px solid var(--hair-0);
+      border-radius: 16px; padding: 30px;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 300px;
+    }
+
+    .step__img img {
+      width: 100%; max-width: 80%;
+      object-fit: contain;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 768px) {
+      .step {
+        grid-template-columns: 1fr;
+      }
+      .step:nth-child(even) .step__img {
+        order: 0;
+      }
+      .step:nth-child(even) .step__body {
+        order: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition-duration: .01ms !important; }
+    }</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.html">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1 class="hero__title">Battery Care Guide</h1>
+  <p class="hero__lead">
+    Six simple routines that add years to your battery pack and maximize range.
+  </p>
+</section>
+
+<section class="guide">
+  <div class="guide__in">
+    <div class="steps">
+      <div class="step" style="--i: 0">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="plug"></i>
+          </div>
+          <div class="step__num">Step 1</div>
+          <h3 class="step__title">Charge Smart</h3>
+          <p class="step__desc">Charge between 20-80% for daily use. Avoid frequent full charges. Use the charger provided—it's matched to your battery.</p>
+        </div>
+        <div class="step__img">
+          <img src="assets/scutie_light.webp" alt="Smart Charging">
+        </div>
+      </div>
+
+      <div class="step" style="--i: 1">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="thermometer"></i>
+          </div>
+          <div class="step__num">Step 2</div>
+          <h3 class="step__title">Mind the Temperature</h3>
+          <p class="step__desc">Charge in cool, dry environments. Avoid hot and humid places. If your scooter gets too hot during riding, let it cool before charging.</p>
+        </div>
+        <div class="step__img">
+          <img src="assets/dark_scutie.webp" alt="Temperature Control">
+        </div>
+      </div>
+
+      <div class="step" style="--i: 2">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="calendar"></i>
+          </div>
+          <div class="step__num">Step 3</div>
+          <h3 class="step__title">Regular Use</h3>
+          <p class="step__desc">Ride regularly. Batteries thrive on regular use. If unused for over a month, charge to 50% and store in a cool place.</p>
+        </div>
+        <div class="step__img">
+          <img src="assets/scutie_light.webp" alt="Regular Usage">
+        </div>
+      </div>
+
+      <div class="step" style="--i: 3">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="droplet"></i>
+          </div>
+          <div class="step__num">Step 4</div>
+          <h3 class="step__title">Keep it Dry</h3>
+          <p class="step__desc">Avoid waterlogging. Don't ride through deep puddles or flooded roads. Water damage voids warranty and damages battery health.</p>
+        </div>
+        <div class="step__img">
+          <img src="assets/dark_scutie.webp" alt="Water Protection">
+        </div>
+      </div>
+
+      <div class="step" style="--i: 4">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="wrench"></i>
+          </div>
+          <div class="step__num">Step 5</div>
+          <h3 class="step__title">Professional Service</h3>
+          <p class="step__desc">Get your battery checked annually at authorized service centers. Preventive maintenance catches issues early and extends life.</p>
+        </div>
+        <div class="step__img">
+          <img src="assets/scutie_light.webp" alt="Professional Service">
+        </div>
+      </div>
+
+      <div class="step" style="--i: 5">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="shield-check"></i>
+          </div>
+          <div class="step__num">Step 6</div>
+          <h3 class="step__title">Know Your Warranty</h3>
+          <p class="step__desc">Register your battery immediately after purchase. Hazra batteries come with 4-5 year warranties. Know the terms and coverage.</p>
+        </div>
+        <div class="step__img">
+          <img src="assets/dark_scutie.webp" alt="Warranty">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="footer">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
+    Follow these tips to maximize battery life and get more from every charge
+  </p>
+  <a class="footer__link" href="index.html">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script>
+  lucide.createIcons();
+  const themeBtn = document.getElementById('theme');
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  });
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+</script>
+
+</body>
+</html>

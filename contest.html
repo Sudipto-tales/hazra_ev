@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* Applied before first paint so a dark-mode visitor never sees a light
+   flash. Kept inline and tiny on purpose: an external file would race
+   the paint it exists to prevent. */
+(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+  <title>Reels Contest — Win Big | Hazra</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazra Electrical Bike">
+<meta property="og:title" content="Reels Contest — Win Big | Hazra">
+<meta property="og:description" content="Show us your ride and share your Hazra moment. Enter the Hazra Reels Contest.">
+<meta property="og:url" content="https://hazraelectricalbike.com/contest.html">
+<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://hazraelectricalbike.com/contest.html">
+<meta name="description" content="Show us your ride and share your Hazra moment. Enter the Hazra Reels Contest.">
+  <link rel="icon" href="assets/hazraev.png" type="image/png">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/typography.css">
+<link rel="stylesheet" href="styles/global.css">
+<link rel="stylesheet" href="styles/utilities.css">
+<link rel="stylesheet" href="styles/components/page-chrome.css">
+  <style>
+
+    .gallery {
+      padding: clamp(60px, 9vw, 140px) 26px;
+      background: rgb(var(--chip-rgb) / .35);
+      border-top: 1px solid var(--hair-0);
+    }
+
+    .gallery__in { width: min(1200px, 93vw); margin: 0 auto; }
+
+    .gallery__title {
+      font-family: 'Montserrat'; font-size: clamp(28px, 3vw, 48px);
+      font-weight: 800; margin-bottom: 50px;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) .1s forwards;
+    }
+
+    .gallery__grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: clamp(20px, 2.5vw, 36px);
+    }
+
+    .gallery__item {
+      aspect-ratio: 9/16; border-radius: 16px;
+      overflow: hidden; position: relative;
+      opacity: 0; transform: scale(.95);
+      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) calc(.15s + var(--i, 0) * 80ms) forwards;
+    }
+
+    .gallery__item img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .35s var(--ease);
+    }
+
+    .gallery__item:hover img {
+      transform: scale(1.08);
+    }
+
+    .gallery__overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.5) 100%);
+      display: flex; align-items: flex-end; padding: 20px;
+      opacity: 0; transition: opacity .35s var(--ease);
+    }
+
+    .gallery__item:hover .gallery__overlay {
+      opacity: 1;
+    }
+
+    .gallery__meta {
+      color: #fff; font-size: 12px;
+      display: flex; gap: 8px;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition-duration: .01ms !important; }
+    }</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.html">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1 class="hero__title">Reels Contest</h1>
+  <p class="hero__lead">
+    Show us your ride. Win amazing prizes. Share your Hazra moment with the world.
+  </p>
+</section>
+
+<section class="gallery">
+  <div class="gallery__in">
+    <h2 class="gallery__title">Featured Entries</h2>
+    <div class="gallery__grid">
+      <div class="gallery__item" style="--i: 0">
+        <img src="assets/scutie_light.webp" alt="Rider 1">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>❤️ 1.2K</span>
+            <span>💬 342</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 1">
+        <img src="assets/dark_scutie.webp" alt="Rider 2">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>❤️ 989</span>
+            <span>💬 256</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 2">
+        <img src="assets/scutie_light.webp" alt="Rider 3">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>❤️ 1.5K</span>
+            <span>💬 468</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 3">
+        <img src="assets/dark_scutie.webp" alt="Rider 4">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>❤️ 876</span>
+            <span>💬 201</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 4">
+        <img src="assets/scutie_light.webp" alt="Rider 5">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>❤️ 2.1K</span>
+            <span>💬 512</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 5">
+        <img src="assets/dark_scutie.webp" alt="Rider 6">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>❤️ 734</span>
+            <span>💬 189</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="footer">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
+    Create your reel now and tag us @hazraev for a chance to win
+  </p>
+  <a class="footer__link" href="index.html">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script>
+  lucide.createIcons();
+  const themeBtn = document.getElementById('theme');
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  });
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+</script>
+
+</body>
+</html>

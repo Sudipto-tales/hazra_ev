@@ -3,15 +3,40 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* Applied before first paint so a dark-mode visitor never sees a light
+   flash. Kept inline and tiny on purpose: an external file would race
+   the paint it exists to prevent. */
+(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
 <title>Hazra Electrical Bike — Follow Elegant</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazra Electrical Bike">
+<meta property="og:title" content="Hazra Electrical Bike — Follow Elegant">
+<meta property="og:description" content="Hazra Electrical Bike — electric scooters built for everyday Indian riding. Book a test drive or find a dealership near you.">
+<meta property="og:url" content="https://hazraelectricalbike.com/">
+<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://hazraelectricalbike.com/">
 <link rel="icon" href="assets/hazraev.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/hazraev.png">
 <meta name="description" content="Hazra Electrical Bike — electric scooters built for everyday Indian riding. Book a test drive or find a dealership near you.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/typography.css">
+<link rel="stylesheet" href="styles/global.css">
+<link rel="stylesheet" href="styles/utilities.css">
 <link rel="stylesheet" href="style.css">
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization",
+ "name":"Hazra Electrical Bike",
+ "url":"https://hazraelectricalbike.com/",
+ "logo":"https://hazraelectricalbike.com/assets/hazraev.png",
+ "description":"Electric scooters built for everyday Indian riding."}
+</script>
 </head>
 <body>
 
@@ -27,8 +52,8 @@
 
     <!-- photo sits underneath; white plates notch into it -->
     <figure class="photo">
-      <img class="photo__img photo__img--light" src="assets/scutie_light.png" alt="Hazra Electrical Bike in daylight">
-      <img class="photo__img photo__img--dark"  src="assets/dark_scutie.png"  alt="Hazra Electrical Bike at night" aria-hidden="true">
+      <img class="photo__img photo__img--light" src="assets/scutie_light.webp" alt="Hazra Electrical Bike in daylight">
+      <img class="photo__img photo__img--dark"  src="assets/dark_scutie.webp"  alt="Hazra Electrical Bike at night" aria-hidden="true">
       <div class="photo__shade"></div>
 
       <div class="pill pill--b reveal-pop"><i data-lucide="gauge"></i><span>120&nbsp;km/hour</span></div>
@@ -67,8 +92,8 @@
             About <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
-            <a href="#our-story" class="nav__s">Our Story</a>
-            <a href="#career"    class="nav__s">Career</a>
+            <a href="our-story.html" class="nav__s">Our Story</a>
+            <a href="career.html"    class="nav__s">Career</a>
             <a href="#faq"       class="nav__s">FAQ</a>
           </div>
         </div>
@@ -78,12 +103,12 @@
             Products <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--wide">
-            <a href="#chalo-1000-v2" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
-            <a href="#chalo-smart-pro"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
-            <a href="#chalo-smart-plus" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
-            <a href="#chalo-smart-eco"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
-            <a href="#chalo-neo"        class="nav__s">CHALO NEO <em>Low Speed</em></a>
-            <a href="#nja-7"            class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+            <a href="chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+            <a href="chalo-smart-pro.html"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
+            <a href="chalo-smart-plus.html" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
+            <a href="chalo-smart-eco.html"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
+            <a href="chalo-neo.html"        class="nav__s">CHALO NEO <em>Low Speed</em></a>
+            <a href="nja-7.html"            class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
           </div>
         </div>
 
@@ -92,11 +117,11 @@
             Social <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
-            <a href="#contest"     class="nav__s">Contest <em>Reels Contest</em></a>
-            <a href="#blog"        class="nav__s">Blog</a>
+            <a href="contest.html"     class="nav__s">Contest <em>Reels Contest</em></a>
+            <a href="blog.html"        class="nav__s">Blog</a>
             <a href="#news"        class="nav__s">News</a>
-            <a href="#battery-use" class="nav__s">Battery Use</a>
-            <a href="#ev-future"   class="nav__s">EV Future</a>
+            <a href="battery-use.html" class="nav__s">Battery Use</a>
+            <a href="ev-future.html"   class="nav__s">EV Future</a>
           </div>
         </div>
 
@@ -105,8 +130,8 @@
             Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
-            <a href="#dealer-locator"  class="nav__s">Dealer Locator</a>
-            <a href="#become-a-dealer" class="nav__s">Become a Dealer</a>
+            <a href="dealer-locator.html"  class="nav__s">Dealer Locator</a>
+            <a href="become-a-dealer.html" class="nav__s">Become a Dealer</a>
           </div>
         </div>
 
@@ -115,8 +140,8 @@
             Service <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--wide">
-            <a href="#free-warranty-registration" class="nav__s">Free Warranty Registration</a>
-            <a href="#paid-warranty-registration" class="nav__s">Paid Warranty Registration</a>
+            <a href="warranty-free.html" class="nav__s">Free Warranty Registration</a>
+            <a href="warranty-paid.html" class="nav__s">Paid Warranty Registration</a>
           </div>
         </div>
 
@@ -185,6 +210,98 @@
   </main>
 </section>
 </div>
+
+<!-- ══════════ STICKY NAVBAR ══════════
+     Full-width glass bar; appears after hero scroll.
+     Hides on scroll-down, shows on scroll-up or idle. -->
+<header class="sticky-bar" id="stickyBar" aria-hidden="true">
+  <div class="sticky-bar__inner">
+    <a class="brand sticky-bar__brand" href="#" aria-label="Hazra Electrical Bike — home">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
+    </a>
+
+    <button class="burger" id="stickyBurger" aria-label="Open menu" aria-expanded="false" aria-controls="stickyNav">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav sticky-bar__nav" id="stickyNav">
+      <a href="#" class="nav__i is-on">Home</a>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          About <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu">
+          <a href="our-story.html" class="nav__s">Our Story</a>
+          <a href="career.html"    class="nav__s">Career</a>
+          <a href="#faq"       class="nav__s">FAQ</a>
+        </div>
+      </div>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          Products <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu nav__menu--wide">
+          <a href="chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+          <a href="chalo-smart-pro.html"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
+          <a href="chalo-smart-plus.html" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
+          <a href="chalo-smart-eco.html"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
+          <a href="chalo-neo.html"        class="nav__s">CHALO NEO <em>Low Speed</em></a>
+          <a href="nja-7.html"            class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+        </div>
+      </div>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          Social <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu">
+          <a href="contest.html"     class="nav__s">Contest <em>Reels Contest</em></a>
+          <a href="blog.html"        class="nav__s">Blog</a>
+          <a href="#news"        class="nav__s">News</a>
+          <a href="battery-use.html" class="nav__s">Battery Use</a>
+          <a href="ev-future.html"   class="nav__s">EV Future</a>
+        </div>
+      </div>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu">
+          <a href="dealer-locator.html"    class="nav__s">Locate Dealers</a>
+          <a href="become-a-dealer.html"   class="nav__s">Become a Dealer</a>
+        </div>
+      </div>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          Service <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu">
+          <a href="warranty-free.html"     class="nav__s">Warranty (Free)</a>
+          <a href="warranty-paid.html"     class="nav__s">Warranty (Paid)</a>
+          <a href="battery-use.html"       class="nav__s">Battery Care</a>
+        </div>
+      </div>
+
+      <a href="#contact" class="nav__i">Contact</a>
+    </nav>
+
+    <div class="sticky-bar__end">
+      <button class="theme" id="stickyTheme">
+        <i class="theme__sun" data-lucide="sun"></i>
+        <i class="theme__moon" data-lucide="moon"></i>
+      </button>
+      <a href="#contact" class="sticky-bar__cta" aria-label="Contact us">
+        <i data-lucide="shopping-bag"></i>
+        <span>CONTACT US</span>
+      </a>
+    </div>
+  </div>
+</header>
 
 
 <!-- ══════════ ABOUT ══════════
@@ -269,7 +386,7 @@
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
           <span class="card__360">360&deg;</span>
-          <img class="card__img" src="assets/scutie_light.png" alt="Matic S1">
+          <img class="card__img" src="assets/scutie_light.webp" alt="Matic S1">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -303,7 +420,7 @@
       <article class="card" style="--c:#241640">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/dark_scutie.png" alt="Matic Pro">
+          <img class="card__img" src="assets/dark_scutie.webp" alt="Matic Pro">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -337,7 +454,7 @@
       <article class="card" style="--c:#f0532b">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/scutie_light.png" alt="Matic Eco">
+          <img class="card__img" src="assets/scutie_light.webp" alt="Matic Eco">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -371,7 +488,7 @@
       <article class="card" style="--c:#a41fbf">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/dark_scutie.png" alt="Matic City">
+          <img class="card__img" src="assets/dark_scutie.webp" alt="Matic City">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -405,7 +522,7 @@
       <article class="card" style="--c:#f7941d">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/scutie_light.png" alt="Matic Lite">
+          <img class="card__img" src="assets/scutie_light.webp" alt="Matic Lite">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -439,7 +556,7 @@
       <article class="card" style="--c:#efeaf8">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/dark_scutie.png" alt="Matic X">
+          <img class="card__img" src="assets/dark_scutie.webp" alt="Matic X">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -631,7 +748,7 @@
             <div class="fslide__media">
               <i class="fslide__halo"></i>
               <i class="fslide__floor"></i>
-              <img class="fslide__img" src="assets/storm.png" alt="Matic S1 in violet" decoding="async">
+              <img class="fslide__img" src="assets/storm.webp" alt="Matic S1 in violet" decoding="async">
             </div>
             <div class="fslide__body">
               <h3 class="fslide__name">Matic S1</h3>
@@ -643,7 +760,7 @@
             <div class="fslide__media">
               <i class="fslide__halo"></i>
               <i class="fslide__floor"></i>
-              <img class="fslide__img" src="assets/storm.png" alt="Matic Pro in matte indigo" loading="lazy" decoding="async">
+              <img class="fslide__img" src="assets/storm.webp" alt="Matic Pro in matte indigo" loading="lazy" decoding="async">
             </div>
             <div class="fslide__body">
               <h3 class="fslide__name">Matic Pro</h3>
@@ -655,7 +772,7 @@
             <div class="fslide__media">
               <i class="fslide__halo"></i>
               <i class="fslide__floor"></i>
-              <img class="fslide__img" src="assets/storm.png" alt="Matic X in signal flame" loading="lazy" decoding="async">
+              <img class="fslide__img" src="assets/storm.webp" alt="Matic X in signal flame" loading="lazy" decoding="async">
             </div>
             <div class="fslide__body">
               <h3 class="fslide__name">Matic X</h3>
@@ -667,7 +784,7 @@
             <div class="fslide__media">
               <i class="fslide__halo"></i>
               <i class="fslide__floor"></i>
-              <img class="fslide__img" src="assets/storm.png" alt="Matic Air in pearl white" loading="lazy" decoding="async">
+              <img class="fslide__img" src="assets/storm.webp" alt="Matic Air in pearl white" loading="lazy" decoding="async">
             </div>
             <div class="fslide__body">
               <h3 class="fslide__name">Matic Air</h3>
@@ -776,7 +893,7 @@
     <div class="bento">
 
       <article class="bento__c bento__c--lead" style="--pos:38% 62%;--tint:var(--brand-violet)">
-        <img class="bento__img" src="assets/dark_scutie.png" alt="Battery pack detail">
+        <img class="bento__img" src="assets/dark_scutie.webp" alt="Battery pack detail">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="battery-charging"></i>Battery</span>
         <div class="bento__body">
@@ -786,7 +903,7 @@
       </article>
 
       <article class="bento__c bento__c--wide" style="--pos:72% 34%;--tint:var(--brand-blue)">
-        <img class="bento__img" src="assets/dark_scutie.png" alt="Cockpit and controls">
+        <img class="bento__img" src="assets/dark_scutie.webp" alt="Cockpit and controls">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="zap"></i>Control</span>
         <div class="bento__body">
@@ -796,7 +913,7 @@
       </article>
 
       <article class="bento__c" style="--pos:24% 78%;--tint:var(--brand-magenta)">
-        <img class="bento__img" src="assets/scutie_light.png" alt="Dealer handover">
+        <img class="bento__img" src="assets/scutie_light.webp" alt="Dealer handover">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="map-pin"></i>Network</span>
         <div class="bento__body">
@@ -806,7 +923,7 @@
       </article>
 
       <article class="bento__c" style="--pos:84% 66%;--tint:var(--brand-flame)">
-        <img class="bento__img" src="assets/scutie_light.png" alt="Suspension and warranty seal">
+        <img class="bento__img" src="assets/scutie_light.webp" alt="Suspension and warranty seal">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="shield-check"></i>Warranty</span>
         <div class="bento__body">
@@ -828,7 +945,7 @@
     <div class="ride__grid">
 
       <figure class="ride__media reveal-up">
-        <img class="ride__img" src="assets/scutie_light.png" alt="Hazra EV scooter">
+        <img class="ride__img" src="assets/scutie_light.webp" alt="Hazra EV scooter">
         <i class="ride__wash"></i>
         <figcaption class="ride__offer">
           <b>Season offer</b>
@@ -976,7 +1093,7 @@
 
       <a class="post" href="#" style="--i:0;--pos:30% 58%;--tint:var(--brand-violet)">
         <figure class="post__media">
-          <img class="post__img" src="assets/dark_scutie.png" alt="">
+          <img class="post__img" src="assets/dark_scutie.webp" alt="">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">
@@ -989,7 +1106,7 @@
 
       <a class="post" href="#" style="--i:1;--pos:66% 44%;--tint:var(--brand-blue)">
         <figure class="post__media">
-          <img class="post__img" src="assets/scutie_light.png" alt="">
+          <img class="post__img" src="assets/scutie_light.webp" alt="">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">
@@ -1002,7 +1119,7 @@
 
       <a class="post" href="#" style="--i:2;--pos:20% 70%;--tint:var(--brand-flame)">
         <figure class="post__media">
-          <img class="post__img" src="assets/dark_scutie.png" alt="">
+          <img class="post__img" src="assets/dark_scutie.webp" alt="">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">
@@ -1019,92 +1136,107 @@
 
 
 <!-- ══════════ FOOTER ══════════
-     Video plate underneath, brand-gradient veil on top. The video is
-     decoration: if assets/footer.mp4 is missing the poster and the gradient
-     carry the block on their own. -->
+     Redesigned with wave effect, compact layout, and social media on right.
+     Background images: footer-lightbg.webp (light) / footer-darkbg.webp (dark) -->
 <footer class="foot" id="contact">
 
-  <video class="foot__v" autoplay muted loop playsinline preload="none"
-         poster="assets/dark_scutie.png" aria-hidden="true" tabindex="-1">
-    <source src="assets/footer.mp4" type="video/mp4">
-  </video>
+  <!-- Wave cut effect at the top -->
+  <div class="foot__wave"></div>
+
+  <!-- Background with theme support -->
+  <div class="foot__bg foot__bg--light" aria-hidden="true"></div>
+  <div class="foot__bg foot__bg--dark" aria-hidden="true"></div>
   <i class="foot__veil"></i>
-  <i class="foot__glow"></i>
 
   <div class="wrap foot__in">
 
-    <div class="foot__top">
-      <div class="foot__brand">
-        <img class="foot__logo" src="assets/hazraev.png" alt="Hazra Electrical Bike">
-        <p class="foot__tag">
-          Premium electric scooters designed for smarter, cleaner and more
-          affordable mobility.
-        </p>
-        <ul class="foot__contact">
-          <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
-          <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
-          <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
-        </ul>
-        <div class="foot__socials">
-          <a href="#" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
-          <a href="#" aria-label="Instagram"><i data-lucide="instagram"></i></a>
-          <a href="#" aria-label="YouTube"><i data-lucide="youtube"></i></a>
-          <a href="#" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+    <!-- Main content grid: Brand + Navigation left, Social media right -->
+    <div class="foot__main">
+
+      <!-- Left column: Brand and navigation -->
+      <div class="foot__content">
+
+        <!-- Brand section -->
+        <div class="foot__brand">
+          <img class="foot__logo" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+          <p class="foot__tag">
+            Premium electric scooters designed for smarter, cleaner and more
+            affordable mobility.
+          </p>
+          <ul class="foot__contact">
+            <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
+            <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
+            <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
+          </ul>
         </div>
+
+        <!-- Navigation columns -->
+        <nav class="foot__cols" aria-label="Footer">
+          <div class="fcol">
+            <h4>Electric Scooters</h4>
+            <a href="chalo-1000-v2.html">CHALO 1000 V2</a>
+            <a href="chalo-smart-pro.html">CHALO SMART PRO</a>
+            <a href="chalo-smart-plus.html">CHALO SMART PLUS</a>
+            <a href="chalo-neo.html">CHALO NEO</a>
+            <a href="#collection">Compare models</a>
+            <a href="#test-ride">Book test ride</a>
+          </div>
+          <div class="fcol">
+            <h4>Buy</h4>
+            <a href="#">Book a scooter</a>
+            <a href="#">EMI calculator</a>
+            <a href="#">Charging</a>
+            <a href="#">Download brochure</a>
+            <a href="dealer-locator.html">Locate dealers</a>
+          </div>
+          <div class="fcol">
+            <h4>Ownership</h4>
+            <a href="#">Running cost calculator</a>
+            <a href="#performance">Range confidence</a>
+            <a href="#">Accessories</a>
+            <a href="#">Battery warranty</a>
+            <a href="battery-use.html">Battery use</a>
+          </div>
+          <div class="fcol">
+            <h4>Company</h4>
+            <a href="our-story.html">Our story</a>
+            <a href="blog.html">Blog</a>
+            <a href="#news">News</a>
+            <a href="career.html">Careers</a>
+            <a href="become-a-dealer.html">Become a dealer</a>
+          </div>
+          <div class="fcol">
+            <h4>Support</h4>
+            <a href="#faq">FAQs</a>
+            <a href="#contact">Contact us</a>
+            <a href="#">Register complaint</a>
+            <a href="warranty-free.html">Warranty registration</a>
+            <a href="#">Sitemap</a>
+          </div>
+        </nav>
       </div>
 
-      <nav class="foot__cols" aria-label="Footer">
-        <div class="fcol">
-          <h4>Electric Scooters</h4>
-          <a href="#chalo-1000-v2">CHALO 1000 V2</a>
-          <a href="#chalo-smart-pro">CHALO SMART PRO</a>
-          <a href="#chalo-smart-plus">CHALO SMART PLUS</a>
-          <a href="#chalo-neo">CHALO NEO</a>
-          <a href="#collection">Compare models</a>
-          <a href="#test-ride">Book test ride</a>
+      <!-- Right column: Social media section -->
+      <aside class="foot__social-section">
+        <h3 class="foot__social-title">Follow us</h3>
+        <div class="foot__socials">
+          <a href="#" class="foot__social-link foot__social--instagram" aria-label="Instagram" title="Instagram">
+            <i data-lucide="instagram"></i>
+          </a>
+          <a href="#" class="foot__social-link foot__social--facebook" aria-label="Facebook" title="Facebook">
+            <i data-lucide="facebook"></i>
+          </a>
+          <a href="#" class="foot__social-link foot__social--youtube" aria-label="YouTube" title="YouTube">
+            <i data-lucide="youtube"></i>
+          </a>
+          <a href="#" class="foot__social-link foot__social--whatsapp" aria-label="WhatsApp" title="WhatsApp">
+            <i data-lucide="message-circle"></i>
+          </a>
         </div>
-        <div class="fcol">
-          <h4>Buy</h4>
-          <a href="#">Book a scooter</a>
-          <a href="#">EMI calculator</a>
-          <a href="#">Charging</a>
-          <a href="#">Download brochure</a>
-          <a href="#dealer-locator">Locate dealers</a>
-        </div>
-        <div class="fcol">
-          <h4>Ownership</h4>
-          <a href="#">Running cost calculator</a>
-          <a href="#performance">Range confidence</a>
-          <a href="#">Accessories</a>
-          <a href="#">Battery warranty</a>
-          <a href="#battery-use">Battery use</a>
-        </div>
-        <div class="fcol">
-          <h4>Company</h4>
-          <a href="#our-story">Our story</a>
-          <a href="#insights">Blog</a>
-          <a href="#news">News</a>
-          <a href="#career">Careers</a>
-          <a href="#become-a-dealer">Become a dealer</a>
-        </div>
-        <div class="fcol">
-          <h4>Support</h4>
-          <a href="#faq">FAQs</a>
-          <a href="#contact">Contact us</a>
-          <a href="#">Register complaint</a>
-          <a href="#free-warranty-registration">Warranty registration</a>
-          <a href="#">Sitemap</a>
-        </div>
-      </nav>
+      </aside>
     </div>
 
-    <div class="foot__cities">
-      <span class="foot__cities-l">Check pricing</span>
-      <a href="#">Kolkata</a><a href="#">Delhi</a><a href="#">Mumbai</a>
-      <a href="#">Bengaluru</a><a href="#">Pune</a><a href="#">Jaipur</a>
-      <a href="#" class="is-all">All cities<i data-lucide="arrow-up-right"></i></a>
-    </div>
-
+    <!-- Footer base: Legal and copyright -->
     <div class="foot__base">
       <p>&copy; 2026 Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
       <div class="foot__legal">
@@ -1126,9 +1258,7 @@
     <span class="dock__lb">Test Drive</span>
   </a>
 
-  <!-- #dealership does not exist yet — the form is a future build. The click
-       handler in script.js swallows the jump until the section lands. -->
-  <a class="dock__i" href="#dealership" data-dock="dealership" aria-label="Dealership enquiry">
+  <a class="dock__i" href="dealership-enquiry.html" data-dock="dealership" aria-label="Dealership enquiry">
     <i data-lucide="store"></i>
     <span class="dock__lb">Dealership</span>
   </a>

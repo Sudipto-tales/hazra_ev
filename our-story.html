@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* Applied before first paint so a dark-mode visitor never sees a light
+   flash. Kept inline and tiny on purpose: an external file would race
+   the paint it exists to prevent. */
+(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+  <title>Our Story — Hazra Electrical Bike</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazra Electrical Bike">
+<meta property="og:title" content="Our Story — Hazra Electrical Bike">
+<meta property="og:description" content="Learn how Hazra Electrical Bike was born from one frame, one battery, and a stubborn idea to build electric scooters that riders actually want.">
+<meta property="og:url" content="https://hazraelectricalbike.com/our-story.html">
+<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://hazraelectricalbike.com/our-story.html">
+  <link rel="icon" href="assets/hazraev.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/hazraev.png">
+  <meta name="description" content="Learn how Hazra Electrical Bike was born from one frame, one battery, and a stubborn idea to build electric scooters that riders actually want.">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/typography.css">
+<link rel="stylesheet" href="styles/global.css">
+<link rel="stylesheet" href="styles/utilities.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ════════════════════════════════════════════
+       OUR STORY — Timeline & Milestones
+       ════════════════════════════════════════════ */
+
+    :root {
+      --brand-indigo:  #3a1a6b;
+      --brand-violet:  #7b2ff7;
+      --brand-magenta: #a41fbf;
+      --brand-blue:    #12a5e0;
+      --brand-orange:  #f7941d;
+      --brand-flame:   #f0532b;
+      --brand-grad: linear-gradient(96deg,
+          var(--brand-violet) 0%,
+          var(--brand-magenta) 30%,
+          var(--brand-flame) 66%,
+          var(--brand-orange) 100%);
+
+      --ink-0:        #180f2c;
+      --ink-soft-0:   #6b6480;
+      --hair-0:       #e3ddec;
+      --surface-0:    #faf8fd;
+      --surface-rgb:  250 248 253;
+      --chip-rgb:     240 235 249;
+      --accent:       var(--brand-orange);
+      --accent-ink:   #180f2c;
+      --glass-bd:     rgba(255,255,255,.28);
+      --glass-bg:     rgba(255,255,255,.16);
+      --veil:         rgba(26,14,48,.32);
+      --sh-a:         .45;
+      --ease: cubic-bezier(.22,1,.36,1);
+    }
+
+    html[data-theme="dark"] {
+      --ink-0:        #f6f3fb;
+      --ink-soft-0:   #9a93ad;
+      --hair-0:       #2f2743;
+      --surface-0:    #120e1c;
+      --surface-rgb:  18 14 28;
+      --chip-rgb:     33 26 50;
+      --accent:       #ff8f2e;
+      --accent-ink:   #150c26;
+      --glass-bd:     rgba(255,255,255,.16);
+      --glass-bg:     rgba(255,255,255,.08);
+      --veil:         rgba(9,4,20,.52);
+      --sh-a:         .8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--surface-0);
+      color: var(--ink-0);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgb(var(--surface-rgb) / .92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--hair-0);
+      padding: 20px 0;
+    }
+
+    .header__top {
+      display: flex; align-items: center; justify-content: space-between;
+      width: min(1520px, 93vw); margin: 0 auto; padding: 0 26px;
+    }
+
+    .brand {
+      display: inline-flex; align-items: center; gap: 9px;
+      text-decoration: none;
+    }
+
+    .brand__mark {
+      width: 32px; height: 32px;
+      object-fit: contain;
+    }
+
+    .brand__txt {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12.5px; font-weight: 700;
+      color: var(--ink-soft-0);
+    }
+
+    .theme {
+      display: grid; place-items: center;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: none; border: 1px solid var(--hair-0);
+      cursor: pointer; color: var(--ink-0);
+    }
+
+    .theme svg { width: 17px; height: 17px; position: absolute; }
+    .theme__moon { display: none; }
+    html[data-theme="dark"] .theme__sun { display: none; }
+    html[data-theme="dark"] .theme__moon { display: block; }
+
+    /* Hero Section */
+    .hero {
+      position: relative;
+      background: var(--surface-0);
+      padding: clamp(80px, 12vw, 160px) 26px;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(120% 78% at 50% 12%,
+        color-mix(in srgb, var(--brand-violet) 8%, transparent) 0%, transparent 68%);
+      pointer-events: none;
+    }
+
+    .hero__in {
+      position: relative; z-index: 1;
+      width: min(900px, 93vw); margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero__tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
+      color: var(--ink-soft-0); margin-bottom: 24px;
+      opacity: 0; transform: translateY(20px);
+      animation: reveal-up .8s var(--ease) .2s forwards;
+    }
+
+    .hero__tag::before {
+      content: ''; width: 10px; height: 10px;
+      background: var(--brand-grad);
+    }
+
+    .hero__title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(40px, 4.2vw, 72px);
+      font-weight: 900; line-height: 1.05;
+      letter-spacing: -.035em; margin-bottom: 24px;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up 1s var(--ease) .3s forwards;
+    }
+
+    .hero__lead {
+      font-size: clamp(16px, 1.3vw, 20px);
+      line-height: 1.6; color: var(--ink-soft-0);
+      max-width: 600px; margin: 0 auto;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up 1s var(--ease) .4s forwards;
+    }
+
+    @keyframes reveal-up {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    /* Timeline */
+    .timeline {
+      padding: clamp(60px, 9vw, 140px) 26px;
+      background: var(--surface-0);
+      position: relative;
+    }
+
+    .timeline__in {
+      width: min(1200px, 93vw); margin: 0 auto;
+    }
+
+    .timeline__head {
+      margin-bottom: clamp(50px, 6vw, 80px);
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) .1s forwards;
+    }
+
+    .timeline__eyebrow {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
+      color: var(--ink-soft-0); margin-bottom: 16px;
+    }
+
+    .timeline__eyebrow::before {
+      content: ''; width: 10px; height: 10px;
+      background: var(--brand-grad);
+    }
+
+    .timeline__title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(28px, 3vw, 48px);
+      font-weight: 800; line-height: 1.06;
+      letter-spacing: -.035em;
+    }
+
+    /* Timeline Items */
+    .timeline__items {
+      position: relative;
+      padding: 40px 0;
+    }
+
+    .timeline__items::before {
+      content: '';
+      position: absolute; left: 50%;
+      top: 0; bottom: 0;
+      width: 1px; background: var(--hair-0);
+      transform: translateX(-1px);
+    }
+
+    .timeline__item {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: clamp(20px, 3vw, 40px);
+      margin-bottom: clamp(50px, 6vw, 80px);
+      opacity: 0;
+    }
+
+    .timeline__item:nth-child(odd) {
+      animation: reveal-left .8s var(--ease) calc(.15s + var(--i, 0) * 200ms) forwards;
+    }
+
+    .timeline__item:nth-child(even) {
+      animation: reveal-right .8s var(--ease) calc(.15s + var(--i, 0) * 200ms) forwards;
+    }
+
+    @keyframes reveal-left {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @keyframes reveal-right {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .timeline__content {
+      text-align: right;
+      padding-right: 40px;
+    }
+
+    .timeline__content:nth-child(3) {
+      grid-column: 3;
+      text-align: left;
+      padding-right: 0;
+      padding-left: 40px;
+    }
+
+    .timeline__year {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(20px, 1.8vw, 28px);
+      font-weight: 800; color: var(--brand-violet);
+      margin-bottom: 12px;
+    }
+
+    .timeline__label {
+      font-size: 13px; font-weight: 700;
+      color: var(--ink-0); margin-bottom: 10px;
+    }
+
+    .timeline__desc {
+      font-size: 13px; line-height: 1.6;
+      color: var(--ink-soft-0);
+    }
+
+    .timeline__dot {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--brand-grad);
+      color: #fff;
+      margin: 0 auto;
+      box-shadow: 0 0 0 8px var(--surface-0),
+                  0 0 0 9px var(--hair-0);
+    }
+
+    .timeline__dot svg {
+      width: 16px; height: 16px;
+    }
+
+    /* Values Section */
+    .values {
+      padding: clamp(60px, 9vw, 140px) 26px;
+      background: rgb(var(--chip-rgb) / .35);
+      border-top: 1px solid var(--hair-0);
+    }
+
+    .values__in {
+      width: min(1200px, 93vw); margin: 0 auto;
+    }
+
+    .values__head {
+      margin-bottom: clamp(50px, 6vw, 80px);
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) .1s forwards;
+    }
+
+    .values__title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: clamp(28px, 3vw, 48px);
+      font-weight: 800; letter-spacing: -.035em;
+    }
+
+    .values__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: clamp(24px, 2.5vw, 40px);
+    }
+
+    .value__card {
+      padding: clamp(28px, 3vw, 40px);
+      background: var(--surface-0);
+      border: 1px solid var(--hair-0);
+      border-radius: 20px;
+      transition: all .35s var(--ease);
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 120ms) forwards;
+    }
+
+    .value__card:hover {
+      border-color: var(--brand-violet);
+      box-shadow: 0 30px 60px -20px rgba(123, 47, 247, .25);
+      transform: translateY(-6px);
+    }
+
+    .value__icon {
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: var(--brand-grad);
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .value__icon svg {
+      width: 24px; height: 24px;
+    }
+
+    .value__title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 18px; font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .value__desc {
+      font-size: 13px; line-height: 1.7;
+      color: var(--ink-soft-0);
+    }
+
+    /* Footer */
+    .footer {
+      padding: clamp(50px, 7vw, 100px) 26px;
+      background: var(--surface-0);
+      border-top: 1px solid var(--hair-0);
+      text-align: center;
+    }
+
+    .footer__link {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 26px;
+      background: var(--brand-grad);
+      color: #fff;
+      border: none; border-radius: 999px;
+      text-decoration: none;
+      font-size: 12px; font-weight: 700; letter-spacing: .06em;
+      cursor: pointer;
+      transition: all .35s var(--ease);
+      opacity: 0; transform: scale(.95);
+      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) .5s forwards;
+    }
+
+    .footer__link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
+    }
+
+    .footer__link svg {
+      width: 15px; height: 15px;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 768px) {
+      .timeline__items::before { left: 16px; }
+
+      .timeline__item {
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      .timeline__item:nth-child(odd),
+      .timeline__item:nth-child(even) {
+        animation: none;
+        opacity: 1;
+      }
+
+      .timeline__content {
+        text-align: left;
+        padding-right: 0;
+        padding-left: 50px;
+        margin-bottom: 30px;
+      }
+
+      .timeline__content:nth-child(3) {
+        padding-left: 50px;
+      }
+
+      .timeline__dot {
+        position: absolute;
+        left: 0;
+        width: 32px; height: 32px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization",
+ "name":"Hazra Electrical Bike",
+ "url":"https://hazraelectricalbike.com/",
+ "logo":"https://hazraelectricalbike.com/assets/hazraev.png",
+ "description":"Electric scooters built for everyday Indian riding."}
+</script>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.html">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero__in">
+    <p class="hero__tag">Our Story</p>
+    <h1 class="hero__title">One frame, one battery,<br>one stubborn idea.</h1>
+    <p class="hero__lead">
+      The story of Hazra Electrical Bike is the story of builders who believed that electric
+      scooters should feel like something riders actually want to ride.
+    </p>
+  </div>
+</section>
+
+<section class="timeline">
+  <div class="timeline__in">
+    <div class="timeline__head">
+      <p class="timeline__eyebrow">Journey</p>
+      <h2 class="timeline__title">Milestones that shaped us</h2>
+    </div>
+
+    <div class="timeline__items">
+      <div class="timeline__item" style="--i: 0">
+        <div class="timeline__content">
+          <div class="timeline__year">2013</div>
+          <h3 class="timeline__label">The Beginning</h3>
+          <p class="timeline__desc">
+            The first frame was pressed in a single piece.
+            No screws to rattle, no joints to fail. Pure elegance.
+          </p>
+        </div>
+        <div class="timeline__dot">
+          <i data-lucide="zap"></i>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="timeline__item" style="--i: 1">
+        <div></div>
+        <div class="timeline__dot">
+          <i data-lucide="battery-charging"></i>
+        </div>
+        <div class="timeline__content">
+          <div class="timeline__year">2016</div>
+          <h3 class="timeline__label">Swappable Battery</h3>
+          <p class="timeline__desc">
+            We introduced the first field-swappable pack. Riders could choose
+            their battery without choosing their scooter.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline__item" style="--i: 2">
+        <div class="timeline__content">
+          <div class="timeline__year">2019</div>
+          <h3 class="timeline__label">National Network</h3>
+          <p class="timeline__desc">
+            From 3 dealers to 48. We stopped being a prototype
+            and became a service network that riders trust.
+          </p>
+        </div>
+        <div class="timeline__dot">
+          <i data-lucide="map-pin"></i>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="timeline__item" style="--i: 3">
+        <div></div>
+        <div class="timeline__dot">
+          <i data-lucide="users"></i>
+        </div>
+        <div class="timeline__content">
+          <div class="timeline__year">2022</div>
+          <h3 class="timeline__label">26,000 Riders</h3>
+          <p class="timeline__desc">
+            Twenty-six thousand scooters on Indian roads. Every rider
+            chose us because we built something worth choosing.
+          </p>
+        </div>
+      </div>
+
+      <div class="timeline__item" style="--i: 4">
+        <div class="timeline__content">
+          <div class="timeline__year">2025</div>
+          <h3 class="timeline__label">Going Global</h3>
+          <p class="timeline__desc">
+            The same ethos that works in India is carrying us into Southeast Asia.
+            Still one frame. Still one idea.
+          </p>
+        </div>
+        <div class="timeline__dot">
+          <i data-lucide="globe"></i>
+        </div>
+        <div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="values">
+  <div class="values__in">
+    <div class="values__head">
+      <p class="timeline__eyebrow">Core Values</p>
+      <h2 class="values__title">What we stand for</h2>
+    </div>
+
+    <div class="values__grid">
+      <div class="value__card" style="--i: 0">
+        <div class="value__icon">
+          <i data-lucide="heart"></i>
+        </div>
+        <h3 class="value__title">Integrity</h3>
+        <p class="value__desc">
+          We publish the range figures we actually measured.
+          No marketing, no exaggeration. Just honest numbers.
+        </p>
+      </div>
+
+      <div class="value__card" style="--i: 1">
+        <div class="value__icon">
+          <i data-lucide="shield-check"></i>
+        </div>
+        <h3 class="value__title">Durability</h3>
+        <p class="value__desc">
+          Built to last, serviced to keep lasting.
+          Every scooter we build, we're ready to service.
+        </p>
+      </div>
+
+      <div class="value__card" style="--i: 2">
+        <div class="value__icon">
+          <i data-lucide="leaf"></i>
+        </div>
+        <h3 class="value__title">Sustainability</h3>
+        <p class="value__desc">
+          Clean energy is not a marketing line.
+          It's the reason we exist.
+        </p>
+      </div>
+
+      <div class="value__card" style="--i: 3">
+        <div class="value__icon">
+          <i data-lucide="users"></i>
+        </div>
+        <h3 class="value__title">Community</h3>
+        <p class="value__desc">
+          Our riders are not customers. They're the reason
+          we build what we build.
+        </p>
+      </div>
+
+      <div class="value__card" style="--i: 4">
+        <div class="value__icon">
+          <i data-lucide="zap"></i>
+        </div>
+        <h3 class="value__title">Innovation</h3>
+        <p class="value__desc">
+          We sweat the small details and never stop asking
+          how to make the ride better.
+        </p>
+      </div>
+
+      <div class="value__card" style="--i: 5">
+        <div class="value__icon">
+          <i data-lucide="hand-heart"></i>
+        </div>
+        <h3 class="value__title">Trust</h3>
+        <p class="value__desc">
+          Earned through transparency, reliability,
+          and a dealer network that's always there.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="footer">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px; font-size: 14px;">
+    Ready to be part of the story?
+  </p>
+  <a class="footer__link" href="index.html">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script>
+  // Lucide icons
+  lucide.createIcons();
+
+  // Theme toggle
+  const themeBtn = document.getElementById('theme');
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  });
+
+  // Load saved theme
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+</script>
+
+</body>
+</html>
