@@ -1,0 +1,409 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paid Warranty Plans | Hazra</title>
+  <link rel="icon" href="../../assets/hazraev.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-violet:  #7b2ff7;
+      --brand-magenta: #a41fbf;
+      --brand-blue:    #12a5e0;
+      --brand-flame:   #f0532b;
+      --brand-grad: linear-gradient(96deg, var(--brand-violet) 0%, var(--brand-magenta) 30%, var(--brand-flame) 66%, #f7941d 100%);
+      --ink-0:        #180f2c;
+      --ink-soft-0:   #6b6480;
+      --hair-0:       #e3ddec;
+      --surface-0:    #faf8fd;
+      --surface-rgb:  250 248 253;
+      --chip-rgb:     240 235 249;
+      --ease: cubic-bezier(.22,1,.36,1);
+    }
+
+    html[data-theme="dark"] {
+      --ink-0:        #f6f3fb;
+      --ink-soft-0:   #9a93ad;
+      --hair-0:       #2f2743;
+      --surface-0:    #120e1c;
+      --surface-rgb:  18 14 28;
+      --chip-rgb:     33 26 50;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui; background: var(--surface-0); color: var(--ink-0); }
+
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgb(var(--surface-rgb) / .92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--hair-0);
+      padding: 20px 0;
+    }
+
+    .header__top {
+      display: flex; align-items: center; justify-content: space-between;
+      width: min(1520px, 93vw); margin: 0 auto; padding: 0 26px;
+    }
+
+    .brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; }
+    .brand__mark { width: 32px; height: 32px; object-fit: contain; }
+    .brand__txt { font-family: 'Montserrat'; font-size: 12.5px; font-weight: 700; color: var(--ink-soft-0); }
+
+    .theme {
+      display: grid; place-items: center; width: 40px; height: 40px;
+      border-radius: 50%; background: none; border: 1px solid var(--hair-0);
+      cursor: pointer; color: var(--ink-0);
+    }
+
+    .theme svg { width: 17px; height: 17px; position: absolute; }
+    .theme__moon { display: none; }
+    html[data-theme="dark"] .theme__sun { display: none; }
+    html[data-theme="dark"] .theme__moon { display: block; }
+
+    .hero {
+      text-align: center; padding: clamp(80px, 12vw, 160px) 26px;
+      background: var(--surface-0);
+    }
+
+    .hero__title {
+      font-family: 'Montserrat'; font-size: clamp(40px, 4.2vw, 72px);
+      font-weight: 900; margin-bottom: 24px;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up 1s var(--ease) .2s forwards;
+    }
+
+    .plans {
+      padding: clamp(60px, 9vw, 140px) 26px;
+      background: rgb(var(--chip-rgb) / .35);
+      border-top: 1px solid var(--hair-0);
+    }
+
+    .plans__in { width: min(1200px, 93vw); margin: 0 auto; }
+
+    .plans__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: clamp(24px, 2.5vw, 40px);
+    }
+
+    .plan {
+      background: var(--surface-0);
+      border: 1px solid var(--hair-0);
+      border-radius: 20px;
+      padding: clamp(28px, 3vw, 40px);
+      transition: all .35s var(--ease);
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 100ms) forwards;
+    }
+
+    .plan:hover {
+      border-color: var(--brand-violet);
+      box-shadow: 0 30px 60px -20px rgba(123, 47, 247, .25);
+      transform: translateY(-6px);
+    }
+
+    .plan__badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: var(--brand-grad);
+      color: #fff;
+      border-radius: 6px;
+      font-size: 10px; font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .plan__title {
+      font-family: 'Montserrat'; font-size: 20px;
+      font-weight: 800; margin-bottom: 12px;
+    }
+
+    .plan__price {
+      font-family: 'Montserrat'; font-size: 28px;
+      font-weight: 800; color: var(--brand-violet);
+      margin-bottom: 20px;
+    }
+
+    .plan__features {
+      list-style: none;
+      margin-bottom: 24px;
+    }
+
+    .plan__feature {
+      display: flex; gap: 10px;
+      font-size: 12px; line-height: 1.6;
+      color: var(--ink-soft-0);
+      margin-bottom: 12px;
+    }
+
+    .plan__check {
+      color: var(--brand-violet);
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+
+    .plan__btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--brand-grad);
+      color: #fff;
+      border: none; border-radius: 8px;
+      font-size: 12px; font-weight: 700;
+      cursor: pointer;
+      transition: all .35s var(--ease);
+    }
+
+    .plan__btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px -4px rgba(123, 47, 247, .3);
+    }
+
+    .comparison {
+      margin-top: 60px;
+      padding: 40px;
+      background: var(--surface-0);
+      border: 1px solid var(--hair-0);
+      border-radius: 20px;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) .4s forwards;
+    }
+
+    .comparison__title {
+      font-family: 'Montserrat'; font-size: 20px;
+      font-weight: 800; margin-bottom: 20px;
+    }
+
+    .comparison__table {
+      width: 100%; border-collapse: collapse;
+    }
+
+    .comparison__table th,
+    .comparison__table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--hair-0);
+      font-size: 12px;
+    }
+
+    .comparison__table th {
+      font-weight: 800;
+      color: var(--ink-0);
+    }
+
+    .comparison__table td {
+      color: var(--ink-soft-0);
+    }
+
+    .footer {
+      padding: clamp(50px, 7vw, 100px) 26px;
+      background: var(--surface-0);
+      border-top: 1px solid var(--hair-0);
+      text-align: center;
+    }
+
+    .footer__link {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 26px; background: var(--brand-grad);
+      color: #fff; border: none; border-radius: 999px;
+      text-decoration: none; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: all .35s var(--ease);
+      opacity: 0; transform: scale(.95);
+      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) .5s forwards;
+    }
+
+    .footer__link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
+    }
+
+    @keyframes reveal-up {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.php">
+      <img class="brand__mark" src="../../assets/hazraev.png" alt="Hazra">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1 class="hero__title">Extended Warranty Plans</h1>
+</section>
+
+<section class="plans">
+  <div class="plans__in">
+    <div class="plans__grid">
+      <div class="plan" style="--i: 0">
+        <div class="plan__badge">Popular</div>
+        <h3 class="plan__title">Standard Plus</h3>
+        <div class="plan__price">â‚¹8,999</div>
+        <ul class="plan__features">
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>6-year total coverage</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Extended battery warranty</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Free annual service</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Priority support</span>
+          </li>
+        </ul>
+        <button class="plan__btn">Buy Now</button>
+      </div>
+
+      <div class="plan" style="--i: 1">
+        <div class="plan__badge">Best Value</div>
+        <h3 class="plan__title">Premium Pro</h3>
+        <div class="plan__price">â‚¹14,999</div>
+        <ul class="plan__features">
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>8-year total coverage</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Battery replacement covered</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Free bi-annual service</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Roadside assistance</span>
+          </li>
+        </ul>
+        <button class="plan__btn">Buy Now</button>
+      </div>
+
+      <div class="plan" style="--i: 2">
+        <div class="plan__badge">Ultimate</div>
+        <h3 class="plan__title">Lifetime Care</h3>
+        <div class="plan__price">â‚¹19,999</div>
+        <ul class="plan__features">
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Lifetime coverage</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Full battery replacement</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>Free unlimited service</span>
+          </li>
+          <li class="plan__feature">
+            <span class="plan__check">âœ“</span>
+            <span>24/7 premium support</span>
+          </li>
+        </ul>
+        <button class="plan__btn">Buy Now</button>
+      </div>
+    </div>
+
+    <div class="comparison">
+      <h3 class="comparison__title">Feature Comparison</h3>
+      <table class="comparison__table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Standard Plus</th>
+            <th>Premium Pro</th>
+            <th>Lifetime Care</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Duration</td>
+            <td>6 Years</td>
+            <td>8 Years</td>
+            <td>Lifetime</td>
+          </tr>
+          <tr>
+            <td>Annual Service</td>
+            <td>1x Free</td>
+            <td>2x Free</td>
+            <td>Unlimited</td>
+          </tr>
+          <tr>
+            <td>Battery Warranty</td>
+            <td>Extended</td>
+            <td>Replacement</td>
+            <td>Replacement</td>
+          </tr>
+          <tr>
+            <td>Parts Coverage</td>
+            <td>Manufacturing</td>
+            <td>Manufacturing</td>
+            <td>100%</td>
+          </tr>
+          <tr>
+            <td>Support</td>
+            <td>Priority</td>
+            <td>Premium</td>
+            <td>24/7</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="footer">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
+    Plans can be purchased anytime during your ownership
+  </p>
+  <a class="footer__link" href="index.php">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+  const themeBtn = document.getElementById('theme');
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  });
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+</script>
+
+</body>
+</html>
+

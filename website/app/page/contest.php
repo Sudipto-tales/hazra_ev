@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reels Contest â€” Win Big | Hazra</title>
+  <link rel="icon" href="../../assets/hazraev.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-violet:  #7b2ff7;
+      --brand-magenta: #a41fbf;
+      --brand-blue:    #12a5e0;
+      --brand-flame:   #f0532b;
+      --brand-grad: linear-gradient(96deg, var(--brand-violet) 0%, var(--brand-magenta) 30%, var(--brand-flame) 66%, #f7941d 100%);
+      --ink-0:        #180f2c;
+      --ink-soft-0:   #6b6480;
+      --hair-0:       #e3ddec;
+      --surface-0:    #faf8fd;
+      --surface-rgb:  250 248 253;
+      --chip-rgb:     240 235 249;
+      --ease: cubic-bezier(.22,1,.36,1);
+    }
+
+    html[data-theme="dark"] {
+      --ink-0:        #f6f3fb;
+      --ink-soft-0:   #9a93ad;
+      --hair-0:       #2f2743;
+      --surface-0:    #120e1c;
+      --surface-rgb:  18 14 28;
+      --chip-rgb:     33 26 50;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui; background: var(--surface-0); color: var(--ink-0); }
+
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgb(var(--surface-rgb) / .92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--hair-0);
+      padding: 20px 0;
+    }
+
+    .header__top {
+      display: flex; align-items: center; justify-content: space-between;
+      width: min(1520px, 93vw); margin: 0 auto; padding: 0 26px;
+    }
+
+    .brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; }
+    .brand__mark { width: 32px; height: 32px; object-fit: contain; }
+    .brand__txt { font-family: 'Montserrat'; font-size: 12.5px; font-weight: 700; color: var(--ink-soft-0); }
+
+    .theme {
+      display: grid; place-items: center; width: 40px; height: 40px;
+      border-radius: 50%; background: none; border: 1px solid var(--hair-0);
+      cursor: pointer; color: var(--ink-0);
+    }
+
+    .theme svg { width: 17px; height: 17px; position: absolute; }
+    .theme__moon { display: none; }
+    html[data-theme="dark"] .theme__sun { display: none; }
+    html[data-theme="dark"] .theme__moon { display: block; }
+
+    .hero {
+      text-align: center; padding: clamp(80px, 12vw, 160px) 26px;
+      background: var(--surface-0);
+    }
+
+    .hero__title {
+      font-family: 'Montserrat'; font-size: clamp(40px, 4.2vw, 72px);
+      font-weight: 900; margin-bottom: 24px;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up 1s var(--ease) .2s forwards;
+    }
+
+    .hero__lead {
+      font-size: 16px; line-height: 1.6; color: var(--ink-soft-0);
+      max-width: 600px; margin: 0 auto;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up 1s var(--ease) .3s forwards;
+    }
+
+    .gallery {
+      padding: clamp(60px, 9vw, 140px) 26px;
+      background: rgb(var(--chip-rgb) / .35);
+      border-top: 1px solid var(--hair-0);
+    }
+
+    .gallery__in { width: min(1200px, 93vw); margin: 0 auto; }
+
+    .gallery__title {
+      font-family: 'Montserrat'; font-size: clamp(28px, 3vw, 48px);
+      font-weight: 800; margin-bottom: 50px;
+      opacity: 0; transform: translateY(30px);
+      animation: reveal-up .8s var(--ease) .1s forwards;
+    }
+
+    .gallery__grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: clamp(20px, 2.5vw, 36px);
+    }
+
+    .gallery__item {
+      aspect-ratio: 9/16; border-radius: 16px;
+      overflow: hidden; position: relative;
+      opacity: 0; transform: scale(.95);
+      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) calc(.15s + var(--i, 0) * 80ms) forwards;
+    }
+
+    .gallery__item img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .35s var(--ease);
+    }
+
+    .gallery__item:hover img {
+      transform: scale(1.08);
+    }
+
+    .gallery__overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.5) 100%);
+      display: flex; align-items: flex-end; padding: 20px;
+      opacity: 0; transition: opacity .35s var(--ease);
+    }
+
+    .gallery__item:hover .gallery__overlay {
+      opacity: 1;
+    }
+
+    .gallery__meta {
+      color: #fff; font-size: 12px;
+      display: flex; gap: 8px;
+    }
+
+    .footer {
+      padding: clamp(50px, 7vw, 100px) 26px;
+      background: var(--surface-0);
+      border-top: 1px solid var(--hair-0);
+      text-align: center;
+    }
+
+    .footer__link {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 26px; background: var(--brand-grad);
+      color: #fff; border: none; border-radius: 999px;
+      text-decoration: none; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: all .35s var(--ease);
+      opacity: 0; transform: scale(.95);
+      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) .5s forwards;
+    }
+
+    .footer__link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
+    }
+
+    @keyframes reveal-up {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: scale(.95); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.php">
+      <img class="brand__mark" src="../../assets/hazraev.png" alt="Hazra">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1 class="hero__title">Reels Contest</h1>
+  <p class="hero__lead">
+    Show us your ride. Win amazing prizes. Share your Hazra moment with the world.
+  </p>
+</section>
+
+<section class="gallery">
+  <div class="gallery__in">
+    <h2 class="gallery__title">Featured Entries</h2>
+    <div class="gallery__grid">
+      <div class="gallery__item" style="--i: 0">
+        <img src="../../assets/scutie_light.png" alt="Rider 1">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>â¤ï¸ 1.2K</span>
+            <span>ðŸ’¬ 342</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 1">
+        <img src="../../assets/dark_scutie.png" alt="Rider 2">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>â¤ï¸ 989</span>
+            <span>ðŸ’¬ 256</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 2">
+        <img src="../../assets/scutie_light.png" alt="Rider 3">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>â¤ï¸ 1.5K</span>
+            <span>ðŸ’¬ 468</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 3">
+        <img src="../../assets/dark_scutie.png" alt="Rider 4">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>â¤ï¸ 876</span>
+            <span>ðŸ’¬ 201</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 4">
+        <img src="../../assets/scutie_light.png" alt="Rider 5">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>â¤ï¸ 2.1K</span>
+            <span>ðŸ’¬ 512</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gallery__item" style="--i: 5">
+        <img src="../../assets/dark_scutie.png" alt="Rider 6">
+        <div class="gallery__overlay">
+          <div class="gallery__meta">
+            <span>â¤ï¸ 734</span>
+            <span>ðŸ’¬ 189</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="footer">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
+    Create your reel now and tag us @hazraev for a chance to win
+  </p>
+  <a class="footer__link" href="index.php">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+  const themeBtn = document.getElementById('theme');
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  });
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+</script>
+
+</body>
+</html>
+
