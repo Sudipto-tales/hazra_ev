@@ -3,13 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+/* Applied before first paint so a dark-mode visitor never sees a light
+   flash. Kept inline and tiny on purpose: an external file would race
+   the paint it exists to prevent. */
+(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
   <title>Our Story — Hazra Electrical Bike</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazra Electrical Bike">
+<meta property="og:title" content="Our Story — Hazra Electrical Bike">
+<meta property="og:description" content="Learn how Hazra Electrical Bike was born from one frame, one battery, and a stubborn idea to build electric scooters that riders actually want.">
+<meta property="og:url" content="https://hazraelectricalbike.com/our-story.html">
+<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://hazraelectricalbike.com/our-story.html">
   <link rel="icon" href="assets/hazraev.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/hazraev.png">
   <meta name="description" content="Learn how Hazra Electrical Bike was born from one frame, one battery, and a stubborn idea to build electric scooters that riders actually want.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/typography.css">
+<link rel="stylesheet" href="styles/global.css">
+<link rel="stylesheet" href="styles/utilities.css">
   <link rel="stylesheet" href="style.css">
   <style>
     /* ════════════════════════════════════════════
@@ -429,6 +447,13 @@
       }
     }
   </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization",
+ "name":"Hazra Electrical Bike",
+ "url":"https://hazraelectricalbike.com/",
+ "logo":"https://hazraelectricalbike.com/assets/hazraev.png",
+ "description":"Electric scooters built for everyday Indian riding."}
+</script>
 </head>
 <body>
 
@@ -629,7 +654,7 @@
   </a>
 </section>
 
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
 <script>
   // Lucide icons
   lucide.createIcons();

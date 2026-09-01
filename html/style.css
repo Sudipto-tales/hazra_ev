@@ -1,6 +1,6 @@
 /* ════════════════════════════════════════════════
    Hazra Electrical Bike — hero
-   Product shot: assets/scutie_light.png (light) / assets/dark_scutie.png (dark)
+   Product shot: assets/scutie_light.webp (light) / assets/dark_scutie.webp (dark)
 
    SCROLL ZOOM
    ───────────
@@ -15,6 +15,9 @@
    ════════════════════════════════════════════════ */
 
 :root{
+  /* palette, spacing, radius, shadow and easing now come from
+     styles/tokens.css. What stays here is hero-specific: scroll
+     progress, the photo geometry, and the two background images. */
   /* scroll progress — written by script.js, 0…1 */
   --p:0;
   /* viewport, written by script.js (avoids 100vw scrollbar overflow) */
@@ -24,35 +27,8 @@
   --iz:1.06;
   --px:0;  --py:0;   /* mouse parallax offsets, in px */
 
-  /* ── brand palette, lifted from the Hazra EV mark ──
-     the H is an indigo → violet → magenta ramp, the bolt is orange → flame,
-     the swoosh tail is cyan. Everything accent-coloured pulls from here. */
-  --brand-indigo:  #3a1a6b;
-  --brand-violet:  #7b2ff7;
-  --brand-magenta: #a41fbf;
-  --brand-blue:    #12a5e0;
-  --brand-orange:  #f7941d;
-  --brand-flame:   #f0532b;
-  --brand-grad: linear-gradient(96deg,
-      var(--brand-violet) 0%,
-      var(--brand-magenta) 30%,
-      var(--brand-flame) 66%,
-      var(--brand-orange) 100%);
-
-  /* palette — light. "-0" = the resting value; .canvas ramps the live token. */
-  --ink-0:        #180f2c;
-  --ink-soft-0:   #6b6480;
-  --hair-0:       #e3ddec;
-  --surface-0:    #faf8fd;
-  --surface-rgb:  250 248 253;
-  --chip-rgb:     240 235 249;
-  --accent:       var(--brand-orange);
-  --accent-ink:   #180f2c;
-  --glass-bd:     rgba(255,255,255,.28);
-  --glass-bg:     rgba(255,255,255,.16);
-  --veil:         rgba(26,14,48,.32);
-  --sh-a:         .45;
-  --bg-img:       url('assets/scutie_light.png');
+  /* the hero swaps its own art per theme */
+  --bg-img:       url('assets/scutie_light.webp');
   --bg-fallback:  radial-gradient(120% 90% at 20% 10%, #cdbfe6 0%, #7d5fa8 45%, #2c1550 100%);
 
   /* geometry — the whole interlock is driven from here */
@@ -70,32 +46,19 @@
   --cw: min(1520px, 93vw);
   --ch: min(900px, 88vh);
 
-  --ease: cubic-bezier(.22,1,.36,1);
 }
 
 html[data-theme="dark"]{
-  --ink-0:        #f6f3fb;
-  --ink-soft-0:   #9a93ad;
-  --hair-0:       #2f2743;
-  --surface-0:    #120e1c;
-  --surface-rgb:  18 14 28;
-  --chip-rgb:     33 26 50;
-  --accent:       #ff8f2e;
-  --accent-ink:   #150c26;
-  --glass-bd:     rgba(255,255,255,.16);
-  --glass-bg:     rgba(255,255,255,.08);
-  --veil:         rgba(9,4,20,.52);
-  --sh-a:         .8;
-  --bg-img:       url('assets/dark_scutie.png');
+  /* only the hero's own background art flips here; every other
+     dark token is in styles/tokens.css. */
+  --bg-img:       url('assets/dark_scutie.webp');
   --bg-fallback:  radial-gradient(120% 90% at 25% 8%, #45276e 0%, #221340 48%, #0a0614 100%);
 }
 
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:'Inter',system-ui,sans-serif;
-  background:#0b0713;
-  -webkit-font-smoothing:antialiased;
-}
+/* reset, body defaults and focus rings: styles/global.css.
+   The hero needs a near-black page behind its sticky stage, so
+   that one override stays here. */
+body{background:#0b0713}
 
 /* ── scroll driver + sticky pin ───────────────── */
 .scroll{position:relative;height:260vh}
@@ -696,7 +659,6 @@ html[data-theme="dark"] .theme__moon{display:block}
   .vtag,.pill--a{display:none}
 }
 
-
 /* ════════════════════════════════════════════════
    CONSISTENCY PASSES — Animation Enhancements (Phase 1)
    ════════════════════════════════════════════════
@@ -819,7 +781,6 @@ html[data-theme="dark"] .theme__moon{display:block}
     transition-duration:.01ms !important;
   }
 }
-
 
 /* ════════════════════════════════════════════════
    BELOW THE FOLD — About + Collection
@@ -1342,7 +1303,6 @@ html[data-theme="dark"] .theme__moon{display:block}
   .ticker__track{animation:none}
 }
 
-
 /* ════════════════════════════════════════════════
    FEATURE WINDOW — scroll-scrubbed model deck
 
@@ -1745,7 +1705,6 @@ html[data-theme="dark"] .theme__moon{display:block}
   .arc__ring{transition:none}
 }
 
-
 /* ════════════════════════════════════════════════
    PERFORMANCE STATS
    Four cells on one hairline grid. The gradient rule under each cell is a
@@ -1834,7 +1793,6 @@ html[data-theme="dark"] .theme__moon{display:block}
   .perf__cell::after{left:0;right:0}
   .perf__cell + .perf__cell{border-top:1px solid var(--hair-0)}
 }
-
 
 /* ════════════════════════════════════════════════
    NEWS — bento
@@ -1935,7 +1893,6 @@ html[data-theme="dark"] .theme__moon{display:block}
   .bento__c--lead,.bento__c--wide{grid-column:1;grid-row:auto}
   .bento__c--lead{min-height:320px}
 }
-
 
 /* ════════════════════════════════════════════════
    BOOK A TEST RIDE
@@ -2040,7 +1997,6 @@ html[data-theme="dark"] .theme__moon{display:block}
   .ride__media{aspect-ratio:16 / 10}
 }
 
-
 /* ════════════════════════════════════════════════
    FAQ
    The panel is a grid whose single row animates 0fr → 1fr. The content
@@ -2119,7 +2075,6 @@ html[data-theme="dark"] .theme__moon{display:block}
   .faq__grid{grid-template-columns:1fr}
   .faq__rail{position:static}
 }
-
 
 /* ════════════════════════════════════════════════
    INSIGHTS
@@ -2201,7 +2156,6 @@ html[data-theme="dark"] .theme__moon{display:block}
 @media (max-width:1000px){.ins__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:660px){.ins__grid{grid-template-columns:1fr}}
 
-
 /* ════════════════════════════════════════════════
    FOOTER — video plate
    The video sits at z-0 under a two-layer veil: a near-black wash for the
@@ -2253,18 +2207,17 @@ html[data-theme="dark"] .theme__moon{display:block}
 html[data-theme="light"] .foot__bg--light{display:block}
 html[data-theme="light"] .foot__bg--dark{display:none}
 
-/* Veil overlay for text readability */
+/* Veil overlay removed — background image shows at full clarity.
+   Text legibility now carried by text-shadow on .foot__in instead. */
 .foot__veil{
   position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:
-    linear-gradient(to bottom, rgba(11,7,19,.88) 0%, rgba(11,7,19,.82) 40%, rgba(11,7,19,.92) 100%),
-    linear-gradient(118deg,
-      color-mix(in srgb, var(--brand-indigo) 72%, transparent) 0%,
-      color-mix(in srgb, var(--brand-violet) 36%, transparent) 38%,
-      color-mix(in srgb, var(--brand-flame) 20%, transparent) 100%);
+  background:none;
 }
 
-.foot__in{position:relative;z-index:3}
+.foot__in{
+  position:relative;z-index:3;
+  text-shadow:0 1px 3px rgba(0,0,0,.55);
+}
 
 /* Main footer grid: content left, social right */
 .foot__main{
@@ -2293,7 +2246,7 @@ html[data-theme="light"] .foot__bg--dark{display:none}
 }
 .foot__tag{
   margin-top:14px;max-width:32ch;
-  font-size:12px;line-height:1.65;color:rgba(255,255,255,.72);
+  font-size:13.5px;line-height:1.65;color:rgba(255,255,255,.72);
 }
 .foot__contact{
   list-style:none;margin-top:18px;
@@ -2301,7 +2254,7 @@ html[data-theme="light"] .foot__bg--dark{display:none}
 }
 .foot__contact li{
   display:flex;align-items:flex-start;gap:10px;
-  font-size:11.5px;line-height:1.5;color:rgba(255,255,255,.76);
+  font-size:13px;line-height:1.55;color:rgba(255,255,255,.76);
 }
 .foot__contact svg{
   width:14px;height:14px;flex:0 0 auto;margin-top:2px;
@@ -2319,13 +2272,13 @@ html[data-theme="light"] .foot__bg--dark{display:none}
 .fcol{display:flex;flex-direction:column;gap:10px}
 .fcol h4{
   margin-bottom:4px;
-  font-size:8.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
   color:rgba(255,255,255,.48);
 }
 .fcol a{
   position:relative;
   align-self:flex-start;
-  font-size:11.5px;color:rgba(255,255,255,.8);text-decoration:none;
+  font-size:13px;color:rgba(255,255,255,.8);text-decoration:none;
   transition:color .3s var(--ease);
 }
 .fcol a::after{
@@ -2347,7 +2300,7 @@ html[data-theme="light"] .foot__bg--dark{display:none}
   min-width:120px;
 }
 .foot__social-title{
-  font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
   color:rgba(255,255,255,.48);
   margin:0;
 }
@@ -2405,10 +2358,10 @@ html[data-theme="light"] .foot__bg--dark{display:none}
   gap:18px;flex-wrap:wrap;
   padding-top:clamp(18px,2vw,26px);
 }
-.foot__base p{font-size:10.5px;line-height:1.6;color:rgba(255,255,255,.5);max-width:70ch}
+.foot__base p{font-size:12px;line-height:1.6;color:rgba(255,255,255,.5);max-width:70ch}
 .foot__legal{display:flex;gap:16px}
 .foot__legal a{
-  font-size:10.5px;color:rgba(255,255,255,.58);text-decoration:none;
+  font-size:12px;color:rgba(255,255,255,.58);text-decoration:none;
   transition:color .3s var(--ease);
 }
 .foot__legal a:hover{color:#fff}
@@ -2463,7 +2416,6 @@ html[data-theme="light"] .foot__bg--dark{display:none}
   .foot__social-link{transition:none}
 }
 
-
 /* ════════════════════════════════════════════════
    PHASE 2 ADVANCED EFFECTS
 
@@ -2514,7 +2466,6 @@ html[data-theme="light"] .foot__bg--dark{display:none}
   }
 }
 
-
 /* ── ENHANCED SCROLL-TRIGGERED COUNTERS ──────────
    Extends beyond .stats to any section: performance cells, insight cards.
    Counter elements get .counter-value class; increment from 0→target on scroll-in.
@@ -2549,7 +2500,6 @@ html[data-theme="light"] .foot__bg--dark{display:none}
   -webkit-background-clip:text;background-clip:text;
   color:transparent;
 }
-
 
 /* ── BACKGROUND GRADIENT SHIFT HOVER ────────────
    Cards and section backgrounds animate gradient angle on hover.
@@ -2604,7 +2554,6 @@ html[data-theme="light"] .foot__bg--dark{display:none}
     opacity:0;
   }
 }
-
 
 /* ── 3D PERSPECTIVE DEPTH EFFECTS ────────────────
    Interactive cards tilt based on cursor position.
@@ -2664,7 +2613,6 @@ html[data-theme="light"] .foot__bg--dark{display:none}
     --ry:0deg;
   }
 }
-
 
 /* ════════════════════════════════════════════════
    FLOATING ACTION DOCK
@@ -2767,7 +2715,6 @@ body:has(.nav.is-open) .dock{opacity:0;pointer-events:none}
   .dock,.dock__i,.dock__lb{transition:none}
   .dock__i:hover,.dock__i:focus-visible{transform:none}
 }
-
 
 /* ════════════════════════════════════════════════
    PHASE 3: POLISH & REFINEMENT

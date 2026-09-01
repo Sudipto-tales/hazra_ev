@@ -7,7 +7,10 @@
   const root = document.documentElement;
 
   /* ── theme ─────────────────────────────────── */
-  const saved = localStorage.getItem('vm-theme');
+  /* 'theme' is the key every page uses. index.html shipped with its own
+     'vm-theme' key, so the preference was lost on every navigation — read
+     the old key once and migrate it, then never write it again. */
+  const saved = localStorage.getItem('theme') || localStorage.getItem('vm-theme');
   const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   root.dataset.theme = saved || (sysDark ? 'dark' : 'light');
 
@@ -45,7 +48,7 @@
   const pager = $('.pager b');
   const setTheme = t => {
     root.dataset.theme = t;
-    localStorage.setItem('vm-theme', t);
+    localStorage.setItem('theme', t);
     if (pager) pager.textContent = t === 'dark' ? '02' : '01';
   };
   setTheme(root.dataset.theme);
