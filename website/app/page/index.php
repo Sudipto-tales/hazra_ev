@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -60,15 +60,15 @@
       </button>
 
       <nav class="nav" id="nav">
-        <a href="#" class="nav__i is-on">Home</a>
+        <a href="<?= base_url('') ?>" class="nav__i is-on">Home</a>
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
             About <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
-            <a href="our-story.php" class="nav__s">Our Story</a>
-            <a href="career.php"    class="nav__s">Career</a>
+            <a href="<?= base_url('our-story') ?>" class="nav__s">Our Story</a>
+            <a href="<?= base_url('career') ?>"    class="nav__s">Career</a>
             <a href="#faq"       class="nav__s">FAQ</a>
           </div>
         </div>
@@ -78,12 +78,11 @@
             Products <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--wide">
-            <a href="chalo-1000-v2.php" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
-            <a href="chalo-smart-pro.php"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
-            <a href="chalo-smart-plus.php" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
-            <a href="chalo-smart-eco.php"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
-            <a href="chalo-neo.php"        class="nav__s">CHALO NEO <em>Low Speed</em></a>
-            <a href="nja-7.php"            class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+            <a href="<?= base_url('products') ?>" class="nav__s" style="font-weight:700; color:var(--accent);">View All Models &rarr;</a>
+            <a href="<?= base_url('product-detail?slug=chalo-1000-v2') ?>" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+            <a href="<?= base_url('product-detail?slug=chalo-smart-pro') ?>" class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
+            <a href="<?= base_url('product-detail?slug=chalo-smart-plus') ?>" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
+            <a href="<?= base_url('products') ?>" class="nav__s">All Scooters <em>Catalogue</em></a>
           </div>
         </div>
 
@@ -92,11 +91,11 @@
             Social <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
-            <a href="contest.php"     class="nav__s">Contest <em>Reels Contest</em></a>
-            <a href="blog.php"        class="nav__s">Blog</a>
+            <a href="<?= base_url('contest') ?>"     class="nav__s">Contest <em>Reels Contest</em></a>
+            <a href="<?= base_url('blog') ?>"        class="nav__s">Blog</a>
             <a href="#news"        class="nav__s">News</a>
-            <a href="battery-use.php" class="nav__s">Battery Use</a>
-            <a href="ev-future.php"   class="nav__s">EV Future</a>
+            <a href="<?= base_url('battery-use') ?>" class="nav__s">Battery Use</a>
+            <a href="<?= base_url('ev-future') ?>"   class="nav__s">EV Future</a>
           </div>
         </div>
 
@@ -105,8 +104,8 @@
             Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
-            <a href="dealer-locator.php"  class="nav__s">Dealer Locator</a>
-            <a href="become-a-dealer.php" class="nav__s">Become a Dealer</a>
+            <a href="<?= base_url('dealer-locator') ?>"  class="nav__s">Dealer Locator</a>
+            <a href="<?= base_url('become-a-dealer') ?>" class="nav__s">Become a Dealer</a>
           </div>
         </div>
 
@@ -115,11 +114,12 @@
             Service <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--wide">
-            <a href="warranty-free.php" class="nav__s">Free Warranty Registration</a>
-            <a href="warranty-paid.php" class="nav__s">Paid Warranty Registration</a>
+            <a href="<?= base_url('warranty-free') ?>" class="nav__s">Free Warranty Registration</a>
+            <a href="<?= base_url('warranty-paid') ?>" class="nav__s">Paid Warranty Registration</a>
           </div>
         </div>
 
+        <a href="<?= base_url('admin') ?>" class="nav__i">Admin</a>
         <a href="#contact" class="nav__i">Contact</a>
       </nav>
 
@@ -201,15 +201,15 @@
     </button>
 
     <nav class="nav sticky-bar__nav" id="stickyNav">
-      <a href="#" class="nav__i is-on">Home</a>
+      <a href="<?= base_url('') ?>" class="nav__i is-on">Home</a>
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
           About <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
-          <a href="our-story.php" class="nav__s">Our Story</a>
-          <a href="career.php"    class="nav__s">Career</a>
+          <a href="<?= base_url('our-story') ?>" class="nav__s">Our Story</a>
+          <a href="<?= base_url('career') ?>"    class="nav__s">Career</a>
           <a href="#faq"       class="nav__s">FAQ</a>
         </div>
       </div>
@@ -219,12 +219,12 @@
           Products <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu nav__menu--wide">
-          <a href="chalo-1000-v2.php" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
-          <a href="chalo-smart-pro.php"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
-          <a href="chalo-smart-plus.php" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
-          <a href="chalo-smart-eco.php"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
-          <a href="chalo-neo.php"        class="nav__s">CHALO NEO <em>Low Speed</em></a>
-          <a href="nja-7.php"            class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+          <a href="<?= base_url('product-detail?slug=chalo-1000-v2') ?>" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+          <a href="<?= base_url('product-detail?slug=chalo-smart-pro') ?>"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
+          <a href="<?= base_url('product-detail?slug=chalo-smart-plus') ?>" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
+          <a href="<?= base_url('product-detail?slug=chalo-smart-eco') ?>"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
+          <a href="<?= base_url('product-detail?slug=chalo-neo') ?>"        class="nav__s">CHALO NEO <em>Low Speed</em></a>
+          <a href="<?= base_url('products') ?>"            class="nav__s">All Scooters <em>Catalogue</em></a>
         </div>
       </div>
 
@@ -233,11 +233,11 @@
           Social <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
-          <a href="contest.php"     class="nav__s">Contest <em>Reels Contest</em></a>
-          <a href="blog.php"        class="nav__s">Blog</a>
+          <a href="<?= base_url('contest') ?>"     class="nav__s">Contest <em>Reels Contest</em></a>
+          <a href="<?= base_url('blog') ?>"        class="nav__s">Blog</a>
           <a href="#news"        class="nav__s">News</a>
-          <a href="battery-use.php" class="nav__s">Battery Use</a>
-          <a href="ev-future.php"   class="nav__s">EV Future</a>
+          <a href="<?= base_url('battery-use') ?>" class="nav__s">Battery Use</a>
+          <a href="<?= base_url('ev-future') ?>"   class="nav__s">EV Future</a>
         </div>
       </div>
 
@@ -246,8 +246,8 @@
           Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
-          <a href="dealer-locator.php"    class="nav__s">Locate Dealers</a>
-          <a href="become-a-dealer.php"   class="nav__s">Become a Dealer</a>
+          <a href="<?= base_url('dealer-locator') ?>"    class="nav__s">Locate Dealers</a>
+          <a href="<?= base_url('become-a-dealer') ?>"   class="nav__s">Become a Dealer</a>
         </div>
       </div>
 
@@ -256,12 +256,13 @@
           Service <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
-          <a href="warranty-free.php"     class="nav__s">Warranty (Free)</a>
-          <a href="warranty-paid.php"     class="nav__s">Warranty (Paid)</a>
-          <a href="battery-use.php"       class="nav__s">Battery Care</a>
+          <a href="<?= base_url('warranty-free') ?>"     class="nav__s">Warranty (Free)</a>
+          <a href="<?= base_url('warranty-paid') ?>"     class="nav__s">Warranty (Paid)</a>
+          <a href="<?= base_url('battery-use') ?>"       class="nav__s">Battery Care</a>
         </div>
       </div>
 
+      <a href="<?= base_url('admin') ?>" class="nav__i">Admin</a>
       <a href="#contact" class="nav__i">Contact</a>
     </nav>
 
@@ -1149,11 +1150,11 @@
         <nav class="foot__cols" aria-label="Footer">
           <div class="fcol">
             <h4>Electric Scooters</h4>
-            <a href="chalo-1000-v2.php">CHALO 1000 V2</a>
-            <a href="chalo-smart-pro.php">CHALO SMART PRO</a>
-            <a href="chalo-smart-plus.php">CHALO SMART PLUS</a>
-            <a href="chalo-neo.php">CHALO NEO</a>
-            <a href="#collection">Compare models</a>
+            <a href="products.php">All Electric Models</a>
+            <a href="product-detail.php?model=HZ-VS1">Volt S1</a>
+            <a href="product-detail.php?model=HZ-VS2">Volt S2 Pro</a>
+            <a href="product-detail.php?model=HZ-SR1">Surge R</a>
+            <a href="products.php">Compare models</a>
             <a href="#test-ride">Book test ride</a>
           </div>
           <div class="fcol">

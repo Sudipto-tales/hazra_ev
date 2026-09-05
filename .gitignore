@@ -11,6 +11,7 @@ website/.git.vayu-backup/
 
 # ── PHP / Composer ───────────────────────────────────────
 website/vendor/
+website/env
 composer.phar
 
 # ── Website runtime state ────────────────────────────────

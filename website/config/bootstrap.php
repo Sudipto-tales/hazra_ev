@@ -23,20 +23,25 @@ foreach (glob(__BASEDIR__ . '/core/*.php') as $filename) {
 
 // Function to load view files dynamically
 function load_view($path, $data = []) {
-    $base_dir = dirname(__DIR__); 
-    $file_path = $base_dir . '/' . $path;
+    $file_path = __BASEDIR__ . '/' . ltrim($path, '/');
     if (file_exists($file_path)) {
         extract($data);
         require $file_path;
     } else {
-        echo "Error: View '{$path}' not found!";
+        error_log("[Vayu] View '{$path}' not found!");
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            echo "Error: View '{$path}' not found!";
+        }
     }
 }
 
 function base_url($path = '') {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-    $base_url = $protocol . $_SERVER['HTTP_HOST'] . str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
-    
-    return rtrim($base_url, '/') . '/' . ltrim($path, '/');
+    global $base_url;
+    $root = rtrim($base_url ?: 'http://localhost', '/');
+    return $path === '' ? $root : $root . '/' . ltrim($path, '/');
+}
+
+function e($value): string {
+    return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 ?>

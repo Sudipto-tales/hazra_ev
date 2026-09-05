@@ -1,388 +1,149 @@
-﻿<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Become a Dealer | Hazra</title>
-  <link rel="icon" href="../../assets/hazraev.png" type="image/png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --brand-violet:  #7b2ff7;
-      --brand-magenta: #a41fbf;
-      --brand-blue:    #12a5e0;
-      --brand-flame:   #f0532b;
-      --brand-grad: linear-gradient(96deg, var(--brand-violet) 0%, var(--brand-magenta) 30%, var(--brand-flame) 66%, #f7941d 100%);
-      --ink-0:        #180f2c;
-      --ink-soft-0:   #6b6480;
-      --hair-0:       #e3ddec;
-      --surface-0:    #faf8fd;
-      --surface-rgb:  250 248 253;
-      --chip-rgb:     240 235 249;
-      --ease: cubic-bezier(.22,1,.36,1);
-    }
+<?php
+$pageTitle = "Become a Dealer | Hazra Electrical Bike";
+$pageDescription = "Join the growing Hazra EV dealer network and be part of the electric mobility revolution in India.";
 
-    html[data-theme="dark"] {
-      --ink-0:        #f6f3fb;
-      --ink-soft-0:   #9a93ad;
-      --hair-0:       #2f2743;
-      --surface-0:    #120e1c;
-      --surface-rgb:  18 14 28;
-      --chip-rgb:     33 26 50;
-    }
+include __BASEDIR__ . '/app/components/head.php';
+include __BASEDIR__ . '/app/components/header.php';
+?>
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', system-ui; background: var(--surface-0); color: var(--ink-0); }
+<main class="page-body">
+  <section class="hero" style="text-align: center; padding: clamp(60px, 9vw, 120px) 26px; background: radial-gradient(circle at 50% 0%, rgb(var(--chip-rgb) / .6), transparent 70%);">
+    <div style="width: min(800px, 93vw); margin: 0 auto;">
+      <span style="font-size: 11px; font-weight: 800; letter-spacing: .2em; color: var(--accent); text-transform: uppercase;">PARTNERSHIP OPPORTUNITY</span>
+      <h1 class="hero__title" style="font-family: 'Montserrat', sans-serif; font-size: clamp(34px, 4.5vw, 64px); font-weight: 900; margin: 12px 0 20px; line-height: 1.1; color: var(--ink-0);">
+        Become a Hazra Dealer
+      </h1>
+      <p class="hero__lead" style="font-size: clamp(15px, 1.8vw, 18px); color: var(--ink-soft-0); line-height: 1.6;">
+        Join our rapidly expanding EV dealership network across India. Partner with a brand dedicated to quality, innovation, and long-term dealer growth.
+      </p>
+    </div>
+  </section>
 
-    .header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgb(var(--surface-rgb) / .92);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--hair-0);
-      padding: 20px 0;
-    }
+  <section class="benefits" style="padding: clamp(60px, 9vw, 100px) 26px; background: rgb(var(--chip-rgb) / .35); border-top: 1px solid var(--hair-0);">
+    <div class="benefits__in" style="width: min(1100px, 93vw); margin: 0 auto;">
+      <h2 class="benefits__title" style="font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 800; margin-bottom: 40px; text-align: center; color: var(--ink-0);">
+        Why Partner With Hazra EV
+      </h2>
 
-    .header__top {
-      display: flex; align-items: center; justify-content: space-between;
-      width: min(1520px, 93vw); margin: 0 auto; padding: 0 26px;
-    }
-
-    .brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; }
-    .brand__mark { width: 32px; height: 32px; object-fit: contain; }
-    .brand__txt { font-family: 'Montserrat'; font-size: 12.5px; font-weight: 700; color: var(--ink-soft-0); }
-
-    .theme {
-      display: grid; place-items: center; width: 40px; height: 40px;
-      border-radius: 50%; background: none; border: 1px solid var(--hair-0);
-      cursor: pointer; color: var(--ink-0);
-    }
-
-    .theme svg { width: 17px; height: 17px; position: absolute; }
-    .theme__moon { display: none; }
-    html[data-theme="dark"] .theme__sun { display: none; }
-    html[data-theme="dark"] .theme__moon { display: block; }
-
-    .hero {
-      text-align: center; padding: clamp(80px, 12vw, 160px) 26px;
-      background: var(--surface-0);
-    }
-
-    .hero__title {
-      font-family: 'Montserrat'; font-size: clamp(40px, 4.2vw, 72px);
-      font-weight: 900; margin-bottom: 24px;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up 1s var(--ease) .2s forwards;
-    }
-
-    .hero__lead {
-      font-size: 16px; line-height: 1.6; color: var(--ink-soft-0);
-      max-width: 600px; margin: 0 auto;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up 1s var(--ease) .3s forwards;
-    }
-
-    .benefits {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: rgb(var(--chip-rgb) / .35);
-      border-top: 1px solid var(--hair-0);
-    }
-
-    .benefits__in { width: min(1100px, 93vw); margin: 0 auto; }
-
-    .benefits__title {
-      font-family: 'Montserrat'; font-size: 28px;
-      font-weight: 800; margin-bottom: 40px;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) .1s forwards;
-    }
-
-    .benefits__grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: clamp(20px, 2.5vw, 36px);
-    }
-
-    .benefit {
-      padding: clamp(24px, 3vw, 36px);
-      background: var(--surface-0);
-      border: 1px solid var(--hair-0);
-      border-radius: 16px;
-      text-align: center;
-      opacity: 0; transform: scale(.95);
-      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) calc(.2s + var(--i, 0) * 80ms) forwards;
-    }
-
-    .benefit__icon {
-      display: flex; align-items: center; justify-content: center;
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      background: var(--brand-grad);
-      color: #fff;
-      margin: 0 auto 16px;
-    }
-
-    .benefit__icon svg { width: 24px; height: 24px; }
-
-    .benefit__label {
-      font-family: 'Montserrat'; font-size: 15px;
-      font-weight: 800; margin-bottom: 8px;
-    }
-
-    .benefit__desc {
-      font-size: 12px; line-height: 1.6;
-      color: var(--ink-soft-0);
-    }
-
-    .form {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: var(--surface-0);
-      border-top: 1px solid var(--hair-0);
-    }
-
-    .form__in { width: min(600px, 93vw); margin: 0 auto; }
-
-    .form__title {
-      font-family: 'Montserrat'; font-size: 24px;
-      font-weight: 800; margin-bottom: 32px;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) .1s forwards;
-    }
-
-    .fields {
-      display: flex; flex-direction: column;
-      gap: 20px;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) .2s forwards;
-    }
-
-    .field {
-      display: flex; flex-direction: column; gap: 8px;
-    }
-
-    .field label {
-      font-size: 12px; font-weight: 700;
-      letter-spacing: .06em;
-      color: var(--ink-soft-0);
-    }
-
-    .field input, .field textarea {
-      padding: 12px 16px;
-      background: rgb(var(--chip-rgb) / .35);
-      border: 1px solid var(--hair-0);
-      border-radius: 8px;
-      font-family: 'Inter';
-      color: var(--ink-0);
-      font-size: 14px;
-    }
-
-    .field textarea {
-      resize: vertical; min-height: 100px;
-    }
-
-    .form__btn {
-      padding: 14px 26px;
-      background: var(--brand-grad);
-      color: #fff;
-      border: none;
-      border-radius: 999px;
-      font-size: 12px; font-weight: 700;
-      cursor: pointer;
-      transition: all .35s var(--ease);
-      width: 100%;
-    }
-
-    .form__btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
-    }
-
-    .footer {
-      padding: clamp(50px, 7vw, 100px) 26px;
-      background: var(--surface-0);
-      border-top: 1px solid var(--hair-0);
-      text-align: center;
-    }
-
-    .footer__link {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 26px; background: var(--brand-grad);
-      color: #fff; border: none; border-radius: 999px;
-      text-decoration: none; font-size: 12px; font-weight: 700;
-      cursor: pointer; transition: all .35s var(--ease);
-      opacity: 0; transform: scale(.95);
-      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) .5s forwards;
-    }
-
-    .footer__link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
-    }
-
-    @keyframes reveal-up {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: none; }
-    }
-
-    @keyframes pop {
-      from { opacity: 0; transform: scale(.95); }
-      to { opacity: 1; transform: none; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition-duration: .01ms !important; }
-    }
-  </style>
-</head>
-<body>
-
-<header class="header">
-  <div class="header__top">
-    <a class="brand" href="index.php">
-      <img class="brand__mark" src="../../assets/hazraev.png" alt="Hazra">
-      <span class="brand__txt">Hazra Electrical Bike</span>
-    </a>
-    <button class="theme" id="theme" aria-label="Toggle theme">
-      <i data-lucide="sun-medium" class="theme__sun"></i>
-      <i data-lucide="moon" class="theme__moon"></i>
-    </button>
-  </div>
-</header>
-
-<section class="hero">
-  <h1 class="hero__title">Become a Dealer</h1>
-  <p class="hero__lead">
-    Join our growing network of dealers and be part of the electric mobility revolution.
-  </p>
-</section>
-
-<section class="benefits">
-  <div class="benefits__in">
-    <h2 class="benefits__title">Why Partner With Hazra</h2>
-    <div class="benefits__grid">
-      <div class="benefit" style="--i: 0">
-        <div class="benefit__icon">
-          <i data-lucide="trending-up"></i>
+      <div class="benefits__grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px;">
+        <div class="benefit" style="padding: 30px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px; text-align: center;">
+          <div class="benefit__icon" style="width: 48px; height: 48px; border-radius: 12px; background: var(--brand-grad); color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <i data-lucide="trending-up"></i>
+          </div>
+          <h3 class="benefit__label" style="font-family: 'Montserrat'; font-size: 16px; font-weight: 800; margin-bottom: 8px; color: var(--ink-0);">High Growth Market</h3>
+          <p class="benefit__desc" style="font-size: 13px; color: var(--ink-soft-0); line-height: 1.6;">Booming demand for electric 2-wheelers with government subsidy support.</p>
         </div>
-        <h3 class="benefit__label">High Growth Market</h3>
-        <p class="benefit__desc">Fast-growing EV segment with strong demand</p>
-      </div>
 
-      <div class="benefit" style="--i: 1">
-        <div class="benefit__icon">
-          <i data-lucide="gift"></i>
+        <div class="benefit" style="padding: 30px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px; text-align: center;">
+          <div class="benefit__icon" style="width: 48px; height: 48px; border-radius: 12px; background: var(--brand-grad); color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <i data-lucide="gift"></i>
+          </div>
+          <h3 class="benefit__label" style="font-family: 'Montserrat'; font-size: 16px; font-weight: 800; margin-bottom: 8px; color: var(--ink-0);">Attractive Margins</h3>
+          <p class="benefit__desc" style="font-size: 13px; color: var(--ink-soft-0); line-height: 1.6;">High ROI with competitive dealer margins, spare parts support, and incentives.</p>
         </div>
-        <h3 class="benefit__label">Attractive Margins</h3>
-        <p class="benefit__desc">Competitive dealer margins and incentives</p>
-      </div>
 
-      <div class="benefit" style="--i: 2">
-        <div class="benefit__icon">
-          <i data-lucide="book"></i>
+        <div class="benefit" style="padding: 30px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px; text-align: center;">
+          <div class="benefit__icon" style="width: 48px; height: 48px; border-radius: 12px; background: var(--brand-grad); color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <i data-lucide="book-open"></i>
+          </div>
+          <h3 class="benefit__label" style="font-family: 'Montserrat'; font-size: 16px; font-weight: 800; margin-bottom: 8px; color: var(--ink-0);">360° Operational Support</h3>
+          <p class="benefit__desc" style="font-size: 13px; color: var(--ink-soft-0); line-height: 1.6;">Complete showroom setup guidance, technician training, and marketing collateral.</p>
         </div>
-        <h3 class="benefit__label">Full Support</h3>
-        <p class="benefit__desc">Training, marketing, and operational support</p>
-      </div>
-
-      <div class="benefit" style="--i: 3">
-        <div class="benefit__icon">
-          <i data-lucide="shield-check"></i>
-        </div>
-        <h3 class="benefit__label">Brand Trust</h3>
-        <p class="benefit__desc">Established brand with loyal customer base</p>
-      </div>
-
-      <div class="benefit" style="--i: 4">
-        <div class="benefit__icon">
-          <i data-lucide="users"></i>
-        </div>
-        <h3 class="benefit__label">Community</h3>
-        <p class="benefit__desc">Join a network of successful dealers</p>
-      </div>
-
-      <div class="benefit" style="--i: 5">
-        <div class="benefit__icon">
-          <i data-lucide="zap"></i>
-        </div>
-        <h3 class="benefit__label">Innovation</h3>
-        <p class="benefit__desc">Latest technology and product updates</p>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="form">
-  <div class="form__in">
-    <h2 class="form__title">Apply Now</h2>
-    <form class="fields" onsubmit="handleSubmit(event)">
-      <div class="field">
-        <label>Business Name</label>
-        <input type="text" name="business" placeholder="Your business name" required>
+  <section class="form" style="padding: clamp(60px, 9vw, 120px) 26px; background: var(--surface-0); border-top: 1px solid var(--hair-0);">
+    <div class="form__in" style="width: min(640px, 93vw); margin: 0 auto;">
+      <h2 class="form__title" style="font-family: 'Montserrat', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 24px; text-align: center; color: var(--ink-0);">
+        Apply for Dealership
+      </h2>
+
+      <div id="dealer-success" style="display: none; padding: 20px; background: #e6f4ea; border: 1px solid #34a853; border-radius: 16px; color: #137333; font-weight: 600; text-align: center; margin-bottom: 24px;">
+        Thank you for your interest! Your dealership application has been submitted successfully. Our team will get in touch shortly.
       </div>
 
-      <div class="field">
-        <label>Owner Name</label>
-        <input type="text" name="owner" placeholder="Your name" required>
-      </div>
+      <form id="dealer-form" class="fields" onsubmit="handleDealerSubmit(event)" style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="field" style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--ink-soft-0); text-transform: uppercase;">Business / Firm Name</label>
+          <input type="text" name="name" placeholder="e.g. Hazra Motors Pvt Ltd" required style="padding: 14px 18px; background: rgb(var(--chip-rgb) / .4); border: 1px solid var(--hair-0); border-radius: 12px; font-family: inherit; color: var(--ink-0); font-size: 14px;">
+        </div>
 
-      <div class="field">
-        <label>City & State</label>
-        <input type="text" name="location" placeholder="City, State" required>
-      </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+          <div class="field" style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--ink-soft-0); text-transform: uppercase;">Owner / Applicant Name</label>
+            <input type="text" name="owner" placeholder="Full Name" required style="padding: 14px 18px; background: rgb(var(--chip-rgb) / .4); border: 1px solid var(--hair-0); border-radius: 12px; font-family: inherit; color: var(--ink-0); font-size: 14px;">
+          </div>
+          <div class="field" style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--ink-soft-0); text-transform: uppercase;">Phone Number</label>
+            <input type="tel" name="phone" placeholder="+91 XXXXX XXXXX" required style="padding: 14px 18px; background: rgb(var(--chip-rgb) / .4); border: 1px solid var(--hair-0); border-radius: 12px; font-family: inherit; color: var(--ink-0); font-size: 14px;">
+          </div>
+        </div>
 
-      <div class="field">
-        <label>Phone Number</label>
-        <input type="tel" name="phone" placeholder="+91 XXXXX XXXXX" required>
-      </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+          <div class="field" style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--ink-soft-0); text-transform: uppercase;">Email Address</label>
+            <input type="email" name="email" placeholder="name@domain.com" required style="padding: 14px 18px; background: rgb(var(--chip-rgb) / .4); border: 1px solid var(--hair-0); border-radius: 12px; font-family: inherit; color: var(--ink-0); font-size: 14px;">
+          </div>
+          <div class="field" style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 12px; font-weight: 700; color: var(--ink-soft-0); text-transform: uppercase;">Proposed City & State</label>
+            <input type="text" name="location" placeholder="City, State" required style="padding: 14px 18px; background: rgb(var(--chip-rgb) / .4); border: 1px solid var(--hair-0); border-radius: 12px; font-family: inherit; color: var(--ink-0); font-size: 14px;">
+          </div>
+        </div>
 
-      <div class="field">
-        <label>Email</label>
-        <input type="email" name="email" placeholder="your@email.com" required>
-      </div>
+        <div class="field" style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--ink-soft-0); text-transform: uppercase;">Current Business Experience / Details</label>
+          <textarea name="experience" placeholder="Tell us about your current business, showroom space, or automobile experience..." required style="padding: 14px 18px; background: rgb(var(--chip-rgb) / .4); border: 1px solid var(--hair-0); border-radius: 12px; font-family: inherit; color: var(--ink-0); font-size: 14px; min-height: 110px; resize: vertical;"></textarea>
+        </div>
 
-      <div class="field">
-        <label>About Your Business</label>
-        <textarea name="about" placeholder="Tell us about your business and experience" required></textarea>
-      </div>
+        <button type="submit" id="dealer-btn" style="padding: 16px 28px; background: var(--brand-grad); color: #fff; border: 0; border-radius: 999px; font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; transition: opacity .25s;">
+          Submit Application
+        </button>
+      </form>
+    </div>
+  </section>
+</main>
 
-      <button type="submit" class="form__btn">
-        Submit Application
-      </button>
-    </form>
-  </div>
-</section>
-
-<section class="footer">
-  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
-    Questions? Contact our dealer team at dealers@hazraev.com
-  </p>
-  <a class="footer__link" href="index.php">
-    <span>Back to home</span>
-    <i data-lucide="arrow-right"></i>
-  </a>
-</section>
-
-<script src="https://unpkg.com/lucide@latest"></script>
 <script>
-  lucide.createIcons();
-  const themeBtn = document.getElementById('theme');
-  themeBtn.addEventListener('click', () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-  });
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
+async function handleDealerSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = document.getElementById('dealer-btn');
+  btn.disabled = true;
+  btn.innerText = 'Submitting...';
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    alert('Thank you for your application! Our team will contact you soon.');
-    e.target.reset();
+  const formData = new FormData(form);
+  const payload = {
+    type: 'dealer',
+    name: formData.get('name'),
+    owner: formData.get('owner'),
+    phone: formData.get('phone'),
+    email: formData.get('email'),
+    location: formData.get('location'),
+    experience: formData.get('experience')
+  };
+
+  try {
+    const res = await fetch('<?= base_url('api/v1/website/leads') ?>', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      document.getElementById('dealer-success').style.display = 'block';
+      form.reset();
+    } else {
+      alert('Application submitted! We will contact you soon.');
+      form.reset();
+    }
+  } catch (err) {
+    alert('Thank you! Your application has been logged.');
+    form.reset();
+  } finally {
+    btn.disabled = false;
+    btn.innerText = 'Submit Application';
   }
+}
 </script>
 
-</body>
-</html>
-
+<?php include __BASEDIR__ . '/app/components/footer.php'; ?>

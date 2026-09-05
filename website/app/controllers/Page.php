@@ -16,34 +16,44 @@ class Page extends BaseController
         return $this->respond('/app/page/career.php');
     }
 
+    public function products()
+    {
+        return $this->respond('/app/page/products.php');
+    }
+
+    public function productDetail()
+    {
+        return $this->respond('/app/page/product-detail.php');
+    }
+
     public function chalo1000v2()
     {
-        return $this->respond('/app/page/chalo-1000-v2.php');
+        return $this->respond('/app/page/product-detail.php');
     }
 
     public function chaloNeo()
     {
-        return $this->respond('/app/page/chalo-neo.php');
+        return $this->respond('/app/page/product-detail.php');
     }
 
     public function chaloSmartEco()
     {
-        return $this->respond('/app/page/chalo-smart-eco.php');
+        return $this->respond('/app/page/product-detail.php');
     }
 
     public function chaloSmartPlus()
     {
-        return $this->respond('/app/page/chalo-smart-plus.php');
+        return $this->respond('/app/page/product-detail.php');
     }
 
     public function chaloSmartPro()
     {
-        return $this->respond('/app/page/chalo-smart-pro.php');
+        return $this->respond('/app/page/product-detail.php');
     }
 
     public function nja7()
     {
-        return $this->respond('/app/page/nja-7.php');
+        return $this->respond('/app/page/product-detail.php');
     }
 
     public function batteryUse()
@@ -90,5 +100,9 @@ class Page extends BaseController
     {
         return $this->respond('/app/page/warranty-paid.php');
     }
+
+    public function admin()
+    {
+        return $this->respond('/app/page/admin.php');
+    }
 }
-?>

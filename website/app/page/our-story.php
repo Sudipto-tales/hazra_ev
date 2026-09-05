@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
@@ -434,7 +434,7 @@
 
 <header class="header">
   <div class="header__top">
-    <a class="brand" href="index.php">
+    <a class="brand" href="<?= base_url('') ?>">
       <img class="brand__mark" src="../../assets/hazraev.png" alt="Hazra">
       <span class="brand__txt">Hazra Electrical Bike</span>
     </a>
@@ -623,7 +623,7 @@
   <p style="color: var(--ink-soft-0); margin-bottom: 24px; font-size: 14px;">
     Ready to be part of the story?
   </p>
-  <a class="footer__link" href="index.php">
+  <a class="footer__link" href="<?= base_url('') ?>">
     <span>Back to home</span>
     <i data-lucide="arrow-right"></i>
   </a>

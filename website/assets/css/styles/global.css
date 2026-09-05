@@ -1,0 +1,47 @@
+/* ══════════════════════════════════════════════════════════
+   global.css — reset, document defaults, shared primitives
+   ══════════════════════════════════════════════════════════ */
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+html{
+  scroll-behavior:smooth;
+  -webkit-text-size-adjust:100%;
+  color-scheme:light;
+}
+html[data-theme="dark"]{color-scheme:dark}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+}
+
+body{
+  background:var(--surface-0);
+  color:var(--ink-0);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;
+}
+
+img,svg,video{display:block;max-width:100%}
+img{height:auto}
+
+a{color:inherit;text-decoration:none}
+
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+
+:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+  border-radius:var(--r-sm);
+}
+
+::selection{background:var(--brand-violet);color:#fff}
+
+hr{border:0;border-top:1px solid var(--hair-0)}

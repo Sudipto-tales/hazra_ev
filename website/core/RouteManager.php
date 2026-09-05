@@ -119,19 +119,25 @@ class RouteManager
 
     public static function resolveRoute(): string
     {
+        $route = '';
         if (!empty($_GET['route'])) {
-            return trim($_GET['route'], '/');
+            $route = trim($_GET['route'], '/');
+        } else {
+            $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            $scriptName = $_SERVER['SCRIPT_NAME'];
+            $basePath = str_replace('\\', '/', dirname($scriptName));
+
+            if ($basePath !== '/' && str_starts_with($requestUri, $basePath)) {
+                $requestUri = substr($requestUri, strlen($basePath));
+            }
+
+            $route = trim($requestUri, '/');
         }
 
-        $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $scriptName = $_SERVER['SCRIPT_NAME'];
-        $basePath = str_replace('\\', '/', dirname($scriptName));
-
-        if ($basePath !== '/' && str_starts_with($requestUri, $basePath)) {
-            $requestUri = substr($requestUri, strlen($basePath));
+        if (str_ends_with($route, '.php')) {
+            $route = substr($route, 0, -4);
         }
 
-        $route = trim($requestUri, '/');
-        return $route === '' ? 'default' : $route;
+        return ($route === '' || $route === 'index') ? 'default' : $route;
     }
 }

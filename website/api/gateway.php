@@ -94,8 +94,17 @@ class ApiGatewayProvider extends RouteProvider
 
             // --- Realtime ---------------------------------------------------------- §1.6
             'GET:api/v1/stream'            => ['StreamController', 'index', 'auth'],
+
+            // --- Website Public & Admin Management --------------------------------
+            'GET:api/v1/website/products'        => ['WebsiteController', 'products'],
+            'GET:api/v1/website/settings'        => ['WebsiteController', 'settings'],
+            'POST:api/v1/website/settings'       => ['WebsiteController', 'updateSettings', 'auth'],
+            'POST:api/v1/website/leads'          => ['WebsiteController', 'storeLead'],
+            'GET:api/v1/website/leads'           => ['WebsiteController', 'leads', 'auth'],
+            'PATCH:api/v1/website/leads/{id}'    => ['WebsiteController', 'updateLeadStatus', 'auth'],
         ];
     }
 }
 
 return ApiGatewayProvider::routes();
+

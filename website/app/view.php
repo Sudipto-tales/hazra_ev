@@ -7,25 +7,69 @@ class ViewRouteProvider extends RouteProvider
     public static function routes(): array
     {
         return [
-            'default' => ['Welcome', 'index'],
+            'default' => ['Page', 'index'],
             'index' => ['Page', 'index'],
+            'index.php' => ['Page', 'index'],
+
             'our-story' => ['Page', 'ourStory'],
+            'our-story.php' => ['Page', 'ourStory'],
+
             'career' => ['Page', 'career'],
-            'chalo-1000-v2' => ['Page', 'chalo1000v2'],
-            'chalo-neo' => ['Page', 'chaloNeo'],
-            'chalo-smart-eco' => ['Page', 'chaloSmartEco'],
-            'chalo-smart-plus' => ['Page', 'chaloSmartPlus'],
-            'chalo-smart-pro' => ['Page', 'chaloSmartPro'],
-            'nja-7' => ['Page', 'nja7'],
+            'career.php' => ['Page', 'career'],
+
+            'products' => ['Page', 'products'],
+            'products.php' => ['Page', 'products'],
+
+            'product-detail' => ['Page', 'productDetail'],
+            'product-detail.php' => ['Page', 'productDetail'],
+
+            'chalo-1000-v2' => ['Page', 'productDetail'],
+            'chalo-1000-v2.php' => ['Page', 'productDetail'],
+
+            'chalo-neo' => ['Page', 'productDetail'],
+            'chalo-neo.php' => ['Page', 'productDetail'],
+
+            'chalo-smart-eco' => ['Page', 'productDetail'],
+            'chalo-smart-eco.php' => ['Page', 'productDetail'],
+
+            'chalo-smart-plus' => ['Page', 'productDetail'],
+            'chalo-smart-plus.php' => ['Page', 'productDetail'],
+
+            'chalo-smart-pro' => ['Page', 'productDetail'],
+            'chalo-smart-pro.php' => ['Page', 'productDetail'],
+
+            'nja-7' => ['Page', 'productDetail'],
+            'nja-7.php' => ['Page', 'productDetail'],
+
             'battery-use' => ['Page', 'batteryUse'],
+            'battery-use.php' => ['Page', 'batteryUse'],
+
             'ev-future' => ['Page', 'evFuture'],
+            'ev-future.php' => ['Page', 'evFuture'],
+
             'blog' => ['Page', 'blog'],
+            'blog.php' => ['Page', 'blog'],
+
             'contest' => ['Page', 'contest'],
+            'contest.php' => ['Page', 'contest'],
+
             'dealer-locator' => ['Page', 'dealerLocator'],
+            'dealer-locator.php' => ['Page', 'dealerLocator'],
+
             'become-a-dealer' => ['Page', 'becomeDealer'],
+            'become-a-dealer.php' => ['Page', 'becomeDealer'],
+
             'dealership-enquiry' => ['Page', 'dealershipEnquiry'],
+            'dealership-enquiry.php' => ['Page', 'dealershipEnquiry'],
+
             'warranty-free' => ['Page', 'warrantyFree'],
+            'warranty-free.php' => ['Page', 'warrantyFree'],
+
             'warranty-paid' => ['Page', 'warrantyPaid'],
+            'warranty-paid.php' => ['Page', 'warrantyPaid'],
+
+            'admin' => ['Page', 'admin'],
+            'admin.php' => ['Page', 'admin'],
         ];
     }
 }

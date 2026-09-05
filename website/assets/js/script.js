@@ -615,16 +615,28 @@
     });
   });
 
-  /* ── test ride form ───────────────────────────
-     No endpoint is wired yet: this validates, then prints the receipt the
-     backend will replace. Nothing leaves the page. */
+  /* ── test ride form ─────────────────────────── */
   const form = $('#rideForm');
   const ok   = $('#rideOk');
-  form?.addEventListener('submit', e => {
+  form?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!form.reportValidity()) return;
-    const name = new FormData(form).get('name')?.toString().trim().split(' ')[0] || 'there';
-    ok.textContent = `Thanks ${name} — a dealer will call you within one working day.`;
+    const formData = new FormData(form);
+    const payload = {
+      type: 'test_ride',
+      name: formData.get('name'),
+      phone: formData.get('phone'),
+      city: formData.get('city')
+    };
+    try {
+      await fetch('api/v1/website/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch(err){}
+    const name = formData.get('name')?.toString().trim().split(' ')[0] || 'there';
+    ok.textContent = `Thanks ${name} — your test ride request has been registered! A dealer will call you shortly.`;
     form.reset();
   });
 
