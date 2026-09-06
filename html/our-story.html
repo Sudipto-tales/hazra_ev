@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
-/* Applied before first paint so a dark-mode visitor never sees a light
-   flash. Kept inline and tiny on purpose: an external file would race
-   the paint it exists to prevent. */
 (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
 if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-  <title>Our Story — Hazra Electrical Bike</title>
+<title>Our Story — Hazra Electrical Bike</title>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hazra Electrical Bike">
 <meta property="og:title" content="Our Story — Hazra Electrical Bike">
@@ -20,658 +17,1154 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 <meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://hazraelectricalbike.com/our-story.html">
-  <link rel="icon" href="assets/hazraev.png" type="image/png">
-  <link rel="apple-touch-icon" href="assets/hazraev.png">
-  <meta name="description" content="Learn how Hazra Electrical Bike was born from one frame, one battery, and a stubborn idea to build electric scooters that riders actually want.">
+<link rel="icon" href="assets/hazraev.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/hazraev.png">
+<meta name="description" content="Learn how Hazra Electrical Bike was born from one frame, one battery, and a stubborn idea to build electric scooters that riders actually want.">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles/tokens.css">
 <link rel="stylesheet" href="styles/typography.css">
 <link rel="stylesheet" href="styles/global.css">
 <link rel="stylesheet" href="styles/utilities.css">
-  <link rel="stylesheet" href="style.css">
-  <style>
-    /* ════════════════════════════════════════════
-       OUR STORY — Timeline & Milestones
-       ════════════════════════════════════════════ */
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --story-green:#1db954;
+  --story-green-soft:#34d399;
+}
+.sticky-bar.is-page{transform:translateY(0);opacity:1;pointer-events:auto}
 
-    :root {
-      --brand-indigo:  #3a1a6b;
-      --brand-violet:  #7b2ff7;
-      --brand-magenta: #a41fbf;
-      --brand-blue:    #12a5e0;
-      --brand-orange:  #f7941d;
-      --brand-flame:   #f0532b;
-      --brand-grad: linear-gradient(96deg,
-          var(--brand-violet) 0%,
-          var(--brand-magenta) 30%,
-          var(--brand-flame) 66%,
-          var(--brand-orange) 100%);
+/* ── HERO ── */
+.story-hero{
+  position:relative;min-height:clamp(320px,42vh,440px);
+  display:grid;place-items:center;overflow:hidden;isolation:isolate;margin-top:56px;
+}
+.story-hero__bg{
+  position:absolute;inset:0;z-index:0;
+  background-image:
+    linear-gradient(160deg,rgba(24,15,44,.72) 0%,rgba(58,26,107,.55) 42%,rgba(240,83,43,.35) 100%),
+    url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1800&q=80');
+  background-size:cover;background-position:center 40%;
+  transform:scale(1.08);animation:story-ken 14s var(--ease) infinite alternate;
+}
+html[data-theme="light"] .story-hero__bg{
+  background-image:
+    linear-gradient(160deg,rgba(250,248,253,.22) 0%,rgba(58,26,107,.48) 40%,rgba(240,83,43,.38) 100%),
+    url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1800&q=80');
+}
+@keyframes story-ken{from{transform:scale(1.08)}to{transform:scale(1.14) translateY(-2%)}}
+.story-hero__veil{
+  position:absolute;inset:0;z-index:1;
+  background:radial-gradient(80% 70% at 50% 30%,transparent 0%,rgba(11,7,19,.5) 100%);
+  pointer-events:none;
+}
+.story-hero__in{
+  position:relative;z-index:2;width:min(900px,92vw);margin:0 auto;
+  padding:clamp(48px,7vw,80px) 26px;text-align:center;
+}
+.story-hero .eyebrow{color:rgba(255,255,255,.78);justify-content:center}
+.story-hero .eyebrow .sq{background:var(--brand-grad)}
+.story-hero__title{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(40px,5.2vw,72px);font-weight:900;letter-spacing:-.035em;line-height:1.05;
+  color:#fff;margin:14px 0 18px;text-shadow:0 12px 40px rgba(0,0,0,.35);
+}
+.story-hero__lead{
+  max-width:34em;margin:0 auto;font-size:clamp(15px,1.25vw,18px);line-height:1.65;
+  color:rgba(255,255,255,.82);
+}
 
-      --ink-0:        #180f2c;
-      --ink-soft-0:   #6b6480;
-      --hair-0:       #e3ddec;
-      --surface-0:    #faf8fd;
-      --surface-rgb:  250 248 253;
-      --chip-rgb:     240 235 249;
-      --accent:       var(--brand-orange);
-      --accent-ink:   #180f2c;
-      --glass-bd:     rgba(255,255,255,.28);
-      --glass-bg:     rgba(255,255,255,.16);
-      --veil:         rgba(26,14,48,.32);
-      --sh-a:         .45;
-      --ease: cubic-bezier(.22,1,.36,1);
-    }
+/* ── ABOUT INTRO (story + curved image) ── */
+.story-about{
+  padding:clamp(40px,5.5vw,72px) 0;
+  background:var(--surface-0);
+}
+.story-about__grid{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:clamp(24px,3.5vw,48px);
+  align-items:center;
+}
+.story-about__lead{
+  font-size:clamp(16px,1.35vw,19px);line-height:1.7;
+  color:var(--ink-0);margin:14px 0 16px;max-width:38ch;
+}
+.story-about__text{
+  font-size:14.5px;line-height:1.75;color:var(--ink-soft-0);
+  margin-bottom:14px;max-width:46ch;
+}
+.story-about__media{
+  position:relative;
+}
+.story-about__frame{
+  position:relative;
+  border-radius:60% 40% 55% 45% / 45% 55% 45% 55%;
+  overflow:hidden;
+  aspect-ratio:1/1.05;
+  box-shadow:var(--sh-3);
+  border:1px solid var(--hair-0);
+}
+.story-about__frame img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .8s var(--ease);
+}
+.story-about__frame:hover img{transform:scale(1.06)}
+.story-about__blob{
+  position:absolute;z-index:-1;
+  width:70%;height:70%;
+  border-radius:55% 45% 40% 60% / 50% 40% 60% 50%;
+  background:var(--brand-grad);
+  opacity:.18;
+  filter:blur(2px);
+}
+.story-about__blob--a{top:-8%;right:-10%}
+.story-about__blob--b{
+  bottom:-12%;left:-14%;width:55%;height:55%;
+  background:linear-gradient(135deg,var(--story-green),var(--brand-blue));
+  opacity:.14;
+}
+.story-about__pill{
+  position:absolute;bottom:8%;left:-6%;
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border-radius:var(--r-lg);
+  background:var(--surface-0);border:1px solid var(--hair-0);
+  box-shadow:var(--sh-2);
+}
+.story-about__pill b{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:20px;font-weight:900;
+  background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.story-about__pill span{font-size:11px;font-weight:700;color:var(--ink-soft-0);line-height:1.3}
 
-    html[data-theme="dark"] {
-      --ink-0:        #f6f3fb;
-      --ink-soft-0:   #9a93ad;
-      --hair-0:       #2f2743;
-      --surface-0:    #120e1c;
-      --surface-rgb:  18 14 28;
-      --chip-rgb:     33 26 50;
-      --accent:       #ff8f2e;
-      --accent-ink:   #150c26;
-      --glass-bd:     rgba(255,255,255,.16);
-      --glass-bg:     rgba(255,255,255,.08);
-      --veil:         rgba(9,4,20,.52);
-      --sh-a:         .8;
-    }
+/* ── WHY — 4 vertical process panels ── */
+.story-why{
+  padding:clamp(40px,5.5vw,72px) 0;
+  background:rgb(var(--chip-rgb) / .35);
+  border-top:1px solid var(--hair-0);
+}
+.story-why .sec__head{text-align:center;margin-bottom:clamp(24px,3.5vw,40px)}
+.story-why .eyebrow{justify-content:center}
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--surface-0);
-      color: var(--ink-0);
-      -webkit-font-smoothing: antialiased;
-    }
+.story-steps{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:0;
+  background:var(--surface-0);
+  border:1px solid var(--hair-0);
+  border-radius:var(--r-xl);
+  overflow:hidden;
+  box-shadow:var(--sh-1);
+}
+.story-step{
+  position:relative;
+  padding:clamp(22px,2.8vw,32px) clamp(16px,1.8vw,24px) clamp(24px,3vw,36px);
+  border-right:1px solid var(--hair-0);
+  display:flex;flex-direction:column;align-items:flex-start;
+  min-height:280px;
+  opacity:0;transform:translateY(28px);
+}
+.story-step:last-child{border-right:0}
+.story-step.is-in{
+  animation:reveal-pop .7s var(--ease) forwards;
+  animation-delay:calc(var(--i,0) * 120ms);
+}
+@keyframes reveal-pop{to{opacity:1;transform:none}}
 
-    .header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgb(var(--surface-rgb) / .92);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--hair-0);
-      padding: 20px 0;
-    }
+.story-step__n{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(56px,6vw,88px);
+  font-weight:900;line-height:1;letter-spacing:-.04em;
+  background:var(--brand-grad);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  margin-bottom:12px;
+  opacity:.92;
+}
+.story-step:nth-child(2) .story-step__n{
+  background:linear-gradient(120deg,var(--brand-magenta),var(--brand-flame));
+  -webkit-background-clip:text;background-clip:text;
+}
+.story-step:nth-child(3) .story-step__n{
+  background:linear-gradient(120deg,var(--brand-blue),var(--story-green));
+  -webkit-background-clip:text;background-clip:text;
+}
+.story-step:nth-child(4) .story-step__n{
+  background:linear-gradient(120deg,var(--story-green),var(--brand-orange));
+  -webkit-background-clip:text;background-clip:text;
+}
+.story-step__label{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-0);margin-bottom:12px;
+}
+.story-step__desc{
+  font-size:13px;line-height:1.65;color:var(--ink-soft-0);
+  flex:1;margin-bottom:22px;
+}
+.story-step__icon{
+  width:44px;height:44px;border-radius:50%;
+  display:grid;place-items:center;
+  border:1px solid var(--hair-0);
+  background:rgb(var(--chip-rgb) / .7);
+  color:var(--brand-violet);
+  margin-top:auto;
+}
+.story-step:nth-child(3) .story-step__icon{color:var(--brand-blue)}
+.story-step:nth-child(4) .story-step__icon{color:var(--story-green)}
+.story-step__icon svg{width:20px;height:20px}
 
-    .header__top {
-      display: flex; align-items: center; justify-content: space-between;
-      width: min(1520px, 93vw); margin: 0 auto; padding: 0 26px;
-    }
+.story-step__arrow{
+  position:absolute;top:50%;right:-14px;z-index:2;
+  width:28px;height:28px;border-radius:50%;
+  display:grid;place-items:center;
+  background:var(--surface-0);border:1px solid var(--hair-0);
+  color:var(--brand-orange);box-shadow:var(--sh-1);
+  transform:translateY(-50%);
+}
+.story-step:last-child .story-step__arrow{display:none}
+.story-step__arrow svg{width:14px;height:14px}
 
-    .brand {
-      display: inline-flex; align-items: center; gap: 9px;
-      text-decoration: none;
-    }
+/* ── SCROLL TIMELINE (pinned journey) ── */
+.story-tl{
+  position:relative;
+  background:var(--surface-0);
+  border-top:1px solid var(--hair-0);
+}
+.story-tl__head{
+  padding:clamp(36px,5vw,56px) 0 16px;
+  text-align:center;
+}
+.story-tl__head .eyebrow{justify-content:center}
 
-    .brand__mark {
-      width: 32px; height: 32px;
-      object-fit: contain;
-    }
+.story-tl__drive{
+  position:relative;
+  height:400vh;
+}
+.story-tl__pin{
+  position:sticky;top:56px;
+  height:calc(100vh - 56px);
+  display:grid;
+  grid-template-columns:1fr 1.15fr;
+  gap:0;
+  overflow:hidden;
+  align-items:stretch;
+}
+.story-tl__years{
+  position:relative;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(24px,4vw,48px) clamp(20px,3vw,40px);
+  background:
+    radial-gradient(90% 80% at 0% 50%,
+      color-mix(in srgb,var(--brand-violet) 12%,transparent) 0%,transparent 70%),
+    var(--surface-0);
+  border-right:1px solid var(--hair-0);
+}
+.story-tl__year{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(64px,9vw,120px);
+  font-weight:900;letter-spacing:-.04em;line-height:1;
+  color:transparent;
+  -webkit-text-stroke:1.5px var(--hair-0);
+  position:absolute;left:clamp(20px,3vw,40px);top:50%;
+  transform:translateY(-50%) translateX(-12px);
+  opacity:0;
+  transition:opacity .45s var(--ease),transform .55s var(--ease),color .45s, -webkit-text-stroke-color .45s;
+  pointer-events:none;
+}
+.story-tl__year.is-active{
+  opacity:1;
+  transform:translateY(-50%) translateX(0);
+  color:var(--brand-flame);
+  -webkit-text-stroke-color:transparent;
+  background:var(--brand-grad);
+  -webkit-background-clip:text;background-clip:text;
+}
+.story-tl__year.is-passed{
+  opacity:.12;
+  transform:translateY(-50%) translateX(-8px) scale(.92);
+  color:var(--ink-0);
+  -webkit-text-stroke-color:transparent;
+}
 
-    .brand__txt {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 12.5px; font-weight: 700;
-      color: var(--ink-soft-0);
-    }
+.story-tl__stage{
+  position:relative;
+  overflow:hidden;
+  background:rgb(var(--chip-rgb) / .25);
+}
+.story-tl__slide{
+  position:absolute;inset:0;
+  display:grid;
+  grid-template-rows:1.15fr auto;
+  opacity:0;
+  transform:translateY(28px) scale(.97);
+  pointer-events:none;
+  transition:opacity .55s var(--ease),transform .6s var(--ease);
+}
+.story-tl__slide.is-active{
+  opacity:1;
+  transform:none;
+  pointer-events:auto;
+  z-index:2;
+}
+.story-tl__img{
+  position:relative;overflow:hidden;min-height:0;
+}
+.story-tl__img img{
+  width:100%;height:100%;object-fit:cover;
+  transform:scale(1.08);
+  transition:transform 1.1s var(--ease);
+}
+.story-tl__slide.is-active .story-tl__img img{transform:scale(1)}
+.story-tl__img::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(24,15,44,.45),transparent 45%);
+  pointer-events:none;
+}
+.story-tl__copy{
+  padding:clamp(20px,3vw,32px) clamp(20px,3vw,36px) clamp(24px,3vw,36px);
+  background:var(--surface-0);
+  border-top:1px solid var(--hair-0);
+}
+.story-tl__tag{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--brand-violet);margin-bottom:10px;
+}
+.story-tl__tag i{
+  width:8px;height:8px;border-radius:2px;background:var(--brand-grad);
+}
+.story-tl__title{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(20px,2.2vw,28px);font-weight:800;letter-spacing:-.02em;
+  margin-bottom:10px;color:var(--ink-0);
+}
+.story-tl__text{
+  font-size:14px;line-height:1.7;color:var(--ink-soft-0);max-width:52ch;
+}
+.story-tl__progress{
+  position:absolute;left:0;top:0;bottom:0;width:3px;z-index:5;
+  background:var(--hair-0);
+}
+.story-tl__progress > i{
+  display:block;width:100%;height:0%;
+  background:var(--brand-grad);
+  transition:height .15s linear;
+}
 
-    .theme {
-      display: grid; place-items: center;
-      width: 40px; height: 40px; border-radius: 50%;
-      background: none; border: 1px solid var(--hair-0);
-      cursor: pointer; color: var(--ink-0);
-    }
+/* dots */
+.story-tl__dots{
+  position:absolute;right:18px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:10px;z-index:6;
+}
+.story-tl__dot{
+  width:8px;height:8px;border-radius:50%;
+  border:0;padding:0;cursor:pointer;
+  background:var(--hair-0);
+  transition:transform .25s var(--ease),background .25s;
+}
+.story-tl__dot.is-on{
+  background:var(--brand-flame);
+  transform:scale(1.35);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--brand-flame) 22%,transparent);
+}
 
-    .theme svg { width: 17px; height: 17px; position: absolute; }
-    .theme__moon { display: none; }
-    html[data-theme="dark"] .theme__sun { display: none; }
-    html[data-theme="dark"] .theme__moon { display: block; }
+/* EXPERTISE mosaic — images + numbers */
+.story-exp{
+  padding:clamp(40px,5.5vw,72px) 0;
+  background:rgb(var(--chip-rgb) / .3);
+  border-top:1px solid var(--hair-0);
+}
+.story-exp__grid{
+  display:grid;
+  grid-template-columns:1fr 1.2fr;
+  gap:clamp(24px,3.5vw,48px);
+  align-items:center;
+}
+.story-exp__lead{
+  font-size:15px;line-height:1.7;color:var(--ink-soft-0);
+  margin:12px 0 18px;max-width:42ch;
+}
+.story-mosaic{
+  display:grid;
+  grid-template-columns:1.25fr 1fr 1fr;
+  grid-template-rows:auto auto;
+  gap:12px;
+}
+.story-mosaic__cell{
+  border-radius:var(--r-lg);overflow:hidden;
+  border:1px solid var(--hair-0);background:var(--surface-0);
+  opacity:0;transform:translateY(24px) scale(.96);
+}
+.story-mosaic__cell.is-in{
+  animation:reveal-pop .7s var(--ease) forwards;
+  animation-delay:calc(var(--i,0)*90ms);
+}
+.story-mosaic__cell--tall{grid-row:1 / span 2;min-height:260px}
+.story-mosaic__cell img{
+  width:100%;height:100%;object-fit:cover;display:block;min-height:130px;
+  transition:transform .65s var(--ease);
+}
+.story-mosaic__cell:hover img{transform:scale(1.05)}
+.story-mosaic__stat{
+  padding:18px 16px;min-height:120px;
+  display:flex;flex-direction:column;justify-content:center;
+  background:rgb(var(--chip-rgb) / .65);
+}
+.story-mosaic__stat--grad{background:var(--brand-grad);color:#fff;border:none}
+.story-mosaic__n{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(26px,2.6vw,36px);font-weight:900;letter-spacing:-.03em;line-height:1;
+  margin-bottom:6px;
+}
+.story-mosaic__stat:not(.story-mosaic__stat--grad) .story-mosaic__n{
+  background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.story-mosaic__l{font-size:11.5px;font-weight:700;color:var(--ink-soft-0)}
+.story-mosaic__stat--grad .story-mosaic__l{color:rgba(255,255,255,.88)}
+.story-mosaic__d{font-size:11.5px;line-height:1.45;color:var(--ink-soft-0);margin-top:5px}
+.story-mosaic__stat--grad .story-mosaic__d{color:rgba(255,255,255,.8)}
+.story-faces{display:flex;margin-bottom:8px}
+.story-faces img{
+  width:30px;height:30px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--surface-0);margin-left:-7px;
+}
+.story-faces img:first-child{margin-left:0}
 
-    /* Hero Section */
-    .hero {
-      position: relative;
-      background: var(--surface-0);
-      padding: clamp(80px, 12vw, 160px) 26px;
-      overflow: hidden;
-    }
+/* Gallery + testimonials */
+.story-gal{
+  padding:clamp(36px,5vw,64px) 0;
+  background:var(--surface-0);
+  border-top:1px solid var(--hair-0);
+}
+.story-gal .sec__head{text-align:center;margin-bottom:clamp(24px,3.5vw,36px)}
+.story-gal .eyebrow{justify-content:center}
+.story-gal__grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-auto-rows:minmax(140px,auto);
+  gap:12px;
+}
+.story-gal__item{
+  position:relative;border-radius:var(--r-lg);overflow:hidden;
+  border:1px solid var(--hair-0);background:var(--surface-0);
+  opacity:0;transform:translateY(20px) scale(.97);
+}
+.story-gal__item.is-in{
+  animation:reveal-pop .65s var(--ease) forwards;
+  animation-delay:calc(var(--i,0)*70ms);
+}
+.story-gal__item--tall{grid-row:span 2}
+.story-gal__item--wide{grid-column:span 2}
+.story-gal__item img{
+  width:100%;height:100%;object-fit:cover;display:block;min-height:140px;
+  transition:transform .65s var(--ease);
+}
+.story-gal__item:hover img{transform:scale(1.06)}
+.story-gal__quote{
+  padding:20px 18px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  min-height:140px;
+  background:rgb(var(--chip-rgb) / .55);
+}
+.story-gal__quote--grad{
+  background:var(--brand-grad);color:#fff;border:none;
+}
+.story-gal__stars{display:flex;gap:3px;margin-bottom:10px;color:var(--brand-orange)}
+.story-gal__quote--grad .story-gal__stars{color:#fff}
+.story-gal__stars svg{width:13px;height:13px;fill:currentColor}
+.story-gal__q{
+  font-size:13.5px;line-height:1.55;font-weight:500;margin-bottom:14px;
+  color:var(--ink-0);
+}
+.story-gal__quote--grad .story-gal__q{color:#fff}
+.story-gal__who{
+  display:flex;align-items:center;gap:10px;margin-top:auto;
+}
+.story-gal__who img{
+  width:36px;height:36px;border-radius:50%;object-fit:cover;min-height:0;
+  border:2px solid var(--surface-0);
+}
+.story-gal__who b{display:block;font-size:12.5px;font-weight:800}
+.story-gal__who span{font-size:11px;color:var(--ink-soft-0)}
+.story-gal__quote--grad .story-gal__who span{color:rgba(255,255,255,.8)}
 
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(120% 78% at 50% 12%,
-        color-mix(in srgb, var(--brand-violet) 8%, transparent) 0%, transparent 68%);
-      pointer-events: none;
-    }
+/* TEAM */
+.story-team{
+  padding:clamp(36px,5vw,64px) 0;background:rgb(var(--chip-rgb) / .28);text-align:center;
+  border-top:1px solid var(--hair-0);
+}
+.story-team__grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:clamp(12px,1.8vw,18px);margin-top:clamp(24px,3.5vw,36px);
+}
+.story-member{
+  border-radius:var(--r-lg);overflow:hidden;
+  background:var(--surface-0);border:1px solid var(--hair-0);box-shadow:var(--sh-1);
+  opacity:0;transform:translateY(28px);
+  transition:box-shadow .35s var(--ease),transform .35s var(--ease);
+}
+.story-member.is-in{animation:reveal-pop .7s var(--ease) forwards;animation-delay:calc(var(--i,0)*100ms)}
+.story-member:hover{box-shadow:var(--sh-3);transform:translateY(-4px)}
+.story-member__photo{aspect-ratio:3/3.5;overflow:hidden;background:rgb(var(--chip-rgb))}
+.story-member__photo img{
+  width:100%;height:100%;object-fit:cover;object-position:center top;
+  transition:transform .55s var(--ease);
+}
+.story-member:hover .story-member__photo img{transform:scaleX(1.07) scaleY(1.05)}
+.story-member__info{padding:14px 12px 18px}
+.story-member__name{font-family:'Montserrat',system-ui,sans-serif;font-size:14px;font-weight:800;margin-bottom:4px}
+.story-member__role{font-size:12px;color:var(--ink-soft-0)}
 
-    .hero__in {
-      position: relative; z-index: 1;
-      width: min(900px, 93vw); margin: 0 auto;
-      text-align: center;
-    }
+.story-cta{
+  padding:clamp(28px,4vw,44px) 0;text-align:center;
+  background:radial-gradient(90% 120% at 50% 0%,color-mix(in srgb,var(--brand-violet) 12%,transparent) 0%,transparent 70%),var(--surface-0);
+  border-top:1px solid var(--hair-0);
+}
+.story-cta .sec__title{font-size:clamp(24px,2.8vw,34px)}
+.story-cta p{color:var(--ink-soft-0);margin:8px auto 16px;max-width:36em;font-size:14px}
 
-    .hero__tag {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
-      color: var(--ink-soft-0); margin-bottom: 24px;
-      opacity: 0; transform: translateY(20px);
-      animation: reveal-up .8s var(--ease) .2s forwards;
-    }
-
-    .hero__tag::before {
-      content: ''; width: 10px; height: 10px;
-      background: var(--brand-grad);
-    }
-
-    .hero__title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: clamp(40px, 4.2vw, 72px);
-      font-weight: 900; line-height: 1.05;
-      letter-spacing: -.035em; margin-bottom: 24px;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up 1s var(--ease) .3s forwards;
-    }
-
-    .hero__lead {
-      font-size: clamp(16px, 1.3vw, 20px);
-      line-height: 1.6; color: var(--ink-soft-0);
-      max-width: 600px; margin: 0 auto;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up 1s var(--ease) .4s forwards;
-    }
-
-    @keyframes reveal-up {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: none; }
-    }
-
-    /* Timeline */
-    .timeline {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: var(--surface-0);
-      position: relative;
-    }
-
-    .timeline__in {
-      width: min(1200px, 93vw); margin: 0 auto;
-    }
-
-    .timeline__head {
-      margin-bottom: clamp(50px, 6vw, 80px);
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) .1s forwards;
-    }
-
-    .timeline__eyebrow {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
-      color: var(--ink-soft-0); margin-bottom: 16px;
-    }
-
-    .timeline__eyebrow::before {
-      content: ''; width: 10px; height: 10px;
-      background: var(--brand-grad);
-    }
-
-    .timeline__title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: clamp(28px, 3vw, 48px);
-      font-weight: 800; line-height: 1.06;
-      letter-spacing: -.035em;
-    }
-
-    /* Timeline Items */
-    .timeline__items {
-      position: relative;
-      padding: 40px 0;
-    }
-
-    .timeline__items::before {
-      content: '';
-      position: absolute; left: 50%;
-      top: 0; bottom: 0;
-      width: 1px; background: var(--hair-0);
-      transform: translateX(-1px);
-    }
-
-    .timeline__item {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: clamp(20px, 3vw, 40px);
-      margin-bottom: clamp(50px, 6vw, 80px);
-      opacity: 0;
-    }
-
-    .timeline__item:nth-child(odd) {
-      animation: reveal-left .8s var(--ease) calc(.15s + var(--i, 0) * 200ms) forwards;
-    }
-
-    .timeline__item:nth-child(even) {
-      animation: reveal-right .8s var(--ease) calc(.15s + var(--i, 0) * 200ms) forwards;
-    }
-
-    @keyframes reveal-left {
-      from { opacity: 0; transform: translateX(-30px); }
-      to { opacity: 1; transform: none; }
-    }
-
-    @keyframes reveal-right {
-      from { opacity: 0; transform: translateX(30px); }
-      to { opacity: 1; transform: none; }
-    }
-
-    .timeline__content {
-      text-align: right;
-      padding-right: 40px;
-    }
-
-    .timeline__content:nth-child(3) {
-      grid-column: 3;
-      text-align: left;
-      padding-right: 0;
-      padding-left: 40px;
-    }
-
-    .timeline__year {
-      font-family: 'Montserrat', sans-serif;
-      font-size: clamp(20px, 1.8vw, 28px);
-      font-weight: 800; color: var(--brand-violet);
-      margin-bottom: 12px;
-    }
-
-    .timeline__label {
-      font-size: 13px; font-weight: 700;
-      color: var(--ink-0); margin-bottom: 10px;
-    }
-
-    .timeline__desc {
-      font-size: 13px; line-height: 1.6;
-      color: var(--ink-soft-0);
-    }
-
-    .timeline__dot {
-      position: relative;
-      display: flex; align-items: center; justify-content: center;
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      background: var(--brand-grad);
-      color: #fff;
-      margin: 0 auto;
-      box-shadow: 0 0 0 8px var(--surface-0),
-                  0 0 0 9px var(--hair-0);
-    }
-
-    .timeline__dot svg {
-      width: 16px; height: 16px;
-    }
-
-    /* Values Section */
-    .values {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: rgb(var(--chip-rgb) / .35);
-      border-top: 1px solid var(--hair-0);
-    }
-
-    .values__in {
-      width: min(1200px, 93vw); margin: 0 auto;
-    }
-
-    .values__head {
-      margin-bottom: clamp(50px, 6vw, 80px);
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) .1s forwards;
-    }
-
-    .values__title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: clamp(28px, 3vw, 48px);
-      font-weight: 800; letter-spacing: -.035em;
-    }
-
-    .values__grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: clamp(24px, 2.5vw, 40px);
-    }
-
-    .value__card {
-      padding: clamp(28px, 3vw, 40px);
-      background: var(--surface-0);
-      border: 1px solid var(--hair-0);
-      border-radius: 20px;
-      transition: all .35s var(--ease);
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 120ms) forwards;
-    }
-
-    .value__card:hover {
-      border-color: var(--brand-violet);
-      box-shadow: 0 30px 60px -20px rgba(123, 47, 247, .25);
-      transform: translateY(-6px);
-    }
-
-    .value__icon {
-      display: flex; align-items: center; justify-content: center;
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      background: var(--brand-grad);
-      color: #fff;
-      margin-bottom: 16px;
-    }
-
-    .value__icon svg {
-      width: 24px; height: 24px;
-    }
-
-    .value__title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 18px; font-weight: 800;
-      margin-bottom: 12px;
-    }
-
-    .value__desc {
-      font-size: 13px; line-height: 1.7;
-      color: var(--ink-soft-0);
-    }
-
-    /* Footer */
-    .footer {
-      padding: clamp(50px, 7vw, 100px) 26px;
-      background: var(--surface-0);
-      border-top: 1px solid var(--hair-0);
-      text-align: center;
-    }
-
-    .footer__link {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 26px;
-      background: var(--brand-grad);
-      color: #fff;
-      border: none; border-radius: 999px;
-      text-decoration: none;
-      font-size: 12px; font-weight: 700; letter-spacing: .06em;
-      cursor: pointer;
-      transition: all .35s var(--ease);
-      opacity: 0; transform: scale(.95);
-      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) .5s forwards;
-    }
-
-    .footer__link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
-    }
-
-    .footer__link svg {
-      width: 15px; height: 15px;
-    }
-
-    @keyframes pop {
-      from { opacity: 0; transform: scale(.95); }
-      to { opacity: 1; transform: none; }
-    }
-
-    @media (max-width: 768px) {
-      .timeline__items::before { left: 16px; }
-
-      .timeline__item {
-        grid-template-columns: 1fr;
-        gap: 0;
-      }
-
-      .timeline__item:nth-child(odd),
-      .timeline__item:nth-child(even) {
-        animation: none;
-        opacity: 1;
-      }
-
-      .timeline__content {
-        text-align: left;
-        padding-right: 0;
-        padding-left: 50px;
-        margin-bottom: 30px;
-      }
-
-      .timeline__content:nth-child(3) {
-        padding-left: 50px;
-      }
-
-      .timeline__dot {
-        position: absolute;
-        left: 0;
-        width: 32px; height: 32px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation: none !important;
-        transition-duration: .01ms !important;
-      }
-    }
-  </style>
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Organization",
- "name":"Hazra Electrical Bike",
- "url":"https://hazraelectricalbike.com/",
- "logo":"https://hazraelectricalbike.com/assets/hazraev.png",
- "description":"Electric scooters built for everyday Indian riding."}
-</script>
+@media (max-width:960px){
+  .story-about__grid{grid-template-columns:1fr}
+  .story-steps{grid-template-columns:1fr 1fr}
+  .story-step{border-right:0;border-bottom:1px solid var(--hair-0);min-height:0}
+  .story-step:nth-child(odd){border-right:1px solid var(--hair-0)}
+  .story-step__arrow{display:none}
+  .story-tl__pin{grid-template-columns:1fr;height:auto;position:relative;top:0}
+  .story-tl__drive{height:auto}
+  .story-tl__years{display:none}
+  .story-tl__stage{position:relative}
+  .story-tl__slide{
+    position:relative;opacity:1;transform:none;pointer-events:auto;
+    margin-bottom:20px;border:1px solid var(--hair-0);border-radius:var(--r-lg);overflow:hidden;
+  }
+  .story-tl__img{aspect-ratio:16/10}
+  .story-tl__progress,.story-tl__dots{display:none}
+  .story-exp__grid{grid-template-columns:1fr}
+  .story-mosaic{grid-template-columns:1fr 1fr}
+  .story-mosaic__cell--tall{grid-row:auto;min-height:200px}
+  .story-gal__grid{grid-template-columns:1fr 1fr}
+  .story-gal__item--wide{grid-column:span 2}
+  .story-team__grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:560px){
+  .story-steps{grid-template-columns:1fr}
+  .story-step:nth-child(odd){border-right:0}
+  .story-mosaic{grid-template-columns:1fr}
+  .story-gal__grid{grid-template-columns:1fr}
+  .story-gal__item--wide{grid-column:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  .story-hero__bg{animation:none}
+  .story-step,.story-stat,.story-member,.story-tl__slide,.story-tl__year{
+    opacity:1!important;transform:none!important;animation:none!important;transition:none!important;
+  }
+}
+</style>
 </head>
 <body>
 
-<header class="header">
-  <div class="header__top">
-    <a class="brand" href="index.html">
-      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
-      <span class="brand__txt">Hazra Electrical Bike</span>
+<header class="sticky-bar is-page is-visible" id="stickyBar" aria-hidden="false">
+  <div class="sticky-bar__inner">
+    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
     </a>
-    <button class="theme" id="theme" aria-label="Toggle theme">
-      <i data-lucide="sun-medium" class="theme__sun"></i>
-      <i data-lucide="moon" class="theme__moon"></i>
+    <button class="burger" id="stickyBurger" aria-label="Open menu" aria-expanded="false" aria-controls="stickyNav">
+      <span></span><span></span><span></span>
     </button>
+    <nav class="nav sticky-bar__nav" id="stickyNav">
+      <a href="index.html" class="nav__i">Home</a>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t is-on" aria-expanded="false">About <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="our-story.html" class="nav__s">Our Story</a>
+          <a href="career.html" class="nav__s">Career</a>
+          <a href="index.html#faq" class="nav__s">FAQ</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Products <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu nav__menu--wide">
+          <a href="chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+          <a href="chalo-smart-pro.html" class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
+          <a href="chalo-smart-plus.html" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
+          <a href="chalo-smart-eco.html" class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
+          <a href="chalo-neo.html" class="nav__s">CHALO NEO <em>Low Speed</em></a>
+          <a href="nja-7.html" class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Social <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="contest.html" class="nav__s">Contest <em>Reels Contest</em></a>
+          <a href="blog.html" class="nav__s">Blog</a>
+          <a href="index.html#news" class="nav__s">News</a>
+          <a href="battery-use.html" class="nav__s">Battery Use</a>
+          <a href="ev-future.html" class="nav__s">EV Future</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Dealers <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="dealer-locator.html" class="nav__s">Locate Dealers</a>
+          <a href="become-a-dealer.html" class="nav__s">Become a Dealer</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Service <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="warranty-free.html" class="nav__s">Warranty (Free)</a>
+          <a href="warranty-paid.html" class="nav__s">Warranty (Paid)</a>
+          <a href="battery-use.html" class="nav__s">Battery Care</a>
+        </div>
+      </div>
+      <a href="#contact" class="nav__i">Contact</a>
+    </nav>
+    <div class="sticky-bar__end">
+      <button class="theme" id="stickyTheme" aria-label="Toggle theme">
+        <i class="theme__sun" data-lucide="sun"></i>
+        <i class="theme__moon" data-lucide="moon"></i>
+      </button>
+      <a href="#contact" class="sticky-bar__cta"><i data-lucide="shopping-bag"></i><span>CONTACT US</span></a>
+    </div>
   </div>
 </header>
 
-<section class="hero">
-  <div class="hero__in">
-    <p class="hero__tag">Our Story</p>
-    <h1 class="hero__title">One frame, one battery,<br>one stubborn idea.</h1>
-    <p class="hero__lead">
-      The story of Hazra Electrical Bike is the story of builders who believed that electric
-      scooters should feel like something riders actually want to ride.
-    </p>
+<!-- HERO -->
+<section class="story-hero">
+  <div class="story-hero__bg" aria-hidden="true"></div>
+  <div class="story-hero__veil" aria-hidden="true"></div>
+  <div class="story-hero__in">
+    <p class="eyebrow"><i class="sq"></i>OUR STORY</p>
+    <h1 class="story-hero__title">Built in the city,<br>tuned for the long way home.</h1>
+    <p class="story-hero__lead">One frame, one battery, and a stubborn idea — electric scooters that feel like something you want to ride.</p>
   </div>
 </section>
 
-<section class="timeline">
-  <div class="timeline__in">
-    <div class="timeline__head">
-      <p class="timeline__eyebrow">Journey</p>
-      <h2 class="timeline__title">Milestones that shaped us</h2>
-    </div>
-
-    <div class="timeline__items">
-      <div class="timeline__item" style="--i: 0">
-        <div class="timeline__content">
-          <div class="timeline__year">2013</div>
-          <h3 class="timeline__label">The Beginning</h3>
-          <p class="timeline__desc">
-            The first frame was pressed in a single piece.
-            No screws to rattle, no joints to fail. Pure elegance.
-          </p>
-        </div>
-        <div class="timeline__dot">
-          <i data-lucide="zap"></i>
-        </div>
-        <div></div>
+<!-- ABOUT INTRO -->
+<section class="story-about">
+  <div class="wrap">
+    <div class="story-about__grid">
+      <div>
+        <p class="eyebrow"><i class="sq"></i>ABOUT HAZRA</p>
+        <h2 class="sec__title">A short story about<br><span class="hl">honest electric rides.</span></h2>
+        <p class="story-about__lead">
+          Hazra Electrical Bike started as one frame, one battery and a clear brief:
+          make an EV that feels desirable on real Indian roads — not just on a brochure.
+        </p>
+        <p class="story-about__text">
+          Every model shares the same spine: a swappable pack, a torque map written for
+          stop-start traffic, and a body pressed so there is nothing to rattle loose.
+          We build them carefully, we service what we sell, and we publish the range
+          figures we actually measured.
+        </p>
+        <p class="story-about__text">
+          Today that idea lives across the CHALO family — from eco city runs to
+          high-speed daily riders — with a growing network of people who keep every
+          scooter on the road.
+        </p>
       </div>
-
-      <div class="timeline__item" style="--i: 1">
-        <div></div>
-        <div class="timeline__dot">
-          <i data-lucide="battery-charging"></i>
+      <div class="story-about__media">
+        <i class="story-about__blob story-about__blob--a" aria-hidden="true"></i>
+        <i class="story-about__blob story-about__blob--b" aria-hidden="true"></i>
+        <div class="story-about__frame">
+          <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=80" alt="Hazra scooter on the road" loading="lazy">
         </div>
-        <div class="timeline__content">
-          <div class="timeline__year">2016</div>
-          <h3 class="timeline__label">Swappable Battery</h3>
-          <p class="timeline__desc">
-            We introduced the first field-swappable pack. Riders could choose
-            their battery without choosing their scooter.
-          </p>
+        <div class="story-about__pill">
+          <b>12+</b>
+          <span>Years of<br>road craft</span>
         </div>
-      </div>
-
-      <div class="timeline__item" style="--i: 2">
-        <div class="timeline__content">
-          <div class="timeline__year">2019</div>
-          <h3 class="timeline__label">National Network</h3>
-          <p class="timeline__desc">
-            From 3 dealers to 48. We stopped being a prototype
-            and became a service network that riders trust.
-          </p>
-        </div>
-        <div class="timeline__dot">
-          <i data-lucide="map-pin"></i>
-        </div>
-        <div></div>
-      </div>
-
-      <div class="timeline__item" style="--i: 3">
-        <div></div>
-        <div class="timeline__dot">
-          <i data-lucide="users"></i>
-        </div>
-        <div class="timeline__content">
-          <div class="timeline__year">2022</div>
-          <h3 class="timeline__label">26,000 Riders</h3>
-          <p class="timeline__desc">
-            Twenty-six thousand scooters on Indian roads. Every rider
-            chose us because we built something worth choosing.
-          </p>
-        </div>
-      </div>
-
-      <div class="timeline__item" style="--i: 4">
-        <div class="timeline__content">
-          <div class="timeline__year">2025</div>
-          <h3 class="timeline__label">Going Global</h3>
-          <p class="timeline__desc">
-            The same ethos that works in India is carrying us into Southeast Asia.
-            Still one frame. Still one idea.
-          </p>
-        </div>
-        <div class="timeline__dot">
-          <i data-lucide="globe"></i>
-        </div>
-        <div></div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="values">
-  <div class="values__in">
-    <div class="values__head">
-      <p class="timeline__eyebrow">Core Values</p>
-      <h2 class="values__title">What we stand for</h2>
+<!-- WHY — 4 process steps -->
+<section class="story-why">
+  <div class="wrap">
+    <header class="sec__head">
+      <p class="eyebrow"><i class="sq"></i>HOW WE WORK</p>
+      <h2 class="sec__title">From question to<br><span class="hl">road-ready ride.</span></h2>
+    </header>
+
+    <div class="story-steps">
+      <article class="story-step" style="--i:0">
+        <div class="story-step__n">1</div>
+        <h3 class="story-step__label">Research</h3>
+        <p class="story-step__desc">We ride the routes our customers ride — heat, traffic, load and monsoon — and write requirements from that, not from a lab sheet alone.</p>
+        <div class="story-step__icon"><i data-lucide="search"></i></div>
+        <span class="story-step__arrow" aria-hidden="true"><i data-lucide="chevron-right"></i></span>
+      </article>
+      <article class="story-step" style="--i:1">
+        <div class="story-step__n">2</div>
+        <h3 class="story-step__label">Idea</h3>
+        <p class="story-step__desc">One frame language, swappable energy, and a torque map tuned for stop-start cities. The idea has to feel right before it looks finished.</p>
+        <div class="story-step__icon"><i data-lucide="lightbulb"></i></div>
+        <span class="story-step__arrow" aria-hidden="true"><i data-lucide="chevron-right"></i></span>
+      </article>
+      <article class="story-step" style="--i:2">
+        <div class="story-step__n">3</div>
+        <h3 class="story-step__label">Process</h3>
+        <p class="story-step__desc">Prototypes, rider loops, and production in careful batches. We tighten range claims to measured data before anything ships.</p>
+        <div class="story-step__icon"><i data-lucide="cog"></i></div>
+        <span class="story-step__arrow" aria-hidden="true"><i data-lucide="chevron-right"></i></span>
+      </article>
+      <article class="story-step" style="--i:3">
+        <div class="story-step__n">4</div>
+        <h3 class="story-step__label">Goal</h3>
+        <p class="story-step__desc">Scooters people want to ride every day — backed by service that stays after the sale, from the first city run to the long way home.</p>
+        <div class="story-step__icon"><i data-lucide="target"></i></div>
+      </article>
     </div>
+  </div>
+</section>
 
-    <div class="values__grid">
-      <div class="value__card" style="--i: 0">
-        <div class="value__icon">
-          <i data-lucide="heart"></i>
-        </div>
-        <h3 class="value__title">Integrity</h3>
-        <p class="value__desc">
-          We publish the range figures we actually measured.
-          No marketing, no exaggeration. Just honest numbers.
-        </p>
+<!-- SCROLL-PINNED TIMELINE -->
+<section class="story-tl" id="journey">
+  <div class="story-tl__head wrap">
+    <p class="eyebrow"><i class="sq"></i>THE JOURNEY</p>
+    <h2 class="sec__title">A long look at<br><span class="hl">how we got here.</span></h2>
+  </div>
+
+  <div class="story-tl__drive" id="tlDrive">
+    <div class="story-tl__pin" id="tlPin">
+      <div class="story-tl__progress" aria-hidden="true"><i id="tlBar"></i></div>
+
+      <div class="story-tl__years" aria-hidden="true">
+        <div class="story-tl__year is-active" data-y="0">2014</div>
+        <div class="story-tl__year" data-y="1">2018</div>
+        <div class="story-tl__year" data-y="2">2022</div>
+        <div class="story-tl__year" data-y="3">2026</div>
       </div>
 
-      <div class="value__card" style="--i: 1">
-        <div class="value__icon">
-          <i data-lucide="shield-check"></i>
-        </div>
-        <h3 class="value__title">Durability</h3>
-        <p class="value__desc">
-          Built to last, serviced to keep lasting.
-          Every scooter we build, we're ready to service.
-        </p>
-      </div>
+      <div class="story-tl__stage">
+        <article class="story-tl__slide is-active" data-s="0">
+          <div class="story-tl__img">
+            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80" alt="First workshop" loading="lazy">
+          </div>
+          <div class="story-tl__copy">
+            <p class="story-tl__tag"><i></i>Chapter 01</p>
+            <h3 class="story-tl__title">The first frame</h3>
+            <p class="story-tl__text">
+              A single prototype, a stubborn brief, and the belief that an electric scooter
+              should feel like something you choose — not something you settle for.
+              Research on real city routes began here.
+            </p>
+          </div>
+        </article>
 
-      <div class="value__card" style="--i: 2">
-        <div class="value__icon">
-          <i data-lucide="leaf"></i>
-        </div>
-        <h3 class="value__title">Sustainability</h3>
-        <p class="value__desc">
-          Clean energy is not a marketing line.
-          It's the reason we exist.
-        </p>
-      </div>
+        <article class="story-tl__slide" data-s="1">
+          <div class="story-tl__img">
+            <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1200&q=80" alt="City launch" loading="lazy">
+          </div>
+          <div class="story-tl__copy">
+            <p class="story-tl__tag"><i></i>Chapter 02</p>
+            <h3 class="story-tl__title">City launch</h3>
+            <p class="story-tl__text">
+              First production batches rolled out. Rider feedback became the product
+              roadmap — torque maps, battery swaps, and service habits shaped by people
+              who rode every day, not by a brochure committee.
+            </p>
+          </div>
+        </article>
 
-      <div class="value__card" style="--i: 3">
-        <div class="value__icon">
-          <i data-lucide="users"></i>
-        </div>
-        <h3 class="value__title">Community</h3>
-        <p class="value__desc">
-          Our riders are not customers. They're the reason
-          we build what we build.
-        </p>
-      </div>
+        <article class="story-tl__slide" data-s="2">
+          <div class="story-tl__img">
+            <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=1200&q=80" alt="Network grows" loading="lazy">
+          </div>
+          <div class="story-tl__copy">
+            <p class="story-tl__tag"><i></i>Chapter 03</p>
+            <h3 class="story-tl__title">Network grows</h3>
+            <p class="story-tl__text">
+              Service points expanded across cities and towns. Range claims were tightened
+              to measured data. The idea scaled without losing the craft that started it.
+            </p>
+          </div>
+        </article>
 
-      <div class="value__card" style="--i: 4">
-        <div class="value__icon">
-          <i data-lucide="zap"></i>
-        </div>
-        <h3 class="value__title">Innovation</h3>
-        <p class="value__desc">
-          We sweat the small details and never stop asking
-          how to make the ride better.
-        </p>
-      </div>
+        <article class="story-tl__slide" data-s="3">
+          <div class="story-tl__img">
+            <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1200&q=80" alt="CHALO family" loading="lazy">
+          </div>
+          <div class="story-tl__copy">
+            <p class="story-tl__tag"><i></i>Chapter 04</p>
+            <h3 class="story-tl__title">The CHALO line</h3>
+            <p class="story-tl__text">
+              A full model family — from eco city runs to high-speed daily riders —
+              built on the same spine: honest range, service that stays, and a ride
+              tuned for the long way home.
+            </p>
+          </div>
+        </article>
 
-      <div class="value__card" style="--i: 5">
-        <div class="value__icon">
-          <i data-lucide="hand-heart"></i>
+        <div class="story-tl__dots" id="tlDots" aria-label="Timeline chapters">
+          <button class="story-tl__dot is-on" type="button" data-d="0" aria-label="2014"></button>
+          <button class="story-tl__dot" type="button" data-d="1" aria-label="2018"></button>
+          <button class="story-tl__dot" type="button" data-d="2" aria-label="2022"></button>
+          <button class="story-tl__dot" type="button" data-d="3" aria-label="2026"></button>
         </div>
-        <h3 class="value__title">Trust</h3>
-        <p class="value__desc">
-          Earned through transparency, reliability,
-          and a dealer network that's always there.
-        </p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="footer">
-  <p style="color: var(--ink-soft-0); margin-bottom: 24px; font-size: 14px;">
-    Ready to be part of the story?
-  </p>
-  <a class="footer__link" href="index.html">
-    <span>Back to home</span>
-    <i data-lucide="arrow-right"></i>
-  </a>
+<!-- EXPERTISE MOSAIC -->
+<section class="story-exp">
+  <div class="wrap">
+    <div class="story-exp__grid">
+      <div>
+        <p class="eyebrow"><i class="sq"></i>BY THE NUMBERS</p>
+        <h2 class="sec__title">Craft you can<br><span class="hl">measure.</span></h2>
+        <p class="story-exp__lead">
+          From the first single-piece frame to a national service footprint,
+          every step is measured by what riders actually need on the road.
+        </p>
+        <a class="btn btn--ink" href="index.html#collection">
+          <span>See the collection</span><i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+      <div class="story-mosaic">
+        <div class="story-mosaic__cell story-mosaic__cell--tall" style="--i:0">
+          <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=800&q=80" alt="On the road" loading="lazy">
+        </div>
+        <div class="story-mosaic__cell" style="--i:1">
+          <div class="story-mosaic__stat">
+            <div class="story-mosaic__n" data-to="12">0</div>
+            <div class="story-mosaic__l">Years on the road</div>
+            <p class="story-mosaic__d">Building EVs with a long view.</p>
+          </div>
+        </div>
+        <div class="story-mosaic__cell" style="--i:2">
+          <div class="story-mosaic__stat">
+            <div class="story-mosaic__n" data-to="26" data-suffix="k">0</div>
+            <div class="story-mosaic__l">Riders delivered</div>
+            <p class="story-mosaic__d">Trusted across cities and towns.</p>
+          </div>
+        </div>
+        <div class="story-mosaic__cell" style="--i:3">
+          <div class="story-mosaic__stat story-mosaic__stat--grad">
+            <div class="story-faces">
+              <img src="https://i.pravatar.cc/72?u=h1" alt="">
+              <img src="https://i.pravatar.cc/72?u=h2" alt="">
+              <img src="https://i.pravatar.cc/72?u=h3" alt="">
+            </div>
+            <div class="story-mosaic__n" data-to="48" data-suffix="+">0</div>
+            <div class="story-mosaic__l">Service points</div>
+            <p class="story-mosaic__d">Find a dealer near you.</p>
+          </div>
+        </div>
+        <div class="story-mosaic__cell" style="--i:4">
+          <div class="story-mosaic__stat">
+            <div class="story-mosaic__n" data-to="130" data-suffix=" km">0</div>
+            <div class="story-mosaic__l">Best-case range</div>
+            <p class="story-mosaic__d">Figures we measured, not invented.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
-<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<!-- TEAM -->
+<section class="story-team" id="team">
+  <div class="wrap">
+    <p class="eyebrow" style="justify-content:center"><i class="sq"></i>OUR TEAM</p>
+    <h2 class="sec__title">Dedicated people<br><span class="hl">behind every ride.</span></h2>
+    <div class="story-team__grid">
+      <article class="story-member" style="--i:0">
+        <div class="story-member__photo"><img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=500&q=80" alt="Rahul Sen" loading="lazy"></div>
+        <div class="story-member__info"><h3 class="story-member__name">Rahul Sen</h3><p class="story-member__role">Founder &amp; Design</p></div>
+      </article>
+      <article class="story-member" style="--i:1">
+        <div class="story-member__photo"><img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=500&q=80" alt="Priya Das" loading="lazy"></div>
+        <div class="story-member__info"><h3 class="story-member__name">Priya Das</h3><p class="story-member__role">Product Lead</p></div>
+      </article>
+      <article class="story-member" style="--i:2">
+        <div class="story-member__photo"><img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=500&q=80" alt="Amit Roy" loading="lazy"></div>
+        <div class="story-member__info"><h3 class="story-member__name">Amit Roy</h3><p class="story-member__role">Engineering</p></div>
+      </article>
+      <article class="story-member" style="--i:3">
+        <div class="story-member__photo"><img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=500&q=80" alt="Sneha Ghosh" loading="lazy"></div>
+        <div class="story-member__info"><h3 class="story-member__name">Sneha Ghosh</h3><p class="story-member__role">Customer Success</p></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY + TESTIMONIALS -->
+<section class="story-gal">
+  <div class="wrap">
+    <header class="sec__head">
+      <p class="eyebrow"><i class="sq"></i>RIDERS &amp; MOMENTS</p>
+      <h2 class="sec__title">On the road with<br><span class="hl">Hazra.</span></h2>
+    </header>
+    <div class="story-gal__grid">
+      <article class="story-gal__item story-gal__item--tall" style="--i:0">
+        <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=700&q=80" alt="City ride" loading="lazy">
+      </article>
+      <article class="story-gal__item" style="--i:1">
+        <div class="story-gal__quote">
+          <div class="story-gal__stars">
+            <i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i>
+          </div>
+          <p class="story-gal__q">“Range is honest. After six months of office runs, the numbers still match what they promised.”</p>
+          <div class="story-gal__who">
+            <img src="https://i.pravatar.cc/72?u=r1" alt="">
+            <div><b>Ankit Mehta</b><span>CHALO Smart Pro · Delhi</span></div>
+          </div>
+        </div>
+      </article>
+      <article class="story-gal__item story-gal__item--tall" style="--i:2">
+        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=700&q=80" alt="Workshop" loading="lazy">
+      </article>
+      <article class="story-gal__item" style="--i:3">
+        <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=700&q=80" alt="Team" loading="lazy">
+      </article>
+      <article class="story-gal__item story-gal__item--wide" style="--i:4">
+        <div class="story-gal__quote story-gal__quote--grad">
+          <div class="story-gal__stars">
+            <i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i>
+          </div>
+          <p class="story-gal__q">“Service stayed after the sale. That is rare. The scooter is quiet, quick in traffic, and easy to live with every day.”</p>
+          <div class="story-gal__who">
+            <img src="https://i.pravatar.cc/72?u=r2" alt="">
+            <div><b>Neha Kapoor</b><span>CHALO 1000 V2 · Ghaziabad</span></div>
+          </div>
+        </div>
+      </article>
+      <article class="story-gal__item" style="--i:5">
+        <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=700&q=80" alt="Evening ride" loading="lazy">
+      </article>
+      <article class="story-gal__item" style="--i:6">
+        <div class="story-gal__quote">
+          <div class="story-gal__stars">
+            <i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i>
+          </div>
+          <p class="story-gal__q">“Swappable pack changed my week. No waiting at a charger between shifts.”</p>
+          <div class="story-gal__who">
+            <img src="https://i.pravatar.cc/72?u=r3" alt="">
+            <div><b>Vikram Singh</b><span>CHALO Neo · Lucknow</span></div>
+          </div>
+        </div>
+      </article>
+      <article class="story-gal__item" style="--i:7">
+        <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=80" alt="Detail" loading="lazy">
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="story-cta">
+  <div class="wrap">
+    <h2 class="sec__title">Ready for the <span class="hl">next chapter?</span></h2>
+    <p>Book a test ride or find a dealer — the road is waiting.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn btn--ink" href="index.html#test-ride"><span>Book test ride</span><i data-lucide="bike"></i></a>
+      <a class="btn btn--ghost" href="dealer-locator.html">Locate dealers</a>
+    </div>
+  </div>
+</section>
+
+<footer class="foot" id="contact">
+  <div class="foot__wave"></div>
+  <div class="foot__bg foot__bg--light" aria-hidden="true"></div>
+  <div class="foot__bg foot__bg--dark" aria-hidden="true"></div>
+  <i class="foot__veil"></i>
+  <div class="wrap foot__in">
+    <div class="foot__main">
+      <div class="foot__content">
+        <div class="foot__brand">
+          <img class="foot__logo" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+          <p class="foot__tag">Premium electric scooters designed for smarter, cleaner and more affordable mobility.</p>
+          <ul class="foot__contact">
+            <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
+            <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
+            <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
+          </ul>
+        </div>
+        <nav class="foot__cols" aria-label="Footer">
+          <div class="fcol">
+            <h4>Electric Scooters</h4>
+            <a href="chalo-1000-v2.html">CHALO 1000 V2</a>
+            <a href="chalo-smart-pro.html">CHALO SMART PRO</a>
+            <a href="chalo-smart-plus.html">CHALO SMART PLUS</a>
+            <a href="chalo-neo.html">CHALO NEO</a>
+            <a href="index.html#collection">Compare models</a>
+            <a href="index.html#test-ride">Book test ride</a>
+          </div>
+          <div class="fcol">
+            <h4>Buy</h4>
+            <a href="#">Book a scooter</a>
+            <a href="#">EMI calculator</a>
+            <a href="#">Charging</a>
+            <a href="#">Download brochure</a>
+            <a href="dealer-locator.html">Locate dealers</a>
+          </div>
+          <div class="fcol">
+            <h4>Ownership</h4>
+            <a href="#">Running cost calculator</a>
+            <a href="index.html#performance">Range confidence</a>
+            <a href="#">Accessories</a>
+            <a href="#">Battery warranty</a>
+            <a href="battery-use.html">Battery use</a>
+          </div>
+          <div class="fcol">
+            <h4>Company</h4>
+            <a href="our-story.html">Our story</a>
+            <a href="blog.html">Blog</a>
+            <a href="index.html#news">News</a>
+            <a href="career.html">Careers</a>
+            <a href="become-a-dealer.html">Become a dealer</a>
+          </div>
+          <div class="fcol">
+            <h4>Support</h4>
+            <a href="index.html#faq">FAQs</a>
+            <a href="#contact">Contact us</a>
+            <a href="#">Register complaint</a>
+            <a href="warranty-free.html">Warranty registration</a>
+            <a href="#">Sitemap</a>
+          </div>
+        </nav>
+      </div>
+      <aside class="foot__social-section">
+        <h3 class="foot__social-title">Follow us</h3>
+        <div class="foot__socials">
+          <a href="#" class="foot__social-link foot__social--instagram" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+          <a href="#" class="foot__social-link foot__social--facebook" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+          <a href="#" class="foot__social-link foot__social--youtube" aria-label="YouTube"><i data-lucide="youtube"></i></a>
+          <a href="#" class="foot__social-link foot__social--whatsapp" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
+        </div>
+      </aside>
+    </div>
+    <div class="foot__base">
+      <p>&copy; 2026 Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
+      <div class="foot__legal"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></div>
+    </div>
+  </div>
+</footer>
+
+<aside class="dock" aria-label="Quick actions">
+  <a class="dock__i" href="index.html#test-ride" aria-label="Book a test drive"><i data-lucide="bike"></i><span class="dock__lb">Test Drive</span></a>
+  <a class="dock__i" href="dealership-enquiry.html" aria-label="Dealership enquiry"><i data-lucide="store"></i><span class="dock__lb">Dealership</span></a>
+  <a class="dock__i" href="tel:+919829016542" aria-label="Call"><i data-lucide="phone"></i><span class="dock__lb">Call Us</span></a>
+  <a class="dock__i" href="https://wa.me/919829016542" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i data-lucide="message-circle"></i><span class="dock__lb">WhatsApp</span></a>
+</aside>
+
+<script src="script.js"></script>
 <script>
-  // Lucide icons
-  lucide.createIcons();
+lucide.createIcons();
 
-  // Theme toggle
-  const themeBtn = document.getElementById('theme');
-  themeBtn.addEventListener('click', () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+document.getElementById('stickyTheme')?.addEventListener('click',()=>{
+  const html=document.documentElement;
+  const next=html.getAttribute('data-theme')==='dark'?'light':'dark';
+  html.setAttribute('data-theme',next);
+  localStorage.setItem('theme',next);
+  localStorage.setItem('vm-theme',next);
+});
+
+const stickyNav=document.getElementById('stickyNav');
+const stickyBurger=document.getElementById('stickyBurger');
+stickyBurger?.addEventListener('click',()=>{
+  const on=!stickyNav?.classList.contains('is-open');
+  stickyNav?.classList.toggle('is-open',on);
+  stickyBurger.classList.toggle('is-on',on);
+  stickyBurger.setAttribute('aria-expanded',String(on));
+});
+document.querySelectorAll('.nav__grp').forEach(grp=>{
+  const btn=grp.querySelector('.nav__i--t');
+  btn?.addEventListener('click',e=>{
+    e.stopPropagation();
+    const open=grp.classList.contains('is-open');
+    document.querySelectorAll('.nav__grp.is-open').forEach(g=>g.classList.remove('is-open'));
+    if(!open) grp.classList.add('is-open');
+  });
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.sticky-bar')){
+    document.querySelectorAll('.nav__grp.is-open').forEach(g=>g.classList.remove('is-open'));
+    stickyNav?.classList.remove('is-open');
+    stickyBurger?.classList.remove('is-on');
+  }
+});
+
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-in');io.unobserve(e.target)}})
+},{threshold:.15});
+document.querySelectorAll('.story-step,.story-mosaic__cell,.story-member,.story-gal__item').forEach(el=>io.observe(el));
+
+function countUp(el){
+  const to=parseFloat(el.dataset.to||'0');
+  const suffix=el.dataset.suffix||'';
+  const t0=performance.now();const dur=1200;
+  const tick=t=>{
+    const p=Math.min(1,(t-t0)/dur);
+    el.textContent=Math.round(to*(1-Math.pow(1-p,3)))+suffix;
+    if(p<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+const co=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.querySelectorAll('[data-to]').forEach(countUp);
+      co.unobserve(e.target);
+    }
+  });
+},{threshold:.3});
+document.querySelectorAll('.story-mosaic').forEach(el=>co.observe(el));
+
+/* Scroll-pinned timeline */
+(() => {
+  const drive=document.getElementById('tlDrive');
+  const years=[...document.querySelectorAll('.story-tl__year')];
+  const slides=[...document.querySelectorAll('.story-tl__slide')];
+  const dots=[...document.querySelectorAll('.story-tl__dot')];
+  const bar=document.getElementById('tlBar');
+  if(!drive||!slides.length) return;
+
+  const desktop=window.matchMedia('(min-width:961px)');
+  let active=0;
+
+  const setActive=i=>{
+    i=Math.max(0,Math.min(slides.length-1,i));
+    if(i===active&&years[i]?.classList.contains('is-active')) return;
+    active=i;
+    years.forEach((y,n)=>{
+      y.classList.toggle('is-active',n===i);
+      y.classList.toggle('is-passed',n<i);
+    });
+    slides.forEach((s,n)=>s.classList.toggle('is-active',n===i));
+    dots.forEach((d,n)=>d.classList.toggle('is-on',n===i));
+  };
+
+  const onScroll=()=>{
+    if(!desktop.matches){
+      slides.forEach(s=>s.classList.add('is-active'));
+      return;
+    }
+    const rect=drive.getBoundingClientRect();
+    const span=drive.offsetHeight-window.innerHeight;
+    const gone=Math.min(Math.max(-rect.top,0),span);
+    const p=span>0?gone/span:0;
+    if(bar) bar.style.height=(p*100)+'%';
+    const idx=Math.min(slides.length-1,Math.floor(p*slides.length));
+    setActive(idx);
+  };
+
+  dots.forEach(d=>{
+    d.addEventListener('click',()=>{
+      if(!desktop.matches) return;
+      const i=+d.dataset.d;
+      const span=drive.offsetHeight-window.innerHeight;
+      const y=drive.offsetTop+(span*(i+.15)/slides.length);
+      window.scrollTo({top:y,behavior:'smooth'});
+    });
   });
 
-  // Load saved theme
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
+  addEventListener('scroll',onScroll,{passive:true});
+  addEventListener('resize',onScroll);
+  onScroll();
+})();
 </script>
-
 </body>
 </html>
