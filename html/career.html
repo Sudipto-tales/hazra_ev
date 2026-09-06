@@ -1,789 +1,935 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
-/* Applied before first paint so a dark-mode visitor never sees a light
-   flash. Kept inline and tiny on purpose: an external file would race
-   the paint it exists to prevent. */
 (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
 if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-  <title>Careers — Hazra Electrical Bike</title>
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Hazra Electrical Bike">
-<meta property="og:title" content="Careers — Hazra Electrical Bike">
-<meta property="og:description" content="Join the Hazra team. We&#x27;re hiring talented builders, engineers, and creators who want to change how India rides.">
-<meta property="og:url" content="https://hazraelectricalbike.com/career.html">
-<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
-<meta name="twitter:card" content="summary_large_image">
+<title>Careers — Hazra Electrical Bike</title>
+<meta name="description" content="Join Hazra Electrical Bike. Build electric scooters people actually want to ride. Open roles across design, engineering, sales and service.">
 <link rel="canonical" href="https://hazraelectricalbike.com/career.html">
-  <link rel="icon" href="assets/hazraev.png" type="image/png">
-  <link rel="apple-touch-icon" href="assets/hazraev.png">
-  <meta name="description" content="Join the Hazra team. We're hiring talented builders, engineers, and creators who want to change how India rides.">
-<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="assets/hazraev.png" type="image/png">
 <link rel="stylesheet" href="styles/tokens.css">
 <link rel="stylesheet" href="styles/typography.css">
 <link rel="stylesheet" href="styles/global.css">
 <link rel="stylesheet" href="styles/utilities.css">
-  <link rel="stylesheet" href="style.css">
-  <style>
-    /* ════════════════════════════════════════════
-       CAREERS — Animated Job Cards
-       ════════════════════════════════════════════ */
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<style>
+.sticky-bar.is-page{transform:translateY(0);opacity:1;pointer-events:auto}
 
-    :root {
-      --brand-indigo:  #3a1a6b;
-      --brand-violet:  #7b2ff7;
-      --brand-magenta: #a41fbf;
-      --brand-blue:    #12a5e0;
-      --brand-orange:  #f7941d;
-      --brand-flame:   #f0532b;
-      --brand-grad: linear-gradient(96deg,
-          var(--brand-violet) 0%,
-          var(--brand-magenta) 30%,
-          var(--brand-flame) 66%,
-          var(--brand-orange) 100%);
+/* ── Banner (our-story style) ── */
+.car-banner{
+  position:relative;min-height:clamp(280px,40vh,400px);
+  display:grid;place-items:center;overflow:hidden;isolation:isolate;margin-top:56px;
+}
+.car-banner__bg{
+  position:absolute;inset:0;z-index:0;
+  background-image:
+    linear-gradient(160deg,rgba(24,15,44,.72) 0%,rgba(58,26,107,.55) 42%,rgba(240,83,43,.35) 100%),
+    url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1800&q=80');
+  background-size:cover;background-position:center 35%;
+  transform:scale(1.06);animation:car-ken 14s var(--ease) infinite alternate;
+}
+html[data-theme="light"] .car-banner__bg{
+  background-image:
+    linear-gradient(160deg,rgba(250,248,253,.2) 0%,rgba(58,26,107,.48) 40%,rgba(240,83,43,.38) 100%),
+    url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1800&q=80');
+}
+@keyframes car-ken{from{transform:scale(1.06)}to{transform:scale(1.12) translateY(-2%)}}
+.car-banner__veil{
+  position:absolute;inset:0;z-index:1;
+  background:radial-gradient(80% 70% at 50% 30%,transparent 0%,rgba(11,7,19,.5) 100%);
+  pointer-events:none;
+}
+.car-banner__in{
+  position:relative;z-index:2;width:min(900px,92vw);margin:0 auto;
+  padding:clamp(48px,7vw,80px) 26px;text-align:center;
+}
+.car-banner .eyebrow{color:rgba(255,255,255,.78);justify-content:center}
+.car-banner .eyebrow .sq{background:var(--brand-grad)}
+.car-banner__title{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(36px,4.8vw,60px);font-weight:900;letter-spacing:-.035em;line-height:1.06;
+  color:#fff;margin:14px 0 14px;text-shadow:0 12px 40px rgba(0,0,0,.35);
+}
+.car-banner__lead{
+  max-width:34em;margin:0 auto;font-size:clamp(14px,1.2vw,17px);line-height:1.65;
+  color:rgba(255,255,255,.82);
+}
 
-      --ink-0:        #180f2c;
-      --ink-soft-0:   #6b6480;
-      --hair-0:       #e3ddec;
-      --surface-0:    #faf8fd;
-      --surface-rgb:  250 248 253;
-      --chip-rgb:     240 235 249;
-      --accent:       var(--brand-orange);
-      --accent-ink:   #180f2c;
-      --glass-bd:     rgba(255,255,255,.28);
-      --glass-bg:     rgba(255,255,255,.16);
-      --veil:         rgba(26,14,48,.32);
-      --sh-a:         .45;
-      --ease: cubic-bezier(.22,1,.36,1);
-    }
+/* ── HERO: illustration left + copy right ── */
+.car-hero{
+  padding:clamp(36px,5vw,64px) 0 clamp(40px,5.5vw,72px);
+  background:
+    radial-gradient(70% 80% at 0% 50%,color-mix(in srgb,var(--brand-violet) 10%,transparent) 0%,transparent 65%),
+    radial-gradient(50% 60% at 100% 0%,color-mix(in srgb,var(--brand-orange) 8%,transparent) 0%,transparent 60%),
+    var(--surface-0);
+  overflow:hidden;
+}
+.car-hero__grid{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:clamp(28px,4vw,56px);
+  align-items:center;
+}
+.car-hero__art{
+  position:relative;
+  border-radius:var(--r-xl);
+  overflow:hidden;
+  background:rgb(var(--chip-rgb) / .55);
+  border:1px solid var(--hair-0);
+  aspect-ratio:5/4;
+  display:grid;place-items:center;
+}
+.car-hero__art img{
+  width:100%;height:100%;object-fit:cover;
+  mix-blend-mode:multiply;
+  opacity:.92;
+}
+html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
+.car-hero__dots{
+  position:absolute;left:16px;bottom:16px;
+  display:flex;gap:6px;
+}
+.car-hero__dots i{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--brand-orange);
+  opacity:.85;
+}
+.car-hero__dots i:nth-child(2){background:var(--brand-violet)}
+.car-hero__dots i:nth-child(3){background:var(--brand-blue)}
+.car-hero__dots i:nth-child(4){background:var(--brand-flame)}
+.car-hero__dots i:nth-child(5){background:#1db954}
 
-    html[data-theme="dark"] {
-      --ink-0:        #f6f3fb;
-      --ink-soft-0:   #9a93ad;
-      --hair-0:       #2f2743;
-      --surface-0:    #120e1c;
-      --surface-rgb:  18 14 28;
-      --chip-rgb:     33 26 50;
-      --accent:       #ff8f2e;
-      --accent-ink:   #150c26;
-      --glass-bd:     rgba(255,255,255,.16);
-      --glass-bg:     rgba(255,255,255,.08);
-      --veil:         rgba(9,4,20,.52);
-      --sh-a:         .8;
-    }
+.car-hero__kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 12px;border-radius:var(--r-pill);
+  background:rgb(var(--chip-rgb));
+  border:1px solid var(--hair-0);
+  font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-soft-0);margin-bottom:16px;
+}
+.car-hero__title{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(40px,5.5vw,68px);
+  font-weight:900;letter-spacing:-.04em;line-height:1.02;
+  color:var(--ink-0);margin-bottom:16px;
+}
+.car-hero__title span{
+  position:relative;display:inline-block;
+}
+.car-hero__title span::after{
+  content:'';position:absolute;left:0;right:0;bottom:6px;height:10px;
+  background:color-mix(in srgb,var(--brand-orange) 45%,transparent);
+  z-index:-1;border-radius:2px;
+}
+.car-hero__lead{
+  font-size:15px;line-height:1.7;color:var(--ink-soft-0);
+  max-width:40ch;margin-bottom:22px;
+}
+.car-hero__actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.car-hero__social{display:flex;gap:10px;margin-left:8px}
+.car-hero__social a{
+  width:36px;height:36px;border-radius:50%;
+  display:grid;place-items:center;
+  border:1px solid var(--hair-0);color:var(--ink-0);
+  transition:border-color .25s,color .25s,transform .25s;
+}
+.car-hero__social a:hover{
+  border-color:var(--brand-violet);color:var(--brand-violet);transform:translateY(-2px);
+}
+.car-hero__social svg{width:16px;height:16px}
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--surface-0);
-      color: var(--ink-0);
-      -webkit-font-smoothing: antialiased;
-    }
+@keyframes car-pop{to{opacity:1;transform:none}}
 
-    .header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgb(var(--surface-rgb) / .92);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--hair-0);
-      padding: 20px 0;
-    }
+/* ── JOBS ── */
+.car-jobs{
+  padding:clamp(40px,5.5vw,72px) 0;
+  background:var(--surface-0);
+}
+.car-jobs .sec__head{margin-bottom:clamp(24px,3.5vw,36px)}
+.car-jobs__filters{
+  display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;
+}
+.car-filter{
+  padding:8px 14px;border-radius:var(--r-pill);
+  border:1px solid var(--hair-0);background:transparent;
+  font-size:12px;font-weight:700;color:var(--ink-soft-0);cursor:pointer;
+  transition:background .25s,color .25s,border-color .25s;
+}
+.car-filter.is-on,
+.car-filter:hover{
+  background:var(--ink-0);color:var(--surface-0);border-color:var(--ink-0);
+}
+.car-jobs__grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.car-job{
+  text-align:left;
+  padding:22px 20px;
+  border-radius:var(--r-lg);
+  background:var(--surface-0);
+  border:1px solid var(--hair-0);
+  cursor:pointer;
+  opacity:0;transform:translateY(24px);
+  transition:border-color .3s var(--ease),box-shadow .3s var(--ease),transform .3s var(--ease);
+}
+.car-job.is-in{
+  animation:car-pop .65s var(--ease) forwards;
+  animation-delay:calc(var(--i,0)*70ms);
+}
+.car-job:hover{
+  border-color:color-mix(in srgb,var(--brand-violet) 45%,var(--hair-0));
+  box-shadow:var(--sh-3);
+  transform:translateY(-4px);
+}
+.car-job__top{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  margin-bottom:12px;
+}
+.car-job__dept{
+  font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-violet);
+}
+.car-job__type{
+  font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;
+  background:rgb(var(--chip-rgb));color:var(--ink-soft-0);
+}
+.car-job__title{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:17px;font-weight:800;letter-spacing:-.02em;
+  margin-bottom:8px;color:var(--ink-0);
+}
+.car-job__meta{
+  display:flex;flex-wrap:wrap;gap:12px;
+  font-size:12.5px;color:var(--ink-soft-0);margin-bottom:14px;
+}
+.car-job__meta span{display:inline-flex;align-items:center;gap:5px}
+.car-job__meta svg{width:13px;height:13px}
+.car-job__excerpt{
+  font-size:13px;line-height:1.55;color:var(--ink-soft-0);
+  margin-bottom:16px;
+}
+.car-job__go{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:800;color:var(--brand-flame);
+}
+.car-job__go svg{width:14px;height:14px;transition:transform .25s}
+.car-job:hover .car-job__go svg{transform:translateX(3px)}
 
-    .header__top {
-      display: flex; align-items: center; justify-content: space-between;
-      width: min(1520px, 93vw); margin: 0 auto; padding: 0 26px;
-    }
+/* ── MODAL ── */
+.car-modal{
+  position:fixed;inset:0;z-index:300;
+  display:grid;place-items:center;
+  padding:24px;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .3s var(--ease),visibility .3s;
+}
+.car-modal.is-open{
+  opacity:1;visibility:visible;pointer-events:auto;
+}
+.car-modal__backdrop{
+  position:absolute;inset:0;
+  background:rgba(11,7,19,.55);
+  backdrop-filter:blur(8px);
+}
+.car-modal__panel{
+  position:relative;z-index:1;
+  width:min(640px,100%);
+  max-height:min(88vh,820px);
+  overflow:auto;
+  background:var(--surface-0);
+  border:1px solid var(--hair-0);
+  border-radius:22px;
+  box-shadow:var(--sh-3);
+  transform:translateY(18px) scale(.97);
+  transition:transform .35s var(--ease);
+}
+.car-modal.is-open .car-modal__panel{transform:none}
+.car-modal__close{
+  position:sticky;top:0;z-index:2;
+  float:right;margin:14px 14px 0 0;
+  width:36px;height:36px;border-radius:50%;
+  border:1px solid var(--hair-0);background:var(--surface-0);
+  display:grid;place-items:center;cursor:pointer;color:var(--ink-0);
+}
+.car-modal__close svg{width:16px;height:16px}
+.car-modal__body{padding:8px 28px 28px;clear:both}
+.car-modal__dept{
+  font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-violet);margin-bottom:8px;
+}
+.car-modal__title{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(22px,2.5vw,28px);font-weight:900;letter-spacing:-.03em;
+  margin-bottom:10px;
+}
+.car-modal__meta{
+  display:flex;flex-wrap:wrap;gap:14px;
+  font-size:13px;color:var(--ink-soft-0);margin-bottom:20px;
+}
+.car-modal__meta span{display:inline-flex;align-items:center;gap:6px}
+.car-modal__meta svg{width:14px;height:14px}
+.car-modal__block{margin-bottom:18px}
+.car-modal__block h4{
+  font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-0);margin-bottom:8px;
+}
+.car-modal__block p,
+.car-modal__block li{
+  font-size:13.5px;line-height:1.65;color:var(--ink-soft-0);
+}
+.car-modal__block ul{padding-left:18px;margin:0}
+.car-modal__block li{margin-bottom:4px}
+.car-modal__contact{
+  display:grid;gap:8px;
+  padding:14px 16px;border-radius:var(--r-md);
+  background:rgb(var(--chip-rgb) / .6);
+  border:1px solid var(--hair-0);
+  margin-bottom:22px;
+}
+.car-modal__contact a,
+.car-modal__contact span{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--ink-0);text-decoration:none;
+}
+.car-modal__contact svg{width:14px;height:14px;color:var(--brand-violet)}
 
-    .brand {
-      display: inline-flex; align-items: center; gap: 9px;
-      text-decoration: none;
-    }
+.car-form{display:grid;gap:12px}
+.car-form__row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.car-form label{
+  display:grid;gap:6px;
+  font-size:11.5px;font-weight:700;color:var(--ink-soft-0);
+}
+.car-form input,
+.car-form select,
+.car-form textarea{
+  width:100%;padding:11px 12px;border-radius:12px;
+  border:1px solid var(--hair-0);background:var(--surface-0);
+  font:inherit;font-size:13.5px;color:var(--ink-0);
+  outline:none;transition:border-color .25s;
+}
+.car-form input:focus,
+.car-form select:focus,
+.car-form textarea:focus{border-color:var(--brand-violet)}
+.car-form textarea{min-height:96px;resize:vertical}
+.car-form__file{
+  border:1px dashed var(--hair-0);border-radius:12px;
+  padding:14px;text-align:center;font-size:12.5px;color:var(--ink-soft-0);
+  cursor:pointer;transition:border-color .25s,background .25s;
+}
+.car-form__file:hover{border-color:var(--brand-violet);background:rgb(var(--chip-rgb) / .4)}
+.car-form__file input{display:none}
+.car-form__actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.car-form__note{font-size:11.5px;color:var(--ink-soft-0);margin-top:6px}
 
-    .brand__mark {
-      width: 32px; height: 32px;
-      object-fit: contain;
-    }
+/* ── CTA ── */
+.car-cta{
+  padding:clamp(28px,4vw,44px) 0;text-align:center;
+  border-top:1px solid var(--hair-0);
+  background:radial-gradient(90% 120% at 50% 0%,color-mix(in srgb,var(--brand-violet) 12%,transparent) 0%,transparent 70%),var(--surface-0);
+}
+.car-cta .sec__title{font-size:clamp(24px,2.8vw,34px)}
+.car-cta p{color:var(--ink-soft-0);margin:8px auto 16px;max-width:36em;font-size:14px}
 
-    .brand__txt {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 12.5px; font-weight: 700;
-      color: var(--ink-soft-0);
-    }
-
-    .theme {
-      display: grid; place-items: center;
-      width: 40px; height: 40px; border-radius: 50%;
-      background: none; border: 1px solid var(--hair-0);
-      cursor: pointer; color: var(--ink-0);
-    }
-
-    .theme svg { width: 17px; height: 17px; position: absolute; }
-    .theme__moon { display: none; }
-    html[data-theme="dark"] .theme__sun { display: none; }
-    html[data-theme="dark"] .theme__moon { display: block; }
-
-    /* Hero Section */
-    .hero {
-      position: relative;
-      background: var(--surface-0);
-      padding: clamp(80px, 12vw, 160px) 26px;
-      overflow: hidden;
-    }
-
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(120% 78% at 50% 12%,
-        color-mix(in srgb, var(--brand-violet) 8%, transparent) 0%, transparent 68%);
-      pointer-events: none;
-    }
-
-    .hero__in {
-      position: relative; z-index: 1;
-      width: min(900px, 93vw); margin: 0 auto;
-      text-align: center;
-    }
-
-    .hero__tag {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
-      color: var(--ink-soft-0); margin-bottom: 24px;
-      opacity: 0; transform: translateY(20px);
-      animation: reveal-up .8s var(--ease) .2s forwards;
-    }
-
-    .hero__tag::before {
-      content: ''; width: 10px; height: 10px;
-      background: var(--brand-grad);
-    }
-
-    .hero__title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: clamp(40px, 4.2vw, 72px);
-      font-weight: 900; line-height: 1.05;
-      letter-spacing: -.035em; margin-bottom: 24px;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up 1s var(--ease) .3s forwards;
-    }
-
-    .hero__lead {
-      font-size: clamp(16px, 1.3vw, 20px);
-      line-height: 1.6; color: var(--ink-soft-0);
-      max-width: 600px; margin: 0 auto;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up 1s var(--ease) .4s forwards;
-    }
-
-    @keyframes reveal-up {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: none; }
-    }
-
-    /* Jobs Section */
-    .jobs {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: var(--surface-0);
-      position: relative;
-    }
-
-    .jobs__in {
-      width: min(1000px, 93vw); margin: 0 auto;
-    }
-
-    .jobs__head {
-      margin-bottom: clamp(50px, 6vw, 80px);
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) .1s forwards;
-    }
-
-    .jobs__eyebrow {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
-      color: var(--ink-soft-0); margin-bottom: 16px;
-    }
-
-    .jobs__eyebrow::before {
-      content: ''; width: 10px; height: 10px;
-      background: var(--brand-grad);
-    }
-
-    .jobs__title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: clamp(28px, 3vw, 48px);
-      font-weight: 800; line-height: 1.06;
-      letter-spacing: -.035em;
-    }
-
-    /* Job Cards */
-    .job__list {
-      list-style: none;
-      display: flex; flex-direction: column;
-      gap: clamp(20px, 2.5vw, 32px);
-    }
-
-    .job__card {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 24px;
-      padding: clamp(24px, 3vw, 36px);
-      background: rgb(var(--chip-rgb) / .35);
-      border: 1px solid var(--hair-0);
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all .35s var(--ease);
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 100ms) forwards;
-    }
-
-    .job__card:hover {
-      border-color: var(--brand-violet);
-      background: var(--surface-0);
-      box-shadow: 0 30px 60px -20px rgba(123, 47, 247, .25);
-      transform: translateY(-4px);
-    }
-
-    .job__body {
-      display: flex; flex-direction: column;
-      gap: 14px;
-    }
-
-    .job__header {
-      display: flex; align-items: flex-start;
-      gap: 16px;
-    }
-
-    .job__icon {
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-      width: 48px; height: 48px;
-      border-radius: 12px;
-      background: var(--brand-grad);
-      color: #fff;
-    }
-
-    .job__icon svg {
-      width: 24px; height: 24px;
-    }
-
-    .job__title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 18px; font-weight: 800;
-      color: var(--ink-0);
-    }
-
-    .job__category {
-      display: inline-flex; align-items: center;
-      padding: 6px 12px;
-      background: rgb(var(--surface-rgb) / .5);
-      border: 1px solid var(--hair-0);
-      border-radius: 6px;
-      font-size: 10px; font-weight: 700;
-      letter-spacing: .06em;
-      color: var(--ink-soft-0);
-      width: fit-content;
-      margin-top: 8px;
-    }
-
-    .job__desc {
-      font-size: 13px; line-height: 1.7;
-      color: var(--ink-soft-0);
-    }
-
-    .job__tags {
-      display: flex; flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .job__tag {
-      display: inline-flex; align-items: center;
-      padding: 6px 12px;
-      background: var(--surface-0);
-      border: 1px solid var(--hair-0);
-      border-radius: 999px;
-      font-size: 11px; font-weight: 600;
-      color: var(--ink-soft-0);
-    }
-
-    .job__meta {
-      display: flex; flex-direction: column;
-      align-items: flex-end;
-      justify-content: space-between;
-      min-width: 140px;
-    }
-
-    .job__location {
-      font-size: 12px;
-      color: var(--ink-soft-0);
-      display: flex; align-items: center;
-      gap: 6px;
-    }
-
-    .job__location svg {
-      width: 14px; height: 14px;
-    }
-
-    .job__cta {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 16px;
-      background: var(--brand-grad);
-      color: #fff;
-      border: none; border-radius: 999px;
-      font-size: 11px; font-weight: 700;
-      letter-spacing: .04em;
-      cursor: pointer;
-      transition: all .35s var(--ease);
-      white-space: nowrap;
-    }
-
-    .job__card:hover .job__cta {
-      transform: translateX(2px);
-    }
-
-    .job__cta svg {
-      width: 12px; height: 12px;
-    }
-
-    /* Culture Section */
-    .culture {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: rgb(var(--chip-rgb) / .35);
-      border-top: 1px solid var(--hair-0);
-    }
-
-    .culture__in {
-      width: min(1000px, 93vw); margin: 0 auto;
-    }
-
-    .culture__head {
-      margin-bottom: clamp(50px, 6vw, 80px);
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) .1s forwards;
-    }
-
-    .culture__title {
-      font-family: 'Montserrat', sans-serif;
-      font-size: clamp(28px, 3vw, 48px);
-      font-weight: 800; letter-spacing: -.035em;
-    }
-
-    .culture__grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: clamp(20px, 2.5vw, 36px);
-    }
-
-    .culture__item {
-      text-align: center;
-      opacity: 0; transform: scale(.95);
-      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) calc(.15s + var(--i, 0) * 80ms) forwards;
-    }
-
-    @keyframes pop {
-      from { opacity: 0; transform: scale(.95); }
-      to { opacity: 1; transform: none; }
-    }
-
-    .culture__icon {
-      display: flex; align-items: center; justify-content: center;
-      width: 56px; height: 56px;
-      margin: 0 auto 16px;
-      border-radius: 14px;
-      background: var(--brand-grad);
-      color: #fff;
-    }
-
-    .culture__icon svg {
-      width: 28px; height: 28px;
-    }
-
-    .culture__label {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 15px; font-weight: 800;
-      color: var(--ink-0);
-      margin-bottom: 8px;
-    }
-
-    .culture__desc {
-      font-size: 12px; line-height: 1.6;
-      color: var(--ink-soft-0);
-    }
-
-    /* Footer */
-    .footer {
-      padding: clamp(50px, 7vw, 100px) 26px;
-      background: var(--surface-0);
-      border-top: 1px solid var(--hair-0);
-      text-align: center;
-    }
-
-    .footer__link {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 26px;
-      background: var(--brand-grad);
-      color: #fff;
-      border: none; border-radius: 999px;
-      text-decoration: none;
-      font-size: 12px; font-weight: 700; letter-spacing: .06em;
-      cursor: pointer;
-      transition: all .35s var(--ease);
-      opacity: 0; transform: scale(.95);
-      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) .5s forwards;
-    }
-
-    .footer__link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 34px -12px rgba(240, 83, 43, .55);
-    }
-
-    .footer__link svg {
-      width: 15px; height: 15px;
-    }
-
-    @media (max-width: 768px) {
-      .job__card {
-        grid-template-columns: 1fr;
-        gap: 16px;
-      }
-
-      .job__meta {
-        flex-direction: row;
-        gap: 16px;
-        align-items: center;
-        justify-content: space-between;
-        min-width: auto;
-      }
-
-      .job__cta {
-        flex-shrink: 0;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation: none !important;
-        transition-duration: .01ms !important;
-      }
-    }
-  </style>
+@media (max-width:960px){
+  .car-hero__grid{grid-template-columns:1fr}
+  .car-jobs__grid{grid-template-columns:1fr}
+  .car-form__row{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .car-banner__bg{animation:none}
+  .car-job{opacity:1!important;transform:none!important;animation:none!important}
+}
+</style>
 </head>
 <body>
 
-<header class="header">
-  <div class="header__top">
-    <a class="brand" href="index.html">
-      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
-      <span class="brand__txt">Hazra Electrical Bike</span>
+<header class="sticky-bar is-page is-visible" id="stickyBar" aria-hidden="false">
+  <div class="sticky-bar__inner">
+    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
     </a>
-    <button class="theme" id="theme" aria-label="Toggle theme">
-      <i data-lucide="sun-medium" class="theme__sun"></i>
-      <i data-lucide="moon" class="theme__moon"></i>
+    <button class="burger" id="stickyBurger" aria-label="Open menu" aria-expanded="false" aria-controls="stickyNav">
+      <span></span><span></span><span></span>
     </button>
+    <nav class="nav sticky-bar__nav" id="stickyNav">
+      <a href="index.html" class="nav__i">Home</a>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t is-on" aria-expanded="false">About <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="our-story.html" class="nav__s">Our Story</a>
+          <a href="career.html" class="nav__s">Career</a>
+          <a href="index.html#faq" class="nav__s">FAQ</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Products <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu nav__menu--wide">
+          <a href="chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+          <a href="chalo-smart-pro.html" class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
+          <a href="chalo-smart-plus.html" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
+          <a href="chalo-smart-eco.html" class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
+          <a href="chalo-neo.html" class="nav__s">CHALO NEO <em>Low Speed</em></a>
+          <a href="nja-7.html" class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Social <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="contest.html" class="nav__s">Contest</a>
+          <a href="blog.html" class="nav__s">Blog</a>
+          <a href="battery-use.html" class="nav__s">Battery Use</a>
+          <a href="ev-future.html" class="nav__s">EV Future</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Dealers <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="dealer-locator.html" class="nav__s">Locate Dealers</a>
+          <a href="become-a-dealer.html" class="nav__s">Become a Dealer</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Service <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="warranty-free.html" class="nav__s">Warranty (Free)</a>
+          <a href="warranty-paid.html" class="nav__s">Warranty (Paid)</a>
+        </div>
+      </div>
+      <a href="#contact" class="nav__i">Contact</a>
+    </nav>
+    <div class="sticky-bar__end">
+      <button class="theme" id="stickyTheme" aria-label="Toggle theme">
+        <i class="theme__sun" data-lucide="sun"></i>
+        <i class="theme__moon" data-lucide="moon"></i>
+      </button>
+      <a href="#contact" class="sticky-bar__cta"><i data-lucide="shopping-bag"></i><span>CONTACT US</span></a>
+    </div>
   </div>
 </header>
 
-<section class="hero">
-  <div class="hero__in">
-    <p class="hero__tag">Careers</p>
-    <h1 class="hero__title">Build the future of<br>electric mobility.</h1>
-    <p class="hero__lead">
-      We're hiring talented builders, engineers, and creators
-      who want to change how India rides.
-    </p>
+<!-- BANNER -->
+<section class="car-banner">
+  <div class="car-banner__bg" aria-hidden="true"></div>
+  <div class="car-banner__veil" aria-hidden="true"></div>
+  <div class="car-banner__in">
+    <p class="eyebrow"><i class="sq"></i>CAREERS</p>
+    <h1 class="car-banner__title">Build with people<br>who build the ride.</h1>
+    <p class="car-banner__lead">Designers, engineers, service leads and storytellers — join a team shipping electric scooters for real Indian roads.</p>
   </div>
 </section>
 
-<section class="jobs">
-  <div class="jobs__in">
-    <div class="jobs__head">
-      <p class="jobs__eyebrow">Open Positions</p>
-      <h2 class="jobs__title">Join the team</h2>
-    </div>
-
-    <ul class="job__list">
-      <li class="job__card" style="--i: 0">
-        <div class="job__body">
-          <div class="job__header">
-            <div class="job__icon">
-              <i data-lucide="cpu"></i>
-            </div>
-            <div>
-              <h3 class="job__title">Senior Hardware Engineer</h3>
-              <span class="job__category">Engineering</span>
-            </div>
-          </div>
-          <p class="job__desc">
-            Design and optimize battery management systems and motor controllers
-            for the next generation of electric scooters.
-          </p>
-          <div class="job__tags">
-            <span class="job__tag">Bangalore</span>
-            <span class="job__tag">Full-time</span>
-            <span class="job__tag">5+ years</span>
-          </div>
-        </div>
-        <div class="job__meta">
-          <span class="job__location">
-            <i data-lucide="map-pin"></i>Bangalore
-          </span>
-          <button class="job__cta">
-            <span>Apply</span>
-            <i data-lucide="arrow-right"></i>
-          </button>
-        </div>
-      </li>
-
-      <li class="job__card" style="--i: 1">
-        <div class="job__body">
-          <div class="job__header">
-            <div class="job__icon">
-              <i data-lucide="code"></i>
-            </div>
-            <div>
-              <h3 class="job__title">Full Stack Developer</h3>
-              <span class="job__category">Software</span>
-            </div>
-          </div>
-          <p class="job__desc">
-            Build the web and mobile platforms that connect riders with their scooters.
-            Work on APIs, diagnostics, and user-facing applications.
-          </p>
-          <div class="job__tags">
-            <span class="job__tag">Remote</span>
-            <span class="job__tag">Full-time</span>
-            <span class="job__tag">3+ years</span>
-          </div>
-        </div>
-        <div class="job__meta">
-          <span class="job__location">
-            <i data-lucide="map-pin"></i>Remote
-          </span>
-          <button class="job__cta">
-            <span>Apply</span>
-            <i data-lucide="arrow-right"></i>
-          </button>
-        </div>
-      </li>
-
-      <li class="job__card" style="--i: 2">
-        <div class="job__body">
-          <div class="job__header">
-            <div class="job__icon">
-              <i data-lucide="users"></i>
-            </div>
-            <div>
-              <h3 class="job__title">Customer Success Manager</h3>
-              <span class="job__category">Operations</span>
-            </div>
-          </div>
-          <p class="job__desc">
-            Own the rider experience across our dealer network.
-            Build relationships and drive satisfaction in your assigned region.
-          </p>
-          <div class="job__tags">
-            <span class="job__tag">Delhi NCR</span>
-            <span class="job__tag">Full-time</span>
-            <span class="job__tag">2+ years</span>
-          </div>
-        </div>
-        <div class="job__meta">
-          <span class="job__location">
-            <i data-lucide="map-pin"></i>Delhi NCR
-          </span>
-          <button class="job__cta">
-            <span>Apply</span>
-            <i data-lucide="arrow-right"></i>
-          </button>
-        </div>
-      </li>
-
-      <li class="job__card" style="--i: 3">
-        <div class="job__body">
-          <div class="job__header">
-            <div class="job__icon">
-              <i data-lucide="palette"></i>
-            </div>
-            <div>
-              <h3 class="job__title">Product Designer</h3>
-              <span class="job__category">Design</span>
-            </div>
-          </div>
-          <p class="job__desc">
-            Shape the visual and interaction design of rider-facing products.
-            Own design systems and craft beautiful, intuitive interfaces.
-          </p>
-          <div class="job__tags">
-            <span class="job__tag">Bangalore</span>
-            <span class="job__tag">Full-time</span>
-            <span class="job__tag">4+ years</span>
-          </div>
-        </div>
-        <div class="job__meta">
-          <span class="job__location">
-            <i data-lucide="map-pin"></i>Bangalore
-          </span>
-          <button class="job__cta">
-            <span>Apply</span>
-            <i data-lucide="arrow-right"></i>
-          </button>
-        </div>
-      </li>
-
-      <li class="job__card" style="--i: 4">
-        <div class="job__body">
-          <div class="job__header">
-            <div class="job__icon">
-              <i data-lucide="factory"></i>
-            </div>
-            <div>
-              <h3 class="job__title">Manufacturing Engineer</h3>
-              <span class="job__category">Operations</span>
-            </div>
-          </div>
-          <p class="job__desc">
-            Optimize our manufacturing processes and quality control.
-            Lead initiatives to scale production without compromising on craftsmanship.
-          </p>
-          <div class="job__tags">
-            <span class="job__tag">Ghaziabad</span>
-            <span class="job__tag">Full-time</span>
-            <span class="job__tag">5+ years</span>
-          </div>
-        </div>
-        <div class="job__meta">
-          <span class="job__location">
-            <i data-lucide="map-pin"></i>Ghaziabad
-          </span>
-          <button class="job__cta">
-            <span>Apply</span>
-            <i data-lucide="arrow-right"></i>
-          </button>
-        </div>
-      </li>
-
-      <li class="job__card" style="--i: 5">
-        <div class="job__body">
-          <div class="job__header">
-            <div class="job__icon">
-              <i data-lucide="megaphone"></i>
-            </div>
-            <div>
-              <h3 class="job__title">Growth Marketing Manager</h3>
-              <span class="job__category">Marketing</span>
-            </div>
-          </div>
-          <p class="job__desc">
-            Drive rider acquisition and engagement through data-driven campaigns.
-            Own growth initiatives across all channels and markets.
-          </p>
-          <div class="job__tags">
-            <span class="job__tag">Bangalore</span>
-            <span class="job__tag">Full-time</span>
-            <span class="job__tag">3+ years</span>
-          </div>
-        </div>
-        <div class="job__meta">
-          <span class="job__location">
-            <i data-lucide="map-pin"></i>Bangalore
-          </span>
-          <button class="job__cta">
-            <span>Apply</span>
-            <i data-lucide="arrow-right"></i>
-          </button>
-        </div>
-      </li>
-    </ul>
-  </div>
-</section>
-
-<section class="culture">
-  <div class="culture__in">
-    <div class="culture__head">
-      <p class="jobs__eyebrow">Our Culture</p>
-      <h2 class="culture__title">Why you'll love working here</h2>
-    </div>
-
-    <div class="culture__grid">
-      <div class="culture__item" style="--i: 0">
-        <div class="culture__icon">
-          <i data-lucide="target"></i>
-        </div>
-        <h3 class="culture__label">Mission-Driven</h3>
-        <p class="culture__desc">Every line of code, every part, every decision moves us closer to cleaner cities.</p>
+<!-- HERO -->
+<section class="car-hero">
+  <div class="wrap">
+    <div class="car-hero__grid">
+      <div class="car-hero__art">
+        <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80" alt="Hazra team illustration style group" loading="eager">
+        <div class="car-hero__dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
       </div>
-
-      <div class="culture__item" style="--i: 1">
-        <div class="culture__icon">
-          <i data-lucide="users"></i>
+      <div>
+        <span class="car-hero__kicker">Careers at Hazra</span>
+        <h1 class="car-hero__title">HELLO<br><span>PEOPLE!</span></h1>
+        <p class="car-hero__lead">
+          We build electric scooters for real Indian roads — and we need people who care
+          about craft, honesty and riders. Designers, engineers, service leads and storytellers:
+          if that sounds like you, come build with us.
+        </p>
+        <div class="car-hero__actions">
+          <a class="btn btn--ink" href="#openings"><span>View openings</span><i data-lucide="arrow-down"></i></a>
+          <a class="btn btn--ghost" href="mailto:careers@hazraev.com">careers@hazraev.com</a>
+          <div class="car-hero__social">
+            <a href="#" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+            <a href="#" aria-label="LinkedIn"><i data-lucide="linkedin"></i></a>
+          </div>
         </div>
-        <h3 class="culture__label">Collaborative</h3>
-        <p class="culture__desc">Small teams, big impact. You'll work directly with founders and across disciplines.</p>
-      </div>
-
-      <div class="culture__item" style="--i: 2">
-        <div class="culture__icon">
-          <i data-lucide="lightbulb"></i>
-        </div>
-        <h3 class="culture__label">Innovative</h3>
-        <p class="culture__desc">We solve real problems. Your ideas matter and get built into products.</p>
-      </div>
-
-      <div class="culture__item" style="--i: 3">
-        <div class="culture__icon">
-          <i data-lucide="trending-up"></i>
-        </div>
-        <h3 class="culture__label">Growing Fast</h3>
-        <p class="culture__desc">Wear multiple hats. Learn new skills. Grow faster than you ever thought possible.</p>
-      </div>
-
-      <div class="culture__item" style="--i: 4">
-        <div class="culture__icon">
-          <i data-lucide="heart"></i>
-        </div>
-        <h3 class="culture__label">Care First</h3>
-        <p class="culture__desc">Competitive salary, health insurance, flexible work, and genuine work-life balance.</p>
-      </div>
-
-      <div class="culture__item" style="--i: 5">
-        <div class="culture__icon">
-          <i data-lucide="building"></i>
-        </div>
-        <h3 class="culture__label">Remote-Friendly</h3>
-        <p class="culture__desc">Work from anywhere. We believe great work happens where you're most productive.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="footer">
-  <p style="color: var(--ink-soft-0); margin-bottom: 24px; font-size: 14px;">
-    Don't see the perfect role? Send us your resume anyway.
-  </p>
-  <a class="footer__link" href="index.html">
-    <span>Back to home</span>
-    <i data-lucide="arrow-right"></i>
-  </a>
+<!-- WHAT YOU GET — FAQ-style accordion -->
+<section class="faq" id="what-you-get">
+  <div class="wrap">
+    <div class="faq__grid">
+      <div class="faq__rail">
+        <p class="eyebrow"><i class="sq"></i>WHAT YOU GET</p>
+        <h2 class="sec__title reveal-up">Why people stay<br><span class="hl">at Hazra.</span></h2>
+        <p class="faq__lead reveal-up">
+          Benefits, culture and growth — the practical reasons builders choose to stay.
+        </p>
+        <a class="link faq__all" href="#openings">See open roles<i data-lucide="arrow-up-right"></i></a>
+      </div>
+
+      <ul class="faq__list">
+        <li class="faq__item">
+          <button class="faq__q" type="button" aria-expanded="false">
+            <span>Meaningful work on real products</span>
+            <i class="faq__ico" data-lucide="plus"></i>
+          </button>
+          <div class="faq__panel"><div class="faq__a">
+            <p>Ship scooters riders use every day — frames, packs, service and stories — not decks that never leave the room. Your work shows up on the road.</p>
+          </div></div>
+        </li>
+        <li class="faq__item">
+          <button class="faq__q" type="button" aria-expanded="false">
+            <span>Growth path and ownership</span>
+            <i class="faq__ico" data-lucide="plus"></i>
+          </button>
+          <div class="faq__panel"><div class="faq__a">
+            <p>Clear ownership, mentorship and room to stretch across functions as we scale. High performers take on more scope without waiting on a rigid ladder.</p>
+          </div></div>
+        </li>
+        <li class="faq__item">
+          <button class="faq__q" type="button" aria-expanded="false">
+            <span>Fair pay and health cover</span>
+            <i class="faq__ico" data-lucide="plus"></i>
+          </button>
+          <div class="faq__panel"><div class="faq__a">
+            <p>Competitive salary, health cover and performance rewards tied to real outcomes — product quality, rider trust and network strength.</p>
+          </div></div>
+        </li>
+        <li class="faq__item">
+          <button class="faq__q" type="button" aria-expanded="false">
+            <span>Builder culture</span>
+            <i class="faq__ico" data-lucide="plus"></i>
+          </button>
+          <div class="faq__panel"><div class="faq__a">
+            <p>Small teams, fast feedback and respect for craft — whether you design, engineer or run the service floor. Decisions stay close to the work.</p>
+          </div></div>
+        </li>
+        <li class="faq__item">
+          <button class="faq__q" type="button" aria-expanded="false">
+            <span>Learning and tools</span>
+            <i class="faq__ico" data-lucide="plus"></i>
+          </button>
+          <div class="faq__panel"><div class="faq__a">
+            <p>Budget for courses, conferences and tools you need. We prefer people who keep learning over people who wait to be trained.</p>
+          </div></div>
+        </li>
+        <li class="faq__item">
+          <button class="faq__q" type="button" aria-expanded="false">
+            <span>How hiring works</span>
+            <i class="faq__ico" data-lucide="plus"></i>
+          </button>
+          <div class="faq__panel"><div class="faq__a">
+            <p>Apply on a role card, talk to the team, and hear back within 7–10 working days. We value portfolio and proof of craft as much as CV length.</p>
+          </div></div>
+        </li>
+      </ul>
+    </div>
+  </div>
 </section>
 
-<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<!-- OPEN ROLES -->
+<section class="car-jobs" id="openings">
+  <div class="wrap">
+    <header class="sec__head">
+      <p class="eyebrow"><i class="sq"></i>OPEN ROLES</p>
+      <h2 class="sec__title">Find your next<br><span class="hl">chapter.</span></h2>
+    </header>
+
+    <div class="car-jobs__filters" role="tablist">
+      <button class="car-filter is-on" type="button" data-filter="all">All</button>
+      <button class="car-filter" type="button" data-filter="Engineering">Engineering</button>
+      <button class="car-filter" type="button" data-filter="Design">Design</button>
+      <button class="car-filter" type="button" data-filter="Sales">Sales</button>
+      <button class="car-filter" type="button" data-filter="Service">Service</button>
+    </div>
+
+    <div class="car-jobs__grid" id="jobGrid">
+      <!-- cards injected / static below -->
+      <button class="car-job" type="button" style="--i:0" data-dept="Engineering" data-job="me">
+        <div class="car-job__top">
+          <span class="car-job__dept">Engineering</span>
+          <span class="car-job__type">Full-time</span>
+        </div>
+        <h3 class="car-job__title">Mechanical Engineer</h3>
+        <div class="car-job__meta">
+          <span><i data-lucide="map-pin"></i> Ghaziabad</span>
+          <span><i data-lucide="briefcase"></i> 3–6 yrs</span>
+        </div>
+        <p class="car-job__excerpt">Own frame, suspension and packaging for the next CHALO platforms.</p>
+        <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
+      </button>
+
+      <button class="car-job" type="button" style="--i:1" data-dept="Engineering" data-job="ee">
+        <div class="car-job__top">
+          <span class="car-job__dept">Engineering</span>
+          <span class="car-job__type">Full-time</span>
+        </div>
+        <h3 class="car-job__title">Electrical / Battery Engineer</h3>
+        <div class="car-job__meta">
+          <span><i data-lucide="map-pin"></i> Ghaziabad</span>
+          <span><i data-lucide="briefcase"></i> 2–5 yrs</span>
+        </div>
+        <p class="car-job__excerpt">Battery packs, BMS integration and charging behaviour on real routes.</p>
+        <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
+      </button>
+
+      <button class="car-job" type="button" style="--i:2" data-dept="Design" data-job="id">
+        <div class="car-job__top">
+          <span class="car-job__dept">Design</span>
+          <span class="car-job__type">Full-time</span>
+        </div>
+        <h3 class="car-job__title">Industrial Designer</h3>
+        <div class="car-job__meta">
+          <span><i data-lucide="map-pin"></i> Noida / Hybrid</span>
+          <span><i data-lucide="briefcase"></i> 2–4 yrs</span>
+        </div>
+        <p class="car-job__excerpt">Form language, colour &amp; trim, and rider touchpoints across the line-up.</p>
+        <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
+      </button>
+
+      <button class="car-job" type="button" style="--i:3" data-dept="Sales" data-job="rs">
+        <div class="car-job__top">
+          <span class="car-job__dept">Sales</span>
+          <span class="car-job__type">Full-time</span>
+        </div>
+        <h3 class="car-job__title">Regional Sales Manager</h3>
+        <div class="car-job__meta">
+          <span><i data-lucide="map-pin"></i> North India</span>
+          <span><i data-lucide="briefcase"></i> 5+ yrs</span>
+        </div>
+        <p class="car-job__excerpt">Grow dealer network, targets and on-ground brand presence in your region.</p>
+        <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
+      </button>
+
+      <button class="car-job" type="button" style="--i:4" data-dept="Service" data-job="sm">
+        <div class="car-job__top">
+          <span class="car-job__dept">Service</span>
+          <span class="car-job__type">Full-time</span>
+        </div>
+        <h3 class="car-job__title">Service Network Lead</h3>
+        <div class="car-job__meta">
+          <span><i data-lucide="map-pin"></i> Pan-India</span>
+          <span><i data-lucide="briefcase"></i> 4–8 yrs</span>
+        </div>
+        <p class="car-job__excerpt">Train dealers, set SLA standards and keep riders moving after the sale.</p>
+        <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
+      </button>
+
+      <button class="car-job" type="button" style="--i:5" data-dept="Design" data-job="ux">
+        <div class="car-job__top">
+          <span class="car-job__dept">Design</span>
+          <span class="car-job__type">Contract</span>
+        </div>
+        <h3 class="car-job__title">UI / Brand Designer</h3>
+        <div class="car-job__meta">
+          <span><i data-lucide="map-pin"></i> Remote / Noida</span>
+          <span><i data-lucide="briefcase"></i> 1–3 yrs</span>
+        </div>
+        <p class="car-job__excerpt">Website, app surfaces and campaign systems aligned to the Hazra mark.</p>
+        <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="car-cta">
+  <div class="wrap">
+    <h2 class="sec__title">Don’t see your role?</h2>
+    <p>Send a short note and portfolio — we hire for attitude and craft year-round.</p>
+    <a class="btn btn--ink" href="mailto:careers@hazraev.com"><span>careers@hazraev.com</span><i data-lucide="mail"></i></a>
+  </div>
+</section>
+
+<!-- JOB MODAL -->
+<div class="car-modal" id="jobModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+  <div class="car-modal__backdrop" data-close></div>
+  <div class="car-modal__panel">
+    <button class="car-modal__close" type="button" data-close aria-label="Close"><i data-lucide="x"></i></button>
+    <div class="car-modal__body">
+      <p class="car-modal__dept" id="modalDept">Engineering</p>
+      <h2 class="car-modal__title" id="modalTitle">Role title</h2>
+      <div class="car-modal__meta" id="modalMeta"></div>
+
+      <div class="car-modal__block">
+        <h4>About the role</h4>
+        <p id="modalAbout"></p>
+      </div>
+      <div class="car-modal__block">
+        <h4>What you’ll do</h4>
+        <ul id="modalDo"></ul>
+      </div>
+      <div class="car-modal__block">
+        <h4>What you bring</h4>
+        <ul id="modalNeed"></ul>
+      </div>
+
+      <div class="car-modal__block">
+        <h4>Reference contact</h4>
+        <div class="car-modal__contact">
+          <a href="mailto:careers@hazraev.com"><i data-lucide="mail"></i> careers@hazraev.com</a>
+          <a href="tel:+919829016542"><i data-lucide="phone"></i> +91 98290 16542</a>
+          <span><i data-lucide="map-pin"></i> Sahibabad Industrial Area, Ghaziabad, UP 201010</span>
+        </div>
+      </div>
+
+      <div class="car-modal__block">
+        <h4>Apply for this role</h4>
+        <form class="car-form" id="applyForm">
+          <input type="hidden" name="role" id="formRole">
+          <div class="car-form__row">
+            <label>Full name<input type="text" name="name" required placeholder="Your name"></label>
+            <label>Email<input type="email" name="email" required placeholder="you@email.com"></label>
+          </div>
+          <div class="car-form__row">
+            <label>Phone<input type="tel" name="phone" required placeholder="+91"></label>
+            <label>Experience (years)<input type="number" name="exp" min="0" step="1" placeholder="3"></label>
+          </div>
+          <label>Portfolio / LinkedIn<input type="url" name="link" placeholder="https://"></label>
+          <label>Cover note<textarea name="note" placeholder="A few lines on why this role fits you"></textarea></label>
+          <label class="car-form__file">
+            <input type="file" name="resume" accept=".pdf,.doc,.docx">
+            <span id="fileLabel">Upload resume (PDF / DOC)</span>
+          </label>
+          <div class="car-form__actions">
+            <button class="btn btn--ink" type="submit"><span>Submit application</span><i data-lucide="send"></i></button>
+            <button class="btn btn--ghost" type="button" data-close>Cancel</button>
+          </div>
+          <p class="car-form__note">We reply within 7–10 working days. Your data is used only for hiring.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="foot" id="contact">
+  <div class="foot__wave"></div>
+  <div class="foot__bg foot__bg--light" aria-hidden="true"></div>
+  <div class="foot__bg foot__bg--dark" aria-hidden="true"></div>
+  <i class="foot__veil"></i>
+  <div class="wrap foot__in">
+    <div class="foot__main">
+      <div class="foot__content">
+        <div class="foot__brand">
+          <img class="foot__logo" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+          <p class="foot__tag">Premium electric scooters designed for smarter, cleaner and more affordable mobility.</p>
+          <ul class="foot__contact">
+            <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
+            <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
+            <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
+          </ul>
+        </div>
+        <nav class="foot__cols" aria-label="Footer">
+          <div class="fcol">
+            <h4>Electric Scooters</h4>
+            <a href="chalo-1000-v2.html">CHALO 1000 V2</a>
+            <a href="chalo-smart-pro.html">CHALO SMART PRO</a>
+            <a href="index.html#collection">Compare models</a>
+            <a href="index.html#test-ride">Book test ride</a>
+          </div>
+          <div class="fcol">
+            <h4>Company</h4>
+            <a href="our-story.html">Our story</a>
+            <a href="career.html">Careers</a>
+            <a href="become-a-dealer.html">Become a dealer</a>
+            <a href="blog.html">Blog</a>
+          </div>
+          <div class="fcol">
+            <h4>Support</h4>
+            <a href="index.html#faq">FAQs</a>
+            <a href="#contact">Contact us</a>
+            <a href="warranty-free.html">Warranty registration</a>
+          </div>
+          <div class="fcol">
+            <h4>Buy</h4>
+            <a href="dealer-locator.html">Locate dealers</a>
+            <a href="#">EMI calculator</a>
+          </div>
+          <div class="fcol">
+            <h4>Legal</h4>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+          </div>
+        </nav>
+      </div>
+      <aside class="foot__social-section">
+        <h3 class="foot__social-title">Follow us</h3>
+        <div class="foot__socials">
+          <a href="#" class="foot__social-link foot__social--instagram" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+          <a href="#" class="foot__social-link foot__social--facebook" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+          <a href="#" class="foot__social-link foot__social--youtube" aria-label="YouTube"><i data-lucide="youtube"></i></a>
+          <a href="#" class="foot__social-link foot__social--whatsapp" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
+        </div>
+      </aside>
+    </div>
+    <div class="foot__base">
+      <p>&copy; 2026 Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
+      <div class="foot__legal"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></div>
+    </div>
+  </div>
+</footer>
+
+<aside class="dock" aria-label="Quick actions">
+  <a class="dock__i" href="index.html#test-ride" aria-label="Test drive"><i data-lucide="bike"></i><span class="dock__lb">Test Drive</span></a>
+  <a class="dock__i" href="dealership-enquiry.html" aria-label="Dealership"><i data-lucide="store"></i><span class="dock__lb">Dealership</span></a>
+  <a class="dock__i" href="tel:+919829016542" aria-label="Call"><i data-lucide="phone"></i><span class="dock__lb">Call Us</span></a>
+  <a class="dock__i" href="https://wa.me/919829016542" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i data-lucide="message-circle"></i><span class="dock__lb">WhatsApp</span></a>
+</aside>
+
+<script src="script.js"></script>
 <script>
-  lucide.createIcons();
+lucide.createIcons();
 
-  const themeBtn = document.getElementById('theme');
-  themeBtn.addEventListener('click', () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+document.getElementById('stickyTheme')?.addEventListener('click',()=>{
+  const html=document.documentElement;
+  const next=html.getAttribute('data-theme')==='dark'?'light':'dark';
+  html.setAttribute('data-theme',next);
+  localStorage.setItem('theme',next);
+  localStorage.setItem('vm-theme',next);
+});
+
+const stickyNav=document.getElementById('stickyNav');
+const stickyBurger=document.getElementById('stickyBurger');
+stickyBurger?.addEventListener('click',()=>{
+  const on=!stickyNav?.classList.contains('is-open');
+  stickyNav?.classList.toggle('is-open',on);
+  stickyBurger.classList.toggle('is-on',on);
+});
+document.querySelectorAll('.nav__grp').forEach(grp=>{
+  grp.querySelector('.nav__i--t')?.addEventListener('click',e=>{
+    e.stopPropagation();
+    const open=grp.classList.contains('is-open');
+    document.querySelectorAll('.nav__grp.is-open').forEach(g=>g.classList.remove('is-open'));
+    if(!open) grp.classList.add('is-open');
   });
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.sticky-bar')){
+    document.querySelectorAll('.nav__grp.is-open').forEach(g=>g.classList.remove('is-open'));
+    stickyNav?.classList.remove('is-open');
+  }
+});
 
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-in');io.unobserve(e.target)}})
+},{threshold:.12});
+document.querySelectorAll('.car-job').forEach(el=>io.observe(el));
+
+/* FAQ-style accordion (same behaviour as home) */
+document.querySelectorAll('#what-you-get .faq__q').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const item=btn.closest('.faq__item');
+    const open=item.classList.contains('is-open');
+    document.querySelectorAll('#what-you-get .faq__item.is-open').forEach(i=>{
+      i.classList.remove('is-open');
+      i.querySelector('.faq__q')?.setAttribute('aria-expanded','false');
+    });
+    if(!open){
+      item.classList.add('is-open');
+      btn.setAttribute('aria-expanded','true');
+    }
+  });
+});
+
+/* Filters */
+document.querySelectorAll('.car-filter').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.car-filter').forEach(b=>b.classList.remove('is-on'));
+    btn.classList.add('is-on');
+    const f=btn.dataset.filter;
+    document.querySelectorAll('.car-job').forEach(card=>{
+      const show=f==='all'||card.dataset.dept===f;
+      card.style.display=show?'':'none';
+    });
+  });
+});
+
+/* Job data for modal */
+const JOBS={
+  me:{
+    dept:'Engineering',title:'Mechanical Engineer',
+    meta:[['map-pin','Ghaziabad'],['briefcase','3–6 yrs'],['clock','Full-time']],
+    about:'Lead mechanical design for frame, suspension and body packaging on current and next-gen CHALO platforms. Work closely with electrical and industrial design.',
+    do:['Own CAD models and drawings for structural parts','Run DFM reviews with production partners','Validate prototypes on Indian road conditions','Document BOMs and engineering changes'],
+    need:['B.E. / B.Tech Mechanical or related','Hands-on CAD (SolidWorks / CATIA)','Experience with two-wheelers or automotive preferred','Comfortable on the shop floor']
+  },
+  ee:{
+    dept:'Engineering',title:'Electrical / Battery Engineer',
+    meta:[['map-pin','Ghaziabad'],['briefcase','2–5 yrs'],['clock','Full-time']],
+    about:'Design and validate battery packs, BMS integration and charging behaviour so published range matches real rider routes.',
+    do:['Specify cells, pack layout and thermal strategy','Integrate BMS and charger protocols','Plan field tests and analyse telemetry','Support service with diagnostics playbooks'],
+    need:['Degree in Electrical / Electronics / related','Battery pack or EV powertrain experience','Strong safety and compliance mindset']
+  },
+  id:{
+    dept:'Design',title:'Industrial Designer',
+    meta:[['map-pin','Noida / Hybrid'],['briefcase','2–4 yrs'],['clock','Full-time']],
+    about:'Shape the look and feel of Hazra scooters — proportion, surfaces, colour & trim, and everyday touchpoints.',
+    do:['Sketch and 3D concepts for new models','Build CMF directions with brand guidelines','Collaborate with engineering on feasibility','Present to leadership and partners'],
+    need:['Degree in Industrial / Product Design','Strong portfolio of physical products','Rhino / Alias / similar tools']
+  },
+  rs:{
+    dept:'Sales',title:'Regional Sales Manager',
+    meta:[['map-pin','North India'],['briefcase','5+ yrs'],['clock','Full-time']],
+    about:'Grow revenue and dealer quality across your region — targets, relationships and on-ground brand presence.',
+    do:['Hit regional volume and mix targets','Recruit and coach dealers','Run local campaigns with marketing','Report pipeline and market feedback'],
+    need:['Proven two-wheeler or auto sales leadership','Willingness to travel extensively','Data-driven and people-first']
+  },
+  sm:{
+    dept:'Service',title:'Service Network Lead',
+    meta:[['map-pin','Pan-India'],['briefcase','4–8 yrs'],['clock','Full-time']],
+    about:'Build a service network riders can trust — training, SLAs, spares flow and continuous improvement.',
+    do:['Define service standards and audits','Train dealer technicians','Improve first-time-fix rates','Feed product teams with field issues'],
+    need:['Service operations experience in auto / EV','Strong process and training skills','Customer empathy']
+  },
+  ux:{
+    dept:'Design',title:'UI / Brand Designer',
+    meta:[['map-pin','Remote / Noida'],['briefcase','1–3 yrs'],['clock','Contract']],
+    about:'Craft digital and campaign surfaces that feel as considered as the scooters — web, app and brand systems.',
+    do:['Design website and product pages','Extend brand system for campaigns','Work with engineering on front-end polish','Maintain component library'],
+    need:['Strong UI portfolio (Figma)','Motion and illustration a plus','Interest in EV / mobility']
+  }
+};
+
+const modal=document.getElementById('jobModal');
+const openModal=id=>{
+  const j=JOBS[id];if(!j) return;
+  document.getElementById('modalDept').textContent=j.dept;
+  document.getElementById('modalTitle').textContent=j.title;
+  document.getElementById('formRole').value=j.title;
+  document.getElementById('modalAbout').textContent=j.about;
+  document.getElementById('modalMeta').innerHTML=j.meta.map(([ic,t])=>`<span><i data-lucide="${ic}"></i>${t}</span>`).join('');
+  document.getElementById('modalDo').innerHTML=j.do.map(t=>`<li>${t}</li>`).join('');
+  document.getElementById('modalNeed').innerHTML=j.need.map(t=>`<li>${t}</li>`).join('');
+  modal.hidden=false;
+  requestAnimationFrame(()=>modal.classList.add('is-open'));
+  document.body.style.overflow='hidden';
+  lucide.createIcons({nodes:[modal]});
+};
+const closeModal=()=>{
+  modal.classList.remove('is-open');
+  document.body.style.overflow='';
+  setTimeout(()=>{modal.hidden=true},300);
+};
+
+document.querySelectorAll('.car-job').forEach(card=>{
+  card.addEventListener('click',()=>openModal(card.dataset.job));
+});
+modal.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',closeModal));
+document.addEventListener('keydown',e=>{if(e.key==='Escape') closeModal()});
+
+document.querySelector('.car-form__file input')?.addEventListener('change',e=>{
+  const f=e.target.files?.[0];
+  document.getElementById('fileLabel').textContent=f?f.name:'Upload resume (PDF / DOC)';
+});
+
+document.getElementById('applyForm')?.addEventListener('submit',e=>{
+  e.preventDefault();
+  alert('Application received. We will get back within 7–10 working days.');
+  closeModal();
+  e.target.reset();
+  document.getElementById('fileLabel').textContent='Upload resume (PDF / DOC)';
+});
 </script>
-
 </body>
 </html>

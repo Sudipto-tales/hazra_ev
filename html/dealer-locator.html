@@ -3,282 +3,658 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-/* Applied before first paint so a dark-mode visitor never sees a light
-   flash. Kept inline and tiny on purpose: an external file would race
-   the paint it exists to prevent. */
-(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
-if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
-document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
-</script>
-  <title>Dealer Locator | Hazra</title>
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Hazra Electrical Bike">
-<meta property="og:title" content="Dealer Locator | Hazra">
-<meta property="og:description" content="Find the nearest Hazra dealer and book your test ride today.">
-<meta property="og:url" content="https://hazraelectricalbike.com/dealer-locator.html">
-<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
-<meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="https://hazraelectricalbike.com/dealer-locator.html">
-<meta name="description" content="Find the nearest Hazra dealer and book your test ride today.">
+  <script>
+    (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+    if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+    document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+  </script>
+  <title>Dealer Locator — Hazra Electrical Bike</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hazra Electrical Bike">
+  <meta property="og:title" content="Dealer Locator — Hazra Electrical Bike">
+  <meta property="og:description" content="Find the nearest Hazra dealer, book a test ride, and start your electric journey today.">
+  <meta property="og:url" content="https://hazraelectricalbike.com/dealer-locator.html">
+  <meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://hazraelectricalbike.com/dealer-locator.html">
+  <meta name="description" content="Find the nearest Hazra dealer, book a test ride, and start your electric journey today.">
   <link rel="icon" href="assets/hazraev.png" type="image/png">
-<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles/tokens.css">
-<link rel="stylesheet" href="styles/typography.css">
-<link rel="stylesheet" href="styles/global.css">
-<link rel="stylesheet" href="styles/utilities.css">
-<link rel="stylesheet" href="styles/components/page-chrome.css">
+  <link rel="apple-touch-icon" href="assets/hazraev.png">
+  <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/typography.css">
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="stylesheet" href="styles/utilities.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <style>
-
-    .search {
-      padding: clamp(40px, 6vw, 80px) 26px;
-      background: rgb(var(--chip-rgb) / .35);
-      border-top: 1px solid var(--hair-0);
+    :root {
+      --brand-indigo:  #3a1a6b;
+      --brand-violet:  #7b2ff7;
+      --brand-magenta: #a41fbf;
+      --brand-blue:    #12a5e0;
+      --brand-orange:  #f7941d;
+      --brand-flame:   #f0532b;
+      --brand-grad: linear-gradient(96deg, var(--brand-violet) 0%, var(--brand-magenta) 30%, var(--brand-flame) 66%, var(--brand-orange) 100%);
     }
-
-    .search__in { width: min(1200px, 93vw); margin: 0 auto; }
-
-    .search__box {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 40px;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) .2s forwards;
+    body { background: var(--surface-0); }
+    .sticky-bar {
+      position: sticky; top: 0;
+      transform: none !important; opacity: 1 !important; pointer-events: auto !important;
+      background: rgb(var(--surface-rgb) / .92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--hair-0); z-index: 200;
     }
-
-    .field {
-      display: flex; flex-direction: column; gap: 8px;
+    .dl-hero {
+      position: relative; padding: clamp(72px, 10vw, 120px) var(--gutter) clamp(48px, 6vw, 72px);
+      text-align: center; overflow: hidden;
     }
-
-    .field label {
-      font-size: 12px; font-weight: 700;
-      letter-spacing: .06em; text-transform: uppercase;
-      color: var(--ink-soft-0);
+    .dl-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--brand-violet) 9%, transparent) 0%, transparent 60%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='320' viewBox='0 0 1200 320' fill='none'%3E%3Cpath d='M0 260 L60 220 L120 240 L180 180 L240 210 L300 150 L360 190 L420 130 L480 170 L540 110 L600 160 L660 120 L720 180 L780 140 L840 200 L900 160 L960 220 L1020 180 L1080 240 L1140 200 L1200 260 L1200 320 L0 320 Z' fill='%237b2ff7' fill-opacity='0.05'/%3E%3C/svg%3E") bottom center / 100% auto no-repeat;
+      pointer-events: none;
     }
-
-    .field input, .field select {
-      padding: 12px 16px;
-      background: var(--surface-0);
-      border: 1px solid var(--hair-0);
-      border-radius: 8px;
-      font-family: 'Inter';
-      color: var(--ink-0);
-      font-size: 14px;
+    .dl-hero__in { position: relative; z-index: 1; width: min(820px, 93vw); margin: 0 auto; }
+    .dl-hero__tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--ink-soft-0); margin-bottom: 16px;
+      opacity: 0; transform: translateY(16px); animation: reveal-up .7s var(--ease) .1s forwards;
     }
-
-    .dealers {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: clamp(20px, 2.5vw, 36px);
+    .dl-hero__tag::before { content: ''; width: 10px; height: 10px; background: var(--brand-grad); border-radius: 2px; }
+    .dl-hero__title {
+      font-family: var(--font-display); font-size: clamp(32px, 4.5vw, 56px); font-weight: 900;
+      line-height: 1.06; letter-spacing: -.035em; margin-bottom: 14px;
+      opacity: 0; transform: translateY(24px); animation: reveal-up .9s var(--ease) .2s forwards;
     }
-
-    .dealer__card {
-      padding: clamp(24px, 3vw, 36px);
-      background: var(--surface-0);
-      border: 1px solid var(--hair-0);
-      border-radius: 16px;
-      transition: all .35s var(--ease);
-      opacity: 0; transform: scale(.95);
-      animation: pop .7s cubic-bezier(.18,.9,.32,1.28) calc(.2s + var(--i, 0) * 80ms) forwards;
+    .dl-hero__lead {
+      font-size: clamp(15px, 1.2vw, 17px); line-height: 1.6; color: var(--ink-soft-0);
+      max-width: 520px; margin: 0 auto 40px;
+      opacity: 0; transform: translateY(24px); animation: reveal-up .9s var(--ease) .3s forwards;
     }
-
-    .dealer__card:hover {
-      border-color: var(--brand-violet);
-      box-shadow: 0 30px 60px -20px rgba(123, 47, 247, .25);
-      transform: translateY(-4px);
+    .dl-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 2vw, 28px);
+      max-width: 680px; margin: 0 auto;
+      opacity: 0; transform: translateY(24px); animation: reveal-up .9s var(--ease) .45s forwards;
     }
-
-    .dealer__name {
-      font-family: 'Montserrat'; font-size: 16px;
-      font-weight: 800; margin-bottom: 12px;
+    .dl-stat { text-align: center; }
+    .dl-stat__num {
+      font-family: var(--font-display); font-size: clamp(26px, 3.2vw, 38px); font-weight: 900;
+      letter-spacing: -.03em; background: var(--brand-grad);
+      -webkit-background-clip: text; background-clip: text; color: transparent; line-height: 1.1;
     }
-
-    .dealer__info {
-      font-size: 13px; line-height: 1.7;
-      color: var(--ink-soft-0);
-      display: flex; flex-direction: column;
-      gap: 10px;
-      margin-bottom: 16px;
+    .dl-stat__label { font-size: 11.5px; font-weight: 600; color: var(--ink-soft-0); margin-top: 4px; }
+    .dl-collage {
+      padding: clamp(32px, 5vw, 64px) var(--gutter);
+      background: rgb(var(--chip-rgb) / .35); border-top: 1px solid var(--hair-0);
     }
-
-    .dealer__info span {
-      display: flex; gap: 8px;
+    .dl-collage__in { width: var(--measure); margin: 0 auto; }
+    .dl-collage__head { text-align: center; margin-bottom: clamp(24px, 3vw, 40px); }
+    .dl-collage__title { font-family: var(--font-display); font-size: clamp(22px, 2.6vw, 32px); font-weight: 800; letter-spacing: -.03em; }
+    .dl-collage__grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(2, 160px); gap: 10px; }
+    .dl-collage__item { border-radius: 14px; overflow: hidden; position: relative; background: var(--surface-0); }
+    .dl-collage__item img { width: 100%; height: 100%; object-fit: cover; transition: transform .55s var(--ease); }
+    .dl-collage__item:hover img { transform: scale(1.05); }
+    .dl-collage__item:nth-child(1) { grid-column: 1 / 5; grid-row: 1 / 3; }
+    .dl-collage__item:nth-child(2) { grid-column: 5 / 8; grid-row: 1; }
+    .dl-collage__item:nth-child(3) { grid-column: 8 / 13; grid-row: 1; }
+    .dl-collage__item:nth-child(4) { grid-column: 5 / 9; grid-row: 2; }
+    .dl-collage__item:nth-child(5) { grid-column: 9 / 13; grid-row: 2; }
+    .dl-locator { padding: clamp(32px, 5vw, 64px) var(--gutter); background: var(--surface-0); }
+    .dl-locator__in { width: var(--measure); margin: 0 auto; }
+    .dl-locator__head { margin-bottom: clamp(20px, 3vw, 32px); }
+    .dl-locator__eyebrow {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--ink-soft-0); margin-bottom: 10px;
     }
-
-    .dealer__cta {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 16px;
-      background: var(--brand-grad);
-      color: #fff;
-      border: none; border-radius: 8px;
-      font-size: 11px; font-weight: 700;
-      cursor: pointer;
-      transition: all .35s var(--ease);
+    .dl-locator__eyebrow::before { content: ''; width: 10px; height: 10px; background: var(--brand-grad); border-radius: 2px; }
+    .dl-locator__title { font-family: var(--font-display); font-size: clamp(24px, 2.8vw, 36px); font-weight: 800; letter-spacing: -.03em; }
+    .dl-shell {
+      display: grid; grid-template-columns: 300px 1fr;
+      border-radius: 22px; overflow: hidden; border: 1px solid var(--hair-0);
+      background: var(--surface-0); box-shadow: var(--sh-3); min-height: 620px;
     }
-
-    .dealer__cta:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px -4px rgba(123, 47, 247, .3);
+    .dl-panel {
+      background: var(--surface-0); border-right: 1px solid var(--hair-0);
+      padding: 22px 18px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto;
     }
-
-    @keyframes pop {
-      from { opacity: 0; transform: scale(.95); }
-      to { opacity: 1; transform: none; }
+    .dl-panel__title { font-family: var(--font-display); font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .dl-panel__title i { width: 16px; height: 16px; color: var(--brand-violet); }
+    .dl-group { display: flex; flex-direction: column; gap: 8px; }
+    .dl-group__label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft-0); }
+    .dl-field select, .dl-field input {
+      width: 100%; padding: 10px 12px; background: rgb(var(--chip-rgb) / .5);
+      border: 1px solid var(--hair-0); border-radius: 10px; font-size: 13.5px; color: var(--ink-0);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6480' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px;
+      transition: border-color .2s;
     }
-
-    @media (max-width: 768px) {
-      .search__box { grid-template-columns: 1fr; }
+    .dl-field select:focus, .dl-field input:focus { outline: none; border-color: var(--brand-violet); }
+    .dl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dl-chip {
+      padding: 7px 12px; border-radius: 999px; border: 1px solid var(--hair-0);
+      background: transparent; font-size: 12px; font-weight: 600; color: var(--ink-soft-0);
+      cursor: pointer; transition: all .2s;
     }
-
+    .dl-chip:hover { border-color: var(--brand-violet); color: var(--ink-0); }
+    .dl-chip.is-on { background: var(--brand-violet); border-color: var(--brand-violet); color: #fff; }
+    .dl-stats-box { display: none; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 12px; border-top: 1px solid var(--hair-0); }
+    .dl-stats-box.is-visible { display: grid; }
+    .dl-stats-box__item { text-align: center; padding: 10px 6px; background: rgb(var(--chip-rgb) / .55); border-radius: 12px; }
+    .dl-stats-box__num { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--brand-violet); line-height: 1.1; }
+    .dl-stats-box__label { font-size: 10.5px; font-weight: 600; color: var(--ink-soft-0); margin-top: 2px; }
+    .dl-apply {
+      width: 100%; margin-top: auto; padding: 12px; background: var(--brand-grad); color: #fff;
+      border: none; border-radius: 12px; font-size: 13px; font-weight: 700; letter-spacing: .04em; cursor: pointer;
+      transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+    }
+    .dl-apply:hover { transform: translateY(-2px); box-shadow: 0 12px 28px -8px rgba(123, 47, 247, .45); }
+    .dl-map-area { position: relative; background: #e8e4f0; min-height: 620px; }
+    #map { width: 100%; height: 100%; min-height: 620px; z-index: 1; }
+    .dl-float-cards {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 20;
+      padding: 16px 16px 20px; display: flex; gap: 14px;
+      overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      background: linear-gradient(to top, rgba(0,0,0,.18) 0%, transparent 70%);
+    }
+    .dl-float-cards::-webkit-scrollbar { display: none; }
+    .dl-fcard {
+      flex: 0 0 min(280px, 78vw); scroll-snap-align: start;
+      background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 16px;
+      overflow: hidden; box-shadow: 0 12px 32px -10px rgba(24,15,44,.28);
+      transition: transform .3s var(--ease), box-shadow .3s var(--ease); cursor: pointer;
+    }
+    .dl-fcard:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -12px rgba(123, 47, 247, .28); }
+    .dl-fcard.is-active { border-color: var(--brand-violet); box-shadow: 0 0 0 2px var(--brand-violet), 0 16px 36px -12px rgba(123, 47, 247, .3); }
+    .dl-fcard__img { height: 130px; overflow: hidden; position: relative; }
+    .dl-fcard__img img { width: 100%; height: 100%; object-fit: cover; }
+    .dl-fcard__badge {
+      position: absolute; top: 10px; left: 10px; padding: 4px 9px;
+      background: rgb(var(--surface-rgb) / .92); backdrop-filter: blur(8px); border-radius: 999px;
+      font-size: 10px; font-weight: 700; letter-spacing: .03em;
+    }
+    .dl-fcard__body { padding: 12px 14px 14px; }
+    .dl-fcard__name { font-family: var(--font-display); font-size: 14.5px; font-weight: 800; margin-bottom: 6px; line-height: 1.25; }
+    .dl-fcard__meta { font-size: 12px; color: var(--ink-soft-0); line-height: 1.45; display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+    .dl-fcard__meta span { display: flex; align-items: center; gap: 6px; }
+    .dl-fcard__meta i { width: 12px; height: 12px; color: var(--brand-violet); flex-shrink: 0; }
+    .dl-fcard__cta {
+      display: inline-flex; align-items: center; gap: 5px; padding: 8px 12px;
+      background: var(--brand-grad); color: #fff; border: none; border-radius: 8px;
+      font-size: 11.5px; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s;
+    }
+    .dl-fcard__cta:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -6px rgba(123, 47, 247, .4); }
+    .dl-fcard__cta i { width: 13px; height: 13px; }
+    .leaflet-container { background: #e8e4f0; font-family: inherit; }
+    .dl-pin {
+      background: var(--brand-grad); width: 26px; height: 26px;
+      border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+      border: 2px solid #fff; box-shadow: 0 4px 12px rgba(123, 47, 247, .4);
+    }
+    .dl-news {
+      padding: clamp(48px, 7vw, 96px) var(--gutter);
+      background: rgb(var(--chip-rgb) / .3); border-top: 1px solid var(--hair-0);
+    }
+    .dl-news__in { width: var(--measure); margin: 0 auto; }
+    .dl-news__head {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      gap: 20px; margin-bottom: clamp(28px, 4vw, 40px); flex-wrap: wrap;
+    }
+    .dl-news__eyebrow {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 10.5px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--ink-soft-0); margin-bottom: 10px;
+    }
+    .dl-news__eyebrow::before { content: ''; width: 10px; height: 10px; background: var(--brand-grad); border-radius: 2px; }
+    .dl-news__title { font-family: var(--font-display); font-size: clamp(24px, 2.8vw, 36px); font-weight: 800; letter-spacing: -.03em; }
+    .dl-news__link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink-soft-0); transition: color .2s; }
+    .dl-news__link:hover { color: var(--brand-violet); }
+    .dl-news__link i { width: 14px; height: 14px; }
+    .dl-posts { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2vw, 24px); }
+    .dl-post {
+      display: flex; flex-direction: column; background: var(--surface-0); border: 1px solid var(--hair-0);
+      border-radius: 18px; overflow: hidden; transition: border-color .3s, box-shadow .3s, transform .3s;
+      text-decoration: none; color: inherit;
+    }
+    .dl-post:hover { border-color: var(--brand-violet); box-shadow: 0 24px 48px -18px rgba(123, 47, 247, .2); transform: translateY(-4px); }
+    .dl-post__media { height: 180px; overflow: hidden; position: relative; }
+    .dl-post__media img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s var(--ease); }
+    .dl-post:hover .dl-post__media img { transform: scale(1.05); }
+    .dl-post__body { padding: 18px 18px 20px; flex: 1; display: flex; flex-direction: column; }
+    .dl-post__cat { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-violet); margin-bottom: 8px; }
+    .dl-post__t { font-family: var(--font-display); font-size: 16px; font-weight: 800; line-height: 1.3; margin-bottom: 8px; }
+    .dl-post__d { font-size: 13px; line-height: 1.55; color: var(--ink-soft-0); margin-bottom: 14px; flex: 1; }
+    .dl-post__go { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; color: var(--ink-0); }
+    .dl-post__go i { width: 14px; height: 14px; }
+    @media (max-width: 980px) {
+      .dl-shell { grid-template-columns: 1fr; min-height: auto; }
+      .dl-panel { border-right: none; border-bottom: 1px solid var(--hair-0); }
+      .dl-map-area, #map { min-height: 420px; }
+      .dl-posts { grid-template-columns: 1fr; }
+      .dl-collage__grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+      .dl-collage__item { grid-column: auto !important; grid-row: auto !important; height: 140px; }
+      .dl-collage__item:nth-child(1) { grid-column: 1 / -1 !important; height: 180px; }
+      .dl-stats { grid-template-columns: repeat(2, 1fr); gap: 20px 12px; }
+    }
+    @media (max-width: 560px) {
+      .dl-float-cards { padding: 12px; }
+      .dl-fcard { flex: 0 0 85vw; }
+    }
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition-duration: .01ms !important; }
-    }</style>
+    }
+    @keyframes reveal-up {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="header__top">
-    <a class="brand" href="index.html">
-      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
-      <span class="brand__txt">Hazra Electrical Bike</span>
+<header class="sticky-bar" id="stickyBar" aria-hidden="false">
+  <div class="sticky-bar__inner">
+    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
     </a>
-    <button class="theme" id="theme" aria-label="Toggle theme">
-      <i data-lucide="sun-medium" class="theme__sun"></i>
-      <i data-lucide="moon" class="theme__moon"></i>
+    <button class="burger" id="stickyBurger" aria-label="Open menu" aria-expanded="false" aria-controls="stickyNav">
+      <span></span><span></span><span></span>
     </button>
+    <nav class="nav sticky-bar__nav" id="stickyNav">
+      <a href="index.html" class="nav__i">Home</a>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">About <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="our-story.html" class="nav__s">Our Story</a>
+          <a href="career.html" class="nav__s">Career</a>
+          <a href="index.html#faq" class="nav__s">FAQ</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Products <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu nav__menu--wide">
+          <a href="chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+          <a href="chalo-smart-pro.html" class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
+          <a href="chalo-smart-plus.html" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
+          <a href="chalo-smart-eco.html" class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
+          <a href="chalo-neo.html" class="nav__s">CHALO NEO <em>Low Speed</em></a>
+          <a href="nja-7.html" class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Social <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="contest.html" class="nav__s">Contest <em>Reels Contest</em></a>
+          <a href="blog.html" class="nav__s">Blog</a>
+          <a href="index.html#news" class="nav__s">News</a>
+          <a href="battery-use.html" class="nav__s">Battery Use</a>
+          <a href="ev-future.html" class="nav__s">EV Future</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t is-on" aria-expanded="false">Dealers <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="dealer-locator.html" class="nav__s">Locate Dealers</a>
+          <a href="become-a-dealer.html" class="nav__s">Become a Dealer</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Service <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="warranty-free.html" class="nav__s">Warranty (Free)</a>
+          <a href="warranty-paid.html" class="nav__s">Warranty (Paid)</a>
+          <a href="battery-use.html" class="nav__s">Battery Care</a>
+        </div>
+      </div>
+      <a href="index.html#contact" class="nav__i">Contact</a>
+    </nav>
+    <div class="sticky-bar__end">
+      <button class="theme" id="stickyTheme" aria-label="Toggle theme">
+        <i class="theme__sun" data-lucide="sun"></i>
+        <i class="theme__moon" data-lucide="moon"></i>
+      </button>
+      <a href="index.html#contact" class="sticky-bar__cta" aria-label="Contact us">
+        <i data-lucide="shopping-bag"></i><span>CONTACT US</span>
+      </a>
+    </div>
   </div>
 </header>
 
-<section class="hero">
-  <h1 class="hero__title">Find a Dealer</h1>
-  <p class="hero__lead">
-    Discover the nearest Hazra dealer and book your test ride today.
-  </p>
+<section class="dl-hero">
+  <div class="dl-hero__in">
+    <p class="dl-hero__tag">Dealer Network</p>
+    <h1 class="dl-hero__title">Find Your Nearest<br>Hazra Dealer</h1>
+    <p class="dl-hero__lead">Experience the ride before you buy. Locate authorized dealers across India, book a test ride, and start your electric journey.</p>
+    <div class="dl-stats" id="stats">
+      <div class="dl-stat"><div class="dl-stat__num" data-target="150">0</div><div class="dl-stat__label">Dealers</div></div>
+      <div class="dl-stat"><div class="dl-stat__num" data-target="80">0</div><div class="dl-stat__label">Cities</div></div>
+      <div class="dl-stat"><div class="dl-stat__num" data-target="25">0</div><div class="dl-stat__label">States</div></div>
+      <div class="dl-stat"><div class="dl-stat__num" data-target="50">0</div><div class="dl-stat__label">k+ Riders</div></div>
+    </div>
+  </div>
 </section>
 
-<section class="search">
-  <div class="search__in">
-    <div class="search__box">
-      <div class="field">
-        <label>City</label>
-        <input type="text" placeholder="Enter your city" id="cityInput">
-      </div>
-      <div class="field">
-        <label>Model</label>
-        <select id="modelSelect">
-          <option>All models</option>
-          <option>CHALO 1000 V2</option>
-          <option>CHALO SMART PRO</option>
-          <option>CHALO SMART PLUS</option>
-        </select>
-      </div>
+<section class="dl-collage">
+  <div class="dl-collage__in">
+    <div class="dl-collage__head"><h2 class="dl-collage__title">Our showrooms &amp; community</h2></div>
+    <div class="dl-collage__grid">
+      <div class="dl-collage__item"><img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" alt="EV showroom" loading="lazy"></div>
+      <div class="dl-collage__item"><img src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80" alt="Electric scooter" loading="lazy"></div>
+      <div class="dl-collage__item"><img src="https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=600&q=80" alt="City charging" loading="lazy"></div>
+      <div class="dl-collage__item"><img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&q=80" alt="Rider on road" loading="lazy"></div>
+      <div class="dl-collage__item"><img src="https://images.unsplash.com/photo-1568605117035-3bdf3e3f0f0a?w=600&q=80" alt="Modern dealership" loading="lazy"></div>
     </div>
+  </div>
+</section>
 
-    <div class="dealers">
-      <div class="dealer__card" style="--i: 0">
-        <h3 class="dealer__name">Hazra Delhi NCR</h3>
-        <div class="dealer__info">
-          <span><i data-lucide="map-pin"></i>Delhi, Gurgaon, Noida</span>
-          <span><i data-lucide="phone"></i">+91 98290 16542</span>
-          <span><i data-lucide="mail"></i>delhi@hazraev.com</span>
+<section class="dl-locator">
+  <div class="dl-locator__in">
+    <div class="dl-locator__head">
+      <p class="dl-locator__eyebrow">Locate</p>
+      <h2 class="dl-locator__title">Dealers near you</h2>
+    </div>
+    <div class="dl-shell">
+      <aside class="dl-panel">
+        <h3 class="dl-panel__title"><i data-lucide="sliders-horizontal"></i> Filters</h3>
+        <div class="dl-group">
+          <span class="dl-group__label">State</span>
+          <div class="dl-field"><select id="stateSelect"><option value="">All states</option></select></div>
         </div>
-        <button class="dealer__cta">
-          <span>Book Test Ride</span>
-          <i data-lucide="arrow-right"></i>
-        </button>
-      </div>
-
-      <div class="dealer__card" style="--i: 1">
-        <h3 class="dealer__name">Hazra Bangalore</h3>
-        <div class="dealer__info">
-          <span><i data-lucide="map-pin"></i>Bangalore, Whitefield</span>
-          <span><i data-lucide="phone"></i>+91 80123 45678</span>
-          <span><i data-lucide="mail"></i>bangalore@hazraev.com</span>
+        <div class="dl-group">
+          <span class="dl-group__label">District</span>
+          <div class="dl-field"><select id="districtSelect" disabled><option value="">All districts</option></select></div>
         </div>
-        <button class="dealer__cta">
-          <span>Book Test Ride</span>
-          <i data-lucide="arrow-right"></i>
-        </button>
-      </div>
-
-      <div class="dealer__card" style="--i: 2">
-        <h3 class="dealer__name">Hazra Mumbai</h3>
-        <div class="dealer__info">
-          <span><i data-lucide="map-pin"></i>Mumbai, Thane</span>
-          <span><i data-lucide="phone"></i>+91 90012 34567</span>
-          <span><i data-lucide="mail"></i>mumbai@hazraev.com</span>
+        <div class="dl-group">
+          <span class="dl-group__label">Dealer type</span>
+          <div class="dl-chips" id="typeChips">
+            <button class="dl-chip is-on" data-type="all">All</button>
+            <button class="dl-chip" data-type="showroom">Showroom</button>
+            <button class="dl-chip" data-type="service">Service</button>
+          </div>
         </div>
-        <button class="dealer__cta">
-          <span>Book Test Ride</span>
-          <i data-lucide="arrow-right"></i>
-        </button>
-      </div>
-
-      <div class="dealer__card" style="--i: 3">
-        <h3 class="dealer__name">Hazra Pune</h3>
-        <div class="dealer__info">
-          <span><i data-lucide="map-pin"></i>Pune, Hinjewadi</span>
-          <span><i data-lucide="phone"></i>+91 78901 23456</span>
-          <span><i data-lucide="mail"></i>pune@hazraev.com</span>
+        <div class="dl-stats-box" id="stateStats">
+          <div class="dl-stats-box__item"><div class="dl-stats-box__num" id="statDealers">0</div><div class="dl-stats-box__label">Dealers</div></div>
+          <div class="dl-stats-box__item"><div class="dl-stats-box__num" id="statCities">0</div><div class="dl-stats-box__label">Cities</div></div>
         </div>
-        <button class="dealer__cta">
-          <span>Book Test Ride</span>
-          <i data-lucide="arrow-right"></i>
-        </button>
-      </div>
-
-      <div class="dealer__card" style="--i: 4">
-        <h3 class="dealer__name">Hazra Kolkata</h3>
-        <div class="dealer__info">
-          <span><i data-lucide="map-pin"></i>Kolkata, Salt Lake</span>
-          <span><i data-lucide="phone"></i>+91 67890 12345</span>
-          <span><i data-lucide="mail"></i>kolkata@hazraev.com</span>
-        </div>
-        <button class="dealer__cta">
-          <span>Book Test Ride</span>
-          <i data-lucide="arrow-right"></i>
-        </button>
-      </div>
-
-      <div class="dealer__card" style="--i: 5">
-        <h3 class="dealer__name">Hazra Jaipur</h3>
-        <div class="dealer__info">
-          <span><i data-lucide="map-pin"></i>Jaipur, C-Scheme</span>
-          <span><i data-lucide="phone"></i>+91 56789 01234</span>
-          <span><i data-lucide="mail"></i>jaipur@hazraev.com</span>
-        </div>
-        <button class="dealer__cta">
-          <span>Book Test Ride</span>
-          <i data-lucide="arrow-right"></i>
-        </button>
+        <button class="dl-apply" id="applyFilter">Apply Filters</button>
+      </aside>
+      <div class="dl-map-area">
+        <div id="map"></div>
+        <div class="dl-float-cards" id="floatCards"></div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="footer">
-  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
-    Find your closest dealer and start your EV journey
-  </p>
-  <a class="footer__link" href="index.html">
-    <span>Back to home</span>
-    <i data-lucide="arrow-right"></i>
-  </a>
+<section class="dl-news" id="dealer-news">
+  <div class="dl-news__in">
+    <div class="dl-news__head">
+      <div>
+        <p class="dl-news__eyebrow">Dealer News</p>
+        <h2 class="dl-news__title">Updates from the network</h2>
+      </div>
+      <a class="dl-news__link" href="blog.html">View all <i data-lucide="arrow-up-right"></i></a>
+    </div>
+    <div class="dl-posts">
+      <a class="dl-post" href="blog.html">
+        <div class="dl-post__media"><img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80" alt="" loading="lazy"></div>
+        <div class="dl-post__body">
+          <span class="dl-post__cat">Expansion</span>
+          <h3 class="dl-post__t">New showrooms open across Maharashtra &amp; Karnataka</h3>
+          <p class="dl-post__d">Eight new touchpoints this quarter, bringing test rides and service closer to riders in Pune, Thane and Bengaluru.</p>
+          <span class="dl-post__go">Read <i data-lucide="arrow-up-right"></i></span>
+        </div>
+      </a>
+      <a class="dl-post" href="blog.html">
+        <div class="dl-post__media"><img src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=600&q=80" alt="" loading="lazy"></div>
+        <div class="dl-post__body">
+          <span class="dl-post__cat">Partnership</span>
+          <h3 class="dl-post__t">Why EV dealerships are a high-growth local business</h3>
+          <p class="dl-post__d">Demand signals, service revenue and local trust — what actually makes a two-wheeler EV counter work.</p>
+          <span class="dl-post__go">Read <i data-lucide="arrow-up-right"></i></span>
+        </div>
+      </a>
+      <a class="dl-post" href="become-a-dealer.html">
+        <div class="dl-post__media"><img src="https://images.unsplash.com/photo-1568605117035-3bdf3e3f0f0a?w=600&q=80" alt="" loading="lazy"></div>
+        <div class="dl-post__body">
+          <span class="dl-post__cat">Opportunity</span>
+          <h3 class="dl-post__t">Become a Hazra dealer — applications open for Q4</h3>
+          <p class="dl-post__d">Join a network built on transparent range figures, strong service support and real rider demand.</p>
+          <span class="dl-post__go">Apply <i data-lucide="arrow-up-right"></i></span>
+        </div>
+      </a>
+    </div>
+  </div>
 </section>
 
+<footer class="foot" id="contact">
+  <div class="foot__wave"></div>
+  <div class="foot__bg foot__bg--light" aria-hidden="true"></div>
+  <div class="foot__bg foot__bg--dark" aria-hidden="true"></div>
+  <i class="foot__veil"></i>
+  <div class="wrap foot__in">
+    <div class="foot__main">
+      <div class="foot__content">
+        <div class="foot__brand">
+          <img class="foot__logo" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+          <p class="foot__tag">Premium electric scooters designed for smarter, cleaner and more affordable mobility.</p>
+          <ul class="foot__contact">
+            <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
+            <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
+            <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
+          </ul>
+        </div>
+        <nav class="foot__cols" aria-label="Footer">
+          <div class="fcol">
+            <h4>Electric Scooters</h4>
+            <a href="chalo-1000-v2.html">CHALO 1000 V2</a>
+            <a href="chalo-smart-pro.html">CHALO SMART PRO</a>
+            <a href="chalo-smart-plus.html">CHALO SMART PLUS</a>
+            <a href="chalo-neo.html">CHALO NEO</a>
+            <a href="index.html#collection">Compare models</a>
+            <a href="index.html#test-ride">Book test ride</a>
+          </div>
+          <div class="fcol">
+            <h4>Buy</h4>
+            <a href="#">Book a scooter</a>
+            <a href="#">EMI calculator</a>
+            <a href="#">Charging</a>
+            <a href="#">Download brochure</a>
+            <a href="dealer-locator.html">Locate dealers</a>
+          </div>
+          <div class="fcol">
+            <h4>Ownership</h4>
+            <a href="#">Running cost calculator</a>
+            <a href="index.html#performance">Range confidence</a>
+            <a href="#">Accessories</a>
+            <a href="#">Battery warranty</a>
+            <a href="battery-use.html">Battery use</a>
+          </div>
+          <div class="fcol">
+            <h4>Company</h4>
+            <a href="our-story.html">Our story</a>
+            <a href="blog.html">Blog</a>
+            <a href="index.html#news">News</a>
+            <a href="career.html">Careers</a>
+            <a href="become-a-dealer.html">Become a dealer</a>
+          </div>
+          <div class="fcol">
+            <h4>Support</h4>
+            <a href="index.html#faq">FAQs</a>
+            <a href="index.html#contact">Contact us</a>
+            <a href="#">Register complaint</a>
+            <a href="warranty-free.html">Warranty registration</a>
+            <a href="#">Sitemap</a>
+          </div>
+        </nav>
+      </div>
+      <aside class="foot__social-section">
+        <h3 class="foot__social-title">Follow us</h3>
+        <div class="foot__socials">
+          <a href="#" class="foot__social-link foot__social--instagram" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+          <a href="#" class="foot__social-link foot__social--facebook" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+          <a href="#" class="foot__social-link foot__social--youtube" aria-label="YouTube"><i data-lucide="youtube"></i></a>
+          <a href="#" class="foot__social-link foot__social--whatsapp" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
+        </div>
+      </aside>
+    </div>
+    <div class="foot__base">
+      <p>&copy; 2026 Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
+      <div class="foot__legal"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></div>
+    </div>
+  </div>
+</footer>
+
 <script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
   lucide.createIcons();
-  const themeBtn = document.getElementById('theme');
-  themeBtn.addEventListener('click', () => {
+  document.getElementById('stickyTheme').addEventListener('click', () => {
     const html = document.documentElement;
     const isDark = html.getAttribute('data-theme') === 'dark';
     html.setAttribute('data-theme', isDark ? 'light' : 'dark');
     localStorage.setItem('theme', isDark ? 'light' : 'dark');
   });
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-</script>
+  document.querySelectorAll('.nav__grp').forEach(grp => {
+    const btn = grp.querySelector('.nav__i--t');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = grp.classList.contains('is-open');
+      document.querySelectorAll('.nav__grp').forEach(g => g.classList.remove('is-open'));
+      if (!open) grp.classList.add('is-open');
+      btn.setAttribute('aria-expanded', !open);
+    });
+  });
+  document.addEventListener('click', () => document.querySelectorAll('.nav__grp').forEach(g => g.classList.remove('is-open')));
+  const burger = document.getElementById('stickyBurger');
+  const nav = document.getElementById('stickyNav');
+  if (burger && nav) {
+    burger.addEventListener('click', () => {
+      const open = burger.classList.toggle('is-on');
+      nav.classList.toggle('is-open', open);
+      burger.setAttribute('aria-expanded', open);
+    });
+  }
+  function animateCounters() {
+    document.querySelectorAll('.dl-stat__num').forEach(el => {
+      const target = +el.dataset.target;
+      const start = performance.now();
+      const duration = 1600;
+      function tick(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const v = Math.floor(eased * target);
+        el.textContent = v + (target === 50 ? '' : '+');
+        if (p < 1) requestAnimationFrame(tick);
+        else el.textContent = target + (target === 50 ? '' : '+');
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+  const obs = new IntersectionObserver((ents) => {
+    if (ents[0].isIntersecting) { animateCounters(); obs.disconnect(); }
+  }, { threshold: 0.35 });
+  obs.observe(document.getElementById('stats'));
 
+  const dealersData = [
+    { id:1, name:"Hazra Delhi NCR", state:"Delhi", district:"New Delhi", city:"New Delhi", address:"Connaught Place, New Delhi 110001", phone:"+91 98290 16542", lat:28.6315, lng:77.2167, type:"showroom", img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80" },
+    { id:2, name:"Hazra Gurgaon", state:"Haryana", district:"Gurugram", city:"Gurugram", address:"Sector 29, Gurugram 122001", phone:"+91 98123 45678", lat:28.4595, lng:77.0266, type:"showroom", img:"https://images.unsplash.com/photo-1568605117035-3bdf3e3f0f0a?w=500&q=80" },
+    { id:3, name:"Hazra Noida", state:"Uttar Pradesh", district:"Gautam Buddha Nagar", city:"Noida", address:"Sector 18, Noida 201301", phone:"+91 98765 43210", lat:28.5700, lng:77.3200, type:"service", img:"https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=500&q=80" },
+    { id:4, name:"Hazra Mumbai Central", state:"Maharashtra", district:"Mumbai", city:"Mumbai", address:"Lower Parel, Mumbai 400013", phone:"+91 90012 34567", lat:18.9940, lng:72.8250, type:"showroom", img:"https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=500&q=80" },
+    { id:5, name:"Hazra Thane", state:"Maharashtra", district:"Thane", city:"Thane", address:"Ghodbunder Road, Thane 400607", phone:"+91 91234 56789", lat:19.2183, lng:72.9781, type:"service", img:"https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500&q=80" },
+    { id:6, name:"Hazra Pune", state:"Maharashtra", district:"Pune", city:"Pune", address:"Hinjewadi Phase 1, Pune 411057", phone:"+91 78901 23456", lat:18.5912, lng:73.7389, type:"showroom", img:"https://images.unsplash.com/photo-1568605117035-3bdf3e3f0f0a?w=500&q=80" },
+    { id:7, name:"Hazra Bangalore", state:"Karnataka", district:"Bengaluru Urban", city:"Bengaluru", address:"Whitefield, Bengaluru 560066", phone:"+91 80123 45678", lat:12.9698, lng:77.7500, type:"showroom", img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80" },
+    { id:8, name:"Hazra Electronic City", state:"Karnataka", district:"Bengaluru Urban", city:"Bengaluru", address:"Electronic City Phase 2, Bengaluru 560100", phone:"+91 87654 32109", lat:12.8399, lng:77.6770, type:"service", img:"https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=500&q=80" },
+    { id:9, name:"Hazra Jaipur", state:"Rajasthan", district:"Jaipur", city:"Jaipur", address:"C-Scheme, Jaipur 302001", phone:"+91 56789 01234", lat:26.9124, lng:75.7873, type:"showroom", img:"https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=500&q=80" },
+    { id:10, name:"Hazra Kolkata", state:"West Bengal", district:"Kolkata", city:"Kolkata", address:"Salt Lake Sector V, Kolkata 700091", phone:"+91 67890 12345", lat:22.5726, lng:88.3639, type:"showroom", img:"https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500&q=80" },
+    { id:11, name:"Hazra Hyderabad", state:"Telangana", district:"Hyderabad", city:"Hyderabad", address:"Hitech City, Hyderabad 500081", phone:"+91 99887 76655", lat:17.4435, lng:78.3772, type:"showroom", img:"https://images.unsplash.com/photo-1568605117035-3bdf3e3f0f0a?w=500&q=80" },
+    { id:12, name:"Hazra Ahmedabad", state:"Gujarat", district:"Ahmedabad", city:"Ahmedabad", address:"SG Highway, Ahmedabad 380054", phone:"+91 88776 65544", lat:23.0225, lng:72.5714, type:"service", img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80" },
+    { id:13, name:"Hazra Chandigarh", state:"Chandigarh", district:"Chandigarh", city:"Chandigarh", address:"Sector 17, Chandigarh 160017", phone:"+91 77665 54433", lat:30.7415, lng:76.7681, type:"showroom", img:"https://images.unsplash.com/photo-1593941707882-a5bba14938c7?w=500&q=80" },
+    { id:14, name:"Hazra Lucknow", state:"Uttar Pradesh", district:"Lucknow", city:"Lucknow", address:"Hazratganj, Lucknow 226001", phone:"+91 66554 43322", lat:26.8467, lng:80.9462, type:"service", img:"https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=500&q=80" },
+    { id:15, name:"Hazra Indore", state:"Madhya Pradesh", district:"Indore", city:"Indore", address:"Vijay Nagar, Indore 452010", phone:"+91 55443 32211", lat:22.7196, lng:75.8577, type:"showroom", img:"https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500&q=80" }
+  ];
+  const stateMap = {};
+  dealersData.forEach(d => { if (!stateMap[d.state]) stateMap[d.state] = new Set(); stateMap[d.state].add(d.district); });
+  const stateSelect = document.getElementById('stateSelect');
+  const districtSelect = document.getElementById('districtSelect');
+  const stateStats = document.getElementById('stateStats');
+  const floatCards = document.getElementById('floatCards');
+  let currentType = 'all';
+  Object.keys(stateMap).sort().forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; stateSelect.appendChild(o); });
+  stateSelect.addEventListener('change', () => {
+    const state = stateSelect.value;
+    districtSelect.innerHTML = '<option value="">All districts</option>';
+    districtSelect.disabled = !state;
+    if (state) {
+      [...stateMap[state]].sort().forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; districtSelect.appendChild(o); });
+      const inState = dealersData.filter(d => d.state === state);
+      document.getElementById('statDealers').textContent = inState.length;
+      document.getElementById('statCities').textContent = new Set(inState.map(d => d.city)).size;
+      stateStats.classList.add('is-visible');
+    } else stateStats.classList.remove('is-visible');
+  });
+  document.getElementById('typeChips').addEventListener('click', e => {
+    const chip = e.target.closest('.dl-chip');
+    if (!chip) return;
+    document.querySelectorAll('.dl-chip').forEach(c => c.classList.remove('is-on'));
+    chip.classList.add('is-on');
+    currentType = chip.dataset.type;
+  });
+  const map = L.map('map', { center: [22.5, 78.5], zoom: 5, zoomControl: true, scrollWheelZoom: false });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+  let markers = [];
+  function clearMarkers() { markers.forEach(m => map.removeLayer(m)); markers = []; }
+  function addMarkers(list) {
+    clearMarkers();
+    list.forEach(d => {
+      const icon = L.divIcon({ className: '', html: '<div class="dl-pin"></div>', iconSize: [26, 26], iconAnchor: [13, 26] });
+      const m = L.marker([d.lat, d.lng], { icon }).addTo(map).bindPopup('<strong>' + d.name + '</strong><br>' + d.address + '<br>' + d.phone);
+      m.on('click', () => highlightCard(d.id));
+      markers.push(m);
+    });
+    if (list.length === 1) map.setView([list[0].lat, list[0].lng], 12);
+    else if (list.length > 1) { const g = L.featureGroup(markers); map.fitBounds(g.getBounds().pad(0.12)); }
+    else map.setView([22.5, 78.5], 5);
+  }
+  function renderFloatCards(list) {
+    floatCards.innerHTML = '';
+    if (!list.length) { floatCards.innerHTML = '<div style="padding:20px;color:var(--ink-soft-0);font-size:14px;">No dealers match your filters.</div>'; return; }
+    list.forEach(d => {
+      const card = document.createElement('article');
+      card.className = 'dl-fcard';
+      card.dataset.id = d.id;
+      card.innerHTML = '<div class="dl-fcard__img"><img src="' + d.img + '" alt="' + d.name + '" loading="lazy"><span class="dl-fcard__badge">' + d.city + '</span></div><div class="dl-fcard__body"><h4 class="dl-fcard__name">' + d.name + '</h4><div class="dl-fcard__meta"><span><i data-lucide="map-pin"></i>' + d.address + '</span><span><i data-lucide="phone"></i>' + d.phone + '</span></div><button class="dl-fcard__cta">Book Test Ride <i data-lucide="arrow-right"></i></button></div>';
+      card.addEventListener('click', () => { map.setView([d.lat, d.lng], 13); highlightCard(d.id); });
+      floatCards.appendChild(card);
+    });
+    lucide.createIcons();
+  }
+  function highlightCard(id) {
+    document.querySelectorAll('.dl-fcard').forEach(c => c.classList.toggle('is-active', +c.dataset.id === id));
+    const active = document.querySelector('.dl-fcard[data-id="' + id + '"]');
+    if (active) active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+  function applyFilters() {
+    const state = stateSelect.value;
+    const district = districtSelect.value;
+    let list = dealersData;
+    if (state) list = list.filter(d => d.state === state);
+    if (district) list = list.filter(d => d.district === district);
+    if (currentType !== 'all') list = list.filter(d => d.type === currentType);
+    renderFloatCards(list);
+    addMarkers(list);
+  }
+  document.getElementById('applyFilter').addEventListener('click', applyFilters);
+  districtSelect.addEventListener('change', applyFilters);
+  renderFloatCards(dealersData);
+  addMarkers(dealersData);
+</script>
 </body>
 </html>

@@ -3,100 +3,417 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-/* Applied before first paint so a dark-mode visitor never sees a light
-   flash. Kept inline and tiny on purpose: an external file would race
-   the paint it exists to prevent. */
-(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
-if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
-document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
-</script>
-  <title>EV Future Trends | Hazra</title>
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Hazra Electrical Bike">
-<meta property="og:title" content="EV Future Trends | Hazra">
-<meta property="og:description" content="Insights into the evolving landscape of electric mobility, technology trends, and what is next for urban transportation.">
-<meta property="og:url" content="https://hazraelectricalbike.com/ev-future.html">
-<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
-<meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="https://hazraelectricalbike.com/ev-future.html">
-<meta name="description" content="Insights into the evolving landscape of electric mobility, technology trends, and what is next for urban transportation.">
+  <script>
+  (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+  if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+  document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+  </script>
+  <title>The EV Future — Electric Mobility Ahead | Hazra</title>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hazra Electrical Bike">
+  <meta property="og:title" content="The EV Future — Electric Mobility Ahead | Hazra">
+  <meta property="og:description" content="Where India’s electric two-wheeler journey is heading: batteries, charging, cities and the riders who will shape the next decade.">
+  <meta property="og:url" content="https://hazraelectricalbike.com/ev-future.html">
+  <meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://hazraelectricalbike.com/ev-future.html">
+  <meta name="description" content="Where India’s electric two-wheeler journey is heading: batteries, charging, cities and the riders who will shape the next decade.">
   <link rel="icon" href="assets/hazraev.png" type="image/png">
-<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles/tokens.css">
-<link rel="stylesheet" href="styles/typography.css">
-<link rel="stylesheet" href="styles/global.css">
-<link rel="stylesheet" href="styles/utilities.css">
-<link rel="stylesheet" href="styles/components/page-chrome.css">
+  <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/typography.css">
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="stylesheet" href="styles/utilities.css">
+  <link rel="stylesheet" href="styles/components/page-chrome.css">
   <style>
-
-    .trends {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: rgb(var(--chip-rgb) / .35);
-      border-top: 1px solid var(--hair-0);
-    }
-
-    .trends__in { width: min(1100px, 93vw); margin: 0 auto; }
-
-    .trends__grid {
+    /* ══════════ HERO — Canada-inspired ══════════ */
+    .fx-hero {
+      position: relative;
+      min-height: 88vh;
+      min-height: 88svh;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: clamp(24px, 2.5vw, 40px);
+      place-items: center;
+      overflow: hidden;
+      background: #0d0818;
+      color: #fff;
     }
-
-    .trend__card {
-      padding: clamp(28px, 3vw, 40px);
-      background: var(--surface-0); border: 1px solid var(--hair-0);
-      border-radius: 20px;
-      transition: all .35s var(--ease);
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 100ms) forwards;
+    .fx-hero__bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(13,8,24,.35) 0%, rgba(13,8,24,.15) 40%, rgba(13,8,24,.72) 100%),
+        url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+      transform: scale(1.04);
+      animation: hero-slow 28s ease-in-out infinite alternate;
     }
-
-    .trend__card:hover {
-      border-color: var(--brand-violet);
-      box-shadow: 0 30px 60px -20px rgba(123, 47, 247, .25);
-      transform: translateY(-6px);
+    @keyframes hero-slow {
+      from { transform: scale(1.04) translateY(0); }
+      to   { transform: scale(1.1) translateY(-2%); }
     }
-
-    .trend__icon {
-      display: flex; align-items: center; justify-content: center;
-      width: 56px; height: 56px;
-      border-radius: 14px;
+    .fx-hero__veil {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 55%, var(--surface-0) 100%);
+      pointer-events: none;
+    }
+    .fx-hero__content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 120px var(--gutter) 80px;
+      width: min(1100px, 94vw);
+    }
+    .fx-hero__eyebrow {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.78);
+      margin-bottom: 18px;
+      opacity: 0;
+      animation: fade-up .9s var(--ease) .2s forwards;
+    }
+    .fx-hero__title {
+      font-family: var(--font-display);
+      font-weight: 900;
+      line-height: .92;
+      letter-spacing: -.04em;
+      margin: 0 0 22px;
+      font-size: clamp(56px, 14vw, 148px);
+      color: rgba(255,255,255,.14);
+      text-shadow: 0 0 80px rgba(123,47,247,.25);
+      opacity: 0;
+      animation: title-in 1.2s var(--ease) .35s forwards;
+      user-select: none;
+    }
+    .fx-hero__title span {
+      display: inline-block;
+      background: linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.28) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: letter-pulse 4.5s ease-in-out infinite;
+    }
+    .fx-hero__title span:nth-child(2) { animation-delay: .15s; }
+    .fx-hero__title span:nth-child(3) { animation-delay: .3s; }
+    .fx-hero__title span:nth-child(4) { animation-delay: .45s; }
+    .fx-hero__title span:nth-child(5) { animation-delay: .6s; }
+    .fx-hero__title span:nth-child(6) { animation-delay: .75s; }
+    .fx-hero__title span:nth-child(7) { animation-delay: .9s; }
+    .fx-hero__title span:nth-child(8) { animation-delay: 1.05s; }
+    @keyframes letter-pulse {
+      0%, 100% { filter: brightness(1); transform: translateY(0); }
+      50% { filter: brightness(1.25); transform: translateY(-4px); }
+    }
+    @keyframes title-in {
+      from { opacity: 0; transform: scale(.92) translateY(24px); letter-spacing: .08em; }
+      to   { opacity: 1; transform: none; letter-spacing: -.04em; }
+    }
+    .fx-hero__lead {
+      max-width: 34ch;
+      margin: 0 auto 36px;
+      font-size: clamp(15px, 1.6vw, 18px);
+      line-height: 1.55;
+      color: rgba(255,255,255,.82);
+      opacity: 0;
+      animation: fade-up .9s var(--ease) .55s forwards;
+    }
+    .fx-hero__actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      opacity: 0;
+      animation: fade-up .9s var(--ease) .7s forwards;
+    }
+    .fx-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 26px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      transition: transform .3s var(--ease), box-shadow .3s var(--ease);
+    }
+    .fx-btn--primary {
       background: var(--brand-grad);
+      color: #fff;
+      box-shadow: 0 14px 32px -10px rgba(240,83,43,.55);
+    }
+    .fx-btn--primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 40px -12px rgba(240,83,43,.6);
+    }
+    .fx-btn--ghost {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.28);
+      color: #fff;
+      backdrop-filter: blur(10px);
+    }
+    .fx-btn--ghost:hover {
+      background: rgba(255,255,255,.2);
+      transform: translateY(-2px);
+    }
+    .fx-btn svg { width: 16px; height: 16px; }
+
+    /* floating stats strip */
+    .fx-stats {
+      position: relative;
+      z-index: 3;
+      margin: -42px auto 0;
+      width: min(920px, 92vw);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--hair-0);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      box-shadow: var(--sh-3);
+      border: 1px solid var(--hair-0);
+    }
+    .fx-stats__item {
+      background: var(--surface-0);
+      padding: 22px 16px;
+      text-align: center;
+    }
+    .fx-stats__item strong {
+      display: block;
+      font-family: var(--font-display);
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 800;
+      color: var(--brand-violet);
+      letter-spacing: -.02em;
+      margin-bottom: 4px;
+    }
+    .fx-stats__item span {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--ink-soft-0);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    /* ══════════ SECTIONS ══════════ */
+    .fx-section {
+      padding: clamp(48px, 7vw, 88px) var(--gutter);
+      background: var(--surface-0);
+    }
+    .fx-section--alt {
+      background: rgb(var(--chip-rgb) / .35);
+    }
+    .fx-section__in {
+      width: min(1100px, 94vw);
+      margin-inline: auto;
+    }
+    .fx-section__head {
+      text-align: center;
+      margin-bottom: clamp(36px, 5vw, 56px);
+    }
+    .fx-section__head .eyebrow {
+      margin-bottom: 10px;
+    }
+    .fx-section__head h2 {
+      font-size: clamp(26px, 4vw, 38px);
+      margin-bottom: 12px;
+    }
+    .fx-section__head p {
+      max-width: 48ch;
+      margin-inline: auto;
+      color: var(--ink-soft-0);
+      font-size: var(--fs-md);
+    }
+
+    /* alternating feature rows — organic image curves */
+    .fx-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(28px, 4vw, 56px);
+      align-items: center;
+      margin-bottom: clamp(48px, 7vw, 80px);
+    }
+    .fx-row:last-child { margin-bottom: 0; }
+    .fx-row--rev .fx-row__media { order: 2; }
+    .fx-row--rev .fx-row__copy { order: 1; }
+
+    .fx-row__media {
+      position: relative;
+    }
+    .fx-row__img-wrap {
+      position: relative;
+      border-radius: 28% 72% 44% 56% / 52% 38% 62% 48%;
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+      box-shadow: var(--sh-3);
+      transition: border-radius 1.2s var(--ease);
+    }
+    .fx-row:nth-child(2) .fx-row__img-wrap {
+      border-radius: 62% 38% 58% 42% / 44% 56% 44% 56%;
+    }
+    .fx-row:nth-child(3) .fx-row__img-wrap {
+      border-radius: 42% 58% 36% 64% / 58% 42% 58% 42%;
+    }
+    .fx-row:nth-child(4) .fx-row__img-wrap {
+      border-radius: 54% 46% 68% 32% / 36% 64% 36% 64%;
+    }
+    .fx-row__img-wrap:hover {
+      border-radius: 18px;
+    }
+    .fx-row__img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .7s var(--ease);
+    }
+    .fx-row__img-wrap:hover img {
+      transform: scale(1.06);
+    }
+    .fx-row__num {
+      position: absolute;
+      font-family: var(--font-display);
+      font-size: clamp(72px, 12vw, 120px);
+      font-weight: 900;
+      line-height: 1;
+      color: rgb(var(--surface-rgb) / .92);
+      text-shadow: 0 8px 40px rgba(24,15,44,.18);
+      z-index: 2;
+      pointer-events: none;
+      opacity: .9;
+    }
+    .fx-row:nth-child(odd) .fx-row__num {
+      bottom: -18px;
+      left: -8px;
+    }
+    .fx-row:nth-child(even) .fx-row__num {
+      bottom: -18px;
+      right: -8px;
+    }
+
+    .fx-row__copy h3 {
+      font-size: clamp(22px, 2.8vw, 28px);
+      margin-bottom: 12px;
+    }
+    .fx-row__copy .loc {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--brand-violet);
+      margin-bottom: 10px;
+    }
+    .fx-row__copy p {
+      color: var(--ink-soft-0);
+      font-size: 14.5px;
+      line-height: 1.7;
+      margin-bottom: 18px;
+      max-width: 42ch;
+    }
+    .fx-row__copy .fx-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: 1px solid var(--hair-0);
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--ink-0);
+      transition: border-color .25s, background .25s, transform .25s;
+    }
+    .fx-row__copy .fx-link:hover {
+      border-color: var(--brand-violet);
+      background: rgb(123 47 247 / .06);
+      transform: translateY(-2px);
+    }
+    .fx-row__copy .fx-link svg { width: 14px; height: 14px; }
+
+    /* insight cards */
+    .fx-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .fx-card {
+      background: var(--surface-0);
+      border: 1px solid var(--hair-0);
+      border-radius: var(--r-lg);
+      padding: 26px 22px;
+      transition: border-color .3s, box-shadow .3s, transform .3s;
+    }
+    .fx-card:hover {
+      border-color: var(--brand-violet);
+      box-shadow: 0 20px 44px -18px rgba(123,47,247,.22);
+      transform: translateY(-4px);
+    }
+    .fx-card__icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--brand-grad);
+      display: grid;
+      place-items: center;
       color: #fff;
       margin-bottom: 16px;
     }
-
-    .trend__icon svg { width: 28px; height: 28px; }
-
-    .trend__title {
-      font-family: 'Montserrat'; font-size: 18px;
-      font-weight: 800; margin-bottom: 12px;
+    .fx-card__icon svg { width: 22px; height: 22px; }
+    .fx-card h4 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .fx-card p {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--ink-soft-0);
     }
 
-    .trend__desc {
-      font-size: 13px; line-height: 1.7;
-      color: var(--ink-soft-0); margin-bottom: 16px;
+    /* CTA band */
+    .fx-cta {
+      padding: clamp(48px, 7vw, 72px) var(--gutter);
+      background: linear-gradient(135deg, #2a1548 0%, #180f2c 55%, #0d0818 100%);
+      color: #f6f3fb;
+      text-align: center;
+    }
+    .fx-cta h2 {
+      font-size: clamp(24px, 3.5vw, 34px);
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    .fx-cta p {
+      max-width: 42ch;
+      margin: 0 auto 28px;
+      color: rgba(246,243,251,.75);
+      font-size: 15px;
     }
 
-    .trend__stat {
-      padding: 12px 16px;
-      background: rgb(var(--chip-rgb) / .5);
-      border-radius: 8px;
-      font-size: 12px; font-weight: 700;
-      color: var(--brand-violet);
-      letter-spacing: .05em;
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: none; }
     }
 
-    @keyframes pop {
-      from { opacity: 0; transform: scale(.95); }
-      to { opacity: 1; transform: none; }
+    /* responsive */
+    @media (max-width: 860px) {
+      .fx-stats { grid-template-columns: repeat(2, 1fr); }
+      .fx-row { grid-template-columns: 1fr; gap: 24px; }
+      .fx-row--rev .fx-row__media,
+      .fx-row--rev .fx-row__copy { order: unset; }
+      .fx-cards { grid-template-columns: 1fr; }
+      .fx-hero__title { font-size: clamp(48px, 16vw, 90px); }
+    }
+    @media (max-width: 520px) {
+      .fx-stats { grid-template-columns: 1fr 1fr; }
+      .fx-hero__content { padding-top: 100px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition-duration: .01ms !important; }
-    }</style>
+      .fx-hero__bg { animation: none; }
+      .fx-hero__title span { animation: none; }
+      * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
 </head>
 <body>
 
@@ -113,89 +430,167 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
   </div>
 </header>
 
-<section class="hero">
-  <h1 class="hero__title">The EV Future</h1>
-  <p class="hero__lead">
-    Insights into the evolving landscape of electric mobility,
-    technology trends, and what's next for urban transportation.
-  </p>
+<!-- ══════════ HERO ══════════ -->
+<section class="fx-hero">
+  <div class="fx-hero__bg" aria-hidden="true"></div>
+  <div class="fx-hero__veil" aria-hidden="true"></div>
+  <div class="fx-hero__content">
+    <p class="fx-hero__eyebrow">The road ahead</p>
+    <h1 class="fx-hero__title" aria-label="ELECTRIC">
+      <span>E</span><span>L</span><span>E</span><span>C</span><span>T</span><span>R</span><span>I</span><span>C</span>
+    </h1>
+    <p class="fx-hero__lead">
+      India’s two-wheeler future is already being written on city streets — quieter, cleaner, and more connected than ever.
+    </p>
+    <div class="fx-hero__actions">
+      <a href="#explore" class="fx-btn fx-btn--primary">
+        Explore the future <i data-lucide="arrow-down"></i>
+      </a>
+      <a href="blog.html" class="fx-btn fx-btn--ghost">
+        <i data-lucide="book-open"></i> Read insights
+      </a>
+    </div>
+  </div>
 </section>
 
-<section class="trends">
-  <div class="trends__in">
-    <div class="trends__grid">
-      <div class="trend__card" style="--i: 0">
-        <div class="trend__icon">
-          <i data-lucide="battery"></i>
-        </div>
-        <h3 class="trend__title">Advanced Batteries</h3>
-        <p class="trend__desc">Next-gen solid-state batteries will 2x range and cut charge times to under 30 minutes by 2028.</p>
-        <div class="trend__stat">Growth: +40% annually</div>
-      </div>
+<!-- floating stats -->
+<div class="fx-stats" id="explore">
+  <div class="fx-stats__item">
+    <strong>2.3M+</strong>
+    <span>EVs in 2025</span>
+  </div>
+  <div class="fx-stats__item">
+    <strong>30%</strong>
+    <span>Target by 2030</span>
+  </div>
+  <div class="fx-stats__item">
+    <strong>9%+</strong>
+    <span>2W monthly share</span>
+  </div>
+  <div class="fx-stats__item">
+    <strong>38%</strong>
+    <span>TCO vs petrol</span>
+  </div>
+</div>
 
-      <div class="trend__card" style="--i: 1">
-        <div class="trend__icon">
-          <i data-lucide="wifi"></i>
-        </div>
-        <h3 class="trend__title">Connected Vehicles</h3>
-        <p class="trend__desc">V2X (vehicle-to-everything) communication will enable autonomous features and predictive maintenance.</p>
-        <div class="trend__stat">Market: $50B by 2030</div>
-      </div>
+<!-- ══════════ FEATURE ROWS ══════════ -->
+<section class="fx-section">
+  <div class="fx-section__in">
+    <div class="fx-section__head">
+      <p class="eyebrow">What is changing</p>
+      <h2>The next decade of electric mobility</h2>
+      <p>From battery chemistry to city streets, four forces are reshaping how India moves.</p>
+    </div>
 
-      <div class="trend__card" style="--i: 2">
-        <div class="trend__icon">
-          <i data-lucide="leaf"></i>
+    <!-- 01 Batteries -->
+    <article class="fx-row">
+      <div class="fx-row__media">
+        <div class="fx-row__img-wrap">
+          <img src="https://images.unsplash.com/photo-1593941707882-a5bba14938c7?auto=format&fit=crop&w=900&q=80" alt="Advanced EV battery technology" loading="lazy">
         </div>
-        <h3 class="trend__title">Sustainable Materials</h3>
-        <p class="trend__desc">Recycled and bio-based materials will reduce manufacturing carbon footprint by 60% within 5 years.</p>
-        <div class="trend__stat">Adoption: +35% YoY</div>
+        <span class="fx-row__num">01</span>
       </div>
-
-      <div class="trend__card" style="--i: 3">
-        <div class="trend__icon">
-          <i data-lucide="zap"></i>
-        </div>
-        <h3 class="trend__title">Fast Charging</h3>
-        <p class="trend__desc">300kW chargers and wireless charging stations will eliminate range anxiety entirely.</p>
-        <div class="trend__stat">Infrastructure: $30B invested</div>
+      <div class="fx-row__copy">
+        <span class="loc">Technology</span>
+        <h3>Batteries get denser, safer, local</h3>
+        <p>
+          LFP already dominates Indian two-wheelers for cost and thermal stability. Next come LMFP cells (10–15% more energy) and sodium-ion packs that use abundant domestic materials. Solid-state remains a post-2030 story for mass volume, but pilot programmes are already running.
+        </p>
+        <a href="battery-use.html" class="fx-link">Battery care guide <i data-lucide="arrow-right"></i></a>
       </div>
+    </article>
 
-      <div class="trend__card" style="--i: 4">
-        <div class="trend__icon">
-          <i data-lucide="trending-up"></i>
+    <!-- 02 Charging & cities -->
+    <article class="fx-row fx-row--rev">
+      <div class="fx-row__media">
+        <div class="fx-row__img-wrap">
+          <img src="https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=900&q=80" alt="Urban electric mobility and charging" loading="lazy">
         </div>
-        <h3 class="trend__title">Market Growth</h3>
-        <p class="trend__desc">Global e-2W market will reach 500M units annually by 2035, with India leading at 60% share.</p>
-        <div class="trend__stat">CAGR: 28% (2020-2035)</div>
+        <span class="fx-row__num">02</span>
       </div>
-
-      <div class="trend__card" style="--i: 5">
-        <div class="trend__icon">
-          <i data-lucide="globe"></i>
-        </div>
-        <h3 class="trend__title">Global Standards</h3>
-        <p class="trend__desc">Harmonized charging standards and battery specs will enable global parts availability and support.</p>
-        <div class="trend__stat">Adoption: 90% of OEMs</div>
+      <div class="fx-row__copy">
+        <span class="loc">Infrastructure</span>
+        <h3>Charging moves from rare to routine</h3>
+        <p>
+          Public chargers are still sparse relative to 2030 targets, yet neighbourhood battery swap points and workplace charging are closing the gap for daily riders. Standardisation of connectors and payments will decide how seamless the experience becomes.
+        </p>
+        <a href="dealer-locator.html" class="fx-link">Find dealers & service <i data-lucide="arrow-right"></i></a>
       </div>
+    </article>
 
-      <div class="trend__card" style="--i: 6">
-        <div class="trend__icon">
-          <i data-lucide="shield-check"></i>
+    <!-- 03 Urban riders -->
+    <article class="fx-row">
+      <div class="fx-row__media">
+        <div class="fx-row__img-wrap">
+          <img src="https://images.unsplash.com/photo-1571068316344-75bc76f77890?auto=format&fit=crop&w=900&q=80" alt="Electric scooter in Indian city traffic" loading="lazy">
         </div>
-        <h3 class="trend__title">Safety Tech</h3>
-        <p class="trend__desc">ABS, collision avoidance, and smart airbags will become standard safety features industry-wide.</p>
-        <div class="trend__stat">Lives saved: 100K+ annually</div>
+        <span class="fx-row__num">03</span>
       </div>
+      <div class="fx-row__copy">
+        <span class="loc">Riders</span>
+        <h3>Two-wheelers lead the real transition</h3>
+        <p>
+          Electric scooters already deliver roughly 38% of the total cost of ownership of a petrol equivalent. With most urban trips under 30 km, range anxiety is fading. The next leap is software, connected features and residual-value confidence.
+        </p>
+        <a href="blog-single.html" class="fx-link">Urban mobility story <i data-lucide="arrow-right"></i></a>
+      </div>
+    </article>
 
-      <div class="trend__card" style="--i: 7">
-        <div class="trend__icon">
-          <i data-lucide="target"></i>
+    <!-- 04 Policy & industry -->
+    <article class="fx-row fx-row--rev">
+      <div class="fx-row__media">
+        <div class="fx-row__img-wrap">
+          <img src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=900&q=80" alt="Future of clean mobility planning" loading="lazy">
         </div>
-        <h3 class="trend__title">Zero Emissions</h3>
-        <p class="trend__desc">By 2040, 85% of all 2-wheelers will be electric, eliminating 2 billion tons of CO₂ annually.</p>
-        <div class="trend__stat">Climate impact: 3°C reduction</div>
+        <span class="fx-row__num">04</span>
+      </div>
+      <div class="fx-row__copy">
+        <span class="loc">India</span>
+        <h3>Policy meets local manufacturing</h3>
+        <p>
+          NITI Aayog’s EV30@30 ambition, PM E-DRIVE support and ACC PLI schemes are pushing domestic cell capacity. Localisation of packs, motors and BMS is accelerating; raw-material security remains the longer strategic challenge.
+        </p>
+        <a href="our-story.html" class="fx-link">Our story at Hazra <i data-lucide="arrow-right"></i></a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ══════════ QUICK INSIGHTS ══════════ -->
+<section class="fx-section fx-section--alt">
+  <div class="fx-section__in">
+    <div class="fx-section__head">
+      <p class="eyebrow">Signals</p>
+      <h2>What to watch next</h2>
+      <p>Three developments that will shape ownership in the next few years.</p>
+    </div>
+    <div class="fx-cards">
+      <div class="fx-card">
+        <div class="fx-card__icon"><i data-lucide="battery-charging"></i></div>
+        <h4>Faster real-world range</h4>
+        <p>LMFP and better thermal management are delivering usable range gains without jumping to solid-state. Expect clearer “real traffic” numbers from manufacturers.</p>
+      </div>
+      <div class="fx-card">
+        <div class="fx-card__icon"><i data-lucide="recycle"></i></div>
+        <h4>Second-life & recycling</h4>
+        <p>India’s first large wave of end-of-life EV batteries arrives around 2027–28. Recovery of lithium, cobalt and nickel becomes both an environmental and strategic priority.</p>
+      </div>
+      <div class="fx-card">
+        <div class="fx-card__icon"><i data-lucide="smartphone"></i></div>
+        <h4>Connected ownership</h4>
+        <p>App-based diagnostics, predictive service alerts and integrated navigation that accounts for charge stops will become expected features, not premiums.</p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="fx-cta">
+  <h2>Ready for the electric everyday?</h2>
+  <p>Explore the CHALO range, book a test ride, or find a dealer near you. The future is already on the road.</p>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;">
+    <a href="index.html#products" class="fx-btn fx-btn--primary">View models</a>
+    <a href="dealer-locator.html" class="fx-btn fx-btn--ghost">Locate dealers</a>
   </div>
 </section>
 
@@ -219,9 +614,6 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
     html.setAttribute('data-theme', isDark ? 'light' : 'dark');
     localStorage.setItem('theme', isDark ? 'light' : 'dark');
   });
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
 </script>
-
 </body>
 </html>

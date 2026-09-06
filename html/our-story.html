@@ -430,63 +430,155 @@ html[data-theme="light"] .story-hero__bg{
 }
 .story-faces img:first-child{margin-left:0}
 
-/* Gallery + testimonials */
+/* Wall of Love — dark cards + green accent */
 .story-gal{
-  padding:clamp(36px,5vw,64px) 0;
-  background:var(--surface-0);
-  border-top:1px solid var(--hair-0);
+  padding:clamp(40px,5.5vw,72px) 0;
+  background:#0c1210;color:#e8f0ec;
+  border-top:1px solid rgba(255,255,255,.06);
 }
-.story-gal .sec__head{text-align:center;margin-bottom:clamp(24px,3.5vw,36px)}
-.story-gal .eyebrow{justify-content:center}
+.story-gal .sec__head{text-align:center;margin-bottom:clamp(24px,3.5vw,40px)}
+.story-gal .eyebrow{justify-content:center;color:rgba(232,240,236,.55)}
+.story-gal .eyebrow .sq{background:linear-gradient(120deg,var(--story-green),var(--brand-blue))}
+.story-gal .sec__title{color:#f4faf7}
+.story-gal .sec__title .hl{
+  background:linear-gradient(96deg,var(--story-green),var(--brand-blue));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
 .story-gal__grid{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  grid-auto-rows:minmax(140px,auto);
-  gap:12px;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;
 }
-.story-gal__item{
-  position:relative;border-radius:var(--r-lg);overflow:hidden;
-  border:1px solid var(--hair-0);background:var(--surface-0);
-  opacity:0;transform:translateY(20px) scale(.97);
+.story-gal__card{
+  position:relative;border-radius:18px;overflow:hidden;
+  background:#141c18;border:1px solid rgba(255,255,255,.07);
+  opacity:0;transform:translateY(22px) scale(.97);
+  transition:border-color .3s var(--ease),box-shadow .3s var(--ease),transform .3s var(--ease);
 }
-.story-gal__item.is-in{
+.story-gal__card.is-in{
   animation:reveal-pop .65s var(--ease) forwards;
   animation-delay:calc(var(--i,0)*70ms);
 }
-.story-gal__item--tall{grid-row:span 2}
-.story-gal__item--wide{grid-column:span 2}
-.story-gal__item img{
-  width:100%;height:100%;object-fit:cover;display:block;min-height:140px;
+.story-gal__card:hover{
+  border-color:color-mix(in srgb,var(--story-green) 40%,transparent);
+  box-shadow:0 18px 40px -18px rgba(29,185,84,.35);
+  transform:translateY(-3px);
+}
+.story-gal__card--photo{aspect-ratio:1/1.05}
+.story-gal__card--photo img{
+  width:100%;height:100%;object-fit:cover;display:block;
   transition:transform .65s var(--ease);
 }
-.story-gal__item:hover img{transform:scale(1.06)}
-.story-gal__quote{
-  padding:20px 18px;
-  display:flex;flex-direction:column;justify-content:space-between;
-  min-height:140px;
-  background:rgb(var(--chip-rgb) / .55);
+.story-gal__card--photo:hover img{transform:scale(1.05)}
+.story-gal__badge{
+  position:absolute;left:12px;bottom:12px;z-index:2;
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 10px;border-radius:999px;
+  background:rgba(12,18,16,.82);backdrop-filter:blur(10px);
+  font-size:10.5px;font-weight:700;color:#e8f0ec;
+  border:1px solid rgba(255,255,255,.1);
 }
-.story-gal__quote--grad{
-  background:var(--brand-grad);color:#fff;border:none;
+.story-gal__badge i{width:12px;height:12px;color:var(--story-green)}
+.story-gal__zoom{
+  position:absolute;right:12px;bottom:12px;z-index:2;
+  width:32px;height:32px;border-radius:50%;
+  display:grid;place-items:center;
+  background:rgba(12,18,16,.75);border:1px solid rgba(255,255,255,.12);
+  color:#e8f0ec;text-decoration:none;
 }
-.story-gal__stars{display:flex;gap:3px;margin-bottom:10px;color:var(--brand-orange)}
-.story-gal__quote--grad .story-gal__stars{color:#fff}
-.story-gal__stars svg{width:13px;height:13px;fill:currentColor}
+.story-gal__zoom svg{width:14px;height:14px}
+.story-gal__card--quote{padding:18px 16px 16px;display:flex;flex-direction:column}
+.story-gal__mark{
+  width:28px;height:28px;border-radius:8px;
+  display:grid;place-items:center;margin-bottom:12px;
+  background:color-mix(in srgb,var(--story-green) 18%,transparent);
+  color:var(--story-green);
+}
+.story-gal__mark svg{width:14px;height:14px}
 .story-gal__q{
-  font-size:13.5px;line-height:1.55;font-weight:500;margin-bottom:14px;
-  color:var(--ink-0);
+  font-size:13px;line-height:1.55;color:rgba(232,240,236,.88);
+  margin-bottom:14px;flex:1;
 }
-.story-gal__quote--grad .story-gal__q{color:#fff}
 .story-gal__who{
   display:flex;align-items:center;gap:10px;margin-top:auto;
+  padding-top:12px;border-top:1px solid rgba(255,255,255,.08);
 }
 .story-gal__who img{
-  width:36px;height:36px;border-radius:50%;object-fit:cover;min-height:0;
-  border:2px solid var(--surface-0);
+  width:34px;height:34px;border-radius:50%;object-fit:cover;
+  border:2px solid rgba(29,185,84,.35);
 }
-.story-gal__who b{display:block;font-size:12.5px;font-weight:800}
-.story-gal__who span{font-size:11px;color:var(--ink-soft-0)}
-.story-gal__quote--grad .story-gal__who span{color:rgba(255,255,255,.8)}
+.story-gal__who b{display:block;font-size:12.5px;font-weight:800;color:#f4faf7}
+.story-gal__who span{font-size:11px;color:rgba(232,240,236,.55);display:block}
+.story-gal__verified{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:700;color:var(--story-green);margin:2px 0;
+}
+.story-gal__verified svg{width:11px;height:11px}
+
+.story-map{
+  padding:clamp(40px,5.5vw,72px) 0;
+  background:#0a100e;color:#e8f0ec;
+  border-top:1px solid rgba(255,255,255,.05);
+}
+.story-map__grid{
+  display:grid;grid-template-columns:1.15fr .85fr;
+  gap:clamp(24px,4vw,48px);align-items:center;
+}
+.story-map__title{
+  font-family:'Montserrat',system-ui,sans-serif;
+  font-size:clamp(26px,3vw,38px);font-weight:900;letter-spacing:-.03em;
+  color:#f4faf7;margin:10px 0 14px;
+}
+.story-map__title span{
+  background:linear-gradient(96deg,var(--story-green),var(--brand-blue));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.story-map__text{
+  font-size:14px;line-height:1.7;color:rgba(232,240,236,.65);
+  margin-bottom:20px;max-width:42ch;
+}
+.story-map__partners{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+.story-map__partner{
+  padding:8px 14px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+  font-size:11.5px;font-weight:700;color:rgba(232,240,236,.8);
+}
+.story-map__partner strong{color:var(--story-green)}
+.story-map__quote{
+  font-size:15px;font-weight:600;line-height:1.5;color:#f4faf7;
+  border-left:3px solid var(--story-green);padding-left:14px;margin-top:8px;
+}
+.story-map__visual{
+  position:relative;border-radius:22px;overflow:hidden;
+  background:#121a16;border:1px solid rgba(255,255,255,.08);
+  aspect-ratio:1/1.05;display:grid;place-items:center;padding:24px;
+}
+.story-map__svg{width:100%;height:auto;max-height:360px}
+.story-map__pin{
+  fill:var(--story-green);
+  filter:drop-shadow(0 0 6px rgba(29,185,84,.65));
+  animation:pin-pulse 2.4s ease-in-out infinite;
+}
+.story-map__pin:nth-child(2){animation-delay:.2s}
+.story-map__pin:nth-child(3){animation-delay:.4s}
+.story-map__pin:nth-child(4){animation-delay:.6s}
+.story-map__pin:nth-child(5){animation-delay:.8s}
+@keyframes pin-pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.7}
+}
+.story-map__legend{
+  position:absolute;left:16px;bottom:16px;right:16px;
+  display:flex;flex-wrap:wrap;gap:8px;
+}
+.story-map__legend span{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:999px;
+  background:rgba(12,18,16,.85);border:1px solid rgba(255,255,255,.1);
+  font-size:10.5px;font-weight:700;color:rgba(232,240,236,.8);
+}
+.story-map__legend i{
+  width:7px;height:7px;border-radius:50%;background:var(--story-green);
+  box-shadow:0 0 0 3px rgba(29,185,84,.25);
+}
 
 /* TEAM */
 .story-team{
@@ -543,7 +635,7 @@ html[data-theme="light"] .story-hero__bg{
   .story-mosaic{grid-template-columns:1fr 1fr}
   .story-mosaic__cell--tall{grid-row:auto;min-height:200px}
   .story-gal__grid{grid-template-columns:1fr 1fr}
-  .story-gal__item--wide{grid-column:span 2}
+  .story-map__grid{grid-template-columns:1fr}
   .story-team__grid{grid-template-columns:1fr 1fr}
 }
 @media (max-width:560px){
@@ -551,7 +643,6 @@ html[data-theme="light"] .story-hero__bg{
   .story-step:nth-child(odd){border-right:0}
   .story-mosaic{grid-template-columns:1fr}
   .story-gal__grid{grid-template-columns:1fr}
-  .story-gal__item--wide{grid-column:auto}
 }
 @media (prefers-reduced-motion:reduce){
   .story-hero__bg{animation:none}
@@ -891,65 +982,169 @@ html[data-theme="light"] .story-hero__bg{
   </div>
 </section>
 
-<!-- GALLERY + TESTIMONIALS -->
-<section class="story-gal">
+<!-- WALL OF LOVE -->
+<section class="story-gal" id="wall">
   <div class="wrap">
     <header class="sec__head">
-      <p class="eyebrow"><i class="sq"></i>RIDERS &amp; MOMENTS</p>
-      <h2 class="sec__title">On the road with<br><span class="hl">Hazra.</span></h2>
+      <p class="eyebrow"><i class="sq"></i>WALL OF LOVE</p>
+      <h2 class="sec__title">Gallery and<br><span class="hl">Testimonials</span></h2>
     </header>
+
     <div class="story-gal__grid">
-      <article class="story-gal__item story-gal__item--tall" style="--i:0">
-        <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=700&q=80" alt="City ride" loading="lazy">
+      <article class="story-gal__card story-gal__card--photo" style="--i:0">
+        <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=600&q=80" alt="Rider on Hazra scooter" loading="lazy">
+        <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
+        <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
       </article>
-      <article class="story-gal__item" style="--i:1">
-        <div class="story-gal__quote">
-          <div class="story-gal__stars">
-            <i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i>
-          </div>
-          <p class="story-gal__q">“Range is honest. After six months of office runs, the numbers still match what they promised.”</p>
-          <div class="story-gal__who">
-            <img src="https://i.pravatar.cc/72?u=r1" alt="">
-            <div><b>Ankit Mehta</b><span>CHALO Smart Pro · Delhi</span></div>
-          </div>
-        </div>
+
+      <article class="story-gal__card story-gal__card--photo" style="--i:1">
+        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=600&q=80" alt="City commute" loading="lazy">
+        <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
+        <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
       </article>
-      <article class="story-gal__item story-gal__item--tall" style="--i:2">
-        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=700&q=80" alt="Workshop" loading="lazy">
-      </article>
-      <article class="story-gal__item" style="--i:3">
-        <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=700&q=80" alt="Team" loading="lazy">
-      </article>
-      <article class="story-gal__item story-gal__item--wide" style="--i:4">
-        <div class="story-gal__quote story-gal__quote--grad">
-          <div class="story-gal__stars">
-            <i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i>
-          </div>
-          <p class="story-gal__q">“Service stayed after the sale. That is rare. The scooter is quiet, quick in traffic, and easy to live with every day.”</p>
-          <div class="story-gal__who">
-            <img src="https://i.pravatar.cc/72?u=r2" alt="">
-            <div><b>Neha Kapoor</b><span>CHALO 1000 V2 · Ghaziabad</span></div>
+
+      <article class="story-gal__card story-gal__card--quote" style="--i:2">
+        <div class="story-gal__mark"><i data-lucide="quote"></i></div>
+        <p class="story-gal__q">“Range is honest. After six months of office runs, the numbers still match what they promised at delivery.”</p>
+        <div class="story-gal__who">
+          <img src="https://i.pravatar.cc/80?u=s1" alt="">
+          <div>
+            <b>Ankit Mehta</b>
+            <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
+            <span>CHALO Smart Pro · Delhi</span>
           </div>
         </div>
       </article>
-      <article class="story-gal__item" style="--i:5">
-        <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=700&q=80" alt="Evening ride" loading="lazy">
+
+      <article class="story-gal__card story-gal__card--photo" style="--i:3">
+        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80" alt="Owner portrait" loading="lazy">
+        <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
       </article>
-      <article class="story-gal__item" style="--i:6">
-        <div class="story-gal__quote">
-          <div class="story-gal__stars">
-            <i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i>
-          </div>
-          <p class="story-gal__q">“Swappable pack changed my week. No waiting at a charger between shifts.”</p>
-          <div class="story-gal__who">
-            <img src="https://i.pravatar.cc/72?u=r3" alt="">
-            <div><b>Vikram Singh</b><span>CHALO Neo · Lucknow</span></div>
+
+      <article class="story-gal__card story-gal__card--quote" style="--i:4">
+        <div class="story-gal__mark"><i data-lucide="quote"></i></div>
+        <p class="story-gal__q">“Service stayed after the sale. Quiet in traffic, easy to live with every single day.”</p>
+        <div class="story-gal__who">
+          <img src="https://i.pravatar.cc/80?u=s2" alt="">
+          <div>
+            <b>Neha Kapoor</b>
+            <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
+            <span>CHALO 1000 V2 · Ghaziabad</span>
           </div>
         </div>
       </article>
-      <article class="story-gal__item" style="--i:7">
-        <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=700&q=80" alt="Detail" loading="lazy">
+
+      <article class="story-gal__card story-gal__card--photo" style="--i:5">
+        <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=600&q=80" alt="Evening ride" loading="lazy">
+        <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
+        <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
       </article>
+
+      <article class="story-gal__card story-gal__card--photo" style="--i:6">
+        <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=600&q=80" alt="Scooter detail" loading="lazy">
+        <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
+      </article>
+
+      <article class="story-gal__card story-gal__card--quote" style="--i:7">
+        <div class="story-gal__mark"><i data-lucide="quote"></i></div>
+        <p class="story-gal__q">“Swappable pack changed my week. No waiting at a charger between shifts.”</p>
+        <div class="story-gal__who">
+          <img src="https://i.pravatar.cc/80?u=s3" alt="">
+          <div>
+            <b>Vikram Singh</b>
+            <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
+            <span>CHALO Neo · Lucknow</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="story-gal__card story-gal__card--photo" style="--i:8">
+        <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=600&q=80" alt="Family ride" loading="lazy">
+        <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
+        <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
+      </article>
+
+      <article class="story-gal__card story-gal__card--quote" style="--i:9">
+        <div class="story-gal__mark"><i data-lucide="quote"></i></div>
+        <p class="story-gal__q">“Build quality feels solid. Dealer support in my city made the switch from petrol painless.”</p>
+        <div class="story-gal__who">
+          <img src="https://i.pravatar.cc/80?u=s4" alt="">
+          <div>
+            <b>Sudipto Ghosh</b>
+            <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
+            <span>CHALO Smart Plus · Kolkata</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="story-gal__card story-gal__card--photo" style="--i:10">
+        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80" alt="Owner" loading="lazy">
+        <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
+      </article>
+
+      <article class="story-gal__card story-gal__card--photo" style="--i:11">
+        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80" alt="Rider" loading="lazy">
+        <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
+        <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- JOIN THE MOVEMENT + MAP -->
+<section class="story-map" id="network">
+  <div class="wrap">
+    <div class="story-map__grid">
+      <div>
+        <p class="eyebrow" style="color:rgba(232,240,236,.55)"><i class="sq" style="background:linear-gradient(120deg,var(--story-green),var(--brand-blue))"></i> JOIN THE MOVEMENT</p>
+        <h2 class="story-map__title">India’s growing<br><span>Hazra network</span></h2>
+        <p class="story-map__text">
+          Dealers and service points across the map — from metros to emerging cities.
+          Strategic partners help us deliver scooters, spares and care closer to home.
+        </p>
+        <div class="story-map__partners">
+          <span class="story-map__partner"><strong>●</strong> Dealers</span>
+          <span class="story-map__partner"><strong>●</strong> Service</span>
+          <span class="story-map__partner"><strong>●</strong> BNHS</span>
+          <span class="story-map__partner"><strong>●</strong> Charge partners</span>
+        </div>
+        <p class="story-map__quote">“Hazra EV — Not just a Ride, a Revolution.”</p>
+        <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btn--ink" href="become-a-dealer.html"><span>Become a dealer</span><i data-lucide="arrow-right"></i></a>
+          <a class="btn btn--ghost" href="dealer-locator.html" style="border-color:rgba(255,255,255,.2);color:#e8f0ec">Locate dealers</a>
+        </div>
+      </div>
+
+      <div class="story-map__visual">
+        <!-- Simplified India outline with green pins -->
+        <svg class="story-map__svg" viewBox="0 0 400 460" xmlns="http://www.w3.org/2000/svg" aria-label="India service network map">
+          <defs>
+            <linearGradient id="mapFill" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#1a2e24"/>
+              <stop offset="100%" stop-color="#0f1a14"/>
+            </linearGradient>
+          </defs>
+          <path fill="url(#mapFill)" stroke="rgba(29,185,84,.35)" stroke-width="2"
+            d="M198 28c12 6 28 18 36 34 8 14 6 28-2 40 10 8 22 22 24 38 2 14-6 28-16 36 8 16 10 34 4 50-4 12-14 22-26 28 4 18 2 38-8 52-8 12-22 20-36 22 2 14 8 28 6 42-2 12-12 22-24 26-10 4-22 2-30-4-6 10-18 16-30 14-14-2-24-14-28-26-12 4-26 2-36-6-10-8-14-22-12-34-12-4-22-14-24-26-2-14 6-28 18-34-8-12-8-28 0-40 6-10 18-16 30-16-4-14 2-30 14-38 10-8 24-8 34-2 6-12 18-20 32-20 8 0 16 2 22 8 6-10 18-16 30-14z"/>
+          <circle class="story-map__pin" cx="210" cy="110" r="7"/>
+          <circle class="story-map__pin" cx="175" cy="155" r="6"/>
+          <circle class="story-map__pin" cx="240" cy="165" r="6"/>
+          <circle class="story-map__pin" cx="155" cy="210" r="7"/>
+          <circle class="story-map__pin" cx="200" cy="230" r="6"/>
+          <circle class="story-map__pin" cx="255" cy="250" r="5"/>
+          <circle class="story-map__pin" cx="180" cy="290" r="6"/>
+          <circle class="story-map__pin" cx="220" cy="320" r="5"/>
+          <circle class="story-map__pin" cx="195" cy="360" r="6"/>
+          <circle class="story-map__pin" cx="165" cy="250" r="5"/>
+        </svg>
+        <div class="story-map__legend">
+          <span><i></i> Delhi NCR</span>
+          <span><i></i> Mumbai</span>
+          <span><i></i> Bengaluru</span>
+          <span><i></i> Kolkata</span>
+          <span><i></i> Lucknow</span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1090,7 +1285,7 @@ document.addEventListener('click',e=>{
 const io=new IntersectionObserver(entries=>{
   entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-in');io.unobserve(e.target)}})
 },{threshold:.15});
-document.querySelectorAll('.story-step,.story-mosaic__cell,.story-member,.story-gal__item').forEach(el=>io.observe(el));
+document.querySelectorAll('.story-step,.story-mosaic__cell,.story-member,.story-gal__card').forEach(el=>io.observe(el));
 
 function countUp(el){
   const to=parseFloat(el.dataset.to||'0');

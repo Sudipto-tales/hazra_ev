@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+  (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+  if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+  document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+  </script>
+  <title>The Future of Urban Mobility is Electric — Hazra Blog</title>
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Hazra Electrical Bike">
+  <meta property="og:title" content="The Future of Urban Mobility is Electric — Hazra Blog">
+  <meta property="og:description" content="Indian cities are shifting to lighter, smarter two-wheelers. Learn how the change is happening street by street.">
+  <meta property="og:url" content="https://hazraelectricalbike.com/blog-single.html">
+  <meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://hazraelectricalbike.com/blog-single.html">
+  <meta name="description" content="Indian cities are shifting to lighter, smarter two-wheelers. Learn how the change is happening street by street.">
+  <link rel="icon" href="assets/hazraev.png" type="image/png">
+  <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/typography.css">
+  <link rel="stylesheet" href="styles/global.css">
+  <link rel="stylesheet" href="styles/utilities.css">
+  <link rel="stylesheet" href="styles/components/page-chrome.css">
+  <style>
+    /* ── single post layout (aesthetic article + sticky rails) ── */
+    .post {
+      padding: clamp(40px, 6vw, 80px) var(--gutter) clamp(60px, 9vw, 120px);
+      background: rgb(var(--chip-rgb) / .28);
+      border-top: 1px solid var(--hair-0);
+    }
+    .post__layout {
+      width: min(1280px, 96vw);
+      margin-inline: auto;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr) 260px;
+      gap: clamp(28px, 3.5vw, 48px);
+      align-items: start;
+    }
+
+    /* left rail */
+    .rail {
+      position: sticky;
+      top: 96px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .rail__label {
+      font-family: var(--font-display);
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      letter-spacing: var(--tr-wide);
+      text-transform: uppercase;
+      color: var(--ink-soft-0);
+      margin-bottom: 10px;
+    }
+    .share {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .share__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 16px;
+      background: var(--surface-0);
+      border: 1px solid var(--hair-0);
+      border-radius: var(--r-md);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-0);
+      transition: border-color .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
+    }
+    .share__btn:hover {
+      border-color: var(--brand-violet);
+      transform: translateY(-2px);
+      box-shadow: var(--sh-2);
+    }
+    .share__btn svg { width: 16px; height: 16px; color: var(--brand-violet); }
+
+    .toc a {
+      display: block;
+      padding: 7px 0;
+      font-size: 13px;
+      color: var(--ink-soft-0);
+      border-left: 2px solid transparent;
+      padding-left: 12px;
+      transition: color .2s, border-color .2s;
+    }
+    .toc a:hover, .toc a.is-active {
+      color: var(--ink-0);
+      border-left-color: var(--brand-violet);
+    }
+
+    /* main article */
+    .article {
+      background: var(--surface-0);
+      border: 1px solid var(--hair-0);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+      box-shadow: var(--sh-2);
+    }
+    .article__hero {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #1a1228;
+      overflow: hidden;
+    }
+    .article__hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .article__hero-shade {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(18,14,28,.55) 0%, transparent 55%);
+    }
+    .article__body {
+      padding: clamp(28px, 4vw, 48px) clamp(24px, 3.5vw, 44px) clamp(36px, 5vw, 56px);
+    }
+    .article__meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 18px;
+      margin-bottom: 22px;
+      font-size: 12.5px;
+      color: var(--ink-soft-0);
+    }
+    .article__cat {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 12px;
+      background: rgb(var(--chip-rgb) / .7);
+      border-radius: 6px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      font-size: 10.5px;
+      color: var(--brand-violet);
+    }
+    .article__title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4.2vw, 42px);
+      font-weight: 900;
+      line-height: 1.12;
+      letter-spacing: -.02em;
+      margin-bottom: 18px;
+      color: var(--ink-0);
+    }
+    .article__lead {
+      font-size: var(--fs-lg);
+      line-height: 1.55;
+      color: var(--ink-soft-0);
+      margin-bottom: 28px;
+      max-width: 58ch;
+    }
+    .article__author {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 0 28px;
+      border-bottom: 1px solid var(--hair-0);
+      margin-bottom: 32px;
+    }
+    .article__author img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--hair-0);
+    }
+    .article__author strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-0);
+    }
+    .article__author span {
+      font-size: 12.5px;
+      color: var(--ink-soft-0);
+    }
+
+    .prose {
+      font-size: var(--fs-md);
+      line-height: 1.75;
+      color: var(--ink-0);
+    }
+    .prose > * + * { margin-top: 1.35em; }
+    .prose h2 {
+      font-family: var(--font-display);
+      font-size: var(--fs-xl);
+      font-weight: 800;
+      margin-top: 2.1em;
+      margin-bottom: .6em;
+      letter-spacing: -.01em;
+    }
+    .prose h3 {
+      font-size: var(--fs-lg);
+      font-weight: 700;
+      margin-top: 1.7em;
+    }
+    .prose p { max-width: 68ch; }
+    .prose a {
+      color: var(--brand-violet);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .prose blockquote {
+      margin: 1.8em 0;
+      padding: 18px 22px;
+      border-left: 4px solid var(--brand-violet);
+      background: rgb(var(--chip-rgb) / .45);
+      border-radius: 0 var(--r-md) var(--r-md) 0;
+      font-size: 1.05em;
+      color: var(--ink-0);
+    }
+    .prose ul, .prose ol {
+      padding-left: 1.35em;
+      max-width: 68ch;
+    }
+    .prose li + li { margin-top: .45em; }
+    .prose img {
+      border-radius: var(--r-lg);
+      margin: 1.8em 0;
+      border: 1px solid var(--hair-0);
+    }
+    .prose .callout {
+      display: flex;
+      gap: 14px;
+      padding: 18px 20px;
+      background: linear-gradient(135deg, rgb(123 47 247 / .08), rgb(240 83 43 / .06));
+      border: 1px solid rgb(123 47 247 / .18);
+      border-radius: var(--r-lg);
+      margin: 2em 0;
+    }
+    .prose .callout svg {
+      flex: none;
+      width: 22px;
+      height: 22px;
+      color: var(--brand-violet);
+      margin-top: 2px;
+    }
+
+    .article__tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 40px;
+      padding-top: 28px;
+      border-top: 1px solid var(--hair-0);
+    }
+    .article__tag {
+      padding: 7px 14px;
+      background: rgb(var(--chip-rgb) / .6);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-soft-0);
+      transition: background .2s, color .2s;
+    }
+    .article__tag:hover {
+      background: var(--brand-violet);
+      color: #fff;
+    }
+
+    /* right sidebar */
+    .aside {
+      position: sticky;
+      top: 96px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .aside__card {
+      background: var(--surface-0);
+      border: 1px solid var(--hair-0);
+      border-radius: var(--r-lg);
+      padding: 22px;
+      box-shadow: var(--sh-1);
+    }
+    .aside__card h4 {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 16px;
+      letter-spacing: -.01em;
+    }
+    .related {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .related__item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: opacity .2s;
+    }
+    .related__item:hover { opacity: .85; }
+    .related__item img {
+      width: 72px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid var(--hair-0);
+    }
+    .related__item strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--ink-0);
+      margin-bottom: 4px;
+    }
+    .related__item span {
+      font-size: 11.5px;
+      color: var(--ink-soft-0);
+    }
+
+    .newsletter p {
+      font-size: 13px;
+      color: var(--ink-soft-0);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .newsletter input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--hair-0);
+      border-radius: var(--r-md);
+      background: rgb(var(--chip-rgb) / .4);
+      margin-bottom: 10px;
+      font-size: 13.5px;
+    }
+    .newsletter button {
+      width: 100%;
+      padding: 12px;
+      background: var(--brand-grad);
+      color: #fff;
+      border-radius: var(--r-md);
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+    }
+    .newsletter button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px -10px rgba(240,83,43,.5);
+    }
+
+    /* mobile */
+    @media (max-width: 980px) {
+      .post__layout {
+        grid-template-columns: 1fr;
+      }
+      .rail, .aside {
+        position: static;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .rail .toc { display: none; }
+    }
+    @media (max-width: 640px) {
+      .rail, .aside { grid-template-columns: 1fr; }
+      .article__body { padding: 24px 18px 32px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition-duration: .01ms !important; }
+    }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"BlogPosting",
+    "headline":"The Future of Urban Mobility is Electric",
+    "description":"Indian cities are shifting to lighter, smarter two-wheelers. Learn how the change is happening street by street.",
+    "image":"https://hazraelectricalbike.com/assets/scutie_light.webp",
+    "datePublished":"2026-08-12",
+    "author":{"@type":"Person","name":"Priya Sharma"},
+    "publisher":{"@type":"Organization","name":"Hazra Electrical Bike"}
+  }
+  </script>
+</head>
+<body>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.html">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <p class="eyebrow" style="margin-bottom:12px">Blog · EV Trends</p>
+  <h1 class="hero__title" style="font-size:clamp(28px,5vw,48px)">The Future of Urban Mobility is Electric</h1>
+  <p class="hero__lead">
+    Indian cities are shifting to lighter, smarter two-wheelers. Here’s how the change is happening street by street.
+  </p>
+</section>
+
+<section class="post">
+  <div class="post__layout">
+
+    <!-- LEFT RAIL -->
+    <aside class="rail" aria-label="Share and contents">
+      <div>
+        <div class="rail__label">Share</div>
+        <div class="share">
+          <a href="#" class="share__btn"><i data-lucide="twitter"></i> Twitter / X</a>
+          <a href="#" class="share__btn"><i data-lucide="linkedin"></i> LinkedIn</a>
+          <a href="#" class="share__btn"><i data-lucide="link"></i> Copy link</a>
+        </div>
+      </div>
+      <div class="toc">
+        <div class="rail__label">On this page</div>
+        <a href="#why-now" class="is-active">Why the shift is accelerating</a>
+        <a href="#city-level">City-level changes</a>
+        <a href="#what-riders">What riders actually want</a>
+        <a href="#looking-ahead">Looking ahead</a>
+      </div>
+    </aside>
+
+    <!-- MAIN ARTICLE -->
+    <article class="article">
+      <div class="article__hero">
+        <img src="assets/scutie_light.webp" alt="Hazra electric scooter on city street">
+        <div class="article__hero-shade"></div>
+      </div>
+      <div class="article__body">
+        <div class="article__meta">
+          <span class="article__cat">EV Trends</span>
+          <span>12 Aug 2026</span>
+          <span>·</span>
+          <span>8 min read</span>
+        </div>
+        <h1 class="article__title">The Future of Urban Mobility is Electric</h1>
+        <p class="article__lead">
+          From quiet morning rides to evening last-mile deliveries, electric two-wheelers are rewriting how Indian cities move. The shift is no longer theoretical — it is visible on every arterial road.
+        </p>
+        <div class="article__author">
+          <img src="https://i.pravatar.cc/96?u=priya" alt="Priya Sharma">
+          <div>
+            <strong>Priya Sharma</strong>
+            <span>Mobility Editor · Hazra Insights</span>
+          </div>
+        </div>
+
+        <div class="prose">
+          <p>
+            For years, the conversation around electric mobility in India stayed in the realm of policy papers and pilot projects. That has changed. Walk through any mid-sized city today and you will notice more silent scooters, more charging points tucked into kirana shops, and more riders who no longer calculate petrol costs before every trip.
+          </p>
+
+          <h2 id="why-now">Why the shift is accelerating</h2>
+          <p>
+            Three forces are converging. First, battery costs have fallen enough that a well-built electric scooter can now compete on total cost of ownership within 18–24 months for a typical urban rider. Second, cities themselves are tightening emission norms and creating low-emission zones. Third, riders have discovered that the daily experience — instant torque, zero gear shifts, and near-silent operation — is simply better for stop-and-go traffic.
+          </p>
+          <blockquote>
+            “The moment you stop thinking about fuel and start thinking about range, the whole relationship with the vehicle changes.” — Field research, Pune 2026
+          </blockquote>
+
+          <h2 id="city-level">City-level changes you can already see</h2>
+          <p>
+            In Bengaluru and Hyderabad, dedicated EV lanes are no longer experimental. Charging hubs near tech parks and metro stations have become reliable enough that many office workers leave their petrol scooters at home. Smaller towns are following a different path: neighbourhood battery-swapping stations and dealer networks that double as service points.
+          </p>
+          <div class="callout">
+            <i data-lucide="zap"></i>
+            <div>
+              <strong>Quick fact</strong><br>
+              Average daily distance for urban two-wheeler users in India is still under 30 km. Most modern electric scooters comfortably cover that on a single charge with margin left for unexpected trips.
+            </div>
+          </div>
+
+          <h3>What this means for first-time buyers</h3>
+          <p>
+            The decision is no longer “should I try electric?” but “which electric fits my actual day?” Range anxiety has largely been replaced by questions about service network density, spare battery availability, and residual value after three years.
+          </p>
+
+          <h2 id="what-riders">What riders actually want</h2>
+          <ul>
+            <li>Predictable range in real traffic, not just on paper</li>
+            <li>Service centres within a reasonable radius</li>
+            <li>Clear, honest total-cost comparisons with petrol alternatives</li>
+            <li>Design that feels premium without feeling fragile</li>
+          </ul>
+          <p>
+            Brands that treat these as table stakes — and then add genuine comfort, storage, and quiet refinement — are the ones gaining mindshare fastest.
+          </p>
+
+          <h2 id="looking-ahead">Looking ahead</h2>
+          <p>
+            The next three years will be less about proving electric works and more about making it the default. Better batteries, denser charging, and smarter software will continue to close the remaining gaps. For cities, the prize is cleaner air and quieter streets. For riders, it is a simpler, more enjoyable daily commute.
+          </p>
+          <p>
+            At Hazra we design every model around that everyday reality. The future of urban mobility is already here — it just happens to be electric.
+          </p>
+        </div>
+
+        <div class="article__tags">
+          <a href="#" class="article__tag">#ElectricMobility</a>
+          <a href="#" class="article__tag">#UrbanEV</a>
+          <a href="#" class="article__tag">#IndiaEV</a>
+          <a href="#" class="article__tag">#ScooterLife</a>
+        </div>
+      </div>
+    </article>
+
+    <!-- RIGHT ASIDE -->
+    <aside class="aside" aria-label="Related and subscribe">
+      <div class="aside__card">
+        <h4>Related posts</h4>
+        <div class="related">
+          <a href="blog-single.html" class="related__item">
+            <img src="assets/dark_scutie.webp" alt="">
+            <div>
+              <strong>Battery Care Guide for EV Riders</strong>
+              <span>Ownership · 6 min</span>
+            </div>
+          </a>
+          <a href="blog-single.html" class="related__item">
+            <img src="assets/scutie_light.webp" alt="">
+            <div>
+              <strong>How Much You Actually Save With EV</strong>
+              <span>Economics · 7 min</span>
+            </div>
+          </a>
+          <a href="blog-single.html" class="related__item">
+            <img src="assets/dark_scutie.webp" alt="">
+            <div>
+              <strong>5 Tips for Safer City Riding</strong>
+              <span>Riding · 5 min</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="aside__card newsletter">
+        <h4>Stay in the loop</h4>
+        <p>Weekly insights on electric mobility, rider stories, and product updates. No spam.</p>
+        <input type="email" placeholder="Your email" aria-label="Email for newsletter">
+        <button type="button">Subscribe</button>
+      </div>
+    </aside>
+
+  </div>
+</section>
+
+<section class="footer">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
+    More stories from the Hazra community
+  </p>
+  <a class="footer__link" href="blog.html">
+    <span>Back to Blog</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script>
+  lucide.createIcons();
+  const themeBtn = document.getElementById('theme');
+  themeBtn.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+  });
+</script>
+</body>
+</html>
