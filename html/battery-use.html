@@ -28,98 +28,7 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 <link rel="stylesheet" href="styles/global.css">
 <link rel="stylesheet" href="styles/utilities.css">
 <link rel="stylesheet" href="styles/components/page-chrome.css">
-  <style>
-
-    .guide {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: rgb(var(--chip-rgb) / .35);
-      border-top: 1px solid var(--hair-0);
-    }
-
-    .guide__in { width: min(1000px, 93vw); margin: 0 auto; }
-
-    .steps {
-      display: flex; flex-direction: column;
-      gap: clamp(30px, 4vw, 50px);
-    }
-
-    .step {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: clamp(30px, 4vw, 60px); align-items: center;
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 150ms) forwards;
-    }
-
-    .step:nth-child(even) {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .step:nth-child(even) .step__img {
-      order: 2;
-    }
-
-    .step:nth-child(even) .step__body {
-      order: 1;
-    }
-
-    .step__icon {
-      display: flex; align-items: center; justify-content: center;
-      width: 60px; height: 60px; border-radius: 14px;
-      background: var(--brand-grad); color: #fff;
-      margin-bottom: 16px;
-    }
-
-    .step__icon svg { width: 28px; height: 28px; }
-
-    .step__num {
-      font-family: 'Montserrat'; font-size: 14px;
-      font-weight: 800; color: var(--brand-violet);
-      letter-spacing: .06em; text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    .step__title {
-      font-family: 'Montserrat'; font-size: 24px;
-      font-weight: 800; margin-bottom: 12px;
-    }
-
-    .step__desc {
-      font-size: 14px; line-height: 1.7;
-      color: var(--ink-soft-0);
-    }
-
-    .step__img {
-      background: var(--surface-0); border: 1px solid var(--hair-0);
-      border-radius: 16px; padding: 30px;
-      display: flex; align-items: center; justify-content: center;
-      min-height: 300px;
-    }
-
-    .step__img img {
-      width: 100%; max-width: 80%;
-      object-fit: contain;
-    }
-
-    @keyframes pop {
-      from { opacity: 0; transform: scale(.95); }
-      to { opacity: 1; transform: none; }
-    }
-
-    @media (max-width: 768px) {
-      .step {
-        grid-template-columns: 1fr;
-      }
-      .step:nth-child(even) .step__img {
-        order: 0;
-      }
-      .step:nth-child(even) .step__body {
-        order: 0;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition-duration: .01ms !important; }
-    }</style>
+  <link rel="stylesheet" href="styles/pages/battery-use.css">
 </head>
 <body>
 
@@ -153,7 +62,7 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
           </div>
           <div class="step__num">Step 1</div>
           <h3 class="step__title">Charge Smart</h3>
-          <p class="step__desc">Charge between 20-80% for daily use. Avoid frequent full charges. Use the charger provided—it's matched to your battery.</p>
+          <p class="step__desc">Charge between 20-80% for daily use. Avoid frequent full charges. Use the charger providedâ€”it's matched to your battery.</p>
         </div>
         <div class="step__img">
           <img src="assets/scutie_light.webp" alt="Smart Charging">
@@ -257,5 +166,6 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
   document.documentElement.setAttribute('data-theme', savedTheme);
 </script>
 
+<script src="script.js"></script>
 </body>
 </html>

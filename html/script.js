@@ -255,6 +255,35 @@
   }
 })();
 
+(() => {
+  'use strict';
+
+  if (!document.querySelector('.dock')) {
+    const dock = document.createElement('aside');
+    dock.className = 'dock';
+    dock.setAttribute('aria-label', 'Quick actions');
+    dock.innerHTML = `
+      <a class="dock__i" href="#contact" aria-label="Book a test drive"><i data-lucide="bike"></i><span class="dock__lb">Test Drive</span></a>
+      <a class="dock__i" href="dealer-locator.html" aria-label="Find a dealer"><i data-lucide="map-pin"></i><span class="dock__lb">Find Dealer</span></a>
+      <a class="dock__i" href="#contact" aria-label="Contact Hazra"><i data-lucide="phone"></i><span class="dock__lb">Contact</span></a>`;
+    document.body.appendChild(dock);
+    if (window.lucide) window.lucide.createIcons({ nodes: [dock] });
+  }
+
+  const slider = document.querySelector('#rangeSlider');
+  const rangeOutput = document.querySelector('#rangeOutput');
+  const rangeCoverage = document.querySelector('#rangeCoverage');
+  const rangeDays = document.querySelector('#rangeDays');
+
+  slider?.addEventListener('input', () => {
+    const distance = Number(slider.value);
+    const days = (120 / distance).toFixed(1);
+    if (rangeOutput) rangeOutput.textContent = String(distance);
+    if (rangeCoverage) rangeCoverage.textContent = days;
+    if (rangeDays) rangeDays.textContent = `${days} days`;
+  });
+})();
+
 
 /* ════════════════════════════════════════════════
    BELOW THE FOLD — mosaic reveal, counters, cards

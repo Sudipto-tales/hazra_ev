@@ -8,7 +8,7 @@
 if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<title>Careers — Hazra Electrical Bike</title>
+<title>Careers â€” Hazra Electrical Bike</title>
 <meta name="description" content="Join Hazra Electrical Bike. Build electric scooters people actually want to ride. Open roles across design, engineering, sales and service.">
 <link rel="canonical" href="https://hazraelectricalbike.com/career.html">
 <link rel="icon" href="assets/hazraev.png" type="image/png">
@@ -18,342 +18,13 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 <link rel="stylesheet" href="styles/utilities.css">
 <link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
-<style>
-.sticky-bar.is-page{transform:translateY(0);opacity:1;pointer-events:auto}
-
-/* ── Banner (our-story style) ── */
-.car-banner{
-  position:relative;min-height:clamp(280px,40vh,400px);
-  display:grid;place-items:center;overflow:hidden;isolation:isolate;margin-top:56px;
-}
-.car-banner__bg{
-  position:absolute;inset:0;z-index:0;
-  background-image:
-    linear-gradient(160deg,rgba(24,15,44,.72) 0%,rgba(58,26,107,.55) 42%,rgba(240,83,43,.35) 100%),
-    url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1800&q=80');
-  background-size:cover;background-position:center 35%;
-  transform:scale(1.06);animation:car-ken 14s var(--ease) infinite alternate;
-}
-html[data-theme="light"] .car-banner__bg{
-  background-image:
-    linear-gradient(160deg,rgba(250,248,253,.2) 0%,rgba(58,26,107,.48) 40%,rgba(240,83,43,.38) 100%),
-    url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1800&q=80');
-}
-@keyframes car-ken{from{transform:scale(1.06)}to{transform:scale(1.12) translateY(-2%)}}
-.car-banner__veil{
-  position:absolute;inset:0;z-index:1;
-  background:radial-gradient(80% 70% at 50% 30%,transparent 0%,rgba(11,7,19,.5) 100%);
-  pointer-events:none;
-}
-.car-banner__in{
-  position:relative;z-index:2;width:min(900px,92vw);margin:0 auto;
-  padding:clamp(48px,7vw,80px) 26px;text-align:center;
-}
-.car-banner .eyebrow{color:rgba(255,255,255,.78);justify-content:center}
-.car-banner .eyebrow .sq{background:var(--brand-grad)}
-.car-banner__title{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(36px,4.8vw,60px);font-weight:900;letter-spacing:-.035em;line-height:1.06;
-  color:#fff;margin:14px 0 14px;text-shadow:0 12px 40px rgba(0,0,0,.35);
-}
-.car-banner__lead{
-  max-width:34em;margin:0 auto;font-size:clamp(14px,1.2vw,17px);line-height:1.65;
-  color:rgba(255,255,255,.82);
-}
-
-/* ── HERO: illustration left + copy right ── */
-.car-hero{
-  padding:clamp(36px,5vw,64px) 0 clamp(40px,5.5vw,72px);
-  background:
-    radial-gradient(70% 80% at 0% 50%,color-mix(in srgb,var(--brand-violet) 10%,transparent) 0%,transparent 65%),
-    radial-gradient(50% 60% at 100% 0%,color-mix(in srgb,var(--brand-orange) 8%,transparent) 0%,transparent 60%),
-    var(--surface-0);
-  overflow:hidden;
-}
-.car-hero__grid{
-  display:grid;
-  grid-template-columns:1.05fr .95fr;
-  gap:clamp(28px,4vw,56px);
-  align-items:center;
-}
-.car-hero__art{
-  position:relative;
-  border-radius:var(--r-xl);
-  overflow:hidden;
-  background:rgb(var(--chip-rgb) / .55);
-  border:1px solid var(--hair-0);
-  aspect-ratio:5/4;
-  display:grid;place-items:center;
-}
-.car-hero__art img{
-  width:100%;height:100%;object-fit:cover;
-  mix-blend-mode:multiply;
-  opacity:.92;
-}
-html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
-.car-hero__dots{
-  position:absolute;left:16px;bottom:16px;
-  display:flex;gap:6px;
-}
-.car-hero__dots i{
-  width:8px;height:8px;border-radius:50%;
-  background:var(--brand-orange);
-  opacity:.85;
-}
-.car-hero__dots i:nth-child(2){background:var(--brand-violet)}
-.car-hero__dots i:nth-child(3){background:var(--brand-blue)}
-.car-hero__dots i:nth-child(4){background:var(--brand-flame)}
-.car-hero__dots i:nth-child(5){background:#1db954}
-
-.car-hero__kicker{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:6px 12px;border-radius:var(--r-pill);
-  background:rgb(var(--chip-rgb));
-  border:1px solid var(--hair-0);
-  font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--ink-soft-0);margin-bottom:16px;
-}
-.car-hero__title{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(40px,5.5vw,68px);
-  font-weight:900;letter-spacing:-.04em;line-height:1.02;
-  color:var(--ink-0);margin-bottom:16px;
-}
-.car-hero__title span{
-  position:relative;display:inline-block;
-}
-.car-hero__title span::after{
-  content:'';position:absolute;left:0;right:0;bottom:6px;height:10px;
-  background:color-mix(in srgb,var(--brand-orange) 45%,transparent);
-  z-index:-1;border-radius:2px;
-}
-.car-hero__lead{
-  font-size:15px;line-height:1.7;color:var(--ink-soft-0);
-  max-width:40ch;margin-bottom:22px;
-}
-.car-hero__actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.car-hero__social{display:flex;gap:10px;margin-left:8px}
-.car-hero__social a{
-  width:36px;height:36px;border-radius:50%;
-  display:grid;place-items:center;
-  border:1px solid var(--hair-0);color:var(--ink-0);
-  transition:border-color .25s,color .25s,transform .25s;
-}
-.car-hero__social a:hover{
-  border-color:var(--brand-violet);color:var(--brand-violet);transform:translateY(-2px);
-}
-.car-hero__social svg{width:16px;height:16px}
-
-@keyframes car-pop{to{opacity:1;transform:none}}
-
-/* ── JOBS ── */
-.car-jobs{
-  padding:clamp(40px,5.5vw,72px) 0;
-  background:var(--surface-0);
-}
-.car-jobs .sec__head{margin-bottom:clamp(24px,3.5vw,36px)}
-.car-jobs__filters{
-  display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;
-}
-.car-filter{
-  padding:8px 14px;border-radius:var(--r-pill);
-  border:1px solid var(--hair-0);background:transparent;
-  font-size:12px;font-weight:700;color:var(--ink-soft-0);cursor:pointer;
-  transition:background .25s,color .25s,border-color .25s;
-}
-.car-filter.is-on,
-.car-filter:hover{
-  background:var(--ink-0);color:var(--surface-0);border-color:var(--ink-0);
-}
-.car-jobs__grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:14px;
-}
-.car-job{
-  text-align:left;
-  padding:22px 20px;
-  border-radius:var(--r-lg);
-  background:var(--surface-0);
-  border:1px solid var(--hair-0);
-  cursor:pointer;
-  opacity:0;transform:translateY(24px);
-  transition:border-color .3s var(--ease),box-shadow .3s var(--ease),transform .3s var(--ease);
-}
-.car-job.is-in{
-  animation:car-pop .65s var(--ease) forwards;
-  animation-delay:calc(var(--i,0)*70ms);
-}
-.car-job:hover{
-  border-color:color-mix(in srgb,var(--brand-violet) 45%,var(--hair-0));
-  box-shadow:var(--sh-3);
-  transform:translateY(-4px);
-}
-.car-job__top{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
-  margin-bottom:12px;
-}
-.car-job__dept{
-  font-size:10.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--brand-violet);
-}
-.car-job__type{
-  font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;
-  background:rgb(var(--chip-rgb));color:var(--ink-soft-0);
-}
-.car-job__title{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:17px;font-weight:800;letter-spacing:-.02em;
-  margin-bottom:8px;color:var(--ink-0);
-}
-.car-job__meta{
-  display:flex;flex-wrap:wrap;gap:12px;
-  font-size:12.5px;color:var(--ink-soft-0);margin-bottom:14px;
-}
-.car-job__meta span{display:inline-flex;align-items:center;gap:5px}
-.car-job__meta svg{width:13px;height:13px}
-.car-job__excerpt{
-  font-size:13px;line-height:1.55;color:var(--ink-soft-0);
-  margin-bottom:16px;
-}
-.car-job__go{
-  display:inline-flex;align-items:center;gap:6px;
-  font-size:12px;font-weight:800;color:var(--brand-flame);
-}
-.car-job__go svg{width:14px;height:14px;transition:transform .25s}
-.car-job:hover .car-job__go svg{transform:translateX(3px)}
-
-/* ── MODAL ── */
-.car-modal{
-  position:fixed;inset:0;z-index:300;
-  display:grid;place-items:center;
-  padding:24px;
-  opacity:0;visibility:hidden;pointer-events:none;
-  transition:opacity .3s var(--ease),visibility .3s;
-}
-.car-modal.is-open{
-  opacity:1;visibility:visible;pointer-events:auto;
-}
-.car-modal__backdrop{
-  position:absolute;inset:0;
-  background:rgba(11,7,19,.55);
-  backdrop-filter:blur(8px);
-}
-.car-modal__panel{
-  position:relative;z-index:1;
-  width:min(640px,100%);
-  max-height:min(88vh,820px);
-  overflow:auto;
-  background:var(--surface-0);
-  border:1px solid var(--hair-0);
-  border-radius:22px;
-  box-shadow:var(--sh-3);
-  transform:translateY(18px) scale(.97);
-  transition:transform .35s var(--ease);
-}
-.car-modal.is-open .car-modal__panel{transform:none}
-.car-modal__close{
-  position:sticky;top:0;z-index:2;
-  float:right;margin:14px 14px 0 0;
-  width:36px;height:36px;border-radius:50%;
-  border:1px solid var(--hair-0);background:var(--surface-0);
-  display:grid;place-items:center;cursor:pointer;color:var(--ink-0);
-}
-.car-modal__close svg{width:16px;height:16px}
-.car-modal__body{padding:8px 28px 28px;clear:both}
-.car-modal__dept{
-  font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--brand-violet);margin-bottom:8px;
-}
-.car-modal__title{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(22px,2.5vw,28px);font-weight:900;letter-spacing:-.03em;
-  margin-bottom:10px;
-}
-.car-modal__meta{
-  display:flex;flex-wrap:wrap;gap:14px;
-  font-size:13px;color:var(--ink-soft-0);margin-bottom:20px;
-}
-.car-modal__meta span{display:inline-flex;align-items:center;gap:6px}
-.car-modal__meta svg{width:14px;height:14px}
-.car-modal__block{margin-bottom:18px}
-.car-modal__block h4{
-  font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--ink-0);margin-bottom:8px;
-}
-.car-modal__block p,
-.car-modal__block li{
-  font-size:13.5px;line-height:1.65;color:var(--ink-soft-0);
-}
-.car-modal__block ul{padding-left:18px;margin:0}
-.car-modal__block li{margin-bottom:4px}
-.car-modal__contact{
-  display:grid;gap:8px;
-  padding:14px 16px;border-radius:var(--r-md);
-  background:rgb(var(--chip-rgb) / .6);
-  border:1px solid var(--hair-0);
-  margin-bottom:22px;
-}
-.car-modal__contact a,
-.car-modal__contact span{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:13px;color:var(--ink-0);text-decoration:none;
-}
-.car-modal__contact svg{width:14px;height:14px;color:var(--brand-violet)}
-
-.car-form{display:grid;gap:12px}
-.car-form__row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.car-form label{
-  display:grid;gap:6px;
-  font-size:11.5px;font-weight:700;color:var(--ink-soft-0);
-}
-.car-form input,
-.car-form select,
-.car-form textarea{
-  width:100%;padding:11px 12px;border-radius:12px;
-  border:1px solid var(--hair-0);background:var(--surface-0);
-  font:inherit;font-size:13.5px;color:var(--ink-0);
-  outline:none;transition:border-color .25s;
-}
-.car-form input:focus,
-.car-form select:focus,
-.car-form textarea:focus{border-color:var(--brand-violet)}
-.car-form textarea{min-height:96px;resize:vertical}
-.car-form__file{
-  border:1px dashed var(--hair-0);border-radius:12px;
-  padding:14px;text-align:center;font-size:12.5px;color:var(--ink-soft-0);
-  cursor:pointer;transition:border-color .25s,background .25s;
-}
-.car-form__file:hover{border-color:var(--brand-violet);background:rgb(var(--chip-rgb) / .4)}
-.car-form__file input{display:none}
-.car-form__actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
-.car-form__note{font-size:11.5px;color:var(--ink-soft-0);margin-top:6px}
-
-/* ── CTA ── */
-.car-cta{
-  padding:clamp(28px,4vw,44px) 0;text-align:center;
-  border-top:1px solid var(--hair-0);
-  background:radial-gradient(90% 120% at 50% 0%,color-mix(in srgb,var(--brand-violet) 12%,transparent) 0%,transparent 70%),var(--surface-0);
-}
-.car-cta .sec__title{font-size:clamp(24px,2.8vw,34px)}
-.car-cta p{color:var(--ink-soft-0);margin:8px auto 16px;max-width:36em;font-size:14px}
-
-@media (max-width:960px){
-  .car-hero__grid{grid-template-columns:1fr}
-  .car-jobs__grid{grid-template-columns:1fr}
-  .car-form__row{grid-template-columns:1fr}
-}
-@media (prefers-reduced-motion:reduce){
-  .car-banner__bg{animation:none}
-  .car-job{opacity:1!important;transform:none!important;animation:none!important}
-}
-</style>
+<link rel="stylesheet" href="styles/pages/career.css">
 </head>
 <body>
 
 <header class="sticky-bar is-page is-visible" id="stickyBar" aria-hidden="false">
   <div class="sticky-bar__inner">
-    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike â€” home">
       <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
       <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
     </a>
@@ -373,12 +44,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">Products <i data-lucide="chevron-down" class="nav__cv"></i></button>
         <div class="nav__menu nav__menu--wide">
-          <a href="chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
-          <a href="chalo-smart-pro.html" class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
-          <a href="chalo-smart-plus.html" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
-          <a href="chalo-smart-eco.html" class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
-          <a href="chalo-neo.html" class="nav__s">CHALO NEO <em>Low Speed</em></a>
-          <a href="nja-7.html" class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+          <a href="ev-details.html" class="nav__s">EV Details <em>Explore the scooter</em></a>
         </div>
       </div>
       <div class="nav__grp">
@@ -423,7 +89,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
   <div class="car-banner__in">
     <p class="eyebrow"><i class="sq"></i>CAREERS</p>
     <h1 class="car-banner__title">Build with people<br>who build the ride.</h1>
-    <p class="car-banner__lead">Designers, engineers, service leads and storytellers — join a team shipping electric scooters for real Indian roads.</p>
+    <p class="car-banner__lead">Designers, engineers, service leads and storytellers â€” join a team shipping electric scooters for real Indian roads.</p>
   </div>
 </section>
 
@@ -439,7 +105,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <span class="car-hero__kicker">Careers at Hazra</span>
         <h1 class="car-hero__title">HELLO<br><span>PEOPLE!</span></h1>
         <p class="car-hero__lead">
-          We build electric scooters for real Indian roads — and we need people who care
+          We build electric scooters for real Indian roads â€” and we need people who care
           about craft, honesty and riders. Designers, engineers, service leads and storytellers:
           if that sounds like you, come build with us.
         </p>
@@ -456,7 +122,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
   </div>
 </section>
 
-<!-- WHAT YOU GET — FAQ-style accordion -->
+<!-- WHAT YOU GET â€” FAQ-style accordion -->
 <section class="faq" id="what-you-get">
   <div class="wrap">
     <div class="faq__grid">
@@ -464,7 +130,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <p class="eyebrow"><i class="sq"></i>WHAT YOU GET</p>
         <h2 class="sec__title reveal-up">Why people stay<br><span class="hl">at Hazra.</span></h2>
         <p class="faq__lead reveal-up">
-          Benefits, culture and growth — the practical reasons builders choose to stay.
+          Benefits, culture and growth â€” the practical reasons builders choose to stay.
         </p>
         <a class="link faq__all" href="#openings">See open roles<i data-lucide="arrow-up-right"></i></a>
       </div>
@@ -476,7 +142,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
             <i class="faq__ico" data-lucide="plus"></i>
           </button>
           <div class="faq__panel"><div class="faq__a">
-            <p>Ship scooters riders use every day — frames, packs, service and stories — not decks that never leave the room. Your work shows up on the road.</p>
+            <p>Ship scooters riders use every day â€” frames, packs, service and stories â€” not decks that never leave the room. Your work shows up on the road.</p>
           </div></div>
         </li>
         <li class="faq__item">
@@ -494,7 +160,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
             <i class="faq__ico" data-lucide="plus"></i>
           </button>
           <div class="faq__panel"><div class="faq__a">
-            <p>Competitive salary, health cover and performance rewards tied to real outcomes — product quality, rider trust and network strength.</p>
+            <p>Competitive salary, health cover and performance rewards tied to real outcomes â€” product quality, rider trust and network strength.</p>
           </div></div>
         </li>
         <li class="faq__item">
@@ -503,7 +169,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
             <i class="faq__ico" data-lucide="plus"></i>
           </button>
           <div class="faq__panel"><div class="faq__a">
-            <p>Small teams, fast feedback and respect for craft — whether you design, engineer or run the service floor. Decisions stay close to the work.</p>
+            <p>Small teams, fast feedback and respect for craft â€” whether you design, engineer or run the service floor. Decisions stay close to the work.</p>
           </div></div>
         </li>
         <li class="faq__item">
@@ -521,7 +187,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
             <i class="faq__ico" data-lucide="plus"></i>
           </button>
           <div class="faq__panel"><div class="faq__a">
-            <p>Apply on a role card, talk to the team, and hear back within 7–10 working days. We value portfolio and proof of craft as much as CV length.</p>
+            <p>Apply on a role card, talk to the team, and hear back within 7â€“10 working days. We value portfolio and proof of craft as much as CV length.</p>
           </div></div>
         </li>
       </ul>
@@ -555,7 +221,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <h3 class="car-job__title">Mechanical Engineer</h3>
         <div class="car-job__meta">
           <span><i data-lucide="map-pin"></i> Ghaziabad</span>
-          <span><i data-lucide="briefcase"></i> 3–6 yrs</span>
+          <span><i data-lucide="briefcase"></i> 3â€“6 yrs</span>
         </div>
         <p class="car-job__excerpt">Own frame, suspension and packaging for the next CHALO platforms.</p>
         <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
@@ -569,7 +235,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <h3 class="car-job__title">Electrical / Battery Engineer</h3>
         <div class="car-job__meta">
           <span><i data-lucide="map-pin"></i> Ghaziabad</span>
-          <span><i data-lucide="briefcase"></i> 2–5 yrs</span>
+          <span><i data-lucide="briefcase"></i> 2â€“5 yrs</span>
         </div>
         <p class="car-job__excerpt">Battery packs, BMS integration and charging behaviour on real routes.</p>
         <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
@@ -583,7 +249,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <h3 class="car-job__title">Industrial Designer</h3>
         <div class="car-job__meta">
           <span><i data-lucide="map-pin"></i> Noida / Hybrid</span>
-          <span><i data-lucide="briefcase"></i> 2–4 yrs</span>
+          <span><i data-lucide="briefcase"></i> 2â€“4 yrs</span>
         </div>
         <p class="car-job__excerpt">Form language, colour &amp; trim, and rider touchpoints across the line-up.</p>
         <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
@@ -611,7 +277,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <h3 class="car-job__title">Service Network Lead</h3>
         <div class="car-job__meta">
           <span><i data-lucide="map-pin"></i> Pan-India</span>
-          <span><i data-lucide="briefcase"></i> 4–8 yrs</span>
+          <span><i data-lucide="briefcase"></i> 4â€“8 yrs</span>
         </div>
         <p class="car-job__excerpt">Train dealers, set SLA standards and keep riders moving after the sale.</p>
         <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
@@ -625,7 +291,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <h3 class="car-job__title">UI / Brand Designer</h3>
         <div class="car-job__meta">
           <span><i data-lucide="map-pin"></i> Remote / Noida</span>
-          <span><i data-lucide="briefcase"></i> 1–3 yrs</span>
+          <span><i data-lucide="briefcase"></i> 1â€“3 yrs</span>
         </div>
         <p class="car-job__excerpt">Website, app surfaces and campaign systems aligned to the Hazra mark.</p>
         <span class="car-job__go">View role <i data-lucide="arrow-right"></i></span>
@@ -636,8 +302,8 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
 
 <section class="car-cta">
   <div class="wrap">
-    <h2 class="sec__title">Don’t see your role?</h2>
-    <p>Send a short note and portfolio — we hire for attitude and craft year-round.</p>
+    <h2 class="sec__title">Donâ€™t see your role?</h2>
+    <p>Send a short note and portfolio â€” we hire for attitude and craft year-round.</p>
     <a class="btn btn--ink" href="mailto:careers@hazraev.com"><span>careers@hazraev.com</span><i data-lucide="mail"></i></a>
   </div>
 </section>
@@ -657,7 +323,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <p id="modalAbout"></p>
       </div>
       <div class="car-modal__block">
-        <h4>What you’ll do</h4>
+        <h4>What youâ€™ll do</h4>
         <ul id="modalDo"></ul>
       </div>
       <div class="car-modal__block">
@@ -696,7 +362,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
             <button class="btn btn--ink" type="submit"><span>Submit application</span><i data-lucide="send"></i></button>
             <button class="btn btn--ghost" type="button" data-close>Cancel</button>
           </div>
-          <p class="car-form__note">We reply within 7–10 working days. Your data is used only for hiring.</p>
+          <p class="car-form__note">We reply within 7â€“10 working days. Your data is used only for hiring.</p>
         </form>
       </div>
     </div>
@@ -723,8 +389,7 @@ html[data-theme="dark"] .car-hero__art img{mix-blend-mode:normal;opacity:.85}
         <nav class="foot__cols" aria-label="Footer">
           <div class="fcol">
             <h4>Electric Scooters</h4>
-            <a href="chalo-1000-v2.html">CHALO 1000 V2</a>
-            <a href="chalo-smart-pro.html">CHALO SMART PRO</a>
+            <a href="ev-details.html">EV Details</a>
             <a href="index.html#collection">Compare models</a>
             <a href="index.html#test-ride">Book test ride</a>
           </div>
@@ -849,43 +514,43 @@ document.querySelectorAll('.car-filter').forEach(btn=>{
 const JOBS={
   me:{
     dept:'Engineering',title:'Mechanical Engineer',
-    meta:[['map-pin','Ghaziabad'],['briefcase','3–6 yrs'],['clock','Full-time']],
+    meta:[['map-pin','Ghaziabad'],['briefcase','3â€“6 yrs'],['clock','Full-time']],
     about:'Lead mechanical design for frame, suspension and body packaging on current and next-gen CHALO platforms. Work closely with electrical and industrial design.',
     do:['Own CAD models and drawings for structural parts','Run DFM reviews with production partners','Validate prototypes on Indian road conditions','Document BOMs and engineering changes'],
     need:['B.E. / B.Tech Mechanical or related','Hands-on CAD (SolidWorks / CATIA)','Experience with two-wheelers or automotive preferred','Comfortable on the shop floor']
   },
   ee:{
     dept:'Engineering',title:'Electrical / Battery Engineer',
-    meta:[['map-pin','Ghaziabad'],['briefcase','2–5 yrs'],['clock','Full-time']],
+    meta:[['map-pin','Ghaziabad'],['briefcase','2â€“5 yrs'],['clock','Full-time']],
     about:'Design and validate battery packs, BMS integration and charging behaviour so published range matches real rider routes.',
     do:['Specify cells, pack layout and thermal strategy','Integrate BMS and charger protocols','Plan field tests and analyse telemetry','Support service with diagnostics playbooks'],
     need:['Degree in Electrical / Electronics / related','Battery pack or EV powertrain experience','Strong safety and compliance mindset']
   },
   id:{
     dept:'Design',title:'Industrial Designer',
-    meta:[['map-pin','Noida / Hybrid'],['briefcase','2–4 yrs'],['clock','Full-time']],
-    about:'Shape the look and feel of Hazra scooters — proportion, surfaces, colour & trim, and everyday touchpoints.',
+    meta:[['map-pin','Noida / Hybrid'],['briefcase','2â€“4 yrs'],['clock','Full-time']],
+    about:'Shape the look and feel of Hazra scooters â€” proportion, surfaces, colour & trim, and everyday touchpoints.',
     do:['Sketch and 3D concepts for new models','Build CMF directions with brand guidelines','Collaborate with engineering on feasibility','Present to leadership and partners'],
     need:['Degree in Industrial / Product Design','Strong portfolio of physical products','Rhino / Alias / similar tools']
   },
   rs:{
     dept:'Sales',title:'Regional Sales Manager',
     meta:[['map-pin','North India'],['briefcase','5+ yrs'],['clock','Full-time']],
-    about:'Grow revenue and dealer quality across your region — targets, relationships and on-ground brand presence.',
+    about:'Grow revenue and dealer quality across your region â€” targets, relationships and on-ground brand presence.',
     do:['Hit regional volume and mix targets','Recruit and coach dealers','Run local campaigns with marketing','Report pipeline and market feedback'],
     need:['Proven two-wheeler or auto sales leadership','Willingness to travel extensively','Data-driven and people-first']
   },
   sm:{
     dept:'Service',title:'Service Network Lead',
-    meta:[['map-pin','Pan-India'],['briefcase','4–8 yrs'],['clock','Full-time']],
-    about:'Build a service network riders can trust — training, SLAs, spares flow and continuous improvement.',
+    meta:[['map-pin','Pan-India'],['briefcase','4â€“8 yrs'],['clock','Full-time']],
+    about:'Build a service network riders can trust â€” training, SLAs, spares flow and continuous improvement.',
     do:['Define service standards and audits','Train dealer technicians','Improve first-time-fix rates','Feed product teams with field issues'],
     need:['Service operations experience in auto / EV','Strong process and training skills','Customer empathy']
   },
   ux:{
     dept:'Design',title:'UI / Brand Designer',
-    meta:[['map-pin','Remote / Noida'],['briefcase','1–3 yrs'],['clock','Contract']],
-    about:'Craft digital and campaign surfaces that feel as considered as the scooters — web, app and brand systems.',
+    meta:[['map-pin','Remote / Noida'],['briefcase','1â€“3 yrs'],['clock','Contract']],
+    about:'Craft digital and campaign surfaces that feel as considered as the scooters â€” web, app and brand systems.',
     do:['Design website and product pages','Extend brand system for campaigns','Work with engineering on front-end polish','Maintain component library'],
     need:['Strong UI portfolio (Figma)','Motion and illustration a plus','Interest in EV / mobility']
   }
@@ -925,7 +590,7 @@ document.querySelector('.car-form__file input')?.addEventListener('change',e=>{
 
 document.getElementById('applyForm')?.addEventListener('submit',e=>{
   e.preventDefault();
-  alert('Application received. We will get back within 7–10 working days.');
+  alert('Application received. We will get back within 7â€“10 working days.');
   closeModal();
   e.target.reset();
   document.getElementById('fileLabel').textContent='Upload resume (PDF / DOC)';

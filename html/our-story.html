@@ -8,10 +8,10 @@
 if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<title>Our Story — Hazra Electrical Bike</title>
+<title>Our Story â€” Hazra Electrical Bike</title>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hazra Electrical Bike">
-<meta property="og:title" content="Our Story — Hazra Electrical Bike">
+<meta property="og:title" content="Our Story â€” Hazra Electrical Bike">
 <meta property="og:description" content="Learn how Hazra Electrical Bike was born from one frame, one battery, and a stubborn idea to build electric scooters that riders actually want.">
 <meta property="og:url" content="https://hazraelectricalbike.com/our-story.html">
 <meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
@@ -27,636 +27,13 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 <link rel="stylesheet" href="styles/utilities.css">
 <link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
-<style>
-:root{
-  --story-green:#1db954;
-  --story-green-soft:#34d399;
-}
-.sticky-bar.is-page{transform:translateY(0);opacity:1;pointer-events:auto}
-
-/* ── HERO ── */
-.story-hero{
-  position:relative;min-height:clamp(320px,42vh,440px);
-  display:grid;place-items:center;overflow:hidden;isolation:isolate;margin-top:56px;
-}
-.story-hero__bg{
-  position:absolute;inset:0;z-index:0;
-  background-image:
-    linear-gradient(160deg,rgba(24,15,44,.72) 0%,rgba(58,26,107,.55) 42%,rgba(240,83,43,.35) 100%),
-    url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1800&q=80');
-  background-size:cover;background-position:center 40%;
-  transform:scale(1.08);animation:story-ken 14s var(--ease) infinite alternate;
-}
-html[data-theme="light"] .story-hero__bg{
-  background-image:
-    linear-gradient(160deg,rgba(250,248,253,.22) 0%,rgba(58,26,107,.48) 40%,rgba(240,83,43,.38) 100%),
-    url('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1800&q=80');
-}
-@keyframes story-ken{from{transform:scale(1.08)}to{transform:scale(1.14) translateY(-2%)}}
-.story-hero__veil{
-  position:absolute;inset:0;z-index:1;
-  background:radial-gradient(80% 70% at 50% 30%,transparent 0%,rgba(11,7,19,.5) 100%);
-  pointer-events:none;
-}
-.story-hero__in{
-  position:relative;z-index:2;width:min(900px,92vw);margin:0 auto;
-  padding:clamp(48px,7vw,80px) 26px;text-align:center;
-}
-.story-hero .eyebrow{color:rgba(255,255,255,.78);justify-content:center}
-.story-hero .eyebrow .sq{background:var(--brand-grad)}
-.story-hero__title{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(40px,5.2vw,72px);font-weight:900;letter-spacing:-.035em;line-height:1.05;
-  color:#fff;margin:14px 0 18px;text-shadow:0 12px 40px rgba(0,0,0,.35);
-}
-.story-hero__lead{
-  max-width:34em;margin:0 auto;font-size:clamp(15px,1.25vw,18px);line-height:1.65;
-  color:rgba(255,255,255,.82);
-}
-
-/* ── ABOUT INTRO (story + curved image) ── */
-.story-about{
-  padding:clamp(40px,5.5vw,72px) 0;
-  background:var(--surface-0);
-}
-.story-about__grid{
-  display:grid;
-  grid-template-columns:1.05fr .95fr;
-  gap:clamp(24px,3.5vw,48px);
-  align-items:center;
-}
-.story-about__lead{
-  font-size:clamp(16px,1.35vw,19px);line-height:1.7;
-  color:var(--ink-0);margin:14px 0 16px;max-width:38ch;
-}
-.story-about__text{
-  font-size:14.5px;line-height:1.75;color:var(--ink-soft-0);
-  margin-bottom:14px;max-width:46ch;
-}
-.story-about__media{
-  position:relative;
-}
-.story-about__frame{
-  position:relative;
-  border-radius:60% 40% 55% 45% / 45% 55% 45% 55%;
-  overflow:hidden;
-  aspect-ratio:1/1.05;
-  box-shadow:var(--sh-3);
-  border:1px solid var(--hair-0);
-}
-.story-about__frame img{
-  width:100%;height:100%;object-fit:cover;
-  transition:transform .8s var(--ease);
-}
-.story-about__frame:hover img{transform:scale(1.06)}
-.story-about__blob{
-  position:absolute;z-index:-1;
-  width:70%;height:70%;
-  border-radius:55% 45% 40% 60% / 50% 40% 60% 50%;
-  background:var(--brand-grad);
-  opacity:.18;
-  filter:blur(2px);
-}
-.story-about__blob--a{top:-8%;right:-10%}
-.story-about__blob--b{
-  bottom:-12%;left:-14%;width:55%;height:55%;
-  background:linear-gradient(135deg,var(--story-green),var(--brand-blue));
-  opacity:.14;
-}
-.story-about__pill{
-  position:absolute;bottom:8%;left:-6%;
-  display:flex;align-items:center;gap:10px;
-  padding:12px 16px;border-radius:var(--r-lg);
-  background:var(--surface-0);border:1px solid var(--hair-0);
-  box-shadow:var(--sh-2);
-}
-.story-about__pill b{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:20px;font-weight:900;
-  background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.story-about__pill span{font-size:11px;font-weight:700;color:var(--ink-soft-0);line-height:1.3}
-
-/* ── WHY — 4 vertical process panels ── */
-.story-why{
-  padding:clamp(40px,5.5vw,72px) 0;
-  background:rgb(var(--chip-rgb) / .35);
-  border-top:1px solid var(--hair-0);
-}
-.story-why .sec__head{text-align:center;margin-bottom:clamp(24px,3.5vw,40px)}
-.story-why .eyebrow{justify-content:center}
-
-.story-steps{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:0;
-  background:var(--surface-0);
-  border:1px solid var(--hair-0);
-  border-radius:var(--r-xl);
-  overflow:hidden;
-  box-shadow:var(--sh-1);
-}
-.story-step{
-  position:relative;
-  padding:clamp(22px,2.8vw,32px) clamp(16px,1.8vw,24px) clamp(24px,3vw,36px);
-  border-right:1px solid var(--hair-0);
-  display:flex;flex-direction:column;align-items:flex-start;
-  min-height:280px;
-  opacity:0;transform:translateY(28px);
-}
-.story-step:last-child{border-right:0}
-.story-step.is-in{
-  animation:reveal-pop .7s var(--ease) forwards;
-  animation-delay:calc(var(--i,0) * 120ms);
-}
-@keyframes reveal-pop{to{opacity:1;transform:none}}
-
-.story-step__n{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(56px,6vw,88px);
-  font-weight:900;line-height:1;letter-spacing:-.04em;
-  background:var(--brand-grad);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  margin-bottom:12px;
-  opacity:.92;
-}
-.story-step:nth-child(2) .story-step__n{
-  background:linear-gradient(120deg,var(--brand-magenta),var(--brand-flame));
-  -webkit-background-clip:text;background-clip:text;
-}
-.story-step:nth-child(3) .story-step__n{
-  background:linear-gradient(120deg,var(--brand-blue),var(--story-green));
-  -webkit-background-clip:text;background-clip:text;
-}
-.story-step:nth-child(4) .story-step__n{
-  background:linear-gradient(120deg,var(--story-green),var(--brand-orange));
-  -webkit-background-clip:text;background-clip:text;
-}
-.story-step__label{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--ink-0);margin-bottom:12px;
-}
-.story-step__desc{
-  font-size:13px;line-height:1.65;color:var(--ink-soft-0);
-  flex:1;margin-bottom:22px;
-}
-.story-step__icon{
-  width:44px;height:44px;border-radius:50%;
-  display:grid;place-items:center;
-  border:1px solid var(--hair-0);
-  background:rgb(var(--chip-rgb) / .7);
-  color:var(--brand-violet);
-  margin-top:auto;
-}
-.story-step:nth-child(3) .story-step__icon{color:var(--brand-blue)}
-.story-step:nth-child(4) .story-step__icon{color:var(--story-green)}
-.story-step__icon svg{width:20px;height:20px}
-
-.story-step__arrow{
-  position:absolute;top:50%;right:-14px;z-index:2;
-  width:28px;height:28px;border-radius:50%;
-  display:grid;place-items:center;
-  background:var(--surface-0);border:1px solid var(--hair-0);
-  color:var(--brand-orange);box-shadow:var(--sh-1);
-  transform:translateY(-50%);
-}
-.story-step:last-child .story-step__arrow{display:none}
-.story-step__arrow svg{width:14px;height:14px}
-
-/* ── SCROLL TIMELINE (pinned journey) ── */
-.story-tl{
-  position:relative;
-  background:var(--surface-0);
-  border-top:1px solid var(--hair-0);
-}
-.story-tl__head{
-  padding:clamp(36px,5vw,56px) 0 16px;
-  text-align:center;
-}
-.story-tl__head .eyebrow{justify-content:center}
-
-.story-tl__drive{
-  position:relative;
-  height:400vh;
-}
-.story-tl__pin{
-  position:sticky;top:56px;
-  height:calc(100vh - 56px);
-  display:grid;
-  grid-template-columns:1fr 1.15fr;
-  gap:0;
-  overflow:hidden;
-  align-items:stretch;
-}
-.story-tl__years{
-  position:relative;
-  display:flex;flex-direction:column;justify-content:center;
-  padding:clamp(24px,4vw,48px) clamp(20px,3vw,40px);
-  background:
-    radial-gradient(90% 80% at 0% 50%,
-      color-mix(in srgb,var(--brand-violet) 12%,transparent) 0%,transparent 70%),
-    var(--surface-0);
-  border-right:1px solid var(--hair-0);
-}
-.story-tl__year{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(64px,9vw,120px);
-  font-weight:900;letter-spacing:-.04em;line-height:1;
-  color:transparent;
-  -webkit-text-stroke:1.5px var(--hair-0);
-  position:absolute;left:clamp(20px,3vw,40px);top:50%;
-  transform:translateY(-50%) translateX(-12px);
-  opacity:0;
-  transition:opacity .45s var(--ease),transform .55s var(--ease),color .45s, -webkit-text-stroke-color .45s;
-  pointer-events:none;
-}
-.story-tl__year.is-active{
-  opacity:1;
-  transform:translateY(-50%) translateX(0);
-  color:var(--brand-flame);
-  -webkit-text-stroke-color:transparent;
-  background:var(--brand-grad);
-  -webkit-background-clip:text;background-clip:text;
-}
-.story-tl__year.is-passed{
-  opacity:.12;
-  transform:translateY(-50%) translateX(-8px) scale(.92);
-  color:var(--ink-0);
-  -webkit-text-stroke-color:transparent;
-}
-
-.story-tl__stage{
-  position:relative;
-  overflow:hidden;
-  background:rgb(var(--chip-rgb) / .25);
-}
-.story-tl__slide{
-  position:absolute;inset:0;
-  display:grid;
-  grid-template-rows:1.15fr auto;
-  opacity:0;
-  transform:translateY(28px) scale(.97);
-  pointer-events:none;
-  transition:opacity .55s var(--ease),transform .6s var(--ease);
-}
-.story-tl__slide.is-active{
-  opacity:1;
-  transform:none;
-  pointer-events:auto;
-  z-index:2;
-}
-.story-tl__img{
-  position:relative;overflow:hidden;min-height:0;
-}
-.story-tl__img img{
-  width:100%;height:100%;object-fit:cover;
-  transform:scale(1.08);
-  transition:transform 1.1s var(--ease);
-}
-.story-tl__slide.is-active .story-tl__img img{transform:scale(1)}
-.story-tl__img::after{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(to top,rgba(24,15,44,.45),transparent 45%);
-  pointer-events:none;
-}
-.story-tl__copy{
-  padding:clamp(20px,3vw,32px) clamp(20px,3vw,36px) clamp(24px,3vw,36px);
-  background:var(--surface-0);
-  border-top:1px solid var(--hair-0);
-}
-.story-tl__tag{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--brand-violet);margin-bottom:10px;
-}
-.story-tl__tag i{
-  width:8px;height:8px;border-radius:2px;background:var(--brand-grad);
-}
-.story-tl__title{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(20px,2.2vw,28px);font-weight:800;letter-spacing:-.02em;
-  margin-bottom:10px;color:var(--ink-0);
-}
-.story-tl__text{
-  font-size:14px;line-height:1.7;color:var(--ink-soft-0);max-width:52ch;
-}
-.story-tl__progress{
-  position:absolute;left:0;top:0;bottom:0;width:3px;z-index:5;
-  background:var(--hair-0);
-}
-.story-tl__progress > i{
-  display:block;width:100%;height:0%;
-  background:var(--brand-grad);
-  transition:height .15s linear;
-}
-
-/* dots */
-.story-tl__dots{
-  position:absolute;right:18px;top:50%;transform:translateY(-50%);
-  display:flex;flex-direction:column;gap:10px;z-index:6;
-}
-.story-tl__dot{
-  width:8px;height:8px;border-radius:50%;
-  border:0;padding:0;cursor:pointer;
-  background:var(--hair-0);
-  transition:transform .25s var(--ease),background .25s;
-}
-.story-tl__dot.is-on{
-  background:var(--brand-flame);
-  transform:scale(1.35);
-  box-shadow:0 0 0 4px color-mix(in srgb,var(--brand-flame) 22%,transparent);
-}
-
-/* EXPERTISE mosaic — images + numbers */
-.story-exp{
-  padding:clamp(40px,5.5vw,72px) 0;
-  background:rgb(var(--chip-rgb) / .3);
-  border-top:1px solid var(--hair-0);
-}
-.story-exp__grid{
-  display:grid;
-  grid-template-columns:1fr 1.2fr;
-  gap:clamp(24px,3.5vw,48px);
-  align-items:center;
-}
-.story-exp__lead{
-  font-size:15px;line-height:1.7;color:var(--ink-soft-0);
-  margin:12px 0 18px;max-width:42ch;
-}
-.story-mosaic{
-  display:grid;
-  grid-template-columns:1.25fr 1fr 1fr;
-  grid-template-rows:auto auto;
-  gap:12px;
-}
-.story-mosaic__cell{
-  border-radius:var(--r-lg);overflow:hidden;
-  border:1px solid var(--hair-0);background:var(--surface-0);
-  opacity:0;transform:translateY(24px) scale(.96);
-}
-.story-mosaic__cell.is-in{
-  animation:reveal-pop .7s var(--ease) forwards;
-  animation-delay:calc(var(--i,0)*90ms);
-}
-.story-mosaic__cell--tall{grid-row:1 / span 2;min-height:260px}
-.story-mosaic__cell img{
-  width:100%;height:100%;object-fit:cover;display:block;min-height:130px;
-  transition:transform .65s var(--ease);
-}
-.story-mosaic__cell:hover img{transform:scale(1.05)}
-.story-mosaic__stat{
-  padding:18px 16px;min-height:120px;
-  display:flex;flex-direction:column;justify-content:center;
-  background:rgb(var(--chip-rgb) / .65);
-}
-.story-mosaic__stat--grad{background:var(--brand-grad);color:#fff;border:none}
-.story-mosaic__n{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(26px,2.6vw,36px);font-weight:900;letter-spacing:-.03em;line-height:1;
-  margin-bottom:6px;
-}
-.story-mosaic__stat:not(.story-mosaic__stat--grad) .story-mosaic__n{
-  background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.story-mosaic__l{font-size:11.5px;font-weight:700;color:var(--ink-soft-0)}
-.story-mosaic__stat--grad .story-mosaic__l{color:rgba(255,255,255,.88)}
-.story-mosaic__d{font-size:11.5px;line-height:1.45;color:var(--ink-soft-0);margin-top:5px}
-.story-mosaic__stat--grad .story-mosaic__d{color:rgba(255,255,255,.8)}
-.story-faces{display:flex;margin-bottom:8px}
-.story-faces img{
-  width:30px;height:30px;border-radius:50%;object-fit:cover;
-  border:2px solid var(--surface-0);margin-left:-7px;
-}
-.story-faces img:first-child{margin-left:0}
-
-/* Wall of Love — dark cards + green accent */
-.story-gal{
-  padding:clamp(40px,5.5vw,72px) 0;
-  background:#0c1210;color:#e8f0ec;
-  border-top:1px solid rgba(255,255,255,.06);
-}
-.story-gal .sec__head{text-align:center;margin-bottom:clamp(24px,3.5vw,40px)}
-.story-gal .eyebrow{justify-content:center;color:rgba(232,240,236,.55)}
-.story-gal .eyebrow .sq{background:linear-gradient(120deg,var(--story-green),var(--brand-blue))}
-.story-gal .sec__title{color:#f4faf7}
-.story-gal .sec__title .hl{
-  background:linear-gradient(96deg,var(--story-green),var(--brand-blue));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.story-gal__grid{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;
-}
-.story-gal__card{
-  position:relative;border-radius:18px;overflow:hidden;
-  background:#141c18;border:1px solid rgba(255,255,255,.07);
-  opacity:0;transform:translateY(22px) scale(.97);
-  transition:border-color .3s var(--ease),box-shadow .3s var(--ease),transform .3s var(--ease);
-}
-.story-gal__card.is-in{
-  animation:reveal-pop .65s var(--ease) forwards;
-  animation-delay:calc(var(--i,0)*70ms);
-}
-.story-gal__card:hover{
-  border-color:color-mix(in srgb,var(--story-green) 40%,transparent);
-  box-shadow:0 18px 40px -18px rgba(29,185,84,.35);
-  transform:translateY(-3px);
-}
-.story-gal__card--photo{aspect-ratio:1/1.05}
-.story-gal__card--photo img{
-  width:100%;height:100%;object-fit:cover;display:block;
-  transition:transform .65s var(--ease);
-}
-.story-gal__card--photo:hover img{transform:scale(1.05)}
-.story-gal__badge{
-  position:absolute;left:12px;bottom:12px;z-index:2;
-  display:inline-flex;align-items:center;gap:6px;
-  padding:6px 10px;border-radius:999px;
-  background:rgba(12,18,16,.82);backdrop-filter:blur(10px);
-  font-size:10.5px;font-weight:700;color:#e8f0ec;
-  border:1px solid rgba(255,255,255,.1);
-}
-.story-gal__badge i{width:12px;height:12px;color:var(--story-green)}
-.story-gal__zoom{
-  position:absolute;right:12px;bottom:12px;z-index:2;
-  width:32px;height:32px;border-radius:50%;
-  display:grid;place-items:center;
-  background:rgba(12,18,16,.75);border:1px solid rgba(255,255,255,.12);
-  color:#e8f0ec;text-decoration:none;
-}
-.story-gal__zoom svg{width:14px;height:14px}
-.story-gal__card--quote{padding:18px 16px 16px;display:flex;flex-direction:column}
-.story-gal__mark{
-  width:28px;height:28px;border-radius:8px;
-  display:grid;place-items:center;margin-bottom:12px;
-  background:color-mix(in srgb,var(--story-green) 18%,transparent);
-  color:var(--story-green);
-}
-.story-gal__mark svg{width:14px;height:14px}
-.story-gal__q{
-  font-size:13px;line-height:1.55;color:rgba(232,240,236,.88);
-  margin-bottom:14px;flex:1;
-}
-.story-gal__who{
-  display:flex;align-items:center;gap:10px;margin-top:auto;
-  padding-top:12px;border-top:1px solid rgba(255,255,255,.08);
-}
-.story-gal__who img{
-  width:34px;height:34px;border-radius:50%;object-fit:cover;
-  border:2px solid rgba(29,185,84,.35);
-}
-.story-gal__who b{display:block;font-size:12.5px;font-weight:800;color:#f4faf7}
-.story-gal__who span{font-size:11px;color:rgba(232,240,236,.55);display:block}
-.story-gal__verified{
-  display:inline-flex;align-items:center;gap:4px;
-  font-size:10px;font-weight:700;color:var(--story-green);margin:2px 0;
-}
-.story-gal__verified svg{width:11px;height:11px}
-
-.story-map{
-  padding:clamp(40px,5.5vw,72px) 0;
-  background:#0a100e;color:#e8f0ec;
-  border-top:1px solid rgba(255,255,255,.05);
-}
-.story-map__grid{
-  display:grid;grid-template-columns:1.15fr .85fr;
-  gap:clamp(24px,4vw,48px);align-items:center;
-}
-.story-map__title{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(26px,3vw,38px);font-weight:900;letter-spacing:-.03em;
-  color:#f4faf7;margin:10px 0 14px;
-}
-.story-map__title span{
-  background:linear-gradient(96deg,var(--story-green),var(--brand-blue));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.story-map__text{
-  font-size:14px;line-height:1.7;color:rgba(232,240,236,.65);
-  margin-bottom:20px;max-width:42ch;
-}
-.story-map__partners{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
-.story-map__partner{
-  padding:8px 14px;border-radius:999px;
-  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
-  font-size:11.5px;font-weight:700;color:rgba(232,240,236,.8);
-}
-.story-map__partner strong{color:var(--story-green)}
-.story-map__quote{
-  font-size:15px;font-weight:600;line-height:1.5;color:#f4faf7;
-  border-left:3px solid var(--story-green);padding-left:14px;margin-top:8px;
-}
-.story-map__visual{
-  position:relative;border-radius:22px;overflow:hidden;
-  background:#121a16;border:1px solid rgba(255,255,255,.08);
-  aspect-ratio:1/1.05;display:grid;place-items:center;padding:24px;
-}
-.story-map__svg{width:100%;height:auto;max-height:360px}
-.story-map__pin{
-  fill:var(--story-green);
-  filter:drop-shadow(0 0 6px rgba(29,185,84,.65));
-  animation:pin-pulse 2.4s ease-in-out infinite;
-}
-.story-map__pin:nth-child(2){animation-delay:.2s}
-.story-map__pin:nth-child(3){animation-delay:.4s}
-.story-map__pin:nth-child(4){animation-delay:.6s}
-.story-map__pin:nth-child(5){animation-delay:.8s}
-@keyframes pin-pulse{
-  0%,100%{opacity:1}
-  50%{opacity:.7}
-}
-.story-map__legend{
-  position:absolute;left:16px;bottom:16px;right:16px;
-  display:flex;flex-wrap:wrap;gap:8px;
-}
-.story-map__legend span{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:5px 10px;border-radius:999px;
-  background:rgba(12,18,16,.85);border:1px solid rgba(255,255,255,.1);
-  font-size:10.5px;font-weight:700;color:rgba(232,240,236,.8);
-}
-.story-map__legend i{
-  width:7px;height:7px;border-radius:50%;background:var(--story-green);
-  box-shadow:0 0 0 3px rgba(29,185,84,.25);
-}
-
-/* TEAM */
-.story-team{
-  padding:clamp(36px,5vw,64px) 0;background:rgb(var(--chip-rgb) / .28);text-align:center;
-  border-top:1px solid var(--hair-0);
-}
-.story-team__grid{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:clamp(12px,1.8vw,18px);margin-top:clamp(24px,3.5vw,36px);
-}
-.story-member{
-  border-radius:var(--r-lg);overflow:hidden;
-  background:var(--surface-0);border:1px solid var(--hair-0);box-shadow:var(--sh-1);
-  opacity:0;transform:translateY(28px);
-  transition:box-shadow .35s var(--ease),transform .35s var(--ease);
-}
-.story-member.is-in{animation:reveal-pop .7s var(--ease) forwards;animation-delay:calc(var(--i,0)*100ms)}
-.story-member:hover{box-shadow:var(--sh-3);transform:translateY(-4px)}
-.story-member__photo{aspect-ratio:3/3.5;overflow:hidden;background:rgb(var(--chip-rgb))}
-.story-member__photo img{
-  width:100%;height:100%;object-fit:cover;object-position:center top;
-  transition:transform .55s var(--ease);
-}
-.story-member:hover .story-member__photo img{transform:scaleX(1.07) scaleY(1.05)}
-.story-member__info{padding:14px 12px 18px}
-.story-member__name{font-family:'Montserrat',system-ui,sans-serif;font-size:14px;font-weight:800;margin-bottom:4px}
-.story-member__role{font-size:12px;color:var(--ink-soft-0)}
-
-.story-cta{
-  padding:clamp(28px,4vw,44px) 0;text-align:center;
-  background:radial-gradient(90% 120% at 50% 0%,color-mix(in srgb,var(--brand-violet) 12%,transparent) 0%,transparent 70%),var(--surface-0);
-  border-top:1px solid var(--hair-0);
-}
-.story-cta .sec__title{font-size:clamp(24px,2.8vw,34px)}
-.story-cta p{color:var(--ink-soft-0);margin:8px auto 16px;max-width:36em;font-size:14px}
-
-@media (max-width:960px){
-  .story-about__grid{grid-template-columns:1fr}
-  .story-steps{grid-template-columns:1fr 1fr}
-  .story-step{border-right:0;border-bottom:1px solid var(--hair-0);min-height:0}
-  .story-step:nth-child(odd){border-right:1px solid var(--hair-0)}
-  .story-step__arrow{display:none}
-  .story-tl__pin{grid-template-columns:1fr;height:auto;position:relative;top:0}
-  .story-tl__drive{height:auto}
-  .story-tl__years{display:none}
-  .story-tl__stage{position:relative}
-  .story-tl__slide{
-    position:relative;opacity:1;transform:none;pointer-events:auto;
-    margin-bottom:20px;border:1px solid var(--hair-0);border-radius:var(--r-lg);overflow:hidden;
-  }
-  .story-tl__img{aspect-ratio:16/10}
-  .story-tl__progress,.story-tl__dots{display:none}
-  .story-exp__grid{grid-template-columns:1fr}
-  .story-mosaic{grid-template-columns:1fr 1fr}
-  .story-mosaic__cell--tall{grid-row:auto;min-height:200px}
-  .story-gal__grid{grid-template-columns:1fr 1fr}
-  .story-map__grid{grid-template-columns:1fr}
-  .story-team__grid{grid-template-columns:1fr 1fr}
-}
-@media (max-width:560px){
-  .story-steps{grid-template-columns:1fr}
-  .story-step:nth-child(odd){border-right:0}
-  .story-mosaic{grid-template-columns:1fr}
-  .story-gal__grid{grid-template-columns:1fr}
-}
-@media (prefers-reduced-motion:reduce){
-  .story-hero__bg{animation:none}
-  .story-step,.story-stat,.story-member,.story-tl__slide,.story-tl__year{
-    opacity:1!important;transform:none!important;animation:none!important;transition:none!important;
-  }
-}
-</style>
+<link rel="stylesheet" href="styles/pages/our-story.css">
 </head>
 <body>
 
 <header class="sticky-bar is-page is-visible" id="stickyBar" aria-hidden="false">
   <div class="sticky-bar__inner">
-    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike â€” home">
       <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
       <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
     </a>
@@ -676,12 +53,7 @@ html[data-theme="light"] .story-hero__bg{
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">Products <i data-lucide="chevron-down" class="nav__cv"></i></button>
         <div class="nav__menu nav__menu--wide">
-          <a href="chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
-          <a href="chalo-smart-pro.html" class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
-          <a href="chalo-smart-plus.html" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
-          <a href="chalo-smart-eco.html" class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
-          <a href="chalo-neo.html" class="nav__s">CHALO NEO <em>Low Speed</em></a>
-          <a href="nja-7.html" class="nav__s">NJA ~ 7 <em>Low Speed</em></a>
+          <a href="ev-details.html" class="nav__s">EV Details <em>Explore the scooter</em></a>
         </div>
       </div>
       <div class="nav__grp">
@@ -728,7 +100,7 @@ html[data-theme="light"] .story-hero__bg{
   <div class="story-hero__in">
     <p class="eyebrow"><i class="sq"></i>OUR STORY</p>
     <h1 class="story-hero__title">Built in the city,<br>tuned for the long way home.</h1>
-    <p class="story-hero__lead">One frame, one battery, and a stubborn idea — electric scooters that feel like something you want to ride.</p>
+    <p class="story-hero__lead">One frame, one battery, and a stubborn idea â€” electric scooters that feel like something you want to ride.</p>
   </div>
 </section>
 
@@ -741,7 +113,7 @@ html[data-theme="light"] .story-hero__bg{
         <h2 class="sec__title">A short story about<br><span class="hl">honest electric rides.</span></h2>
         <p class="story-about__lead">
           Hazra Electrical Bike started as one frame, one battery and a clear brief:
-          make an EV that feels desirable on real Indian roads — not just on a brochure.
+          make an EV that feels desirable on real Indian roads â€” not just on a brochure.
         </p>
         <p class="story-about__text">
           Every model shares the same spine: a swappable pack, a torque map written for
@@ -750,8 +122,8 @@ html[data-theme="light"] .story-hero__bg{
           figures we actually measured.
         </p>
         <p class="story-about__text">
-          Today that idea lives across the CHALO family — from eco city runs to
-          high-speed daily riders — with a growing network of people who keep every
+          Today that idea lives across the CHALO family â€” from eco city runs to
+          high-speed daily riders â€” with a growing network of people who keep every
           scooter on the road.
         </p>
       </div>
@@ -770,7 +142,7 @@ html[data-theme="light"] .story-hero__bg{
   </div>
 </section>
 
-<!-- WHY — 4 process steps -->
+<!-- WHY â€” 4 process steps -->
 <section class="story-why">
   <div class="wrap">
     <header class="sec__head">
@@ -782,7 +154,7 @@ html[data-theme="light"] .story-hero__bg{
       <article class="story-step" style="--i:0">
         <div class="story-step__n">1</div>
         <h3 class="story-step__label">Research</h3>
-        <p class="story-step__desc">We ride the routes our customers ride — heat, traffic, load and monsoon — and write requirements from that, not from a lab sheet alone.</p>
+        <p class="story-step__desc">We ride the routes our customers ride â€” heat, traffic, load and monsoon â€” and write requirements from that, not from a lab sheet alone.</p>
         <div class="story-step__icon"><i data-lucide="search"></i></div>
         <span class="story-step__arrow" aria-hidden="true"><i data-lucide="chevron-right"></i></span>
       </article>
@@ -803,7 +175,7 @@ html[data-theme="light"] .story-hero__bg{
       <article class="story-step" style="--i:3">
         <div class="story-step__n">4</div>
         <h3 class="story-step__label">Goal</h3>
-        <p class="story-step__desc">Scooters people want to ride every day — backed by service that stays after the sale, from the first city run to the long way home.</p>
+        <p class="story-step__desc">Scooters people want to ride every day â€” backed by service that stays after the sale, from the first city run to the long way home.</p>
         <div class="story-step__icon"><i data-lucide="target"></i></div>
       </article>
     </div>
@@ -838,7 +210,7 @@ html[data-theme="light"] .story-hero__bg{
             <h3 class="story-tl__title">The first frame</h3>
             <p class="story-tl__text">
               A single prototype, a stubborn brief, and the belief that an electric scooter
-              should feel like something you choose — not something you settle for.
+              should feel like something you choose â€” not something you settle for.
               Research on real city routes began here.
             </p>
           </div>
@@ -853,7 +225,7 @@ html[data-theme="light"] .story-hero__bg{
             <h3 class="story-tl__title">City launch</h3>
             <p class="story-tl__text">
               First production batches rolled out. Rider feedback became the product
-              roadmap — torque maps, battery swaps, and service habits shaped by people
+              roadmap â€” torque maps, battery swaps, and service habits shaped by people
               who rode every day, not by a brochure committee.
             </p>
           </div>
@@ -881,7 +253,7 @@ html[data-theme="light"] .story-hero__bg{
             <p class="story-tl__tag"><i></i>Chapter 04</p>
             <h3 class="story-tl__title">The CHALO line</h3>
             <p class="story-tl__text">
-              A full model family — from eco city runs to high-speed daily riders —
+              A full model family â€” from eco city runs to high-speed daily riders â€”
               built on the same spine: honest range, service that stays, and a ride
               tuned for the long way home.
             </p>
@@ -1005,13 +377,13 @@ html[data-theme="light"] .story-hero__bg{
 
       <article class="story-gal__card story-gal__card--quote" style="--i:2">
         <div class="story-gal__mark"><i data-lucide="quote"></i></div>
-        <p class="story-gal__q">“Range is honest. After six months of office runs, the numbers still match what they promised at delivery.”</p>
+        <p class="story-gal__q">â€œRange is honest. After six months of office runs, the numbers still match what they promised at delivery.â€</p>
         <div class="story-gal__who">
           <img src="https://i.pravatar.cc/80?u=s1" alt="">
           <div>
             <b>Ankit Mehta</b>
             <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
-            <span>CHALO Smart Pro · Delhi</span>
+            <span>CHALO Smart Pro Â· Delhi</span>
           </div>
         </div>
       </article>
@@ -1023,13 +395,13 @@ html[data-theme="light"] .story-hero__bg{
 
       <article class="story-gal__card story-gal__card--quote" style="--i:4">
         <div class="story-gal__mark"><i data-lucide="quote"></i></div>
-        <p class="story-gal__q">“Service stayed after the sale. Quiet in traffic, easy to live with every single day.”</p>
+        <p class="story-gal__q">â€œService stayed after the sale. Quiet in traffic, easy to live with every single day.â€</p>
         <div class="story-gal__who">
           <img src="https://i.pravatar.cc/80?u=s2" alt="">
           <div>
             <b>Neha Kapoor</b>
             <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
-            <span>CHALO 1000 V2 · Ghaziabad</span>
+            <span>CHALO 1000 V2 Â· Ghaziabad</span>
           </div>
         </div>
       </article>
@@ -1047,13 +419,13 @@ html[data-theme="light"] .story-hero__bg{
 
       <article class="story-gal__card story-gal__card--quote" style="--i:7">
         <div class="story-gal__mark"><i data-lucide="quote"></i></div>
-        <p class="story-gal__q">“Swappable pack changed my week. No waiting at a charger between shifts.”</p>
+        <p class="story-gal__q">â€œSwappable pack changed my week. No waiting at a charger between shifts.â€</p>
         <div class="story-gal__who">
           <img src="https://i.pravatar.cc/80?u=s3" alt="">
           <div>
             <b>Vikram Singh</b>
             <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
-            <span>CHALO Neo · Lucknow</span>
+            <span>CHALO Neo Â· Lucknow</span>
           </div>
         </div>
       </article>
@@ -1066,13 +438,13 @@ html[data-theme="light"] .story-hero__bg{
 
       <article class="story-gal__card story-gal__card--quote" style="--i:9">
         <div class="story-gal__mark"><i data-lucide="quote"></i></div>
-        <p class="story-gal__q">“Build quality feels solid. Dealer support in my city made the switch from petrol painless.”</p>
+        <p class="story-gal__q">â€œBuild quality feels solid. Dealer support in my city made the switch from petrol painless.â€</p>
         <div class="story-gal__who">
           <img src="https://i.pravatar.cc/80?u=s4" alt="">
           <div>
             <b>Sudipto Ghosh</b>
             <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
-            <span>CHALO Smart Plus · Kolkata</span>
+            <span>CHALO Smart Plus Â· Kolkata</span>
           </div>
         </div>
       </article>
@@ -1097,18 +469,18 @@ html[data-theme="light"] .story-hero__bg{
     <div class="story-map__grid">
       <div>
         <p class="eyebrow" style="color:rgba(232,240,236,.55)"><i class="sq" style="background:linear-gradient(120deg,var(--story-green),var(--brand-blue))"></i> JOIN THE MOVEMENT</p>
-        <h2 class="story-map__title">India’s growing<br><span>Hazra network</span></h2>
+        <h2 class="story-map__title">Indiaâ€™s growing<br><span>Hazra network</span></h2>
         <p class="story-map__text">
-          Dealers and service points across the map — from metros to emerging cities.
+          Dealers and service points across the map â€” from metros to emerging cities.
           Strategic partners help us deliver scooters, spares and care closer to home.
         </p>
         <div class="story-map__partners">
-          <span class="story-map__partner"><strong>●</strong> Dealers</span>
-          <span class="story-map__partner"><strong>●</strong> Service</span>
-          <span class="story-map__partner"><strong>●</strong> BNHS</span>
-          <span class="story-map__partner"><strong>●</strong> Charge partners</span>
+          <span class="story-map__partner"><strong>â—</strong> Dealers</span>
+          <span class="story-map__partner"><strong>â—</strong> Service</span>
+          <span class="story-map__partner"><strong>â—</strong> BNHS</span>
+          <span class="story-map__partner"><strong>â—</strong> Charge partners</span>
         </div>
-        <p class="story-map__quote">“Hazra EV — Not just a Ride, a Revolution.”</p>
+        <p class="story-map__quote">â€œHazra EV â€” Not just a Ride, a Revolution.â€</p>
         <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
           <a class="btn btn--ink" href="become-a-dealer.html"><span>Become a dealer</span><i data-lucide="arrow-right"></i></a>
           <a class="btn btn--ghost" href="dealer-locator.html" style="border-color:rgba(255,255,255,.2);color:#e8f0ec">Locate dealers</a>
@@ -1152,7 +524,7 @@ html[data-theme="light"] .story-hero__bg{
 <section class="story-cta">
   <div class="wrap">
     <h2 class="sec__title">Ready for the <span class="hl">next chapter?</span></h2>
-    <p>Book a test ride or find a dealer — the road is waiting.</p>
+    <p>Book a test ride or find a dealer â€” the road is waiting.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
       <a class="btn btn--ink" href="index.html#test-ride"><span>Book test ride</span><i data-lucide="bike"></i></a>
       <a class="btn btn--ghost" href="dealer-locator.html">Locate dealers</a>
@@ -1180,10 +552,7 @@ html[data-theme="light"] .story-hero__bg{
         <nav class="foot__cols" aria-label="Footer">
           <div class="fcol">
             <h4>Electric Scooters</h4>
-            <a href="chalo-1000-v2.html">CHALO 1000 V2</a>
-            <a href="chalo-smart-pro.html">CHALO SMART PRO</a>
-            <a href="chalo-smart-plus.html">CHALO SMART PLUS</a>
-            <a href="chalo-neo.html">CHALO NEO</a>
+            <a href="ev-details.html">EV Details</a>
             <a href="index.html#collection">Compare models</a>
             <a href="index.html#test-ride">Book test ride</a>
           </div>
