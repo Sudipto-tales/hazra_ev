@@ -108,9 +108,26 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 <section class="story-about">
   <div class="wrap">
     <div class="story-about__grid">
-      <div>
+      <div class="story-about__media">
+        <div class="story-about__accent story-about__accent--v" aria-hidden="true"></div>
+        <div class="story-about__accent story-about__accent--h" aria-hidden="true"></div>
+        <div class="story-about__card" id="aboutCarousel">
+          <div class="story-about__slides">
+            <img class="is-active" src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=80" alt="Electric scooter on the road" loading="eager">
+            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=80" alt="Workshop and vehicle detail" loading="lazy">
+            <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=900&q=80" alt="Rider travelling through the city" loading="lazy">
+          </div>
+          <div class="story-about__dots" role="tablist" aria-label="About Hazra images">
+            <button class="is-on" type="button" aria-label="Slide 1" aria-selected="true"></button>
+            <button type="button" aria-label="Slide 2" aria-selected="false"></button>
+            <button type="button" aria-label="Slide 3" aria-selected="false"></button>
+          </div>
+        </div>
+      </div>
+      <div class="story-about__copy">
+        <div class="story-about__icon"><i data-lucide="file-pen"></i></div>
         <p class="eyebrow"><i class="sq"></i>ABOUT HAZRA</p>
-        <h2 class="sec__title">A short story about<br><span class="hl">honest electric rides.</span></h2>
+        <h2 class="story-about__title">We’re <em>presently</em> building honest electric rides.</h2>
         <p class="story-about__lead">
           Hazra Electrical Bike started as one frame, one battery and a clear brief:
           make an EV that feels desirable on real Indian roads â€” not just on a brochure.
@@ -118,24 +135,9 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
         <p class="story-about__text">
           Every model shares the same spine: a swappable pack, a torque map written for
           stop-start traffic, and a body pressed so there is nothing to rattle loose.
-          We build them carefully, we service what we sell, and we publish the range
-          figures we actually measured.
+          We build them carefully, service what we sell, and publish the range figures we actually measured.
         </p>
-        <p class="story-about__text">
-          Today that idea lives across the CHALO family â€” from eco city runs to
-          high-speed daily riders â€” with a growing network of people who keep every
-          scooter on the road.
-        </p>
-      </div>
-      <div class="story-about__media">
-        <i class="story-about__blob story-about__blob--a" aria-hidden="true"></i>
-        <i class="story-about__blob story-about__blob--b" aria-hidden="true"></i>
-        <div class="story-about__frame">
-          <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=80" alt="Hazra scooter on the road" loading="lazy">
-        </div>
-        <div class="story-about__pill">
-          <b>12+</b>
-          <span>Years of<br>road craft</span>
+        <a class="btn btn--brand" href="#journey">Read More <i data-lucide="arrow-right"></i></a>
         </div>
       </div>
     </div>
@@ -143,7 +145,13 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </section>
 
 <!-- WHY â€” 4 process steps -->
-<section class="story-why">
+<section class="story-why story-why--video">
+  <div class="story-why__bg" aria-hidden="true">
+    <video autoplay muted loop playsinline poster="assets/scutie_light.webp">
+      <source src="assets/about.mp4" type="video/mp4">
+    </video>
+    <div class="story-why__veil"></div>
+  </div>
   <div class="wrap">
     <header class="sec__head">
       <p class="eyebrow"><i class="sq"></i>HOW WE WORK</p>
@@ -522,6 +530,12 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </section>
 
 <section class="story-cta">
+  <div class="story-cta__bg" aria-hidden="true">
+    <video autoplay muted loop playsinline poster="assets/scutie_light.webp">
+      <source src="assets/about.mp4" type="video/mp4">
+    </video>
+    <div class="story-cta__veil"></div>
+  </div>
   <div class="wrap">
     <h2 class="sec__title">Ready for the <span class="hl">next chapter?</span></h2>
     <p>Book a test ride or find a dealer â€” the road is waiting.</p>
@@ -676,6 +690,48 @@ const co=new IntersectionObserver(entries=>{
   });
 },{threshold:.3});
 document.querySelectorAll('.story-mosaic').forEach(el=>co.observe(el));
+
+/* About carousel and light video parallax */
+(() => {
+  const root=document.getElementById('aboutCarousel');
+  const slides=[...(root?.querySelectorAll('.story-about__slides img')||[])];
+  const dots=[...(root?.querySelectorAll('.story-about__dots button')||[])];
+  let active=0;
+  const go=i=>{
+    if(!slides.length) return;
+    slides[active].classList.remove('is-active');
+    dots[active]?.classList.remove('is-on');
+    dots[active]?.setAttribute('aria-selected','false');
+    active=(i+slides.length)%slides.length;
+    slides[active].classList.add('is-active');
+    dots[active]?.classList.add('is-on');
+    dots[active]?.setAttribute('aria-selected','true');
+  };
+  dots.forEach((dot,i)=>dot.addEventListener('click',()=>go(i)));
+  if(slides.length>1) setInterval(()=>go(active+1),3000);
+
+  const videoSections=[...document.querySelectorAll('.story-why--video,.story-cta')];
+  const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(!reduce && videoSections.length){
+    let ticking=false;
+    const update=()=>{
+      videoSections.forEach(section=>{
+        const video=section.querySelector('video');
+        const r=section.getBoundingClientRect();
+        if(!video || r.bottom<0 || r.top>innerHeight) return;
+        const p=(innerHeight-r.top)/(innerHeight+r.height);
+        video.style.transform=`scale(1.08) translateY(${(p-.5)*40}px)`;
+      });
+      ticking=false;
+    };
+    addEventListener('scroll',()=>{
+      if(ticking) return;
+      ticking=true;
+      requestAnimationFrame(update);
+    },{passive:true});
+    update();
+  }
+})();
 
 /* Scroll-pinned timeline */
 (() => {

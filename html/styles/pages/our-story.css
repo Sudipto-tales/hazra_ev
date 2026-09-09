@@ -44,17 +44,38 @@ html[data-theme="light"] .story-hero__bg{
   color:rgba(255,255,255,.82);
 }
 
-/* â”€â”€ ABOUT INTRO (story + curved image) â”€â”€ */
+/* â”€â”€ ABOUT INTRO â”€â”€ */
 .story-about{
-  padding:clamp(40px,5.5vw,72px) 0;
+  padding:clamp(56px,7vw,96px) 0;
   background:var(--surface-0);
 }
 .story-about__grid{
   display:grid;
-  grid-template-columns:1.05fr .95fr;
-  gap:clamp(24px,3.5vw,48px);
+  grid-template-columns:1fr 1fr;
+  gap:clamp(32px,5vw,72px);
   align-items:center;
 }
+.story-about__media{position:relative}
+.story-about__card{
+  position:relative;z-index:1;aspect-ratio:4/5;overflow:hidden;
+  border:1px solid var(--hair-0);border-radius:20px;background:#fff;box-shadow:var(--sh-3);
+}
+.story-about__slides,.story-about__slides img{position:absolute;inset:0;width:100%;height:100%}
+.story-about__slides img{object-fit:cover;opacity:0;transition:opacity .7s var(--ease)}
+.story-about__slides img.is-active{opacity:1}
+.story-about__accent{position:absolute;z-index:0;border-radius:8px;background:var(--brand-grad)}
+.story-about__accent--v{left:-18px;top:12%;bottom:18%;width:28px;background:linear-gradient(180deg,var(--brand-violet),var(--brand-magenta))}
+.story-about__accent--h{left:-18px;bottom:-14px;width:55%;height:36px;background:linear-gradient(90deg,var(--brand-violet),var(--brand-blue))}
+.story-about__dots{position:absolute;z-index:2;bottom:14px;left:50%;display:flex;gap:8px;transform:translateX(-50%)}
+.story-about__dots button{width:8px;height:8px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer}
+.story-about__dots button.is-on{background:var(--brand-violet);transform:scale(1.25)}
+.story-about__copy{position:relative}
+.story-about__icon{width:42px;height:42px;display:grid;place-items:center;margin-bottom:16px;border-radius:12px;background:color-mix(in srgb,var(--brand-violet) 12%,transparent);color:var(--brand-violet)}
+.story-about__icon svg{width:20px;height:20px}
+.story-about__title{font-size:clamp(28px,3.2vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.1;color:var(--ink-0);margin:12px 0 18px}
+.story-about__title em{font-style:italic;font-weight:700;background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn--brand{display:inline-flex;align-items:center;gap:9px;padding:12px 28px;border-radius:999px;background:linear-gradient(96deg,var(--brand-violet),var(--brand-blue));color:#fff;font-weight:700;text-decoration:none}
+.btn--brand svg{width:16px;height:16px}
 .story-about__lead{
   font-size:clamp(16px,1.35vw,19px);line-height:1.7;
   color:var(--ink-0);margin:14px 0 16px;max-width:38ch;
@@ -63,49 +84,6 @@ html[data-theme="light"] .story-hero__bg{
   font-size:14.5px;line-height:1.75;color:var(--ink-soft-0);
   margin-bottom:14px;max-width:46ch;
 }
-.story-about__media{
-  position:relative;
-}
-.story-about__frame{
-  position:relative;
-  border-radius:60% 40% 55% 45% / 45% 55% 45% 55%;
-  overflow:hidden;
-  aspect-ratio:1/1.05;
-  box-shadow:var(--sh-3);
-  border:1px solid var(--hair-0);
-}
-.story-about__frame img{
-  width:100%;height:100%;object-fit:cover;
-  transition:transform .8s var(--ease);
-}
-.story-about__frame:hover img{transform:scale(1.06)}
-.story-about__blob{
-  position:absolute;z-index:-1;
-  width:70%;height:70%;
-  border-radius:55% 45% 40% 60% / 50% 40% 60% 50%;
-  background:var(--brand-grad);
-  opacity:.18;
-  filter:blur(2px);
-}
-.story-about__blob--a{top:-8%;right:-10%}
-.story-about__blob--b{
-  bottom:-12%;left:-14%;width:55%;height:55%;
-  background:linear-gradient(135deg,var(--story-green),var(--brand-blue));
-  opacity:.14;
-}
-.story-about__pill{
-  position:absolute;bottom:8%;left:-6%;
-  display:flex;align-items:center;gap:10px;
-  padding:12px 16px;border-radius:var(--r-lg);
-  background:var(--surface-0);border:1px solid var(--hair-0);
-  box-shadow:var(--sh-2);
-}
-.story-about__pill b{
-  font-family:'Montserrat',system-ui,sans-serif;
-  font-size:20px;font-weight:900;
-  background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.story-about__pill span{font-size:11px;font-weight:700;color:var(--ink-soft-0);line-height:1.3}
 
 /* â”€â”€ WHY â€” 4 vertical process panels â”€â”€ */
 .story-why{
@@ -113,6 +91,13 @@ html[data-theme="light"] .story-hero__bg{
   background:rgb(var(--chip-rgb) / .35);
   border-top:1px solid var(--hair-0);
 }
+.story-why--video{position:relative;isolation:isolate;overflow:hidden;padding:clamp(64px,9vw,120px) 0;background:transparent}
+.story-why__bg,.story-cta__bg{position:absolute;inset:0;z-index:-1;overflow:hidden}
+.story-why__bg video,.story-cta__bg video{width:100%;height:100%;object-fit:cover;transform:scale(1.08);transition:transform .15s linear}
+.story-why__veil,.story-cta__veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,14,28,.55),rgba(18,14,28,.76) 52%,rgba(18,14,28,.88))}
+.story-why--video .story-steps{background:rgba(250,248,253,.92);backdrop-filter:blur(12px);border-color:rgba(255,255,255,.35)}
+.story-why--video .sec__title,.story-why--video .eyebrow{color:#f6f3fb}
+.story-why--video .eyebrow .sq{background:var(--brand-grad)}
 .story-why .sec__head{text-align:center;margin-bottom:clamp(24px,3.5vw,40px)}
 .story-why .eyebrow{justify-content:center}
 
@@ -578,12 +563,13 @@ html[data-theme="light"] .story-hero__bg{
 .story-member__role{font-size:12px;color:var(--ink-soft-0)}
 
 .story-cta{
-  padding:clamp(28px,4vw,44px) 0;text-align:center;
-  background:radial-gradient(90% 120% at 50% 0%,color-mix(in srgb,var(--brand-violet) 12%,transparent) 0%,transparent 70%),var(--surface-0);
+  position:relative;isolation:isolate;overflow:hidden;padding:clamp(72px,9vw,120px) 0;text-align:center;background:transparent;
   border-top:1px solid var(--hair-0);
 }
 .story-cta .sec__title{font-size:clamp(24px,2.8vw,34px)}
-.story-cta p{color:var(--ink-soft-0);margin:8px auto 16px;max-width:36em;font-size:14px}
+.story-cta p{color:rgba(255,255,255,.8);margin:8px auto 16px;max-width:36em;font-size:14px}
+.story-cta .sec__title{color:#fff}
+.story-cta .btn--ghost{color:#fff;border-color:rgba(255,255,255,.45)}
 
 @media (max-width:960px){
   .story-about__grid{grid-template-columns:1fr}
@@ -609,6 +595,7 @@ html[data-theme="light"] .story-hero__bg{
   .story-team__grid{grid-template-columns:1fr 1fr}
 }
 @media (max-width:560px){
+  .story-about__grid{gap:38px}
   .story-steps{grid-template-columns:1fr}
   .story-step:nth-child(odd){border-right:0}
   .story-mosaic{grid-template-columns:1fr}
