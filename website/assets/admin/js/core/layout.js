@@ -96,7 +96,7 @@
         <aside class="sidebar" id="sidebarEl">
             <div class="sidebar__brand">
                 <span class="sidebar__logo"><i class="fa-solid fa-plus"></i></span>
-                <div class="sidebar__name">TMH<small lang="bn">মানুষের সাথে ..... মানুষের পাশে</small></div>
+                <div class="sidebar__name">Hazra EV<small>Admin</small></div>
             </div>
             <nav class="sidebar__nav" id="navTrack" aria-label="Main">
                 <span class="nav-pill no-anim" id="navPill"></span>
@@ -141,26 +141,11 @@
     const listAt = (page) => (r, q) => `${page}?q=${encodeURIComponent(q)}`;
 
     const SEARCH_SOURCES = {
-        doctors: { group: 'Doctors', icon: 'fa-user-doctor', href: form('doctor-form') },
-        leadership: { group: 'Leadership', icon: 'fa-user-tie', href: form('leadership-form') },
-        departments: { group: 'Departments', icon: 'fa-hospital', href: form('department-form') },
-        posts: { group: 'Blog', icon: 'fa-newspaper', href: form('blog-form') },
-        categories: { group: 'Categories', icon: 'fa-tags', href: listAt('blog-categories') },
-        jobs: { group: 'Vacancies', icon: 'fa-bullhorn', href: form('job-form') },
-        enquiries: { group: 'Enquiries', icon: 'fa-envelope-open-text', href: form('enquiry-view') },
-        appointments: { group: 'Appointments', icon: 'fa-calendar-check', href: listAt('appointments') },
-        applications: { group: 'Applications', icon: 'fa-file-signature', href: listAt('applications') },
-        pages: { group: 'Pages', icon: 'fa-file-lines', href: listAt('pages') },
-        'lab-tests': { group: 'Lab tests', icon: 'fa-flask-vial', href: listAt('lab-tests') },
-        facilities: { group: 'Facilities', icon: 'fa-bed-pulse', href: listAt('facilities') },
-        testimonials: { group: 'Testimonials', icon: 'fa-comment-medical', href: listAt('testimonials') },
-        faqs: { group: 'FAQs', icon: 'fa-circle-question', href: listAt('faqs') },
-        counters: { group: 'Counters', icon: 'fa-arrow-up-9-1', href: listAt('stats') },
-        'nav-items': { group: 'Navigation', icon: 'fa-sitemap', href: listAt('navigation') },
-        redirects: { group: 'Redirects', icon: 'fa-right-left', href: listAt('redirects') },
-        media: { group: 'Media', icon: 'fa-images', href: listAt('gallery') },
-        users: { group: 'Users', icon: 'fa-user-shield', href: () => 'users' },
-        roles: { group: 'Roles', icon: 'fa-user-shield', href: () => 'users' },
+        products: { group: 'Products', icon: 'fa-bicycle', href: form('product-form') },
+        posts: { group: 'Blog and news', icon: 'fa-newspaper', href: form('blog-form') },
+        jobs: { group: 'Jobs', icon: 'fa-briefcase', href: form('job-form') },
+        media: { group: 'Gallery', icon: 'fa-images', href: listAt('gallery') },
+        applications: { group: 'Career apps', icon: 'fa-file-signature', href: listAt('career-apps') },
     };
 
     const SEARCH_LIMIT = 8;
@@ -349,7 +334,7 @@
 
             <div class="topbar__search">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="search" id="globalSearch" placeholder="Search doctors, posts, enquiries…"
+                <input type="search" id="globalSearch" placeholder="Search products, posts, leads..."
                        aria-label="Search the panel" role="combobox" autocomplete="off"
                        aria-controls="searchResults" aria-expanded="false">
                 <kbd>/</kbd>
@@ -378,7 +363,7 @@
                 <div class="menu hidden" id="accountMenu" role="menu">
                     <a href="profile" role="menuitem"><i class="fa-solid fa-circle-user"></i> My profile</a>
                     <a href="profile?tab=security" role="menuitem"><i class="fa-solid fa-key"></i> Change password</a>
-                    <a href="settings-general" role="menuitem"><i class="fa-solid fa-sliders"></i> Settings</a>
+                    <a href="settings" role="menuitem"><i class="fa-solid fa-sliders"></i> Settings</a>
                     <a href="${SITE}" target="_blank" rel="noopener" role="menuitem"><i class="fa-solid fa-arrow-up-right-from-square"></i> View website</a>
                     <hr>
                     <!-- "Reset demo data" was here, and is gone with the mock
@@ -505,23 +490,8 @@
 
         const bell = document.getElementById('bellBtn');
         if (bell) {
-            /* The prototype's bell said "4 new enquiries" whatever the inbox
-               held. It counts them now — the same count the sidebar badge
-               shows, from the same collection — and says so plainly when there
-               are none. A notification centre is still not built; this is the
-               one number it would have opened with. */
             bell.addEventListener('click', () => {
-                const unread = root.TMH_NAV_COUNT('enquiries', (e) => e.status === 'new');
-
-                if (!unread) {
-                    root.TMH.toast.info('Nothing new', { body: 'Every enquiry has been picked up.' });
-                    return;
-                }
-
-                root.TMH.toast.info(`${unread} new enquir${unread === 1 ? 'y' : 'ies'}`, {
-                    body: 'Nobody has replied to these yet.',
-                    action: { label: 'Open enquiries', onClick: () => { location.href = 'enquiries'; } },
-                });
+                root.TMH.toast.info('Notifications', { body: 'Lead notifications will appear here.' });
             });
         }
 
