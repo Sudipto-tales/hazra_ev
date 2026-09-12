@@ -128,7 +128,7 @@ final class WebsiteController extends V1Controller
     {
         $body = ApiRequest::body();
 
-        $type  = Wire::enumIn((string) ($body['type'] ?? 'contact'), ['contact', 'test_ride', 'dealer', 'dealership_enquiry']) ?? 'contact';
+        $type  = Wire::enumIn((string) ($body['type'] ?? 'contact'), ['contact', 'test_ride', 'dealer']) ?? 'contact';
         $name  = trim((string) ($body['name'] ?? $body['owner'] ?? $body['fullName'] ?? ''));
         $phone = trim((string) ($body['phone'] ?? $body['mobile'] ?? ''));
         $email = trim((string) ($body['email'] ?? ''));
@@ -185,7 +185,7 @@ final class WebsiteController extends V1Controller
         $where = ['1=1'];
         $params = [];
 
-        if ($type = Wire::enumIn((string) $this->query('type', ''), ['contact', 'test_ride', 'dealer', 'dealership_enquiry'])) {
+        if ($type = Wire::enumIn((string) $this->query('type', ''), ['contact', 'test_ride', 'dealer'])) {
             $where[] = 'type = ?';
             $params[] = $type;
         }

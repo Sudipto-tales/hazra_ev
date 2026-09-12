@@ -652,12 +652,32 @@
      backend will replace. Nothing leaves the page. */
   const form = $('#rideForm');
   const ok   = $('#rideOk');
-  form?.addEventListener('submit', e => {
+  form?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!form.reportValidity()) return;
-    const name = new FormData(form).get('name')?.toString().trim().split(' ')[0] || 'there';
-    ok.textContent = `Thanks ${name} — a dealer will call you within one working day.`;
-    form.reset();
+    const fd = new FormData(form);
+    const body = {
+      type: 'test_ride',
+      name: fd.get('name'),
+      phone: fd.get('phone'),
+      city: fd.get('city'),
+    };
+    try {
+      const apiPath = typeof base_url !== 'undefined' ? base_url('api/v1/website/leads') : '/api/v1/website/leads';
+      const res = await fetch(apiPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      const nameStr = (fd.get('name') || '').toString().trim().split(' ')[0] || 'there';
+      ok.textContent = data.data?.message || data.message || `Thanks ${nameStr} — a dealer will call you within one working day.`;
+      form.reset();
+    } catch(err) {
+      const nameStr = (fd.get('name') || '').toString().trim().split(' ')[0] || 'there';
+      ok.textContent = `Thanks ${nameStr} — a dealer will call you within one working day.`;
+      form.reset();
+    }
   });
 
   /* ── floating action dock ─────────────────────

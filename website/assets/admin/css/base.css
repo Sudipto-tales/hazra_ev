@@ -1,0 +1,108 @@
+/* =========================================================
+   Reset, element defaults and utilities.
+   ========================================================= */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    line-height: 1.55;
+    color: var(--text-dark);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    font-family: var(--font-head);
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -.01em;
+}
+
+h1 {
+    font-size: var(--fs-display);
+}
+
+h2 {
+    font-size: var(--fs-h2);
+}
+
+h3 {
+    font-size: var(--fs-h3);
+}
+
+a {
+    color: var(--brand-blue);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+img,
+svg,
+video {
+    display: block;
+    max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+ul,
+ol {
+    list-style: none;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td,
+th,
+.num {
+    font-variant-numeric: tabular-nums;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--hairline);
+}
+
+:focus-visible {
+    outline: 2px solid var(--brand-navy);
+    outline-offset: 2px;
+}

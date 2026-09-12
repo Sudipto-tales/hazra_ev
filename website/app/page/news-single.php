@@ -146,8 +146,36 @@ App::render('header', ['isStickyOnly' => true]);
 </section>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) lucide.createIcons();
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  if (id) {
+    try {
+      const apiPath = <?= json_encode(base_url('api/v1/posts/')) ?> + id;
+      const res = await fetch(apiPath);
+      if (res.ok) {
+        const data = await res.json();
+        const p = data.data || data;
+        if (p.title) {
+          document.querySelectorAll('.hero__title, .story__title').forEach(el => el.textContent = p.title);
+          document.title = p.title + ' — News';
+        }
+        if (p.excerpt || p.content) {
+          const deck = document.querySelector('.story__deck');
+          if (deck) deck.textContent = p.excerpt || p.content.substring(0, 150);
+        }
+        if (p.content) {
+          const prose = document.querySelector('.story__prose');
+          if (prose) prose.innerHTML = '<p>' + p.content.replace(/\n/g, '</p><p>') + '</p>';
+        }
+        if (p.cover_image) {
+          const img = document.querySelector('.story__hero img');
+          if (img) img.src = p.cover_image;
+        }
+      }
+    } catch(e) {}
+  }
 });
 </script>
 <!-- ========== UNIQUE PAGE CONTENT END ========== -->

@@ -34,10 +34,16 @@ class RunCommand
 
         $serverFile = $this->baseDir . '/server.php';
 
-        pcntl_exec(
-            PHP_BINARY,
-            ['-S', "{$host}:{$port}", $serverFile],
-        ) || passthru(
+        // pcntl_exec is Linux/macOS only and not available on Windows.
+        // Use it when present (it replaces the process cleanly), otherwise
+        // fall back to passthru() which works on all platforms.
+        if (function_exists('pcntl_exec')) {
+            pcntl_exec(PHP_BINARY, ['-S', "{$host}:{$port}", $serverFile]);
+        }
+
+        // Fallback (Windows) — passthru keeps stdin/stdout attached so
+        // Ctrl+C propagates correctly.
+        passthru(
             PHP_BINARY . ' -S ' . escapeshellarg("{$host}:{$port}") . ' ' . escapeshellarg($serverFile),
             $exitCode
         );

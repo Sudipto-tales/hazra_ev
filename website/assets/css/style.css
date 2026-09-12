@@ -28,7 +28,7 @@
   --px:0;  --py:0;   /* mouse parallax offsets, in px */
 
   /* the hero swaps its own art per theme */
-  --bg-img:       url('assets/scutie_light.webp');
+  --bg-img:       url('../scutie_light.webp');
   --bg-fallback:  radial-gradient(120% 90% at 20% 10%, #cdbfe6 0%, #7d5fa8 45%, #2c1550 100%);
 
   /* geometry — the whole interlock is driven from here */
@@ -51,7 +51,7 @@
 html[data-theme="dark"]{
   /* only the hero's own background art flips here; every other
      dark token is in styles/tokens.css. */
-  --bg-img:       url('assets/dark_scutie.webp');
+  --bg-img:       url('../dark_scutie.webp');
   --bg-fallback:  radial-gradient(120% 90% at 25% 8%, #45276e 0%, #221340 48%, #0a0614 100%);
 }
 
@@ -2188,11 +2188,11 @@ html[data-theme="dark"] .theme__moon{display:block}
   opacity:.45;
 }
 .foot__bg--light {
-    background-image: url('/assets/footer-lightbg.webp');
+    background-image: url('../footer-lightbg.webp');
 }
 
 .foot__bg--dark {
-    background-image: url('/assets/footer-darkbg.webp');
+    background-image: url('../footer-darkbg.webp');
 }
 html[data-theme="light"] .foot__bg--light{display:block}
 html[data-theme="light"] .foot__bg--dark{display:none}
@@ -2618,6 +2618,7 @@ html[data-theme="light"] .foot__bg--dark{display:none}
   display:grid;place-items:center;
   width:46px;height:46px;flex:none;
   border-radius:999px;
+  background:transparent;
   color:var(--ink-0);text-decoration:none;
   transition:background .32s var(--ease),color .32s var(--ease),transform .32s var(--ease);
 }
@@ -2625,8 +2626,8 @@ html[data-theme="light"] .foot__bg--dark{display:none}
 
 .dock__i:hover,
 .dock__i:focus-visible{
-  background:var(--brand-grad);
-  color:#fff;
+  background:rgb(var(--surface-rgb) / .22);
+  color:var(--ink-0);
   transform:translateX(-2px);
 }
 .dock__i:focus-visible{outline:2px solid var(--brand-violet);outline-offset:3px}

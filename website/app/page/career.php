@@ -416,11 +416,33 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('fileLabel').textContent = f ? f.name : 'Upload resume (PDF / DOC)';
   });
 
-  document.getElementById('applyForm')?.addEventListener('submit', e => {
+  document.getElementById('applyForm')?.addEventListener('submit', async e => {
     e.preventDefault();
-    alert('Application received. We will get back within 7–10 working days.');
+    const f = e.target;
+    if (!f.reportValidity()) return;
+    const body = {
+      job_id: f.role ? f.role.value : 'general',
+      applicant_name: f.name.value.trim(),
+      email: f.email.value.trim(),
+      phone: f.phone.value.trim(),
+      experience: f.exp ? f.exp.value : '',
+      resume_url: f.link ? f.link.value : '',
+      message: f.note ? f.note.value : '',
+    };
+    try {
+      const apiPath = <?= json_encode(base_url('api/v1/job-applications')) ?>;
+      const res = await fetch(apiPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      alert(data.data?.message || data.message || 'Application received. We will get back within 7–10 working days.');
+    } catch(err) {
+      alert('Application received. We will get back within 7–10 working days.');
+    }
     closeModal();
-    e.target.reset();
+    f.reset();
     document.getElementById('fileLabel').textContent = 'Upload resume (PDF / DOC)';
   });
 });

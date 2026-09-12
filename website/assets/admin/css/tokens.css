@@ -1,0 +1,73 @@
+/* =========================================================
+   Teresa / Hazra EV — Admin Panel Design Tokens
+   ========================================================= */
+
+:root {
+    /* ---- brand ---- */
+    --brand-red: #C1272D;
+    --brand-red-soft: #E2565C;
+    --brand-magenta: #A81E5C;
+    --brand-magenta-deep: #7A1540;
+    --brand-navy: #1B3E7A;
+    --brand-blue: #2E6BB8;
+    --accent-orange: #F57C00;
+
+    /* ---- semantic ---- */
+    --good: #2E7D32;
+    --bad: #C62828;
+    --warn: #F57C00;
+    --info: #2E6BB8;
+
+    --good-bg: #E8F3E9;
+    --bad-bg: #FBEAEA;
+    --warn-bg: #FDF0E0;
+    --info-bg: #E7EFF9;
+
+    /* ---- surfaces ---- */
+    --bg: #F7F1F3;
+    --surface: #FFFFFF;
+    --surface-2: #FBF6F8;
+    --surface-3: #F4EBEF;
+    --sidebar-bg: #FFFFFF;
+    --hairline: #F0E3E8;
+    --hairline-strong: #E3D0D8;
+
+    /* ---- text ---- */
+    --text-dark: #2C2028;
+    --text-mid: #6B5A62;
+    --text-muted: #9C8B93;
+    --text-on-brand: #FFFFFF;
+
+    /* ---- type ---- */
+    --font-head: 'Poppins', system-ui, -apple-system, sans-serif;
+    --font-body: 'Poppins', system-ui, -apple-system, sans-serif;
+    --font-brand: 'Baloo 2', 'Poppins', cursive;
+    --font-bn: 'Noto Sans Bengali', 'Poppins', sans-serif;
+
+    --fs-display: clamp(1.5rem, 2.4vw, 2rem);
+    --fs-h2: 1.25rem;
+    --fs-h3: 1.05rem;
+    --fs-body: 0.9375rem;
+    --fs-sm: 0.8125rem;
+    --fs-xs: 0.6875rem;
+
+    /* ---- space ---- */
+    --s1: 4px;
+    --s2: 8px;
+    --s3: 12px;
+    --s4: 16px;
+    --s5: 20px;
+    --s6: 24px;
+    --s8: 32px;
+
+    /* ---- radius ---- */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-full: 9999px;
+
+    /* ---- elevation ---- */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}

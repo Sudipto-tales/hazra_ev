@@ -30,6 +30,13 @@ final class ProductsController extends V1Controller
         'batteryCapacity'  => 'battery_capacity',
         'motorPower'       => 'motor_power',
         'loadCapacityKg'   => 'load_capacity_kg',
+        'isFeatured'       => 'is_featured',
+        'is_featured'      => 'is_featured',
+        'featuredOrder'    => 'featured_order',
+        'featured_order'   => 'featured_order',
+        'slug'             => 'slug',
+        'heroImage'        => 'hero_image',
+        'hero_image'       => 'hero_image',
     ];
 
     public function index(): never
@@ -338,7 +345,8 @@ final class ProductsController extends V1Controller
         return match ($wire) {
             'category'       => Wire::enumIn((string) $value, ['scooty', 'bike', 'bicycle', 'others']) ?? 'others',
             'rating'         => Wire::float($value),
-            'warrantyYears', 'rangeKm', 'topSpeedKmph', 'loadCapacityKg' => Wire::int($value),
+            'warrantyYears', 'rangeKm', 'topSpeedKmph', 'loadCapacityKg', 'featuredOrder', 'featured_order' => Wire::int($value),
+            'isFeatured', 'is_featured' => Wire::bool($value) ? 1 : 0,
             default          => (string) ($value ?? ''),
         };
     }

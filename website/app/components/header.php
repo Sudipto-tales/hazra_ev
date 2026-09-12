@@ -1,13 +1,13 @@
 <?php
 $isStickyOnly = $isStickyOnly ?? false;
-$headerClass = $isStickyOnly ? 'sticky-bar' : 'header';
+$headerClass = $isStickyOnly ? 'sticky-bar is-page is-visible' : 'header';
 $headerId = $isStickyOnly ? 'stickyBar' : '';
 
 // Active route resolution
 $currentRoute = class_exists('RouteManager') ? RouteManager::resolveRoute() : 'default';
 
 function nav_active($route, $current) {
-    if ($route === 'index' && ($current === 'default' || $current === 'index')) return 'is-on';
+    if (($route === 'index' || $route === 'default') && ($current === 'default' || $current === 'index')) return 'is-on';
     return ($current === $route) ? 'is-on' : '';
 }
 
@@ -19,7 +19,7 @@ try {
 } catch (Throwable $e) {}
 ?>
 <!-- ══════════ NAVBAR ══════════ -->
-<header class="<?= $headerClass ?>" <?= $headerId ? 'id="'.$headerId.'"' : '' ?> <?= $isStickyOnly ? 'aria-hidden="true"' : '' ?>>
+<header class="<?= $headerClass ?>" <?= $headerId ? 'id="'.$headerId.'"' : '' ?> <?= $isStickyOnly ? 'aria-hidden="false"' : '' ?>>
   <div class="<?= $isStickyOnly ? 'sticky-bar__inner' : 'header__top' ?>">
     <a class="brand <?= $isStickyOnly ? 'sticky-bar__brand' : '' ?>" href="<?= e(base_url('index')) ?>" aria-label="Hazra Electrical Bike — home">
       <img class="brand__mark" src="<?= e(base_url('assets/hazraev.png')) ?>" alt="Hazra Electrical Bike">

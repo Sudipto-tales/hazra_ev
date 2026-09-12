@@ -325,17 +325,35 @@ document.addEventListener('DOMContentLoaded', () => {
   vd?.addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) show(+b.dataset.i); });
 
   const form = $('#dealerForm'), modal = $('#successModal');
-  form?.addEventListener('submit', e => {
+  form?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!form.checkValidity()) { form.reportValidity(); return; }
     const btn = $('#submitBtn');
     btn.classList.add('is-charging'); btn.disabled = true;
-    setTimeout(() => {
-      btn.classList.remove('is-charging'); btn.disabled = false;
-      form.reset();
-      modal.hidden = false;
-      document.body.style.overflow = 'hidden';
-    }, 1100);
+    const fd = new FormData(form);
+    const body = {
+      type: 'dealer',
+      name: fd.get('fullName'),
+      phone: fd.get('phone'),
+      email: fd.get('email'),
+      city: fd.get('city'),
+      state: fd.get('state'),
+      investment: fd.get('investment'),
+      space: fd.get('space'),
+      experience: fd.get('experience'),
+      message: fd.get('message'),
+    };
+    try {
+      await fetch(baseUrl + '/api/v1/website/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    } catch(err) {}
+    btn.classList.remove('is-charging'); btn.disabled = false;
+    form.reset();
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
   });
   const closeM = () => { modal.hidden = true; document.body.style.overflow = ''; };
   $('#modalClose')?.addEventListener('click', closeM);

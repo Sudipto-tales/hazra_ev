@@ -117,12 +117,33 @@ App::render('header', ['isStickyOnly' => true]);
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) lucide.createIcons();
-  document.getElementById('contactForm')?.addEventListener('submit', e => {
+  document.getElementById('contactForm')?.addEventListener('submit', async e => {
     e.preventDefault();
     const f = e.target;
     if (!f.reportValidity()) return;
-    alert('Thanks ' + f.name.value.trim() + ' — your message was captured. We will get back to you shortly.');
-    f.reset();
+    const body = {
+      type: 'contact',
+      name: f.name.value.trim(),
+      company: f.company ? f.company.value.trim() : '',
+      phone: f.phone.value.trim(),
+      email: f.email.value.trim(),
+      subject: f.subject ? f.subject.value.trim() : '',
+      message: f.message.value.trim(),
+    };
+    try {
+      const apiPath = <?= json_encode(base_url('api/v1/website/leads')) ?>;
+      const res = await fetch(apiPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      alert(data.data?.message || data.message || ('Thanks ' + f.name.value.trim() + ' — your message was captured. We will get back to you shortly.'));
+      f.reset();
+    } catch(err) {
+      alert('Thanks ' + f.name.value.trim() + ' — your message was captured. We will get back to you shortly.');
+      f.reset();
+    }
   });
 });
 </script>

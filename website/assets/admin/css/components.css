@@ -1,0 +1,198 @@
+/* =========================================================
+   UI Components: Cards, Data Tables, Forms, Modals, Badges
+   ========================================================= */
+
+.adm-card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    padding: var(--s6);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--s6);
+}
+
+.adm-card__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: var(--s4);
+}
+
+/* Data Tables */
+.adm-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.adm-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.adm-table th {
+    background: var(--surface-2);
+    padding: 14px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--hairline);
+    letter-spacing: 0.05em;
+}
+
+.adm-table td {
+    padding: 14px 20px;
+    font-size: 13.5px;
+    color: var(--text-dark);
+    border-bottom: 1px solid var(--hairline);
+}
+
+.adm-table tr:last-child td {
+    border-bottom: 0;
+}
+
+.adm-table tr:hover td {
+    background: var(--surface-2);
+}
+
+/* Badges */
+.adm-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--r-full);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.adm-badge--good {
+    background: var(--good-bg);
+    color: var(--good);
+}
+
+.adm-badge--warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+}
+
+.adm-badge--bad {
+    background: var(--bad-bg);
+    color: var(--bad);
+}
+
+.adm-badge--info {
+    background: var(--info-bg);
+    color: var(--info);
+}
+
+/* Buttons */
+.adm-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--r-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    text-decoration: none;
+}
+
+.adm-btn--primary {
+    background: linear-gradient(135deg, var(--brand-navy), var(--brand-blue));
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(27, 62, 122, 0.2);
+}
+
+.adm-btn--primary:hover {
+    opacity: 0.95;
+    text-decoration: none;
+}
+
+.adm-btn--secondary {
+    background: var(--surface-2);
+    color: var(--text-dark);
+    border-color: var(--hairline);
+}
+
+.adm-btn--secondary:hover {
+    background: var(--surface-3);
+    text-decoration: none;
+}
+
+.adm-btn--danger {
+    background: var(--bad-bg);
+    color: var(--bad);
+}
+
+.adm-btn--sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: var(--r-sm);
+}
+
+/* Forms */
+.adm-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: var(--s4);
+}
+
+.adm-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-mid);
+}
+
+.adm-input,
+.adm-select,
+.adm-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-md);
+    font-size: 13.5px;
+    color: var(--text-dark);
+    transition: border-color 0.2s;
+}
+
+.adm-input:focus,
+.adm-select:focus,
+.adm-textarea:focus {
+    border-color: var(--brand-blue);
+    outline: none;
+    background: #ffffff;
+}
+
+/* Grid helper */
+.adm-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s4);
+}
+
+.adm-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--s4);
+}
+
+@media (max-width: 768px) {
+    .adm-grid-2,
+    .adm-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}

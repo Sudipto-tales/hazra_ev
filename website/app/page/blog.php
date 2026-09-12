@@ -250,8 +250,43 @@ App::render('header', ['isStickyOnly' => true]);
 </section>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) lucide.createIcons();
+  try {
+    const apiPath = <?= json_encode(base_url('api/v1/posts?status=published')) ?>;
+    const res = await fetch(apiPath);
+    if (!res.ok) return;
+    const data = await res.json();
+    const posts = data.data || [];
+    const blogs = posts.filter(p => p.type === 'blog');
+    const news = posts.filter(p => p.type === 'news');
+    if (blogs.length > 0) {
+      const feat = blogs[0];
+      const mainTitle = document.querySelector('.bl-feat__main h3 a');
+      const mainExcerpt = document.querySelector('.bl-feat__main p');
+      const mainImg = document.querySelector('.bl-feat__media img');
+      if (mainTitle && feat.title) {
+        mainTitle.textContent = feat.title;
+        mainTitle.href = <?= json_encode(base_url('blog-single?id=')) ?> + feat.id;
+      }
+      if (mainExcerpt && (feat.excerpt || feat.content)) mainExcerpt.textContent = feat.excerpt || feat.content.substring(0, 120) + '...';
+      if (mainImg && feat.cover_image) mainImg.src = feat.cover_image;
+    }
+    if (news.length > 0) {
+      const flashContainer = document.querySelector('.bl-flash');
+      if (flashContainer) {
+        flashContainer.innerHTML = news.map(n => `
+          <a class="bl-flash__row" href="<?= e(base_url('news-single?id=')) ?>${n.id}">
+            <div>
+              <h4>${n.title}</h4>
+              <time>${n.created_at ? n.created_at.substring(0,10) : ''}</time>
+            </div>
+            ${n.cover_image ? `<img src="${n.cover_image}" alt="">` : ''}
+          </a>
+        `).join('');
+      }
+    }
+  } catch (e) {}
 });
 </script>
 <!-- ========== UNIQUE PAGE CONTENT END ========== -->

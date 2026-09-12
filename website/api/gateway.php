@@ -102,9 +102,35 @@ class ApiGatewayProvider extends RouteProvider
             'POST:api/v1/website/leads'          => ['WebsiteController', 'storeLead'],
             'GET:api/v1/website/leads'           => ['WebsiteController', 'leads', 'auth'],
             'PATCH:api/v1/website/leads/{id}'    => ['WebsiteController', 'updateLeadStatus', 'auth'],
+
+            // --- Admin Content: Posts (Blogs & News) ----------------------------
+            'GET:api/v1/posts'              => ['ContentController', 'listPosts'],
+            'GET:api/v1/posts/{id}'         => ['ContentController', 'showPost'],
+            'POST:api/v1/posts'             => ['ContentController', 'storePost',  'auth'],
+            'PATCH:api/v1/posts/{id}'       => ['ContentController', 'updatePost', 'auth'],
+            'DELETE:api/v1/posts/{id}'      => ['ContentController', 'deletePost', 'auth'],
+
+            // --- Admin Content: Gallery -----------------------------------------
+            'GET:api/v1/gallery'            => ['ContentController', 'listGallery'],
+            'GET:api/v1/gallery/{id}'       => ['ContentController', 'showGallery'],
+            'POST:api/v1/gallery'           => ['ContentController', 'storeGallery',  'auth'],
+            'PATCH:api/v1/gallery/{id}'     => ['ContentController', 'updateGallery', 'auth'],
+            'DELETE:api/v1/gallery/{id}'    => ['ContentController', 'deleteGallery', 'auth'],
+
+            // --- Admin Content: Jobs --------------------------------------------
+            'GET:api/v1/jobs'               => ['ContentController', 'listJobs'],
+            'GET:api/v1/jobs/{id}'          => ['ContentController', 'showJob'],
+            'POST:api/v1/jobs'              => ['ContentController', 'storeJob',  'auth'],
+            'PATCH:api/v1/jobs/{id}'        => ['ContentController', 'updateJob', 'auth'],
+            'DELETE:api/v1/jobs/{id}'       => ['ContentController', 'deleteJob', 'auth'],
+
+            // --- Admin Content: Job Applications --------------------------------
+            'GET:api/v1/job-applications'           => ['ContentController', 'listApplications',  'auth'],
+            'POST:api/v1/job-applications'          => ['ContentController', 'storeApplication'],
+            'PATCH:api/v1/job-applications/{id}'    => ['ContentController', 'updateApplication', 'auth'],
+            'DELETE:api/v1/job-applications/{id}'   => ['ContentController', 'deleteApplication', 'auth'],
         ];
     }
 }
 
 return ApiGatewayProvider::routes();
-

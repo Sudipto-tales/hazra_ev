@@ -1,0 +1,194 @@
+/* =========================================================
+   Shell: sidebar, topbar, page header, content grid.
+   ========================================================= */
+
+:root {
+    --sidebar-w: 260px;
+    --sidebar-collapsed-w: 72px;
+    --topbar-h: 70px;
+    --nav-inset: 16px;
+    --nav-h: 46px;
+    --nav-radius: 12px;
+    --sidebar-shadow: 1px 0 0 var(--hairline);
+    --dur: 0.2s;
+    --dur-slow: 0.3s;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --radius-full: 9999px;
+}
+
+.app {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+.sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    box-shadow: var(--sidebar-shadow);
+    display: flex;
+    flex-direction: column;
+    z-index: 40;
+    transition: width var(--dur-slow) var(--ease), transform var(--dur-slow) var(--ease);
+}
+
+.sidebar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    min-height: var(--topbar-h);
+    padding: var(--s4) var(--s5);
+    border-bottom: 1px solid var(--hairline);
+    flex-shrink: 0;
+}
+
+.sidebar__logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--brand-navy), var(--brand-blue));
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(27, 62, 122, 0.25);
+    flex-shrink: 0;
+}
+
+.sidebar__name {
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 1.2;
+    color: var(--brand-navy);
+    white-space: nowrap;
+}
+
+.sidebar__name small {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--brand-blue);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.sidebar__nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--s3) 0 var(--s4);
+    position: relative;
+    scrollbar-width: none;
+}
+
+.sidebar__nav::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.nav-group {
+    margin-bottom: var(--s2);
+}
+
+.nav-group__label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .16em;
+    font-weight: 700;
+    color: var(--text-muted);
+    padding: 14px 0 6px calc(var(--nav-inset) + 12px);
+    white-space: nowrap;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: var(--nav-h);
+    margin: 4px var(--nav-inset);
+    padding: 0 16px;
+    border-radius: var(--nav-radius);
+    color: var(--text-mid);
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    position: relative;
+    z-index: 2;
+    transition: all var(--dur) var(--ease);
+    text-decoration: none;
+}
+
+.nav-item:hover:not(.active) {
+    color: var(--brand-navy);
+    background: var(--surface-3);
+}
+
+.nav-item.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--brand-navy), var(--brand-blue));
+    box-shadow: 0 4px 12px rgba(27, 62, 122, 0.2);
+}
+
+.nav-item i {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-item__badge {
+    margin-left: auto;
+    background: var(--brand-red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+}
+
+/* =========================================================
+   MAIN LAYOUT & TOPBAR
+   ========================================================= */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-w);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 100vh;
+}
+
+.topbar {
+    height: var(--topbar-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--s6);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+}
+
+.content-body {
+    padding: var(--s6);
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .main-content {
+        margin-left: 0;
+    }
+}
