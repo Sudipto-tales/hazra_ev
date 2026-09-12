@@ -1,5 +1,11 @@
 /* =========================================================
-   Teresa / Hazra EV — Admin Panel Design Tokens
+   Teresa Memorial Hospital — Admin Panel
+   Design tokens. Every other stylesheet reads from here and
+   defines no raw colour of its own.
+
+   Values carried over from the public site and the original
+   panel mockup (the public site's stylesheet) so the two read as one
+   product. See docs/06-design-tokens.md.
    ========================================================= */
 
 :root {
@@ -18,6 +24,9 @@
     --warn: #F57C00;
     --info: #2E6BB8;
 
+    /* Tinted backgrounds for badges, banners and toast discs. Kept as
+       explicit hex rather than colour-mix so the dark theme can retune
+       them independently. */
     --good-bg: #E8F3E9;
     --bad-bg: #FBEAEA;
     --warn-bg: #FDF0E0;
@@ -38,7 +47,11 @@
     --text-muted: #9C8B93;
     --text-on-brand: #FFFFFF;
 
-    /* ---- type ---- */
+    /* ---- type ----
+       One family for body and headings, exactly as the mockup
+       (the site's own stylesheet) does. Baloo 2 is the brand lockup only;
+       Noto Sans Bengali carries the logo slogan, which loses its
+       conjuncts in a Latin face. */
     --font-head: 'Poppins', system-ui, -apple-system, sans-serif;
     --font-body: 'Poppins', system-ui, -apple-system, sans-serif;
     --font-brand: 'Baloo 2', 'Poppins', cursive;
@@ -51,7 +64,7 @@
     --fs-sm: 0.8125rem;
     --fs-xs: 0.6875rem;
 
-    /* ---- space ---- */
+    /* ---- space (4px scale) ---- */
     --s1: 4px;
     --s2: 8px;
     --s3: 12px;
@@ -59,15 +72,119 @@
     --s5: 20px;
     --s6: 24px;
     --s8: 32px;
+    --s10: 40px;
+    --s12: 48px;
+    --s16: 64px;
+
+    /* ---- layout ---- */
+    --sidebar-w: 268px;
+    --sidebar-w-collapsed: 82px;
+    --topbar-h: 72px;
+    --content-max: 1460px;
+    --gutter: 34px;
+
+    /* Nav geometry. The active pill is flush to the sidebar's right edge and
+       flares outward with two concave fillets — item box and pill box must be
+       identical or the notches sit off the curve. */
+    --nav-h: 52px;
+    --nav-inset: 10px;
+    --notch: 18px;
+    --nav-radius: 26px;
 
     /* ---- radius ---- */
-    --r-sm: 6px;
-    --r-md: 10px;
-    --r-lg: 14px;
-    --r-full: 9999px;
+    --radius: 22px;
+    --radius-sm: 14px;
+    --radius-xs: 10px;
+    --radius-full: 999px;
 
     /* ---- elevation ---- */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --card-shadow: 0 10px 24px -12px rgba(122, 22, 48, .22), 0 2px 6px -2px rgba(0, 0, 0, .05);
+    --card-shadow-hover: 0 22px 40px -18px rgba(122, 22, 48, .32), 0 4px 10px -4px rgba(0, 0, 0, .07);
+    --overlay-shadow: 0 32px 64px -24px rgba(30, 10, 20, .45);
+    --inset-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+    --sidebar-shadow: 6px 0 24px -12px rgba(100, 18, 40, .25);
+
+    /* Cards sit on a tinted background and are edged in white rather than a
+       hairline, so the surface reads as lifted instead of outlined. Dark
+       retunes this to a real hairline — a white edge would glow there. */
+    --card-edge: rgba(255, 255, 255, .9);
+
+    /* ---- motion ---- */
+    --ease: cubic-bezier(.22, 1, .36, 1);
+    --dur-fast: 140ms;
+    --dur: 180ms;
+    --dur-slow: 260ms;
+
+    /* ---- focus ---- */
+    --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand-blue);
+
+    /* ---- chart series (fixed order, never cycled) ---- */
+    --series-1: var(--brand-red);
+    --series-2: var(--brand-blue);
+    --series-3: var(--brand-navy);
+    --series-4: var(--brand-magenta);
+    --grid-line: #F0E3E8;
+
+    color-scheme: light;
+}
+
+/* =========================================================
+   Dark theme.
+
+   Not an inversion — the neutrals keep a warm magenta cast so
+   the brand red does not read as an alarm on a cold grey. The
+   semantic colours are lifted, not just darkened, because the
+   AA target moves when the background does.
+   ========================================================= */
+[data-theme='dark'] {
+    --brand-red: #E2565C;
+    --brand-red-soft: #F07C81;
+    --brand-magenta: #D2568C;
+    --brand-magenta-deep: #A83E6C;
+    --brand-navy: #6D93D6;
+    --brand-blue: #64B5F6;
+    --accent-orange: #FFA726;
+
+    --good: #6ABF6E;
+    --bad: #EF5350;
+    --warn: #FFA726;
+    --info: #64B5F6;
+
+    --good-bg: #1E2E20;
+    --bad-bg: #33201F;
+    --warn-bg: #33281A;
+    --info-bg: #1C2733;
+
+    --bg: #171015;
+    --surface: #221A20;
+    --surface-2: #2B222A;
+    --surface-3: #332933;
+    --sidebar-bg: #1D151B;
+    --hairline: #3A2F37;
+    --hairline-strong: #4A3D45;
+
+    --text-dark: #F3EAEF;
+    --text-mid: #B9A8B1;
+    --text-muted: #8B7B85;
+
+    --card-shadow: 0 10px 24px -14px rgba(0, 0, 0, .7), 0 2px 6px -2px rgba(0, 0, 0, .4);
+    --card-shadow-hover: 0 22px 40px -20px rgba(0, 0, 0, .8), 0 4px 10px -4px rgba(0, 0, 0, .5);
+    --overlay-shadow: 0 32px 64px -24px rgba(0, 0, 0, .8);
+    --inset-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+    --sidebar-shadow: 6px 0 24px -14px rgba(0, 0, 0, .8);
+    --card-edge: var(--hairline);
+
+    --grid-line: #3A2F37;
+
+    color-scheme: dark;
+}
+
+/* Reduced motion is honoured globally rather than per-component, so a new
+   component cannot forget to. */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --dur-fast: 1ms;
+        --dur: 1ms;
+        --dur-slow: 1ms;
+    }
 }

@@ -124,6 +124,14 @@ class ApiGatewayProvider extends RouteProvider
             'PATCH:api/v1/jobs/{id}'        => ['ContentController', 'updateJob', 'auth'],
             'DELETE:api/v1/jobs/{id}'       => ['ContentController', 'deleteJob', 'auth'],
 
+            // --- Admin Shell Auth & Dashboard -----------------------------
+            'GET:api/v1/admin/me'        => ['AdminAuthController', 'me'],
+            'POST:api/v1/admin/login'    => ['AdminAuthController', 'login'],
+            'POST:api/v1/admin/logout'   => ['AdminAuthController', 'logout'],
+            'GET:api/v1/admin/summary'   => ['AdminController', 'summary'],
+            'GET:api/v1/settings'        => ['AdminController', 'getSettings'],
+            'PATCH:api/v1/settings/{group}' => ['AdminController', 'patchSettings'],
+
             // --- Admin Content: Job Applications --------------------------------
             'GET:api/v1/job-applications'           => ['ContentController', 'listApplications',  'auth'],
             'POST:api/v1/job-applications'          => ['ContentController', 'storeApplication'],

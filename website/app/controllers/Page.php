@@ -116,8 +116,120 @@ class Page extends BaseController
         return $this->respond('/app/page/warranty-paid.php');
     }
 
+    private function guardAdmin()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (!Auth::isAuthenticated() && empty($_SESSION['user_id']) && empty($_SESSION['admin_logged_in'])) {
+            header('Location: ' . base_url('/admin/login'));
+            exit;
+        }
+    }
+
     public function admin()
     {
-        return $this->respond('/app/page/admin.php');
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/dashboard.php');
+    }
+
+    public function adminLogin()
+    {
+        return $this->respond('/app/page/admin/login.php');
+    }
+
+    public function adminLogout()
+    {
+        return $this->respond('/app/page/admin/logout.php');
+    }
+
+    public function adminDashboard()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/dashboard.php');
+    }
+
+    public function adminProducts()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/products.php');
+    }
+
+    public function adminProductForm()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/product-form.php');
+    }
+
+    public function adminBlogs()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/blogs.php');
+    }
+
+    public function adminBlogForm()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/blog-form.php');
+    }
+
+    public function adminNews()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/news.php');
+    }
+
+    public function adminNewsForm()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/news-form.php');
+    }
+
+    public function adminGallery()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/gallery.php');
+    }
+
+    public function adminJobs()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/jobs.php');
+    }
+
+    public function adminJobForm()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/job-form.php');
+    }
+
+    public function adminCareerApps()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/career-apps.php');
+    }
+
+    public function adminTestDrive()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/test-drive.php');
+    }
+
+    public function adminDealership()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/dealership.php');
+    }
+
+    public function adminContact()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/contact.php');
+    }
+
+    public function adminSettings()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/settings.php');
     }
 }

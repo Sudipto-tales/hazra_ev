@@ -79,6 +79,23 @@ class ViewRouteProvider extends RouteProvider
 
             'admin' => ['Page', 'admin'],
             'admin.php' => ['Page', 'admin'],
+            'admin/login' => ['Page', 'adminLogin'],
+            'admin/logout' => ['Page', 'adminLogout'],
+            'admin/dashboard' => ['Page', 'adminDashboard'],
+            'admin/products' => ['Page', 'adminProducts'],
+            'admin/product-form' => ['Page', 'adminProductForm'],
+            'admin/blogs' => ['Page', 'adminBlogs'],
+            'admin/blog-form' => ['Page', 'adminBlogForm'],
+            'admin/news' => ['Page', 'adminNews'],
+            'admin/news-form' => ['Page', 'adminNewsForm'],
+            'admin/gallery' => ['Page', 'adminGallery'],
+            'admin/jobs' => ['Page', 'adminJobs'],
+            'admin/job-form' => ['Page', 'adminJobForm'],
+            'admin/career-apps' => ['Page', 'adminCareerApps'],
+            'admin/test-drive' => ['Page', 'adminTestDrive'],
+            'admin/dealership' => ['Page', 'adminDealership'],
+            'admin/contact' => ['Page', 'adminContact'],
+            'admin/settings' => ['Page', 'adminSettings'],
         ];
     }
 }
