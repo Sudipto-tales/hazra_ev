@@ -1,183 +1,572 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
-/* Applied before first paint so a dark-mode visitor never sees a light
-   flash. Kept inline and tiny on purpose: an external file would race
-   the paint it exists to prevent. */
 (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
 if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-  <title>Become a Dealer | Hazra</title>
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Hazra Electrical Bike">
-<meta property="og:title" content="Become a Dealer | Hazra">
-<meta property="og:description" content="Join the growing Hazra dealer network and be part of the electric mobility revolution.">
-<meta property="og:url" content="https://hazraelectricalbike.com/become-a-dealer.html">
-<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
-<meta name="twitter:card" content="summary_large_image">
-<link rel="canonical" href="https://hazraelectricalbike.com/become-a-dealer.html">
-<meta name="description" content="Join the growing Hazra dealer network and be part of the electric mobility revolution.">
-  <link rel="icon" href="assets/hazraev.png" type="image/png">
+<title>Become a Dealer | Hazra Electrical Bike</title>
+<meta name="description" content="Join the Hazra dealer network. Apply online and grow with electric mobility across India.">
+<link rel="icon" href="assets/hazraev.png" type="image/png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles/tokens.css">
 <link rel="stylesheet" href="styles/typography.css">
 <link rel="stylesheet" href="styles/global.css">
 <link rel="stylesheet" href="styles/utilities.css">
-<link rel="stylesheet" href="styles/components/page-chrome.css">
-  <link rel="stylesheet" href="styles/pages/become-a-dealer.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="styles/pages/become-a-dealer.css">
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
 </head>
-<body>
+<body class="dealer-page">
 
-<header class="header">
-  <div class="header__top">
-    <a class="brand" href="index.html">
-      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
-      <span class="brand__txt">Hazra Electrical Bike</span>
+<header class="sticky-bar is-page is-visible" id="stickyBar" aria-hidden="false">
+  <div class="sticky-bar__inner">
+    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
     </a>
-    <button class="theme" id="theme" aria-label="Toggle theme">
-      <i data-lucide="sun-medium" class="theme__sun"></i>
-      <i data-lucide="moon" class="theme__moon"></i>
+    <button class="burger" id="stickyBurger" aria-label="Open menu" aria-expanded="false" aria-controls="stickyNav">
+      <span></span><span></span><span></span>
     </button>
+    <nav class="nav sticky-bar__nav" id="stickyNav">
+      <a href="index.html" class="nav__i">Home</a>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">About <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="our-story.html" class="nav__s">Our Story</a>
+          <a href="career.html" class="nav__s">Career</a>
+          <a href="index.html#faq" class="nav__s">FAQ</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Products <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu nav__menu--wide">
+          <a href="products.html" class="nav__s">All products</a>
+          <a href="ev-details.html" class="nav__s">EV Details</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t is-on" aria-expanded="false">Dealers <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="dealer-locator.html" class="nav__s">Locate Dealers</a>
+          <a href="become-a-dealer.html" class="nav__s">Become a Dealer</a>
+        </div>
+      </div>
+      <a href="#apply" class="nav__i">Apply</a>
+    </nav>
+    <div class="sticky-bar__end">
+      <button class="theme" id="stickyTheme" type="button" aria-label="Toggle theme">
+        <i class="theme__sun" data-lucide="sun"></i>
+        <i class="theme__moon" data-lucide="moon"></i>
+      </button>
+      <a href="#apply" class="sticky-bar__cta"><i data-lucide="store"></i><span>APPLY NOW</span></a>
+    </div>
   </div>
 </header>
 
-<section class="hero">
-  <h1 class="hero__title">Become a Dealer</h1>
-  <p class="hero__lead">
-    Join our growing network of dealers and be part of the electric mobility revolution.
-  </p>
-</section>
-
-<section class="benefits">
-  <div class="benefits__in">
-    <h2 class="benefits__title">Why Partner With Hazra</h2>
-    <div class="benefits__grid">
-      <div class="benefit" style="--i: 0">
-        <div class="benefit__icon">
-          <i data-lucide="trending-up"></i>
-        </div>
-        <h3 class="benefit__label">High Growth Market</h3>
-        <p class="benefit__desc">Fast-growing EV segment with strong demand</p>
+<!-- HERO -->
+<section class="bd-hero">
+  <div class="bd-hero__grid wrap">
+    <div class="bd-hero__copy">
+      <div class="bd-pills">
+        <span class="bd-pill bd-pill--live"><i class="bd-dot"></i> Partner programme open</span>
+        <span class="bd-pill">Pan-India network</span>
       </div>
-
-      <div class="benefit" style="--i: 1">
-        <div class="benefit__icon">
-          <i data-lucide="gift"></i>
-        </div>
-        <h3 class="benefit__label">Attractive Margins</h3>
-        <p class="benefit__desc">Competitive dealer margins and incentives</p>
+      <h1 class="bd-hero__title">Power the next<br><span class="bd-glow">kilometre</span><br>with Hazra.</h1>
+      <p class="bd-hero__lead">
+        Build a dealership that sells honest range, swappable energy and service that stays.
+        Apply online — our channel team reviews every application.
+      </p>
+      <div class="bd-hero__cta">
+        <a class="bd-btn bd-btn--primary" href="#apply">Become a Dealer <i data-lucide="arrow-right"></i></a>
+        <a class="bd-btn bd-btn--ghost" href="dealer-locator.html">Explore live network</a>
       </div>
-
-      <div class="benefit" style="--i: 2">
-        <div class="benefit__icon">
-          <i data-lucide="book"></i>
-        </div>
-        <h3 class="benefit__label">Full Support</h3>
-        <p class="benefit__desc">Training, marketing, and operational support</p>
-      </div>
-
-      <div class="benefit" style="--i: 3">
-        <div class="benefit__icon">
-          <i data-lucide="shield-check"></i>
-        </div>
-        <h3 class="benefit__label">Brand Trust</h3>
-        <p class="benefit__desc">Established brand with loyal customer base</p>
-      </div>
-
-      <div class="benefit" style="--i: 4">
-        <div class="benefit__icon">
-          <i data-lucide="users"></i>
-        </div>
-        <h3 class="benefit__label">Community</h3>
-        <p class="benefit__desc">Join a network of successful dealers</p>
-      </div>
-
-      <div class="benefit" style="--i: 5">
-        <div class="benefit__icon">
-          <i data-lucide="zap"></i>
-        </div>
-        <h3 class="benefit__label">Innovation</h3>
-        <p class="benefit__desc">Latest technology and product updates</p>
-      </div>
+    </div>
+    <div class="bd-hero__visual" id="heroVisual" aria-hidden="true">
+      <div class="bd-reel bd-reel--up" id="reelUp"></div>
+      <div class="bd-reel bd-reel--down" id="reelDown"></div>
     </div>
   </div>
 </section>
 
-<section class="form">
-  <div class="form__in">
-    <h2 class="form__title">Apply Now</h2>
-    <form class="fields" onsubmit="handleSubmit(event)">
-      <div class="field">
-        <label>Business Name</label>
-        <input type="text" name="business" placeholder="Your business name" required>
-      </div>
+<!-- HOW IT WORKS -->
+<section class="bd-how" id="how">
+  <div class="wrap">
+    <header class="bd-head">
+      <p class="eyebrow"><i class="sq"></i>APPLY · ONBOARD · GROW</p>
+      <h2 class="sec__title">Three steps to<br><span class="hl">your showroom</span></h2>
+    </header>
+    <div class="bd-timeline" aria-hidden="true">
+      <svg class="bd-circuit" viewBox="0 0 900 8" preserveAspectRatio="none">
+        <line x1="0" y1="4" x2="900" y2="4" class="bd-circuit__track"/>
+        <line x1="0" y1="4" x2="900" y2="4" class="bd-circuit__pulse"/>
+      </svg>
+    </div>
+    <div class="bd-how__grid">
+      <article class="bd-card" data-tilt>
+        <span class="bd-card__n">01</span>
+        <div class="bd-card__icon"><i data-lucide="file-pen"></i></div>
+        <h3>Submit application</h3>
+        <p>Share city, space, investment band and experience. We respond after a structured review.</p>
+      </article>
+      <article class="bd-card" data-tilt>
+        <span class="bd-card__n">02</span>
+        <div class="bd-card__icon"><i data-lucide="handshake"></i></div>
+        <h3>Channel discussion</h3>
+        <p>Territory fit, brand standards, training path and commercial terms with the regional team.</p>
+      </article>
+      <article class="bd-card" data-tilt>
+        <span class="bd-card__n">03</span>
+        <div class="bd-card__icon"><i data-lucide="store"></i></div>
+        <h3>Launch &amp; support</h3>
+        <p>Fit-out guidance, product training, launch stock and ongoing marketing + service support.</p>
+      </article>
+    </div>
+    <div class="bd-vanish-wrap">
+      <p class="bd-vanish" id="vanishText"></p>
+      <div class="bd-vanish-dots" id="vanishDots"></div>
+    </div>
+  </div>
+</section>
 
-      <div class="field">
-        <label>Owner Name</label>
-        <input type="text" name="owner" placeholder="Your name" required>
-      </div>
+<!-- BENEFITS / WHY -->
+<section class="bd-why" id="benefits">
+  <div class="wrap">
+    <header class="bd-head">
+      <p class="eyebrow"><i class="sq"></i>WHY HAZRA</p>
+      <h2 class="sec__title">Partner benefits<br><span class="hl">that hold</span></h2>
+    </header>
+    <div class="bd-why__grid" id="benefitGrid">
+      <article class="bd-perk" data-glow>
+        <div class="bd-perk__icon"><i data-lucide="badge-percent"></i></div>
+        <h3>Clear margins</h3>
+        <p>Transparent dealer pricing and structured incentive ladders on volume.</p>
+      </article>
+      <article class="bd-perk" data-glow>
+        <div class="bd-perk__icon"><i data-lucide="wrench"></i></div>
+        <h3>Service backbone</h3>
+        <p>Training, parts pipeline and warranty process designed for real workshops.</p>
+      </article>
+      <article class="bd-perk" data-glow>
+        <div class="bd-perk__icon"><i data-lucide="megaphone"></i></div>
+        <h3>Local marketing</h3>
+        <p>Launch kits, digital assets and co-branded campaigns for your territory.</p>
+      </article>
+      <article class="bd-perk" data-glow>
+        <div class="bd-perk__icon"><i data-lucide="battery-charging"></i></div>
+        <h3>Product edge</h3>
+        <p>Swappable packs, measured range claims and models tuned for Indian cities.</p>
+      </article>
+    </div>
+  </div>
+</section>
 
-      <div class="field">
-        <label>City & State</label>
-        <input type="text" name="location" placeholder="City, State" required>
-      </div>
+<!-- APPLICATION FORM -->
+<section class="bd-apply" id="apply">
+  <div class="wrap bd-apply__layout">
+    <div class="bd-apply__side">
+      <p class="eyebrow"><i class="sq"></i>DEALER APPLICATION</p>
+      <h2 class="sec__title">Plug in your<br><span class="hl">partnership</span></h2>
+      <p class="bd-apply__lead">Complete the form. Our channel desk reviews applications in order of territory priority.</p>
+      <ul class="bd-apply__notes">
+        <li><i data-lucide="map-pin"></i> Preferred: cities with service-ready space</li>
+        <li><i data-lucide="building-2"></i> Showroom / workshop footprint required</li>
+        <li><i data-lucide="clock"></i> Typical first response within 7–10 working days</li>
+      </ul>
+    </div>
 
-      <div class="field">
-        <label>Phone Number</label>
-        <input type="tel" name="phone" placeholder="+91 XXXXX XXXXX" required>
+    <form class="bd-dash" id="dealerForm" novalidate>
+      <div class="bd-dash__glow" aria-hidden="true"></div>
+      <div class="bd-field">
+        <input type="text" name="fullName" id="dName" required placeholder=" ">
+        <label for="dName">Full name</label>
       </div>
-
-      <div class="field">
-        <label>Email</label>
-        <input type="email" name="email" placeholder="your@email.com" required>
+      <div class="bd-field-row">
+        <div class="bd-field">
+          <input type="tel" name="phone" id="dPhone" required pattern="[0-9]{10}" placeholder=" " inputmode="numeric">
+          <label for="dPhone">Mobile number</label>
+        </div>
+        <div class="bd-field">
+          <input type="email" name="email" id="dEmail" required placeholder=" ">
+          <label for="dEmail">Email</label>
+        </div>
       </div>
-
-      <div class="field">
-        <label>About Your Business</label>
-        <textarea name="about" placeholder="Tell us about your business and experience" required></textarea>
+      <div class="bd-field-row">
+        <div class="bd-field">
+          <input type="text" name="city" id="dCity" required placeholder=" ">
+          <label for="dCity">City / town</label>
+        </div>
+        <div class="bd-field">
+          <select name="state" id="dState" required>
+            <option value="" disabled selected></option>
+            <option>West Bengal</option><option>Bihar</option><option>Jharkhand</option>
+            <option>Odisha</option><option>Assam</option><option>Uttar Pradesh</option>
+            <option>Maharashtra</option><option>Delhi</option><option>Karnataka</option>
+            <option>Other</option>
+          </select>
+          <label for="dState">State</label>
+        </div>
       </div>
-
-      <button type="submit" class="form__btn">
-        Submit Application
+      <div class="bd-field">
+        <select name="investment" id="dInvest" required>
+          <option value="" disabled selected></option>
+          <option>Under ₹15 lakh</option>
+          <option>₹15–30 lakh</option>
+          <option>₹30–50 lakh</option>
+          <option>₹50 lakh+</option>
+        </select>
+        <label for="dInvest">Investment band</label>
+      </div>
+      <div class="bd-field">
+        <select name="space" id="dSpace" required>
+          <option value="" disabled selected></option>
+          <option>Under 500 sq ft</option>
+          <option>500–1000 sq ft</option>
+          <option>1000–2000 sq ft</option>
+          <option>2000+ sq ft</option>
+        </select>
+        <label for="dSpace">Showroom / workshop space</label>
+      </div>
+      <div class="bd-field">
+        <select name="experience" id="dExp" required>
+          <option value="" disabled selected></option>
+          <option>New to auto retail</option>
+          <option>2-wheeler dealership experience</option>
+          <option>EV dealership experience</option>
+          <option>Multi-brand / multi-location</option>
+        </select>
+        <label for="dExp">Experience</label>
+      </div>
+      <div class="bd-field">
+        <textarea name="message" id="dMsg" rows="3" placeholder=" "></textarea>
+        <label for="dMsg">Notes (optional)</label>
+      </div>
+      <label class="bd-consent">
+        <input type="checkbox" name="consent" required>
+        <span>I agree to be contacted about dealership opportunities and accept the partner terms.</span>
+      </label>
+      <button type="submit" class="bd-btn bd-btn--primary bd-submit" id="submitBtn">
+        <span class="bd-submit__label">Submit application</span>
+        <span class="bd-submit__bar" aria-hidden="true"></span>
       </button>
     </form>
   </div>
 </section>
 
-<section class="footer">
-  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
-    Questions? Contact our dealer team at dealers@hazraev.com
-  </p>
-  <a class="footer__link" href="index.html">
-    <span>Back to home</span>
-    <i data-lucide="arrow-right"></i>
-  </a>
+<!-- NETWORK RIBBON -->
+<section class="bd-network" id="network">
+  <div class="wrap">
+    <header class="bd-head bd-head--row">
+      <div>
+        <p class="eyebrow"><i class="sq"></i>LIVE NETWORK</p>
+        <h2 class="sec__title">Dealers already<br><span class="hl">on the map</span></h2>
+      </div>
+      <a class="bd-btn bd-btn--ghost" href="dealer-locator.html">Open locator</a>
+    </header>
+  </div>
+  <div class="bd-ribbon">
+    <div class="bd-ribbon__track" id="ribbonTrack"></div>
+  </div>
 </section>
 
-<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
-<script>
-  lucide.createIcons();
-  const themeBtn = document.getElementById('theme');
-  themeBtn.addEventListener('click', () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-  });
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
+<!-- INVESTMENT TIERS -->
+<section class="bd-tiers" id="tiers">
+  <div class="wrap">
+    <header class="bd-head">
+      <p class="eyebrow"><i class="sq"></i>PARTNERSHIP LEVELS</p>
+      <h2 class="sec__title">Choose the scale<br><span class="hl">that fits</span></h2>
+    </header>
+    <div class="bd-podium" id="podium">
+      <div class="bd-pod bd-pod--2">
+        <span class="bd-pod__tag">Studio</span>
+        <h3>City Studio</h3>
+        <p class="bd-pod__price">From ₹15L</p>
+        <ul>
+          <li>Compact showroom</li>
+          <li>Core model lineup</li>
+          <li>Digital lead support</li>
+        </ul>
+      </div>
+      <div class="bd-pod bd-pod--1">
+        <span class="bd-pod__tag">Flagship</span>
+        <h3>Full Dealership</h3>
+        <p class="bd-pod__price">From ₹30L</p>
+        <ul>
+          <li>Showroom + workshop</li>
+          <li>Full product range</li>
+          <li>Priority stock &amp; training</li>
+        </ul>
+      </div>
+      <div class="bd-pod bd-pod--3">
+        <span class="bd-pod__tag">Hub</span>
+        <h3>Regional Hub</h3>
+        <p class="bd-pod__price">Custom</p>
+        <ul>
+          <li>Multi-point territory</li>
+          <li>Service excellence centre</li>
+          <li>Co-marketing budget</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    alert('Thank you for your application! Our team will contact you soon.');
-    e.target.reset();
-  }
-</script>
+<!-- Success modal -->
+<div class="bd-modal" id="successModal" hidden>
+  <div class="bd-modal__panel" role="dialog" aria-modal="true" aria-labelledby="okTitle">
+    <button type="button" class="bd-modal__x" id="modalClose" aria-label="Close"><i data-lucide="x"></i></button>
+    <div class="bd-modal__badge"><i data-lucide="circle-check"></i></div>
+    <h3 id="okTitle">Application received</h3>
+    <p>Our channel team will review your details and contact you on the mobile or email you provided.</p>
+    <button type="button" class="bd-btn bd-btn--primary" id="modalOk">Continue</button>
+  </div>
+</div>
+
+<footer class="foot" id="contact">
+  <div class="wrap foot__top">
+    <div class="foot__brand-block">
+      <a class="brand" href="index.html">
+        <img class="brand__mark" src="assets/hazraev.png" alt="">
+        <span class="brand__txt">Hazra Electrical Bike</span>
+      </a>
+      <p class="foot__tag">Electric scooters for everyday Indian riding.</p>
+    </div>
+    <nav class="foot__cols" aria-label="Footer">
+      <div class="fcol">
+        <h4>Buy</h4>
+        <a href="products.html">All products</a>
+        <a href="dealer-locator.html">Locate dealers</a>
+        <a href="become-a-dealer.html">Become a dealer</a>
+      </div>
+      <div class="fcol">
+        <h4>Company</h4>
+        <a href="our-story.html">Our story</a>
+        <a href="career.html">Careers</a>
+        <a href="blog.html">Blog</a>
+      </div>
+      <div class="fcol">
+        <h4>Support</h4>
+        <a href="index.html#faq">FAQs</a>
+        <a href="warranty-free.html">Warranty</a>
+        <a href="index.html#contact">Contact</a>
+      </div>
+    </nav>
+  </div>
+  <div class="wrap foot__bottom">
+    <p>© Hazra Electrical Bike</p>
+  </div>
+</footer>
 
 <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script>
+(() => {
+  const $ = (s,r=document)=>r.querySelector(s);
+  const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+
+  const SHOTS = [
+    { title:'Kolkata hub', img:'assets/scutie_light.webp' },
+    { title:'Service bay', img:'assets/dark_scutie.webp' },
+    { title:'City studio', img:'assets/storm.webp' },
+    { title:'Launch floor', img:'assets/scutie_light.webp' },
+    { title:'Workshop', img:'assets/dark_scutie.webp' },
+    { title:'Display line', img:'assets/storm.webp' },
+  ];
+
+  const card = (s) => `<article class="bd-vcard"><div class="bd-vcard__media"><img src="${s.img}" alt="" loading="lazy"><span>${s.title}</span></div></article>`;
+  const fill = (el, list) => { el.innerHTML = list.concat(list).map(card).join(''); };
+  fill($('#reelUp'), SHOTS);
+  fill($('#reelDown'), [...SHOTS].reverse());
+
+  const vis = $('#heroVisual');
+  vis?.addEventListener('mouseenter', () => vis.classList.add('is-paused'));
+  vis?.addEventListener('mouseleave', () => vis.classList.remove('is-paused'));
+
+  const track = $('#ribbonTrack');
+  if (track) {
+    const trip = SHOTS.concat(SHOTS).concat(SHOTS);
+    track.innerHTML = trip.map(s => `
+      <div class="bd-rib-card">
+        <img src="${s.img}" alt="" loading="lazy">
+        <span>${s.title}</span>
+      </div>`).join('');
+  }
+
+  const lines = [
+    'Tell us your city and space.',
+    'We match territory and standards.',
+    'Train, stock, launch — then grow with the brand.'
+  ];
+  let vi = 0;
+  const vt = $('#vanishText'), vd = $('#vanishDots');
+  if (vd) vd.innerHTML = lines.map((_,i)=>`<button type="button" data-i="${i}" class="${i?'':'is-on'}"></button>`).join('');
+  const show = (i) => {
+    if (!vt) return;
+    vt.classList.add('out');
+    setTimeout(()=>{
+      vi=i; vt.textContent=lines[i]; vt.classList.remove('out'); vt.classList.add('in');
+      $$('#vanishDots button').forEach((b,n)=>b.classList.toggle('is-on',n===i));
+    }, 280);
+  };
+  show(0);
+  setInterval(()=>show((vi+1)%lines.length), 3200);
+  vd?.addEventListener('click', e => { const b=e.target.closest('[data-i]'); if(b) show(+b.dataset.i); });
+
+  const form = $('#dealerForm'), modal = $('#successModal');
+  form?.addEventListener('submit', e => {
+    e.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    const btn = $('#submitBtn');
+    btn.classList.add('is-charging'); btn.disabled = true;
+    setTimeout(()=>{
+      btn.classList.remove('is-charging'); btn.disabled = false;
+      form.reset();
+      modal.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }, 1100);
+  });
+  const closeM = () => { modal.hidden = true; document.body.style.overflow = ''; };
+  $('#modalClose')?.addEventListener('click', closeM);
+  $('#modalOk')?.addEventListener('click', closeM);
+  modal?.addEventListener('click', e => { if (e.target === modal) closeM(); });
+
+  $$('[data-glow]').forEach(card => {
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', ((e.clientX-r.left)/r.width*100)+'%');
+      card.style.setProperty('--my', ((e.clientY-r.top)/r.height*100)+'%');
+    });
+  });
+  $$('[data-tilt]').forEach(card => {
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX-r.left)/r.width - .5;
+      const y = (e.clientY-r.top)/r.height - .5;
+      card.style.transform = `perspective(900px) rotateY(${x*5}deg) rotateX(${-y*5}deg)`;
+    });
+    card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+  });
+
+  /* ── GSAP ScrollTrigger reveals ── */
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (window.gsap && window.ScrollTrigger && !reduceMotion) {
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Hero copy
+    gsap.from('.bd-hero__copy > *', {
+      opacity: 0,
+      y: 28,
+      duration: 0.7,
+      stagger: 0.08,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+    gsap.from('.bd-hero__visual', {
+      opacity: 0,
+      x: 40,
+      duration: 0.9,
+      delay: 0.15,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+
+    // Section heads
+    gsap.utils.toArray('.bd-head').forEach((el) => {
+      gsap.from(el, {
+        scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none none' },
+        opacity: 0,
+        y: 30,
+        duration: 0.65,
+        ease: 'power2.out',
+        clearProps: 'all'
+      });
+    });
+
+    // How-it-works cards
+    gsap.from('.bd-how__grid .bd-card', {
+      scrollTrigger: { trigger: '.bd-how__grid', start: 'top 80%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 36,
+      duration: 0.6,
+      stagger: 0.12,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+
+    // Circuit pulse stronger when in view
+    ScrollTrigger.create({
+      trigger: '.bd-timeline',
+      start: 'top 85%',
+      onEnter: () => document.querySelector('.bd-circuit__pulse')?.classList.add('is-active')
+    });
+
+    // Benefit perks
+    gsap.from('.bd-why__grid .bd-perk', {
+      scrollTrigger: { trigger: '.bd-why__grid', start: 'top 80%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 32,
+      duration: 0.55,
+      stagger: 0.1,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+
+    // Apply split
+    gsap.from('.bd-apply__side', {
+      scrollTrigger: { trigger: '.bd-apply', start: 'top 75%', toggleActions: 'play none none none' },
+      opacity: 0,
+      x: -28,
+      duration: 0.7,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+    gsap.from('.bd-dash', {
+      scrollTrigger: { trigger: '.bd-apply', start: 'top 75%', toggleActions: 'play none none none' },
+      opacity: 0,
+      x: 28,
+      duration: 0.7,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+
+    // Network ribbon
+    gsap.from('.bd-network .bd-head', {
+      scrollTrigger: { trigger: '.bd-network', start: 'top 80%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 24,
+      duration: 0.6,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+
+    // Partnership tiers
+    gsap.from('.bd-podium .bd-pod', {
+      scrollTrigger: { trigger: '.bd-podium', start: 'top 80%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 40,
+      duration: 0.65,
+      stagger: 0.14,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+
+    // Vanishing stage
+    gsap.from('.bd-vanish-wrap', {
+      scrollTrigger: { trigger: '.bd-vanish-wrap', start: 'top 88%', toggleActions: 'play none none none' },
+      opacity: 0,
+      y: 20,
+      duration: 0.55,
+      ease: 'power2.out',
+      clearProps: 'all'
+    });
+  }
+
+  if (window.lucide) lucide.createIcons();
+})();
+</script>
 </body>
 </html>

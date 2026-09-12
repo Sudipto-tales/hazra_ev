@@ -1,148 +1,596 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
-/* Applied before first paint so a dark-mode visitor never sees a light
-   flash. Kept inline and tiny on purpose: an external file would race
-   the paint it exists to prevent. */
 (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
 if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-  <title>Free Warranty Registration | Hazra</title>
+<title>Free Warranty Registration | Hazra Electrical Bike</title>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hazra Electrical Bike">
-<meta property="og:title" content="Free Warranty Registration | Hazra">
-<meta property="og:description" content="Register your Hazra scooter and unlock complete warranty coverage.">
+<meta property="og:title" content="Free Warranty Registration | Hazra Electrical Bike">
+<meta property="og:description" content="Register your Hazra scooter on the day of purchase to activate standard warranty and free extended coverage.">
 <meta property="og:url" content="https://hazraelectricalbike.com/warranty-free.html">
 <meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://hazraelectricalbike.com/warranty-free.html">
-<meta name="description" content="Register your Hazra scooter and unlock complete warranty coverage.">
-  <link rel="icon" href="assets/hazraev.png" type="image/png">
+<meta name="description" content="Register your Hazra scooter on the day of purchase to activate standard warranty and free extended coverage on chassis, motor and controller.">
+<link rel="icon" href="assets/hazraev.png" type="image/png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles/tokens.css">
 <link rel="stylesheet" href="styles/typography.css">
 <link rel="stylesheet" href="styles/global.css">
 <link rel="stylesheet" href="styles/utilities.css">
-<link rel="stylesheet" href="styles/components/page-chrome.css">
-  <link rel="stylesheet" href="styles/pages/warranty-free.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="styles/pages/warranty-free.css">
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
-<header class="header">
-  <div class="header__top">
-    <a class="brand" href="index.html">
-      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
-      <span class="brand__txt">Hazra Electrical Bike</span>
+<header class="sticky-bar is-page is-visible" id="stickyBar" aria-hidden="false">
+  <div class="sticky-bar__inner">
+    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
     </a>
-    <button class="theme" id="theme" aria-label="Toggle theme">
-      <i data-lucide="sun-medium" class="theme__sun"></i>
-      <i data-lucide="moon" class="theme__moon"></i>
+
+    <button class="burger" id="stickyBurger" aria-label="Open menu" aria-expanded="false" aria-controls="stickyNav">
+      <span></span><span></span><span></span>
     </button>
+
+    <nav class="nav sticky-bar__nav" id="stickyNav">
+      <a href="index.html" class="nav__i is-on">Home</a>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          About <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu">
+          <a href="our-story.html" class="nav__s">Our Story</a>
+          <a href="career.html"    class="nav__s">Career</a>
+          <a href="#faq"       class="nav__s">FAQ</a>
+        </div>
+      </div>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          Products <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu nav__menu--wide">
+          <a href="ev-details.html" class="nav__s">EV Details <em>Explore the scooter</em></a>
+        </div>
+      </div>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          Social <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu">
+          <a href="contest.html"     class="nav__s">Contest <em>Reels Contest</em></a>
+          <a href="blog.html"        class="nav__s">Blog</a>
+          <a href="#news"        class="nav__s">News</a>
+          <a href="battery-use.html" class="nav__s">Battery Use</a>
+          <a href="ev-future.html"   class="nav__s">EV Future</a>
+        </div>
+      </div>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu">
+          <a href="dealer-locator.html"    class="nav__s">Locate Dealers</a>
+          <a href="become-a-dealer.html"   class="nav__s">Become a Dealer</a>
+        </div>
+      </div>
+
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">
+          Service <i data-lucide="chevron-down" class="nav__cv"></i>
+        </button>
+        <div class="nav__menu">
+          <a href="warranty-free.html"     class="nav__s">Warranty (Free)</a>
+          <a href="warranty-paid.html"     class="nav__s">Warranty (Paid)</a>
+          <a href="battery-use.html"       class="nav__s">Battery Care</a>
+        </div>
+      </div>
+
+      <a href="#contact" class="nav__i">Contact</a>
+    </nav>
+
+    <div class="sticky-bar__end">
+      <button class="theme" id="stickyTheme">
+        <i class="theme__sun" data-lucide="sun"></i>
+        <i class="theme__moon" data-lucide="moon"></i>
+      </button>
+      <a href="#contact" class="sticky-bar__cta" aria-label="Contact us">
+        <i data-lucide="shopping-bag"></i>
+        <span>CONTACT US</span>
+      </a>
+    </div>
   </div>
 </header>
 
-<section class="hero">
-  <h1 class="hero__title">Free Warranty Registration</h1>
-  <p class="hero__lead">
-    Register your Hazra scooter instantly and unlock complete warranty coverage.
-  </p>
-</section>
+<main class="wf">
+  <!-- HERO -->
+  <section class="wf-hero">
+    <div class="wrap wf-hero__grid">
+      <div class="wf-hero__copy reveal-up">
+        <p class="eyebrow"><i class="sq"></i>SERVICE · WARRANTY</p>
+        <h1 class="wf-hero__title">Register your scooter<br><span class="hl">for free warranty</span></h1>
+        <p class="wf-hero__lead">Activate standard cover and unlock free extended warranty on chassis, motor and controller. Registration on the day of purchase is required.</p>
+        <a class="btn btn--ink" href="#register"><span>Start registration</span><i data-lucide="arrow-down"></i></a>
+      </div>
+      <div class="wf-hero__media reveal-up" style="--d:.12s">
+        <img src="assets/scutie_light.webp" alt="Hazra electric scooter" loading="eager">
+        <div class="wf-hero__float">
+          <i data-lucide="shield-check"></i>
+          <span>Free extended cover</span>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<section class="content">
-  <div class="content__in">
-    <div class="process">
-      <div class="step" style="--i: 0">
-        <div class="step__num">1</div>
-        <h3 class="step__title">Visit Dealer</h3>
-        <p class="step__desc">Take your scooter to any Hazra dealer</p>
+  <!-- WHY + COVERAGE -->
+  <section class="wf-info">
+    <div class="wrap wf-info__grid">
+      <article class="wf-card reveal-up">
+        <h2>Why register?</h2>
+        <p>Online registration validates your standard warranty and unlocks exclusive free extended benefits at no extra cost. Support is available over phone or through personal visits.</p>
+        <p class="wf-note"><strong>Important:</strong> Warranty activation requires registration on the <em>day of purchase</em>. Without registration, warranty may not apply.</p>
+      </article>
+      <article class="wf-card wf-card--split reveal-up" style="--d:.1s">
+        <div>
+          <h3>Standard warranty</h3>
+          <p class="wf-muted">Coverage from date of purchase</p>
+          <ul class="wf-list">
+            <li><span>Chassis, Motor, Controller, Tyres, Graphene battery &amp; chargers</span><b>1 year</b></li>
+            <li><span>Lithium battery</span><b>3 years</b></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Free extended warranty</h3>
+          <p class="wf-muted">Additional period up to 1 year</p>
+          <ul class="wf-list">
+            <li><span>Chassis</span><b>Covered</b></li>
+            <li><span>Motor</span><b>Covered</b></li>
+            <li><span>Controller</span><b>Covered</b></li>
+          </ul>
+          <p class="wf-muted" style="margin-top:10px">As per prevailing company policy.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+
+  <!-- visual band -->
+  <section class="wf-band" aria-hidden="true">
+    <div class="wf-band__track">
+      <figure class="wf-band__shot reveal-up"><img src="assets/storm.webp" alt="" loading="lazy"></figure>
+      <figure class="wf-band__shot reveal-up" style="--d:.08s"><img src="assets/dark_scutie.webp" alt="" loading="lazy"></figure>
+      <figure class="wf-band__shot reveal-up" style="--d:.16s"><img src="assets/scutie_light.webp" alt="" loading="lazy"></figure>
+      <figure class="wf-band__shot reveal-up" style="--d:.24s"><img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" alt="" loading="lazy"></figure>
+    </div>
+  </section>
+
+  <!-- PAID EXTEND INFO -->
+  <section class="wf-extend">
+    <div class="wrap">
+      <div class="wf-extend__head reveal-up">
+        <h2>Need more years?</h2>
+        <p>After activating <strong>free warranty</strong>, you can buy extra years. Apply within <strong>3 months</strong> of free activation — later applications are not accepted. Free registration must be completed on the purchase day first.</p>
+      </div>
+      <div class="wf-extend__plans">
+        <a class="wf-plan reveal-up" style="--d:.08s" href="warranty-paid.html">
+          <span class="wf-plan__yrs">+1 year</span>
+          <span class="wf-plan__price">₹2,000</span>
+          <span class="wf-plan__cta">Extend warranty <i data-lucide="arrow-up-right"></i></span>
+        </a>
+        <a class="wf-plan reveal-up" style="--d:.16s" href="warranty-paid.html">
+          <span class="wf-plan__yrs">+2 years</span>
+          <span class="wf-plan__price">₹3,500</span>
+          <span class="wf-plan__cta">Extend warranty <i data-lucide="arrow-up-right"></i></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORM -->
+  <section class="wf-form-sec" id="register">
+    <div class="wrap">
+      <header class="wf-form-sec__head reveal-up">
+        <p class="eyebrow"><i class="sq"></i>FREE WARRANTY REGISTRATION</p>
+        <h2>Complete all fields to register</h2>
+        <p>Customer, vehicle, battery and dealer details — plus invoice upload.</p>
+      </header>
+
+      <form class="wf-form reveal-up" style="--d:.1s" id="warrantyForm" novalidate>
+        <!-- Customer -->
+        <fieldset class="wf-fs">
+          <legend>Customer information</legend>
+          <div class="wf-grid">
+            <label class="wf-field">
+              <span>Customer full name <small>(as per invoice)</small></span>
+              <input type="text" name="name" placeholder="Enter your full name" required autocomplete="name">
+            </label>
+            <label class="wf-field">
+              <span>Email address</span>
+              <input type="email" name="userEmail" placeholder="Your email address" required autocomplete="email">
+            </label>
+            <label class="wf-field">
+              <span>Contact number</span>
+              <input type="tel" name="userMobile" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10" autocomplete="tel">
+            </label>
+            <div class="wf-field wf-otp">
+              <span>OTP verification</span>
+              <div class="wf-otp__row">
+                <input type="text" name="otp" placeholder="4-digit OTP" maxlength="4" inputmode="numeric">
+                <button type="button" class="btn btn--ghost" id="sendOtp">Send OTP</button>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Vehicle -->
+        <fieldset class="wf-fs">
+          <legend>Vehicle information</legend>
+          <div class="wf-grid">
+            <label class="wf-field">
+              <span>Chassis number (VIN)</span>
+              <input type="text" name="chassis" placeholder="Enter chassis number" required>
+            </label>
+            <label class="wf-field">
+              <span>Motor number</span>
+              <input type="text" name="motor" placeholder="Enter motor number" required>
+            </label>
+            <label class="wf-field">
+              <span>Controller number</span>
+              <input type="text" name="controller" placeholder="Enter controller number" required>
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- Battery -->
+        <fieldset class="wf-fs">
+          <legend>Battery &amp; charger information</legend>
+          <p class="wf-hint">If a battery type is selected, all applicable battery and charger serial numbers are mandatory.</p>
+          <div class="wf-grid">
+            <label class="wf-field">
+              <span>Battery type</span>
+              <select name="batteryType" id="batteryType" required>
+                <option value="">Select battery type</option>
+                <option value="na">Not applicable</option>
+                <option value="lithium">Lithium battery</option>
+                <option value="graphene">Graphene battery</option>
+              </select>
+            </label>
+            <label class="wf-field" id="voltField" hidden>
+              <span>Graphene battery voltage</span>
+              <select name="batteryVolt" id="batteryVolt">
+                <option value="">Select voltage</option>
+                <option value="48">48V</option>
+                <option value="60">60V</option>
+                <option value="72">72V</option>
+              </select>
+            </label>
+            <label class="wf-field wf-batt-extra" hidden>
+              <span>Battery serial number</span>
+              <input type="text" name="batterySerial" placeholder="Battery serial">
+            </label>
+            <label class="wf-field wf-batt-extra" hidden>
+              <span>Charger serial number</span>
+              <input type="text" name="chargerSerial" placeholder="Charger serial">
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- Dealer -->
+        <fieldset class="wf-fs">
+          <legend>Dealer information</legend>
+          <div class="wf-grid">
+            <label class="wf-field">
+              <span>State</span>
+              <select name="state" id="state" required>
+                <option value="">Select state</option>
+                <option>Andaman and Nicobar</option>
+                <option>Andhra Pradesh</option>
+                <option>Arunachal Pradesh</option>
+                <option>Assam</option>
+                <option>Bihar</option>
+                <option>Chandigarh</option>
+                <option>Chhattisgarh</option>
+                <option>Delhi</option>
+                <option>Goa</option>
+                <option>Gujarat</option>
+                <option>Haryana</option>
+                <option>Himachal Pradesh</option>
+                <option>Jammu and Kashmir</option>
+                <option>Jharkhand</option>
+                <option>Karnataka</option>
+                <option>Kerala</option>
+                <option>Ladakh</option>
+                <option>Lakshadweep</option>
+                <option>Madhya Pradesh</option>
+                <option>Maharashtra</option>
+                <option>Manipur</option>
+                <option>Meghalaya</option>
+                <option>Mizoram</option>
+                <option>Nagaland</option>
+                <option>Odisha</option>
+                <option>Puducherry</option>
+                <option>Punjab</option>
+                <option>Rajasthan</option>
+                <option>Sikkim</option>
+                <option>Tamil Nadu</option>
+                <option>Telangana</option>
+                <option>Tripura</option>
+                <option>Uttar Pradesh</option>
+                <option>Uttarakhand</option>
+                <option>West Bengal</option>
+              </select>
+            </label>
+            <label class="wf-field">
+              <span>District</span>
+              <select name="dist" id="dist" required>
+                <option value="">Select district</option>
+              </select>
+            </label>
+            <label class="wf-field">
+              <span>Dealer name</span>
+              <select name="dealer" id="dealer" required>
+                <option value="">Select dealer</option>
+              </select>
+            </label>
+            <label class="wf-field">
+              <span>Dealer email</span>
+              <input type="email" name="dealerEmail" id="dealerEmail" placeholder="Dealer email" required>
+            </label>
+            <label class="wf-field">
+              <span>Registration / purchase date</span>
+              <input type="date" name="purchase_date" required>
+            </label>
+            <label class="wf-field">
+              <span>Upload purchase invoice</span>
+              <input type="file" name="invoice_file" accept=".pdf,.jpg,.jpeg,.png" required>
+              <small class="wf-file-hint">pdf, jpg, jpeg, png · max 500KB</small>
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- T&C -->
+        <fieldset class="wf-fs wf-fs--terms">
+          <legend>Additional information</legend>
+          <label class="wf-check">
+            <input type="checkbox" name="agreeTerms" id="agreeTerms" required>
+            <span>I agree to the <a href="#" target="_blank" rel="noopener">Terms &amp; Conditions</a> for extended warranty.</span>
+          </label>
+          <p class="wf-hint">Read and accept the terms to enable Submit.</p>
+        </fieldset>
+
+        <div class="wf-actions">
+          <p class="wf-secure"><i data-lucide="shield-check"></i> Secure &amp; protected</p>
+          <button type="submit" class="btn btn--ink" id="submitBtn" disabled>
+            <span>Submit registration</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="foot" id="contact">
+
+  <!-- Wave cut effect at the top -->
+  <div class="foot__wave"></div>
+
+  <!-- Background with theme support -->
+  <div class="foot__bg foot__bg--light" aria-hidden="true"></div>
+  <div class="foot__bg foot__bg--dark" aria-hidden="true"></div>
+  <i class="foot__veil"></i>
+
+  <div class="wrap foot__in">
+
+    <!-- Main content grid: Brand + Navigation left, Social media right -->
+    <div class="foot__main">
+
+      <!-- Left column: Brand and navigation -->
+      <div class="foot__content">
+
+        <!-- Brand section -->
+        <div class="foot__brand">
+          <img class="foot__logo" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+          <p class="foot__tag">
+            Premium electric scooters designed for smarter, cleaner and more
+            affordable mobility.
+          </p>
+          <ul class="foot__contact">
+            <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
+            <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
+            <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
+          </ul>
+        </div>
+
+        <!-- Navigation columns -->
+        <nav class="foot__cols" aria-label="Footer">
+          <div class="fcol">
+            <h4>Electric Scooters</h4>
+            <a href="ev-details.html">EV Details</a>
+            <a href="#collection">Compare models</a>
+            <a href="#test-ride">Book test ride</a>
+          </div>
+          <div class="fcol">
+            <h4>Buy</h4>
+            <a href="#">Book a scooter</a>
+            <a href="#">EMI calculator</a>
+            <a href="#">Charging</a>
+            <a href="#">Download brochure</a>
+            <a href="dealer-locator.html">Locate dealers</a>
+          </div>
+          <div class="fcol">
+            <h4>Ownership</h4>
+            <a href="#">Running cost calculator</a>
+            <a href="#performance">Range confidence</a>
+            <a href="#">Accessories</a>
+            <a href="#">Battery warranty</a>
+            <a href="battery-use.html">Battery use</a>
+          </div>
+          <div class="fcol">
+            <h4>Company</h4>
+            <a href="our-story.html">Our story</a>
+            <a href="blog.html">Blog</a>
+            <a href="#news">News</a>
+            <a href="career.html">Careers</a>
+            <a href="become-a-dealer.html">Become a dealer</a>
+          </div>
+          <div class="fcol">
+            <h4>Support</h4>
+            <a href="#faq">FAQs</a>
+            <a href="#contact">Contact us</a>
+            <a href="#">Register complaint</a>
+            <a href="warranty-free.html">Warranty registration</a>
+            <a href="#">Sitemap</a>
+          </div>
+        </nav>
       </div>
 
-      <div class="step" style="--i: 1">
-        <div class="step__num">2</div>
-        <h3 class="step__title">Fill Form</h3>
-        <p class="step__desc">Complete warranty registration</p>
-      </div>
+      <!-- Right column: Social media section -->
+      <aside class="foot__social-section">
+        <h3 class="foot__social-title">Follow us</h3>
+        <div class="foot__socials">
+          <a href="#" class="foot__social-link foot__social--instagram" aria-label="Instagram" title="Instagram">
+            <i data-lucide="instagram"></i>
+          </a>
+          <a href="#" class="foot__social-link foot__social--facebook" aria-label="Facebook" title="Facebook">
+            <i data-lucide="facebook"></i>
+          </a>
+          <a href="#" class="foot__social-link foot__social--youtube" aria-label="YouTube" title="YouTube">
+            <i data-lucide="youtube"></i>
+          </a>
+          <a href="#" class="foot__social-link foot__social--whatsapp" aria-label="WhatsApp" title="WhatsApp">
+            <i data-lucide="message-circle"></i>
+          </a>
+        </div>
+      </aside>
+    </div>
 
-      <div class="step" style="--i: 2">
-        <div class="step__num">3</div>
-        <h3 class="step__title">Get Certificate</h3>
-        <p class="step__desc">Receive warranty certificate instantly</p>
-      </div>
-
-      <div class="step" style="--i: 3">
-        <div class="step__num">4</div>
-        <h3 class="step__title">Enjoy Coverage</h3>
-        <p class="step__desc">Full warranty benefits active immediately</p>
+    <!-- Footer base: Legal and copyright -->
+    <div class="foot__base">
+      <p>&copy; 2026 Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
+      <div class="foot__legal">
+        <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a>
       </div>
     </div>
 
-    <div class="benefits">
-      <h3 class="benefits__title">What's Covered</h3>
-      <ul class="benefits__list">
-        <li class="benefits__item">
-          <span class="benefits__check"><i data-lucide="check"></i></span>
-          <span class="benefits__text">Frame and body manufacturing defects</span>
-        </li>
-        <li class="benefits__item">
-          <span class="benefits__check"><i data-lucide="check"></i></span>
-          <span class="benefits__text">Electric motor and drivetrain</span>
-        </li>
-        <li class="benefits__item">
-          <span class="benefits__check"><i data-lucide="check"></i></span>
-          <span class="benefits__text">Battery pack (4-5 years)</span>
-        </li>
-        <li class="benefits__item">
-          <span class="benefits__check"><i data-lucide="check"></i></span>
-          <span class="benefits__text">Suspension and braking system</span>
-        </li>
-        <li class="benefits__item">
-          <span class="benefits__check"><i data-lucide="check"></i></span>
-          <span class="benefits__text">Electrical components</span>
-        </li>
-        <li class="benefits__item">
-          <span class="benefits__check"><i data-lucide="check"></i></span>
-          <span class="benefits__text">Free periodic service checks</span>
-        </li>
-      </ul>
-    </div>
-
-    <div class="cta">
-      <button class="cta__btn">
-        <span>Register Your Scooter</span>
-        <i data-lucide="arrow-right"></i>
-      </button>
-    </div>
   </div>
-</section>
-
-<section class="footer">
-  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
-    Questions about warranty? Check FAQ or contact your dealer
-  </p>
-  <a class="footer__link" href="index.html">
-    <span>Back to home</span>
-    <i data-lucide="arrow-right"></i>
-  </a>
-</section>
-
-<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
-<script>
-  lucide.createIcons();
-  const themeBtn = document.getElementById('theme');
-  themeBtn.addEventListener('click', () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-  });
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-</script>
+</footer>
 
 <script src="script.js"></script>
+<script>
+(() => {
+  if (window.lucide) lucide.createIcons();
+
+  const form = document.getElementById('warrantyForm');
+  const agree = document.getElementById('agreeTerms');
+  const submitBtn = document.getElementById('submitBtn');
+  const batteryType = document.getElementById('batteryType');
+  const voltField = document.getElementById('voltField');
+  const battExtras = document.querySelectorAll('.wf-batt-extra');
+
+  agree?.addEventListener('change', () => {
+    submitBtn.disabled = !agree.checked;
+  });
+
+  batteryType?.addEventListener('change', () => {
+    const v = batteryType.value;
+    const showBatt = v === 'lithium' || v === 'graphene';
+    voltField.hidden = v !== 'graphene';
+    battExtras.forEach(el => { el.hidden = !showBatt; });
+  });
+
+  document.getElementById('sendOtp')?.addEventListener('click', () => {
+    const mobile = form.userMobile.value.trim();
+    if (!/^[0-9]{10}$/.test(mobile)) {
+      form.userMobile.focus();
+      alert('Enter a valid 10-digit contact number first.');
+      return;
+    }
+    // Frontend-only placeholder — wire to your OTP API
+    alert('OTP would be sent to ' + mobile + ' (connect backend to enable).');
+  });
+
+  // Lightweight district/dealer placeholders (replace with API later)
+  const dist = document.getElementById('dist');
+  const dealer = document.getElementById('dealer');
+  document.getElementById('state')?.addEventListener('change', e => {
+    const st = e.target.value;
+    dist.innerHTML = '<option value="">Select district</option>';
+    dealer.innerHTML = '<option value="">Select dealer</option>';
+    document.getElementById('dealerEmail').value = '';
+    if (!st) return;
+    // Demo options so UI works offline
+    ['Central', 'North', 'South', 'East', 'West'].forEach(d => {
+      const o = document.createElement('option');
+      o.value = d; o.textContent = d + ' ' + st;
+      dist.appendChild(o);
+    });
+  });
+  dist?.addEventListener('change', () => {
+    dealer.innerHTML = '<option value="">Select dealer</option>';
+    if (!dist.value) return;
+    ['Hazra Authorised Dealer', 'City EV Hub', 'Green Mobility Point'].forEach((name, i) => {
+      const o = document.createElement('option');
+      o.value = name;
+      o.textContent = name;
+      o.dataset.email = 'dealer' + (i + 1) + '@hazra.example';
+      dealer.appendChild(o);
+    });
+  });
+  dealer?.addEventListener('change', () => {
+    const opt = dealer.selectedOptions[0];
+    document.getElementById('dealerEmail').value = opt?.dataset?.email || '';
+  });
+
+  form?.addEventListener('submit', e => {
+    e.preventDefault();
+    if (!agree.checked) return;
+    if (!form.reportValidity()) return;
+    const file = form.invoice_file.files[0];
+    if (file && file.size > 500 * 1024) {
+      alert('Invoice must be 500KB or smaller.');
+      return;
+    }
+    // Frontend-only success — wire to your registration API
+    alert('Registration details captured. Connect this form to your warranty backend to save records.');
+  });
+})();
+</script>
+
+<script>
+/* Page scroll reveals */
+(() => {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const els = [...document.querySelectorAll('.wf .reveal-up')];
+  if (!els.length) return;
+  if (reduce || !('IntersectionObserver' in window)) {
+    els.forEach(el => el.classList.add('is-in'));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const d = parseFloat(getComputedStyle(el).getPropertyValue('--d')) || 0;
+      setTimeout(() => el.classList.add('is-in'), d * 1000);
+      io.unobserve(el);
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  els.forEach(el => io.observe(el));
+})();
+</script>
+
 </body>
 </html>
