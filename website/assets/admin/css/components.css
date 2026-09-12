@@ -188,6 +188,151 @@
     justify-content: center;
 }
 
+/* =========================================================
+   ADMIN LOGIN
+   ========================================================= */
+.adm-auth {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--bg);
+}
+
+.adm-auth__card {
+    width: min(420px, 100%);
+    padding: 36px 32px 28px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-edge, transparent);
+}
+
+.adm-auth__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 28px;
+    text-decoration: none;
+    color: var(--text-dark);
+    font-family: var(--font-brand);
+    font-weight: 700;
+    font-size: 1.15rem;
+}
+
+.adm-auth__brand img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.adm-auth h1 {
+    margin: 0 0 8px;
+    font-family: var(--font-head);
+    font-size: var(--fs-display);
+    font-weight: 700;
+    color: var(--text-dark);
+}
+
+.adm-auth__lead {
+    margin: 0 0 24px;
+    font-size: var(--fs-sm);
+    color: var(--text-mid);
+    line-height: 1.45;
+}
+
+.adm-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.adm-field span {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.adm-field input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-xs);
+    background: var(--surface-2);
+    color: var(--text-dark);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+}
+
+.adm-field input:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-color: var(--brand-blue);
+}
+
+.adm-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 20px;
+    font-size: var(--fs-sm);
+    color: var(--text-mid);
+    cursor: pointer;
+}
+
+.adm-auth__submit {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--brand-red), var(--brand-magenta));
+    color: var(--text-on-brand);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.adm-auth__submit:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
+
+.adm-auth__note {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-xs);
+    background: var(--bad-bg);
+    color: var(--bad);
+    font-size: var(--fs-sm);
+}
+
+.adm-auth__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 22px;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.adm-auth__back:hover {
+    color: var(--text-dark);
+}
+
+body[data-page="login"] .adm-auth__submit {
+    background: linear-gradient(135deg, #7b2ff7, #f97316);
+}
+
 /* Spinner shown in place of the label while a form submits. */
 .btn.is-busy {
     pointer-events: none;
