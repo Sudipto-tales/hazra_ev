@@ -138,19 +138,8 @@
        the activity log is a report rather than a resource.
        --------------------------------------------------------- */
 
-    const PATHS = {
-        activity: 'api/v1/activity',
-        pages: 'api/v1/pages',
-        media: 'api/v1/media',
-        posts: 'api/v1/posts',
-        gallery: 'api/v1/gallery',
-        jobs: 'api/v1/jobs',
-        applications: 'api/v1/job-applications',
-        products: 'api/v1/products',
-        leads: 'api/v1/leads',
-        settings: 'api/v1/settings'
-    };
-    const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
+    const PATHS = { activity: 'api/activity', pages: 'api/pages', media: 'api/media' };
+    const pathFor = (entity) => PATHS[entity] || `api/${entity}`;
 
     /* ---------------------------------------------------------
        Boot
@@ -163,10 +152,10 @@
      */
     const ready = (async function warm() {
         const [collections, settings, pages, me] = await Promise.all([
-            get('api/v1/bootstrap').catch(() => ({ data: {} })),
-            get('api/v1/settings').catch(() => ({ data: {} })),
-            get('api/v1/pages').catch(() => ({ data: [] })),
-            get('api/v1/admin/me').catch(() => ({ data: null })),
+            get('api/bootstrap'),
+            get('api/settings'),
+            get('api/pages'),
+            get('api/auth/me'),
         ]);
 
         Object.assign(cache, collections.data || {});
@@ -395,7 +384,7 @@
          * server's — see api/controllers/DashboardController.php.
          */
         async summary() {
-            const res = await get('api/v1/admin/summary');
+            const res = await get('api/dashboard/summary');
             return res.data;
         },
 
