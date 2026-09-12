@@ -67,7 +67,7 @@ App::render('head', [
 App::render('header', ['isStickyOnly' => true]);
 
 $activeColor = $product['colors'][0] ?? null;
-$heroImg = ($activeColor && !empty($activeColor['images'])) ? $activeColor['images'][0] : base_url('assets/scutie_light.png');
+$heroImg = ($activeColor && !empty($activeColor['images'])) ? $activeColor['images'][0] : base_url('assets/scutie_light.webp');
 ?>
 
 <!-- ========== UNIQUE PAGE CONTENT START ========== -->

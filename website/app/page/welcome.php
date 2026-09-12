@@ -27,8 +27,8 @@
 
     <!-- photo sits underneath; white plates notch into it -->
     <figure class="photo">
-      <img class="photo__img photo__img--light" src="<?= $baseUrl ?>/assets/scutie_light.png" alt="Hazra Electrical Bike in daylight">
-      <img class="photo__img photo__img--dark"  src="<?= $baseUrl ?>/assets/dark_scutie.png"  alt="Hazra Electrical Bike at night" aria-hidden="true">
+      <img class="photo__img photo__img--light" src="<?= $baseUrl ?>/assets/scutie_light.webp" alt="Hazra Electrical Bike in daylight">
+      <img class="photo__img photo__img--dark"  src="<?= $baseUrl ?>/assets/dark_scutie.webp"  alt="Hazra Electrical Bike at night" aria-hidden="true">
       <div class="photo__shade"></div>
 
       <div class="pill pill--b reveal-pop"><i data-lucide="gauge"></i><span>120&nbsp;km/hour</span></div>
@@ -361,7 +361,7 @@
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
           <span class="card__360">360&deg;</span>
-          <img class="card__img" src="assets/scutie_light.png" alt="Matic S1">
+          <img class="card__img" src="assets/scutie_light.webp" alt="Matic S1">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -395,7 +395,7 @@
       <article class="card" style="--c:#241640">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/dark_scutie.png" alt="Matic Pro">
+          <img class="card__img" src="assets/dark_scutie.webp" alt="Matic Pro">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -429,7 +429,7 @@
       <article class="card" style="--c:#f0532b">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/scutie_light.png" alt="Matic Eco">
+          <img class="card__img" src="assets/scutie_light.webp" alt="Matic Eco">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -463,7 +463,7 @@
       <article class="card" style="--c:#a41fbf">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/dark_scutie.png" alt="Matic City">
+          <img class="card__img" src="assets/dark_scutie.webp" alt="Matic City">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -497,7 +497,7 @@
       <article class="card" style="--c:#f7941d">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/scutie_light.png" alt="Matic Lite">
+          <img class="card__img" src="assets/scutie_light.webp" alt="Matic Lite">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -531,7 +531,7 @@
       <article class="card" style="--c:#efeaf8">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="assets/dark_scutie.png" alt="Matic X">
+          <img class="card__img" src="assets/dark_scutie.webp" alt="Matic X">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -868,7 +868,7 @@
     <div class="bento">
 
       <article class="bento__c bento__c--lead" style="--pos:38% 62%;--tint:var(--brand-violet)">
-        <img class="bento__img" src="assets/dark_scutie.png" alt="Battery pack detail">
+        <img class="bento__img" src="assets/dark_scutie.webp" alt="Battery pack detail">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="battery-charging"></i>Battery</span>
         <div class="bento__body">
@@ -878,7 +878,7 @@
       </article>
 
       <article class="bento__c bento__c--wide" style="--pos:72% 34%;--tint:var(--brand-blue)">
-        <img class="bento__img" src="assets/dark_scutie.png" alt="Cockpit and controls">
+        <img class="bento__img" src="assets/dark_scutie.webp" alt="Cockpit and controls">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="zap"></i>Control</span>
         <div class="bento__body">
@@ -888,7 +888,7 @@
       </article>
 
       <article class="bento__c" style="--pos:24% 78%;--tint:var(--brand-magenta)">
-        <img class="bento__img" src="assets/scutie_light.png" alt="Dealer handover">
+        <img class="bento__img" src="assets/scutie_light.webp" alt="Dealer handover">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="map-pin"></i>Network</span>
         <div class="bento__body">
@@ -898,7 +898,7 @@
       </article>
 
       <article class="bento__c" style="--pos:84% 66%;--tint:var(--brand-flame)">
-        <img class="bento__img" src="assets/scutie_light.png" alt="Suspension and warranty seal">
+        <img class="bento__img" src="assets/scutie_light.webp" alt="Suspension and warranty seal">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="shield-check"></i>Warranty</span>
         <div class="bento__body">
@@ -920,7 +920,7 @@
     <div class="ride__grid">
 
       <figure class="ride__media reveal-up">
-        <img class="ride__img" src="assets/scutie_light.png" alt="Hazra EV scooter">
+        <img class="ride__img" src="assets/scutie_light.webp" alt="Hazra EV scooter">
         <i class="ride__wash"></i>
         <figcaption class="ride__offer">
           <b>Season offer</b>
@@ -1068,7 +1068,7 @@
 
       <a class="post" href="#" style="--i:0;--pos:30% 58%;--tint:var(--brand-violet)">
         <figure class="post__media">
-          <img class="post__img" src="assets/dark_scutie.png" alt="">
+          <img class="post__img" src="assets/dark_scutie.webp" alt="">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">
@@ -1081,7 +1081,7 @@
 
       <a class="post" href="#" style="--i:1;--pos:66% 44%;--tint:var(--brand-blue)">
         <figure class="post__media">
-          <img class="post__img" src="assets/scutie_light.png" alt="">
+          <img class="post__img" src="assets/scutie_light.webp" alt="">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">
@@ -1094,7 +1094,7 @@
 
       <a class="post" href="#" style="--i:2;--pos:20% 70%;--tint:var(--brand-flame)">
         <figure class="post__media">
-          <img class="post__img" src="assets/dark_scutie.png" alt="">
+          <img class="post__img" src="assets/dark_scutie.webp" alt="">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">

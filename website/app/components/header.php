@@ -105,8 +105,6 @@ try {
         </div>
       </div>
 
-      <a href="<?= e(base_url('admin')) ?>" class="nav__i <?= nav_active('admin', $currentRoute) ?>" style="color: var(--brand-violet); font-weight: 700;">Admin</a>
-
       <a href="<?= e(base_url('contact')) ?>" class="nav__i <?= nav_active('contact', $currentRoute) ?>">Contact</a>
     </nav>
 

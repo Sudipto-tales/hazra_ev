@@ -5,7 +5,7 @@
 ## What changed
 - Removed the Classic/Retro/Manual thumbnail deck from the bottom shelf.
 - Right column now holds two stacked `<img>` shots cross-faded by `[data-theme]`:
-  `assets/scutie_light.png` (light) / `assets/dark_scutie.png` (dark). No JS `src` swap.
+  `assets/scutie_light.webp` (light) / `assets/dark_scutie.webp` (dark). No JS `src` swap.
 - Shelf rebuilt: pager `01/02` + lime-square `DAY & NIGHT FINISH` + prev/next arrows.
   Arrows now flip the finish (= flip the theme) instead of paging the deck.
   `--shelf-h` 200px → 124px, `--shelf-w` 63% → 57% (keeps the fillet notch).

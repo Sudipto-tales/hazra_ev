@@ -2187,13 +2187,12 @@ html[data-theme="dark"] .theme__moon{display:block}
   pointer-events:none;
   opacity:.45;
 }
-.foot__bg--light{
-  background-image:url('assets/footer-lightbg.webp');
-  display:none;
+.foot__bg--light {
+    background-image: url('/assets/footer-lightbg.webp');
 }
-.foot__bg--dark{
-  background-image:url('assets/footer-darkbg.webp');
-  display:block;
+
+.foot__bg--dark {
+    background-image: url('/assets/footer-darkbg.webp');
 }
 html[data-theme="light"] .foot__bg--light{display:block}
 html[data-theme="light"] .foot__bg--dark{display:none}

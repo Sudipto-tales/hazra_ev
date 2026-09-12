@@ -34,7 +34,7 @@ All 18 HTML pages from `/html/` folder have been successfully converted to PHP f
 ### Image Assets
 - **From:** `src="assets/image.png"`
 - **To:** `src="../../assets/image.png"`
-- **Example:** `scutie_light.png`, `dark_scutie.png`, `hazraev.png`, etc.
+- **Example:** `scutie_light.webp`, `dark_scutie.webp`, `hazraev.png`, etc.
 
 ### CSS File
 - **From:** `<link rel="stylesheet" href="style.css">`
@@ -87,7 +87,7 @@ All 18 HTML pages from `/html/` folder have been successfully converted to PHP f
 │   ├── js/
 │   │   └── script.js                  [Main JavaScript]
 │   ├── image/                         [Product images, etc.]
-│   └── [image files: hazraev.png, scutie_light.png, dark_scutie.png, etc.]
+│   └── [image files: hazraev.png, scutie_light.webp, dark_scutie.webp, etc.]
 ├── config/
 ├── core/
 ├── database/

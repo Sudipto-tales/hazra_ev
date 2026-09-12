@@ -486,7 +486,7 @@ async function saveProduct(e) {
     motorPower: formData.get('motorPower') || '',
     warrantyNote: formData.get('warrantyNote') || '',
     colors: [
-      { name: 'Midnight Blue', argb: 455764827, inStock: true, imageUrls: ['<?= base_url('assets/scutie_light.png') ?>'] }
+      { name: 'Midnight Blue', argb: 455764827, inStock: true, imageUrls: ['<?= base_url('assets/scutie_light.webp') ?>'] }
     ]
   };
 

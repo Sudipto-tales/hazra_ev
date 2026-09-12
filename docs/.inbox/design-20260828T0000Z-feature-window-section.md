@@ -67,7 +67,7 @@ touches only tokens.
 
 ## Known gap — the imagery
 
-`html/assets/` holds two renders (`scutie_light.png`, `dark_scutie.png`), and
+`html/assets/` holds two renders (`scutie_light.webp`, `dark_scutie.webp`), and
 both are **full scene photos at 2390×1792, not cutouts**. Two consequences:
 
 1. Each slide frames its photo in a `.fslide__media` plate (`aspect-ratio:4/3`,
