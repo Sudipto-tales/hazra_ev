@@ -35,37 +35,34 @@ final class AdminAuthController extends V1Controller
             Envelope::invalid('Email and password are required', 'email');
         }
 
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        Csrf::ensureSession();
 
-        // Try standard DB auth
-        $res = Auth::login($email, $password);
-        if ($res['status']) {
-            $_SESSION['admin_logged_in'] = true;
-            $user = [
-                'id' => $_SESSION['user_id'] ?? 'admin-1',
-                'name' => $_SESSION['user_name'] ?? 'Admin User',
-                'email' => $email,
-                'role' => 'admin',
-            ];
-            Envelope::ok(['user' => $user]);
-        }
+        $user = Users::byEmail($email);
 
-        // Fallback check against users_tbl without email verification restriction for admin
-        $userRow = db_fetch_one("SELECT * FROM users_tbl WHERE email = ?", [$email]);
-        if ($userRow && password_verify($password, $userRow['password'])) {
-            $_SESSION['user_id'] = $userRow['id'];
-            $_SESSION['user_email'] = $userRow['email'];
-            $_SESSION['user_name'] = $userRow['name'] ?? 'Admin';
-            $_SESSION['user_role'] = 'admin';
+        if ($user && password_verify($password, $user['password_hash'])) {
+            if (!(int) $user['active']) {
+                Envelope::forbidden('This account is deactivated');
+            }
+
+            if ($user['role'] !== 'admin') {
+                Envelope::forbidden('Admin role required');
+            }
+
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_email'] = $user['email'];
+            $_SESSION['user_name'] = $user['name'];
+            $_SESSION['user_role'] = $user['role'];
             $_SESSION['admin_logged_in'] = true;
+            $_SESSION['logged_in'] = true;
+            $_SESSION['last_activity'] = time();
+            Csrf::rotate();
 
             Envelope::ok(['user' => [
-                'id' => $userRow['id'],
-                'name' => $userRow['name'] ?? 'Admin',
-                'email' => $email,
-                'role' => 'admin',
+                'id' => $user['id'],
+                'name' => $user['name'],
+                'email' => $user['email'],
+                'role' => $user['role'],
             ]]);
         }
 

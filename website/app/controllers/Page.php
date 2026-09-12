@@ -118,10 +118,9 @@ class Page extends BaseController
 
     private function guardAdmin()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        if (!Auth::isAuthenticated() && empty($_SESSION['user_id']) && empty($_SESSION['admin_logged_in'])) {
+        Csrf::ensureSession();
+
+        if (empty($_SESSION['admin_logged_in']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
             header('Location: ' . base_url('/admin/login'));
             exit;
         }

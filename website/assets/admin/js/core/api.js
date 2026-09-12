@@ -151,15 +151,14 @@
      * screen paints anything.
      */
     const ready = (async function warm() {
-        const [collections, settings, pages, me] = await Promise.all([
-            get('api/bootstrap'),
-            get('api/settings'),
-            get('api/pages'),
-            get('api/auth/me'),
+        const [collections, settings, me] = await Promise.all([
+            get('api/v1/admin/bootstrap'),
+            get('api/v1/settings'),
+            get('api/v1/admin/me'),
         ]);
 
         Object.assign(cache, collections.data || {});
-        cache.pages = pages.data || [];
+        cache.pages = [];
 
         settingsDoc = settings.data || {};
         snapshotSettings();
@@ -384,7 +383,7 @@
          * server's — see api/controllers/DashboardController.php.
          */
         async summary() {
-            const res = await get('api/dashboard/summary');
+            const res = await get('api/v1/admin/summary');
             return res.data;
         },
 
@@ -407,7 +406,7 @@
             }
 
             if (!settingsDoc) {
-                const res = await get('api/settings');
+                const res = await get('api/v1/settings');
                 settingsDoc = res.data || {};
                 snapshotSettings();
             }
@@ -435,7 +434,7 @@
             );
 
             for (const group of changed) {
-                const res = await patch(`api/settings/${encodeURIComponent(group)}`, data[group]);
+                const res = await patch(`api/v1/settings/${encodeURIComponent(group)}`, data[group]);
                 data[group] = res.data;
             }
 

@@ -128,6 +128,7 @@ class ApiGatewayProvider extends RouteProvider
             'GET:api/v1/admin/me'        => ['AdminAuthController', 'me'],
             'POST:api/v1/admin/login'    => ['AdminAuthController', 'login'],
             'POST:api/v1/admin/logout'   => ['AdminAuthController', 'logout'],
+            'GET:api/v1/admin/bootstrap' => ['AdminController', 'bootstrap'],
             'GET:api/v1/admin/summary'   => ['AdminController', 'summary'],
             'GET:api/v1/settings'        => ['AdminController', 'getSettings'],
             'PATCH:api/v1/settings/{group}' => ['AdminController', 'patchSettings'],
