@@ -491,6 +491,21 @@
         async refresh(entity) {
             return store.all(entity);
         },
+
+        /* ----- notifications ----- */
+
+        async getNotifications() {
+            const res = await get('api/v1/admin/notifications');
+            return res.data || { items: [], unread: 0 };
+        },
+
+        async markNotificationRead(id) {
+            await post(`api/v1/admin/notifications/${encodeURIComponent(id)}/read`);
+        },
+
+        async markAllNotificationsRead() {
+            await post('api/v1/admin/notifications/read-all');
+        },
     };
 
     root.TMH = root.TMH || {};

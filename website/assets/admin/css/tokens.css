@@ -1,50 +1,45 @@
 /* =========================================================
-   Teresa Memorial Hospital — Admin Panel
+   Hazra EV — Admin Panel
    Design tokens. Every other stylesheet reads from here and
    defines no raw colour of its own.
-
-   Values carried over from the public site and the original
-   panel mockup (the public site's stylesheet) so the two read as one
-   product. See docs/06-design-tokens.md.
    ========================================================= */
 
 :root {
     /* ---- brand ---- */
-    --brand-red: #C1272D;
-    --brand-red-soft: #E2565C;
-    --brand-magenta: #A81E5C;
-    --brand-magenta-deep: #7A1540;
-    --brand-navy: #1B3E7A;
-    --brand-blue: #2E6BB8;
-    --accent-orange: #F57C00;
+    --brand-purple: #6B4C9A;
+    --brand-purple-soft: #9B7ED6;
+    --brand-blue: #3A7BD5;
+    --brand-blue-soft: #6EA8F0;
+    --brand-orange: #FF6B00;
+    --brand-orange-soft: #FF9F40;
 
     /* ---- semantic ---- */
     --good: #2E7D32;
     --bad: #C62828;
-    --warn: #F57C00;
-    --info: #2E6BB8;
+    --warn: #FF6B00;
+    --info: #3A7BD5;
 
     /* Tinted backgrounds for badges, banners and toast discs. Kept as
        explicit hex rather than colour-mix so the dark theme can retune
        them independently. */
     --good-bg: #E8F3E9;
     --bad-bg: #FBEAEA;
-    --warn-bg: #FDF0E0;
+    --warn-bg: #FFF3E0;
     --info-bg: #E7EFF9;
 
     /* ---- surfaces ---- */
-    --bg: #F7F1F3;
+    --bg: #F5F0FA;
     --surface: #FFFFFF;
-    --surface-2: #FBF6F8;
-    --surface-3: #F4EBEF;
+    --surface-2: #F0EBF5;
+    --surface-3: #E6DCEF;
     --sidebar-bg: #FFFFFF;
-    --hairline: #F0E3E8;
-    --hairline-strong: #E3D0D8;
+    --hairline: #E0D5E8;
+    --hairline-strong: #D0C0DB;
 
     /* ---- text ---- */
-    --text-dark: #2C2028;
-    --text-mid: #6B5A62;
-    --text-muted: #9C8B93;
+    --text-dark: #2D2433;
+    --text-mid: #6B5A7A;
+    --text-muted: #9C8BA8;
     --text-on-brand: #FFFFFF;
 
     /* ---- type ----
@@ -98,11 +93,11 @@
     --radius-full: 999px;
 
     /* ---- elevation ---- */
-    --card-shadow: 0 10px 24px -12px rgba(122, 22, 48, .22), 0 2px 6px -2px rgba(0, 0, 0, .05);
-    --card-shadow-hover: 0 22px 40px -18px rgba(122, 22, 48, .32), 0 4px 10px -4px rgba(0, 0, 0, .07);
-    --overlay-shadow: 0 32px 64px -24px rgba(30, 10, 20, .45);
+    --card-shadow: 0 10px 24px -12px rgba(107, 76, 154, .22), 0 2px 6px -2px rgba(0, 0, 0, .05);
+    --card-shadow-hover: 0 22px 40px -18px rgba(107, 76, 154, .32), 0 4px 10px -4px rgba(0, 0, 0, .07);
+    --overlay-shadow: 0 32px 64px -24px rgba(43, 18, 65, .45);
     --inset-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
-    --sidebar-shadow: 6px 0 24px -12px rgba(100, 18, 40, .25);
+    --sidebar-shadow: 6px 0 24px -12px rgba(80, 35, 120, .25);
 
     /* Cards sit on a tinted background and are edged in white rather than a
        hairline, so the surface reads as lifted instead of outlined. Dark
@@ -119,11 +114,11 @@
     --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand-blue);
 
     /* ---- chart series (fixed order, never cycled) ---- */
-    --series-1: var(--brand-red);
+    --series-1: var(--brand-purple);
     --series-2: var(--brand-blue);
-    --series-3: var(--brand-navy);
-    --series-4: var(--brand-magenta);
-    --grid-line: #F0E3E8;
+    --series-3: var(--brand-orange);
+    --series-4: var(--brand-purple-soft);
+    --grid-line: #E0D5E8;
 
     color-scheme: light;
 }
@@ -131,23 +126,22 @@
 /* =========================================================
    Dark theme.
 
-   Not an inversion — the neutrals keep a warm magenta cast so
-   the brand red does not read as an alarm on a cold grey. The
+   Not an inversion — the neutrals keep a warm purple cast so
+   the brand purple does not read as an alarm on a cold grey. The
    semantic colours are lifted, not just darkened, because the
    AA target moves when the background does.
    ========================================================= */
 [data-theme='dark'] {
-    --brand-red: #E2565C;
-    --brand-red-soft: #F07C81;
-    --brand-magenta: #D2568C;
-    --brand-magenta-deep: #A83E6C;
-    --brand-navy: #6D93D6;
+    --brand-purple: #B39DDB;
+    --brand-purple-soft: #D1C4E9;
     --brand-blue: #64B5F6;
-    --accent-orange: #FFA726;
+    --brand-blue-soft: #90CAF9;
+    --brand-orange: #FFB74D;
+    --brand-orange-soft: #FFCC80;
 
     --good: #6ABF6E;
     --bad: #EF5350;
-    --warn: #FFA726;
+    --warn: #FFB74D;
     --info: #64B5F6;
 
     --good-bg: #1E2E20;
@@ -155,17 +149,17 @@
     --warn-bg: #33281A;
     --info-bg: #1C2733;
 
-    --bg: #171015;
-    --surface: #221A20;
-    --surface-2: #2B222A;
-    --surface-3: #332933;
-    --sidebar-bg: #1D151B;
-    --hairline: #3A2F37;
-    --hairline-strong: #4A3D45;
+    --bg: #1A1423;
+    --surface: #231D2E;
+    --surface-2: #2D243D;
+    --surface-3: #382D4A;
+    --sidebar-bg: #1F182A;
+    --hairline: #3D304A;
+    --hairline-strong: #4A3D5A;
 
-    --text-dark: #F3EAEF;
-    --text-mid: #B9A8B1;
-    --text-muted: #8B7B85;
+    --text-dark: #F3EAF7;
+    --text-mid: #B9A8C8;
+    --text-muted: #8B7B95;
 
     --card-shadow: 0 10px 24px -14px rgba(0, 0, 0, .7), 0 2px 6px -2px rgba(0, 0, 0, .4);
     --card-shadow-hover: 0 22px 40px -20px rgba(0, 0, 0, .8), 0 4px 10px -4px rgba(0, 0, 0, .5);
@@ -174,7 +168,7 @@
     --sidebar-shadow: 6px 0 24px -14px rgba(0, 0, 0, .8);
     --card-edge: var(--hairline);
 
-    --grid-line: #3A2F37;
+    --grid-line: #3D304A;
 
     color-scheme: dark;
 }

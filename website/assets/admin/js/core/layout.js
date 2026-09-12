@@ -26,8 +26,8 @@
        from <meta name="app-base"> and parses before this file. */
     const SITE = root.TMH.api.base;
 
-    const THEME_KEY = 'tmh-admin-theme';
-    const COLLAPSE_KEY = 'tmh-admin-collapsed';
+    const THEME_KEY = 'hazra-admin-theme';
+    const COLLAPSE_KEY = 'hazra-admin-collapsed';
 
     /* ---------------------------------------------------------
        THEME
@@ -95,7 +95,7 @@
         return `
         <aside class="sidebar" id="sidebarEl">
             <div class="sidebar__brand">
-                <span class="sidebar__logo"><i class="fa-solid fa-plus"></i></span>
+                <img class="sidebar__logo" src="${esc(base_url('assets/hazraevLogo.jpg'))}" alt="Hazra EV" width="32" height="32">
                 <div class="sidebar__name">Hazra EV<small>Admin</small></div>
             </div>
             <nav class="sidebar__nav" id="navTrack" aria-label="Main">
@@ -348,9 +348,19 @@
                 <i class="fa-solid fa-moon"></i>
             </button>
 
-            <button type="button" class="topbar__btn" id="bellBtn" aria-label="Notifications">
-                <i class="fa-solid fa-bell"></i><span class="dot"></span>
+            <button type="button" class="topbar__btn" id="bellBtn" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+                <i class="fa-solid fa-bell"></i><span class="dot" id="notifDot"></span>
             </button>
+            <div class="menu hidden" id="notifMenu" role="menu" aria-label="Notifications">
+                <div class="notif-header">
+                    <h4>Notifications</h4>
+                    <button type="button" class="btn btn--ghost btn--sm" id="markAllReadBtn">Mark all read</button>
+                </div>
+                <div class="notif-list" id="notifList"></div>
+                <div class="notif-footer">
+                    <a href="contact" role="menuitem">View all leads</a>
+                </div>
+            </div>
 
             <div class="menu-wrap">
                 <button type="button" class="topbar__account" id="accountBtn" aria-haspopup="true" aria-expanded="false">
@@ -489,10 +499,90 @@
         wireGlobalSearch();
 
         const bell = document.getElementById('bellBtn');
-        if (bell) {
-            bell.addEventListener('click', () => {
-                root.TMH.toast.info('Notifications', { body: 'Lead notifications will appear here.' });
+        const notifMenu = document.getElementById('notifMenu');
+        const notifList = document.getElementById('notifList');
+        const notifDot = document.getElementById('notifDot');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+
+        async function loadNotifications() {
+            if (!root.TMH.store) return;
+            try {
+                const data = await root.TMH.store.getNotifications?.() || { items: [], unread: 0 };
+                renderNotifications(data);
+            } catch (e) {
+                console.warn('[notifications] failed to load', e);
+            }
+        }
+
+        function renderNotifications(data) {
+            if (!notifList) return;
+            const items = data.items || [];
+            const unread = data.unread || 0;
+
+            notifDot.classList.toggle('has-unread', unread > 0);
+            notifDot.setAttribute('data-count', unread);
+
+            if (!items.length) {
+                notifList.innerHTML = '<p class="notif-empty">No notifications yet</p>';
+                return;
+            }
+
+            notifList.innerHTML = items.map(item => `
+                <a class="notif-item${item.read ? '' : ' unread'}" href="${root.TMH.util.esc(item.href)}" role="menuitem" data-id="${root.TMH.util.esc(item.id)}">
+                    <div class="notif-icon ${root.TMH.util.esc(item.type || 'info')}"><i class="fa-solid ${root.TMH.util.esc(item.icon || 'fa-bell')}"></i></div>
+                    <div class="notif-content">
+                        <p class="notif-title">${root.TMH.util.esc(item.title)}</p>
+                        <p class="notif-time">${root.TMH.util.esc(item.time)}</p>
+                    </div>
+                    ${!item.read ? '<span class="notif-badge"></span>' : ''}
+                </a>`).join('');
+        }
+
+        if (bell && notifMenu) {
+            bell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const open = notifMenu.classList.toggle('hidden');
+                bell.setAttribute('aria-expanded', String(!open));
+                if (!open) loadNotifications();
             });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.topbar__btn#bellBtn') && !e.target.closest('#notifMenu')) {
+                    notifMenu.classList.add('hidden');
+                    bell.setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            notifMenu.addEventListener('click', (e) => e.stopPropagation());
+
+            if (markAllReadBtn) {
+                markAllReadBtn.addEventListener('click', async () => {
+                    try {
+                        await root.TMH.store.markAllNotificationsRead?.();
+                        loadNotifications();
+                    } catch (e) {
+                        console.warn('[notifications] mark all read failed', e);
+                    }
+                });
+            }
+
+            notifList?.addEventListener('click', async (e) => {
+                const item = e.target.closest('.notif-item');
+                if (!item) return;
+                const id = item.dataset.id;
+                if (id && !item.classList.contains('unread')) return;
+                try {
+                    await root.TMH.store.markNotificationRead?.(id);
+                    item.classList.remove('unread');
+                    const unreadCount = notifList.querySelectorAll('.notif-item.unread').length;
+                    notifDot.classList.toggle('has-unread', unreadCount > 0);
+                    notifDot.setAttribute('data-count', unreadCount);
+                } catch (err) {
+                    console.warn('[notifications] mark read failed', err);
+                }
+            });
+
+            loadNotifications();
         }
 
         /* ---- pill: resync on every event that can move the item ---- */

@@ -10,7 +10,7 @@ $action   = $action ?? base_url('/api/v1/admin/login');
 $next     = $next ?? base_url('/admin/dashboard');
 $home     = $home ?? base_url('/');
 $siteName = $siteName ?? 'Hazra EV';
-$logo     = $logo ?? base_url('assets/hazraev.png');
+$logo     = $logo ?? base_url('assets/hazraevLogo.jpg');
 $csrf     = $csrf ?? Csrf::token();
 
 App::render('admin/head', ['title' => $title, 'page' => $page]);

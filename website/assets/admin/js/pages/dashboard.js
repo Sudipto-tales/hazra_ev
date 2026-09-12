@@ -16,6 +16,15 @@
         ['career_applications', 'Career applications', 'fa-file-signature', 'red'],
     ];
 
+    function skeletonCard(size, tall) {
+        return `
+        <article class="card stat ${size} anim-item skeleton">
+            <div class="stat__icon skeleton"></div>
+            <h3 class="skeleton"></h3>
+            <p class="skeleton"></p>
+        </article>`;
+    }
+
     window.TMH.boot(init);
 
     async function init() {
@@ -33,7 +42,18 @@
         });
 
         const view = document.getElementById('view');
-        view.innerHTML = '<article class="card"><div class="empty"><p>Loading dashboard...</p></div></article>';
+        view.innerHTML = `
+            <div class="bento mb-4">
+                ${skeletonCard('c8', true)}
+                ${skeletonCard('c4', true)}
+            </div>
+            <div class="bento mb-4">
+                ${Array(8).fill(0).map(() => skeletonCard('c3')).join('')}
+            </div>
+            <div class="bento">
+                ${skeletonCard('c8', true)}
+                ${skeletonCard('c4', true)}
+            </div>`;
 
         let data;
         try {

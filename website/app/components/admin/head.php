@@ -13,7 +13,7 @@
     <script>
         (function () {
             try {
-                var stored = localStorage.getItem('tmh-admin-theme');
+                var stored = localStorage.getItem('hazra-admin-theme');
                 document.documentElement.dataset.theme = stored
                     || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             } catch (e) { }
