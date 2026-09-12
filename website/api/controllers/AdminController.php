@@ -45,16 +45,32 @@ final class AdminController extends V1Controller
         ]);
     }
 
-    public function bootstrap(): never
-    {
-        $this->requireAdminSession();
+    // public function bootstrap(): never
+    // {
+    //     $this->requireAdminSession();
 
-        Envelope::ok([
-            'products' => db_fetch_all("SELECT * FROM products WHERE active = 1 ORDER BY created_at DESC") ?? [],
-            'posts' => db_fetch_all("SELECT * FROM posts ORDER BY created_at DESC") ?? [],
-            'jobs' => db_fetch_all("SELECT * FROM jobs ORDER BY created_at DESC") ?? [],
-        ]);
-    }
+    //     Envelope::ok([
+    //         'products' => db_fetch_all("SELECT * FROM products WHERE active = 1 ORDER BY created_at DESC") ?? [],
+    //         'posts' => db_fetch_all("SELECT * FROM posts ORDER BY created_at DESC") ?? [],
+    //         'jobs' => db_fetch_all("SELECT * FROM jobs ORDER BY created_at DESC") ?? [],
+    //     ]);
+    // }
+    public function bootstrap(): never
+{
+    $this->requireAdminSession();
+
+    Envelope::ok([
+        'products' => db_fetch_all(
+            "SELECT * FROM products WHERE active = 1 ORDER BY updated_at DESC"
+        ) ?? [],
+        'posts' => db_fetch_all(
+            "SELECT * FROM posts ORDER BY created_at DESC"
+        ) ?? [],
+        'jobs' => db_fetch_all(
+            "SELECT * FROM jobs ORDER BY created_at DESC"
+        ) ?? [],
+    ]);
+}
 
     public function getSettings(): never
     {
