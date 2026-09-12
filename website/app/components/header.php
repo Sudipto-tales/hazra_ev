@@ -107,7 +107,7 @@ try {
 
       <a href="<?= e(base_url('admin')) ?>" class="nav__i <?= nav_active('admin', $currentRoute) ?>" style="color: var(--brand-violet); font-weight: 700;">Admin</a>
 
-      <a href="<?= e(base_url('index#contact')) ?>" class="nav__i">Contact</a>
+      <a href="<?= e(base_url('contact')) ?>" class="nav__i <?= nav_active('contact', $currentRoute) ?>">Contact</a>
     </nav>
 
     <?php if ($isStickyOnly): ?>
@@ -116,7 +116,7 @@ try {
         <i class="theme__sun" data-lucide="sun"></i>
         <i class="theme__moon" data-lucide="moon"></i>
       </button>
-      <a href="<?= base_url('index#contact') ?>" class="sticky-bar__cta" aria-label="Contact us">
+      <a href="<?= e(base_url('contact')) ?>" class="sticky-bar__cta" aria-label="Contact us">
         <i data-lucide="shopping-bag"></i>
         <span>CONTACT US</span>
       </a>

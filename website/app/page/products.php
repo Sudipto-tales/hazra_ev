@@ -1,183 +1,584 @@
 <?php
-$pageTitle = "All Electric Scooters & Bikes | Hazra Electrical Bike";
-$pageDescription = "Explore the complete lineup of Hazra EV electric scooters and bikes. Premium performance, long range, and eco-friendly Indian riding.";
+App::render('head', [
+    'pageTitle'       => 'Products — Hazra Electrical Bike',
+    'pageDescription' => 'Browse the full Hazra Electrical Bike lineup. Filter by range, price, battery and series.',
+    'extraCss'        => ['assets/css/styles/pages/products.css'],
+]);
 
-// Fetch active products from DB
-$products = [];
-try {
-    if (function_exists('db_fetch_all')) {
-        $rows = db_fetch_all("SELECT * FROM products WHERE active = 1 ORDER BY updated_at DESC");
-        if ($rows) {
-            $ids = array_column($rows, 'id');
-            $ph = implode(',', array_fill(0, count($ids), '?'));
-            $colors = db_fetch_all("SELECT * FROM product_colors WHERE product_id IN ({$ph}) ORDER BY position, name", $ids);
-            
-            $colorImages = [];
-            if ($colors) {
-                $cids = array_column($colors, 'id');
-                $cph = implode(',', array_fill(0, count($cids), '?'));
-                foreach (db_fetch_all("SELECT * FROM product_color_images WHERE color_id IN ({$cph}) ORDER BY position", $cids) as $img) {
-                    $colorImages[$img['color_id']][] = $img['url'];
-                }
-            }
-
-            $byProd = [];
-            foreach ($colors as $c) {
-                $c['images'] = $colorImages[$c['id']] ?? [];
-                $byProd[$c['product_id']][] = $c;
-            }
-
-            foreach ($rows as $r) {
-                $r['highlights'] = json_decode($r['highlights'] ?? '[]', true) ?? [];
-                $r['colors'] = $byProd[$r['id']] ?? [];
-                $products[] = $r;
-            }
-        }
-    }
-} catch (Throwable $e) {
-    error_log("Error loading products: " . $e->getMessage());
-}
-
-include __BASEDIR__ . '/app/components/head.php';
-include __BASEDIR__ . '/app/components/header.php';
+App::render('header', ['isStickyOnly' => true]);
 ?>
 
-<main class="page-body">
-  <section class="hero-page" style="padding: clamp(60px, 8vw, 100px) 26px 40px; text-align: center; background: radial-gradient(circle at 50% 0%, rgb(var(--chip-rgb) / .6), transparent 70%);">
-    <div style="width: min(900px, 93vw); margin: 0 auto;">
-      <span style="font-size: 11px; font-weight: 800; letter-spacing: .2em; color: var(--accent); text-transform: uppercase;">HAZRA EV CATALOGUE</span>
-      <h1 style="font-family: 'Montserrat', sans-serif; font-size: clamp(32px, 4.5vw, 54px); font-weight: 900; margin: 12px 0 16px; line-height: 1.1; color: var(--ink-0);">Our Electric Lineup</h1>
-      <p style="font-size: clamp(14px, 1.6vw, 17px); color: var(--ink-soft-0); max-width: 600px; margin: 0 auto 30px; line-height: 1.6;">
-        Built engineered for Indian roads. High speed, long range, zero emissions.
-      </p>
+<!-- ========== UNIQUE PAGE CONTENT START ========== -->
+<!-- SHOWCASE -->
+<section class="pl-show">
+  <div class="wrap pl-show__grid">
+    <a class="pl-show__hero" href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>">
+      <img src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Hazra signature scooter">
+      <div class="pl-show__hero-copy">
+        <p class="eyebrow"><i class="sq"></i>SIGNATURE</p>
+        <h1>Signature<br>of the road</h1>
+        <span class="pl-show__cta">Explore CHALO 1000 V2 <i data-lucide="arrow-up-right"></i></span>
+      </div>
+    </a>
+    <a class="pl-show__promo" href="<?= e(base_url('index#test-ride')) ?>">
+      <p class="pl-show__promo-kicker">This month</p>
+      <h2>Book a free<br>test ride</h2>
+      <p>Feel the torque map on your own route.</p>
+      <span class="btn btn--ink">Schedule <i data-lucide="bike"></i></span>
+    </a>
+    <button type="button" class="pl-show__tile" data-filter-speed="city">
+      <img src="<?= e(base_url('assets/storm.webp')) ?>" alt="City scooters">
+      <span>City / Daily</span>
+    </button>
+    <button type="button" class="pl-show__tile" data-filter-speed="high">
+      <img src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Performance scooters">
+      <span>High speed</span>
+    </button>
+  </div>
+</section>
 
-      <!-- Category Filter Tabs -->
-      <div class="filter-tabs" style="display: inline-flex; gap: 8px; padding: 6px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 999px; box-shadow: 0 10px 25px -10px rgba(0,0,0,.1);">
-        <button class="tab-btn active" onclick="filterCategory('all', this)" style="padding: 8px 20px; border-radius: 999px; border: 0; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--ink-0); color: var(--surface-0); transition: all .25s;">All Models</button>
-        <button class="tab-btn" onclick="filterCategory('scooty', this)" style="padding: 8px 20px; border-radius: 999px; border: 0; font-size: 13px; font-weight: 600; cursor: pointer; background: transparent; color: var(--ink-soft-0); transition: all .25s;">Scooters</button>
-        <button class="tab-btn" onclick="filterCategory('bike', this)" style="padding: 8px 20px; border-radius: 999px; border: 0; font-size: 13px; font-weight: 600; cursor: pointer; background: transparent; color: var(--ink-soft-0); transition: all .25s;">Motorcycles</button>
-        <button class="tab-btn" onclick="filterCategory('bicycle', this)" style="padding: 8px 20px; border-radius: 999px; border: 0; font-size: 13px; font-weight: 600; cursor: pointer; background: transparent; color: var(--ink-soft-0); transition: all .25s;">E-Bicycles</button>
+<!-- TOOLBAR + FILTERS + GRID -->
+<section class="pl-main">
+  <div class="wrap">
+    <header class="pl-head">
+      <div>
+        <p class="eyebrow"><i class="sq"></i>HAZRA LINEUP</p>
+        <h2 class="sec__title">Products that<br><span class="hl">earn the ride.</span></h2>
+      </div>
+      <p class="pl-count" id="plCount">Showing all models</p>
+    </header>
+
+    <div class="pl-toolbar">
+      <div class="pl-search" id="plSearchWrap">
+        <i data-lucide="search" class="pl-search__icon"></i>
+        <input type="search" id="plSearch" placeholder="Search by name, series, battery, range…" autocomplete="off" enterkeyhint="search">
+        <button type="button" class="pl-search__clear" id="plSearchClear" hidden aria-label="Clear search"><i data-lucide="x"></i></button>
+        <div class="pl-suggest" id="plSuggest" hidden role="listbox"></div>
+      </div>
+
+      <button type="button" class="pl-filter-toggle" id="plFilterToggle" aria-expanded="false" aria-controls="plFilters">
+        <i data-lucide="sliders-horizontal"></i>
+        <span>Filters</span>
+        <b class="pl-filter-badge" id="plFilterBadge" hidden>0</b>
+      </button>
+
+      <label class="pl-sort">
+        <span>Sort</span>
+        <select id="plSort">
+          <option value="featured">Featured</option>
+          <option value="price-asc">Price: low to high</option>
+          <option value="price-desc">Price: high to low</option>
+          <option value="range-desc">Range: high to low</option>
+          <option value="rating-desc">Top rated</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="pl-chips" id="plChips" hidden></div>
+
+    <div class="pl-layout">
+      <div class="pl-filters-backdrop" id="plFiltersBackdrop" hidden></div>
+      <aside class="pl-filters" id="plFilters" aria-label="Product filters">
+        <div class="pl-filters__head">
+          <h3>Filters</h3>
+          <button type="button" class="pl-filters__clear" id="plClearAll">Clear all</button>
+        </div>
+
+        <fieldset class="pl-fg">
+          <legend>Price (ex-showroom)</legend>
+          <div class="pl-range-inputs">
+            <label>Min ₹ <input type="number" id="priceMin" min="0" max="200000" step="1000" placeholder="0"></label>
+            <label>Max ₹ <input type="number" id="priceMax" min="0" max="200000" step="1000" placeholder="150000"></label>
+          </div>
+          <input type="range" id="priceMaxSlider" min="40000" max="150000" step="1000" value="150000">
+        </fieldset>
+
+        <fieldset class="pl-fg">
+          <legend>Range (km)</legend>
+          <div class="pl-range-inputs">
+            <label>Min <input type="number" id="rangeMin" min="0" max="200" step="5" placeholder="0"></label>
+            <label>Max <input type="number" id="rangeMax" min="0" max="200" step="5" placeholder="200"></label>
+          </div>
+          <div class="pl-pills" data-group="rangePreset">
+            <button type="button" data-rmin="0" data-rmax="80">&lt; 80 km</button>
+            <button type="button" data-rmin="80" data-rmax="110">80–110</button>
+            <button type="button" data-rmin="110" data-rmax="200">110+</button>
+          </div>
+        </fieldset>
+
+        <fieldset class="pl-fg">
+          <legend>Series</legend>
+          <div class="pl-checks" id="filterSeries"></div>
+        </fieldset>
+
+        <fieldset class="pl-fg">
+          <legend>Battery</legend>
+          <div class="pl-checks">
+            <label><input type="checkbox" name="battery" value="graphene"> Graphene</label>
+            <label><input type="checkbox" name="battery" value="li-ion"> Li-ion</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="pl-fg">
+          <legend>Speed class</legend>
+          <div class="pl-checks">
+            <label><input type="checkbox" name="speed" value="high"> High speed</label>
+            <label><input type="checkbox" name="speed" value="city"> City / low speed</label>
+          </div>
+        </fieldset>
+      </aside>
+
+      <div class="pl-grid-wrap">
+        <div class="coll__grid pl-grid" id="plGrid"></div>
+        <div class="pl-empty" id="plEmpty" hidden>
+          <p>No models match these filters.</p>
+          <button type="button" class="btn btn--ghost" id="plEmptyClear">Clear filters</button>
+        </div>
       </div>
     </div>
-  </section>
-
-  <section class="catalog-grid" style="padding: 20px 26px clamp(60px, 9vw, 120px);">
-    <div style="width: min(1280px, 93vw); margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 32px;">
-      <?php if (empty($products)): ?>
-        <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px;">
-          <i data-lucide="package-search" style="width: 48px; height: 48px; color: var(--ink-soft-0); margin-bottom: 16px;"></i>
-          <h3 style="font-size: 20px; font-weight: 700; color: var(--ink-0);">No models found</h3>
-          <p style="color: var(--ink-soft-0);">Check back soon for new EV additions.</p>
-        </div>
-      <?php endif; ?>
-
-      <?php foreach ($products as $p): ?>
-        <?php
-          $firstColor = $p['colors'][0] ?? null;
-          $firstImg = ($firstColor && !empty($firstColor['images'])) ? $firstColor['images'][0] : base_url('assets/scutie_light.png');
-        ?>
-        <div class="prod-card" data-category="<?= htmlspecialchars($p['category']) ?>" style="background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 24px; padding: 24px; display: flex; flex-direction: column; transition: transform .35s var(--ease), box-shadow .35s var(--ease); position: relative; overflow: hidden;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-            <span style="font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-violet); background: rgb(var(--chip-rgb)); padding: 4px 10px; border-radius: 999px;">
-              <?= htmlspecialchars(strtoupper($p['category'])) ?>
-            </span>
-            <span style="font-size: 12px; font-weight: 700; color: var(--ink-soft-0); display: flex; align-items: center; gap: 4px;">
-              <i data-lucide="star" style="width: 14px; height: 14px; fill: #f7941d; color: #f7941d;"></i>
-              <?= number_format((float)$p['rating'], 1) ?>
-            </span>
-          </div>
-
-          <h2 style="font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 800; color: var(--ink-0); margin-bottom: 4px;">
-            <?= htmlspecialchars($p['name']) ?>
-          </h2>
-          <span style="font-size: 12px; color: var(--ink-soft-0); font-weight: 600; margin-bottom: 16px;">
-            Code: <?= htmlspecialchars($p['model_code']) ?>
-          </span>
-
-          <!-- Product Image Container -->
-          <div style="position: relative; width: 100%; height: 220px; border-radius: 16px; background: rgb(var(--chip-rgb) / .4); display: grid; place-items: center; overflow: hidden; margin-bottom: 20px;">
-            <img id="img-<?= $p['id'] ?>" src="<?= htmlspecialchars($firstImg) ?>" alt="<?= htmlspecialchars($p['name']) ?>" style="max-width: 90%; max-height: 85%; object-fit: contain; transition: transform .4s var(--ease);">
-          </div>
-
-          <!-- Color Selector Swatches -->
-          <?php if (!empty($p['colors'])): ?>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-              <span style="font-size: 11px; font-weight: 700; color: var(--ink-soft-0); margin-right: 4px;">Colors:</span>
-              <?php foreach ($p['colors'] as $idx => $col): ?>
-                <?php
-                  $hex = '#' . substr(dechex($col['argb'] & 0xFFFFFF), -6);
-                  $colImg = !empty($col['images']) ? $col['images'][0] : $firstImg;
-                ?>
-                <button title="<?= htmlspecialchars($col['name']) ?>" 
-                        onclick="switchColor('<?= $p['id'] ?>', '<?= htmlspecialchars($colImg) ?>', this)"
-                        style="width: 22px; height: 22px; border-radius: 50%; background: <?= $hex ?>; border: 2px solid <?= $idx === 0 ? 'var(--ink-0)' : 'transparent' ?>; cursor: pointer; transition: transform .2s; padding: 0;">
-                </button>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
-
-          <!-- Specs Pill Bar -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; background: rgb(var(--chip-rgb) / .4); border-radius: 14px; margin-bottom: 24px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i data-lucide="zap" style="width: 16px; height: 16px; color: var(--brand-flame);"></i>
-              <div>
-                <div style="font-size: 10px; font-weight: 700; color: var(--ink-soft-0);">RANGE</div>
-                <div style="font-size: 13px; font-weight: 800; color: var(--ink-0);"><?= (int)$p['range_km'] ?> km</div>
-              </div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <i data-lucide="gauge" style="width: 16px; height: 16px; color: var(--brand-blue);"></i>
-              <div>
-                <div style="font-size: 10px; font-weight: 700; color: var(--ink-soft-0);">TOP SPEED</div>
-                <div style="font-size: 13px; font-weight: 800; color: var(--ink-0);"><?= (int)$p['top_speed_kmph'] ?> km/h</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top: auto; display: flex; gap: 10px;">
-            <a href="<?= base_url('product-detail?id=' . urlencode($p['id'])) ?>" style="flex: 1; text-align: center; padding: 12px 16px; background: var(--ink-0); color: var(--surface-0); text-decoration: none; border-radius: 999px; font-size: 12.5px; font-weight: 700; transition: opacity .25s;">
-              View Details
-            </a>
-            <a href="<?= base_url('dealership-enquiry') ?>" style="padding: 12px 16px; border: 1px solid var(--hair-0); color: var(--ink-0); text-decoration: none; border-radius: 999px; font-size: 12.5px; font-weight: 700; transition: background .25s;">
-              Test Ride
-            </a>
-          </div>
-        </div>
-      <?php endforeach; ?>
-    </div>
-  </section>
-</main>
+  </div>
+</section>
 
 <script>
-function filterCategory(cat, btn) {
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    b.style.background = 'transparent';
-    b.style.color = 'var(--ink-soft-0)';
-  });
-  btn.style.background = 'var(--ink-0)';
-  btn.style.color = 'var(--surface-0)';
+document.addEventListener('DOMContentLoaded', () => {
+  const baseUrl = <?= json_encode(rtrim(base_url(''), '/')) ?>;
 
-  document.querySelectorAll('.prod-card').forEach(card => {
-    if (cat === 'all' || card.dataset.category === cat) {
-      card.style.display = 'flex';
-    } else {
-      card.style.display = 'none';
+  const CATALOG = [
+    {
+      id: 'chalo-1000-v2', slug: 'chalo-1000-v2', name: 'CHALO 1000 V2', series: 'CHALO',
+      company: 'Hazra', rangeKm: 100, speed: 'high',
+      battery: ['graphene', 'li-ion'],
+      priceFrom: 61062, priceTo: 72679,
+      rating: 4.8, reviews: 212, color: '#7b2ff7',
+      badge: '4 Years Warranty',
+      chips: ['100 km Range', 'High Speed'],
+      variants: [
+        { price: '₹61,062', label: '60V / 32AH Graphene' },
+        { price: '₹72,679', label: '60V / 25AH Li-ion' }
+      ],
+      image: baseUrl + '/assets/scutie_light.webp',
+      tags: ['chalo', '1000', 'v2', 'graphene', 'high speed', 'hazra']
+    },
+    {
+      id: 'chalo-smart-pro', slug: 'chalo-smart-pro', name: 'CHALO SMART PRO', series: 'CHALO',
+      company: 'Hazra', rangeKm: 120, speed: 'high',
+      battery: ['li-ion'],
+      priceFrom: 79400, priceTo: 88150,
+      rating: 4.9, reviews: 388, color: '#241640',
+      badge: 'Pro Range',
+      chips: ['120 km Range', 'High Speed'],
+      variants: [
+        { price: '₹79,400', label: '72V / 40AH Li-ion' },
+        { price: '₹88,150', label: '72V / 45AH Li-ion' }
+      ],
+      image: baseUrl + '/assets/scutie_light.webp',
+      tags: ['chalo', 'smart', 'pro', 'li-ion', 'high speed']
+    },
+    {
+      id: 'chalo-smart-eco', slug: 'chalo-smart-eco', name: 'CHALO SMART ECO', series: 'CHALO',
+      company: 'Hazra', rangeKm: 130, speed: 'city',
+      battery: ['graphene', 'li-ion'],
+      priceFrom: 54900, priceTo: 66300,
+      rating: 4.7, reviews: 156, color: '#f0532b',
+      badge: 'Best Range',
+      chips: ['130 km Range', 'Low Speed'],
+      variants: [
+        { price: '₹54,900', label: '60V / 32AH Graphene' },
+        { price: '₹66,300', label: '60V / 25AH Li-ion' }
+      ],
+      image: baseUrl + '/assets/scutie_light.webp',
+      tags: ['chalo', 'smart', 'eco', 'range', 'city']
+    },
+    {
+      id: 'chalo-smart-plus', slug: 'chalo-smart-plus', name: 'CHALO SMART PLUS', series: 'CHALO',
+      company: 'Hazra', rangeKm: 85, speed: 'city',
+      battery: ['graphene', 'li-ion'],
+      priceFrom: 49750, priceTo: 58900,
+      rating: 4.6, reviews: 94, color: '#a41fbf',
+      badge: 'City Pick',
+      chips: ['85 km Range', 'Low Speed'],
+      variants: [
+        { price: '₹49,750', label: '48V / 28AH Graphene' },
+        { price: '₹58,900', label: '48V / 24AH Li-ion' }
+      ],
+      image: baseUrl + '/assets/scutie_light.webp',
+      tags: ['chalo', 'smart', 'plus', 'daily']
+    },
+    {
+      id: 'chalo-neo', slug: 'chalo-neo', name: 'CHALO NEO', series: 'CHALO',
+      company: 'Hazra', rangeKm: 50, speed: 'city',
+      battery: ['graphene', 'li-ion'],
+      priceFrom: 42400, priceTo: 51100,
+      rating: 4.5, reviews: 61, color: '#f7941d',
+      badge: 'Value',
+      chips: ['50 km Range', 'Low Speed'],
+      variants: [
+        { price: '₹42,400', label: '48V / 24AH Graphene' },
+        { price: '₹51,100', label: '48V / 20AH Li-ion' }
+      ],
+      image: baseUrl + '/assets/scutie_light.webp',
+      tags: ['chalo', 'neo', 'entry']
+    },
+    {
+      id: 'nja-7', slug: 'nja-7', name: 'NJA-7', series: 'NJA',
+      company: 'Hazra', rangeKm: 140, speed: 'high',
+      battery: ['li-ion'],
+      priceFrom: 104900, priceTo: 119500,
+      rating: 5.0, reviews: 28, color: '#7b2ff7',
+      badge: 'Flagship',
+      chips: ['140 km Range', 'High Speed'],
+      variants: [
+        { price: '₹1,04,900', label: '72V / 45AH Li-ion' },
+        { price: '₹1,19,500', label: '72V / 60AH Li-ion' }
+      ],
+      image: baseUrl + '/assets/scutie_light.webp',
+      tags: ['nja', '7', 'flagship', 'high speed']
     }
-  });
-}
+  ];
 
-function switchColor(prodId, imgUrl, btn) {
-  const imgEl = document.getElementById('img-' + prodId);
-  if (imgEl) {
-    imgEl.style.opacity = '0';
-    setTimeout(() => {
-      imgEl.src = imgUrl;
-      imgEl.style.opacity = '1';
-    }, 200);
+  const state = {
+    q: '', priceMin: null, priceMax: null, rangeMin: null, rangeMax: null,
+    series: [], battery: [], speed: [], sort: 'featured'
+  };
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  const PARAMS = {
+    q: 'q', priceMin: 'priceMin', priceMax: 'priceMax', rangeMin: 'rangeMin', rangeMax: 'rangeMax',
+    series: 'series', battery: 'battery', speed: 'speed', sort: 'sort'
+  };
+
+  function parseList(v) { return v ? v.split(',').map(s => s.trim()).filter(Boolean) : []; }
+  function numOrNull(v) { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
+
+  function readURL() {
+    const p = new URLSearchParams(location.search);
+    state.q = p.get(PARAMS.q) || '';
+    state.priceMin = numOrNull(p.get(PARAMS.priceMin));
+    state.priceMax = numOrNull(p.get(PARAMS.priceMax));
+    state.rangeMin = numOrNull(p.get(PARAMS.rangeMin));
+    state.rangeMax = numOrNull(p.get(PARAMS.rangeMax));
+    state.series = parseList(p.get(PARAMS.series));
+    state.battery = parseList(p.get(PARAMS.battery));
+    state.speed = parseList(p.get(PARAMS.speed));
+    state.sort = p.get(PARAMS.sort) || 'featured';
   }
-  btn.parentElement.querySelectorAll('button').forEach(b => b.style.borderColor = 'transparent');
-  btn.style.borderColor = 'var(--ink-0)';
-}
-</script>
 
-<?php include __BASEDIR__ . '/app/components/footer.php'; ?>
+  function writeURL(replace = true) {
+    const p = new URLSearchParams();
+    if (state.q) p.set(PARAMS.q, state.q);
+    if (state.priceMin != null) p.set(PARAMS.priceMin, String(state.priceMin));
+    if (state.priceMax != null) p.set(PARAMS.priceMax, String(state.priceMax));
+    if (state.rangeMin != null) p.set(PARAMS.rangeMin, String(state.rangeMin));
+    if (state.rangeMax != null) p.set(PARAMS.rangeMax, String(state.rangeMax));
+    if (state.series.length) p.set(PARAMS.series, state.series.join(','));
+    if (state.battery.length) p.set(PARAMS.battery, state.battery.join(','));
+    if (state.speed.length) p.set(PARAMS.speed, state.speed.join(','));
+    if (state.sort && state.sort !== 'featured') p.set(PARAMS.sort, state.sort);
+
+    const qs = p.toString();
+    const url = qs ? `${location.pathname}?${qs}` : location.pathname;
+    if (replace) history.replaceState({ filters: { ...state } }, '', url);
+    else history.pushState({ filters: { ...state } }, '', url);
+  }
+
+  function matches(item) {
+    if (state.q) {
+      const hay = [item.name, item.series, item.company, ...(item.tags || []), ...(item.battery || []), ...(item.chips || [])].join(' ').toLowerCase();
+      const tokens = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+      if (!tokens.every(t => hay.includes(t))) return false;
+    }
+    if (state.priceMin != null && item.priceTo < state.priceMin) return false;
+    if (state.priceMax != null && item.priceFrom > state.priceMax) return false;
+    if (state.rangeMin != null && item.rangeKm < state.rangeMin) return false;
+    if (state.rangeMax != null && item.rangeKm > state.rangeMax) return false;
+    if (state.series.length && !state.series.includes(item.series)) return false;
+    if (state.battery.length && !state.battery.some(b => item.battery.includes(b))) return false;
+    if (state.speed.length && !state.speed.includes(item.speed)) return false;
+    return true;
+  }
+
+  function sortList(list) {
+    const arr = [...list];
+    switch (state.sort) {
+      case 'price-asc': return arr.sort((a, b) => a.priceFrom - b.priceFrom);
+      case 'price-desc': return arr.sort((a, b) => b.priceFrom - a.priceFrom);
+      case 'range-desc': return arr.sort((a, b) => b.rangeKm - a.rangeKm);
+      case 'rating-desc': return arr.sort((a, b) => b.rating - a.rating);
+      default: return arr;
+    }
+  }
+
+  function filtered() { return sortList(CATALOG.filter(matches)); }
+
+  function cardHTML(p) {
+    const vars = p.variants.map(v => `<button class="var" type="button"><b>${v.price}</b><span>${v.label}</span></button>`).join('');
+    const chips = p.chips.map((c, i) => `<span><i data-lucide="${i === 0 ? 'battery-charging' : 'zap'}"></i>${c}</span>`).join('');
+    const detailUrl = `${baseUrl}/product-detail?slug=${p.slug}`;
+    const testRideUrl = `${baseUrl}/index#test-ride`;
+
+    return `
+<article class="card is-in" style="--c:${p.color}" data-id="${p.id}">
+  <div class="card__media">
+    <span class="card__badge"><i data-lucide="shield-check"></i>${p.badge}</span>
+    <span class="card__360">360°</span>
+    <img class="card__img" src="${p.image}" alt="${p.name}" loading="lazy">
+    <i class="card__wash"></i>
+    <i class="card__shine"></i>
+  </div>
+  <div class="card__body">
+    <div class="card__rate"><i data-lucide="star"></i><b>${p.rating.toFixed(1)}</b><span>· ${p.reviews} reviews</span></div>
+    <h3 class="card__name">${p.name}</h3>
+    <div class="card__chips">${chips}</div>
+    <div class="card__colors" role="group" aria-label="Available colours">
+      <button class="sw is-on" style="--c:${p.color}" type="button" aria-label="Colour"></button>
+    </div>
+    <div class="card__price">
+      <p class="card__plabel">Ex-showroom — starts at</p>
+      <div class="card__vars">${vars}</div>
+      <p class="card__note">*Without GST</p>
+    </div>
+    <div class="card__acts">
+      <a class="btn btn--ghost" href="${detailUrl}">Explore</a>
+      <a class="btn btn--ink" href="${testRideUrl}"><span>Test Ride</span><i data-lucide="bike"></i></a>
+    </div>
+  </div>
+</article>`;
+  }
+
+  function renderGrid() {
+    const list = filtered();
+    const grid = $('#plGrid');
+    const empty = $('#plEmpty');
+    const count = $('#plCount');
+
+    if (!list.length) {
+      grid.innerHTML = '';
+      empty.hidden = false;
+      count.textContent = 'No models found';
+    } else {
+      empty.hidden = true;
+      grid.innerHTML = list.map(cardHTML).join('');
+      count.textContent = list.length === CATALOG.length
+        ? `Showing all ${list.length} models`
+        : `Showing ${list.length} of ${CATALOG.length} models`;
+      if (window.lucide) lucide.createIcons({ nodes: grid.querySelectorAll('[data-lucide]') });
+    }
+    renderChips();
+    updateBadge();
+  }
+
+  function activeFilterCount() {
+    let n = 0;
+    if (state.q) n++;
+    if (state.priceMin != null || state.priceMax != null) n++;
+    if (state.rangeMin != null || state.rangeMax != null) n++;
+    n += state.series.length + state.battery.length + state.speed.length;
+    return n;
+  }
+
+  function updateBadge() {
+    const b = $('#plFilterBadge');
+    const n = activeFilterCount();
+    if (n) { b.hidden = false; b.textContent = String(n); }
+    else b.hidden = true;
+  }
+
+  function renderChips() {
+    const wrap = $('#plChips');
+    const chips = [];
+    if (state.q) chips.push({ key: 'q', label: `“${state.q}”` });
+    if (state.priceMin != null || state.priceMax != null) {
+      const a = state.priceMin != null ? `₹${state.priceMin.toLocaleString('en-IN')}` : '0';
+      const b = state.priceMax != null ? `₹${state.priceMax.toLocaleString('en-IN')}` : '∞';
+      chips.push({ key: 'price', label: `Price ${a}–${b}` });
+    }
+    if (state.rangeMin != null || state.rangeMax != null) {
+      chips.push({ key: 'range', label: `Range ${state.rangeMin ?? 0}–${state.rangeMax ?? '∞'} km` });
+    }
+    state.series.forEach(s => chips.push({ key: 'series', value: s, label: s }));
+    state.battery.forEach(s => chips.push({ key: 'battery', value: s, label: s }));
+    state.speed.forEach(s => chips.push({ key: 'speed', value: s, label: s === 'high' ? 'High speed' : 'City' }));
+
+    if (!chips.length) { wrap.hidden = true; wrap.innerHTML = ''; return; }
+    wrap.hidden = false;
+    wrap.innerHTML = chips.map(c =>
+      `<button type="button" class="pl-chip" data-chip-key="${c.key}" data-chip-value="${c.value || ''}">${c.label} <i data-lucide="x"></i></button>`
+    ).join('') + `<button type="button" class="pl-chip pl-chip--clear" data-chip-key="all">Clear all</button>`;
+    if (window.lucide) lucide.createIcons({ nodes: wrap.querySelectorAll('[data-lucide]') });
+  }
+
+  function syncControlsFromState() {
+    $('#plSearch').value = state.q;
+    $('#plSearchClear').hidden = !state.q;
+    $('#plSort').value = state.sort;
+    $('#priceMin').value = state.priceMin ?? '';
+    $('#priceMax').value = state.priceMax ?? '';
+    if (state.priceMax != null) $('#priceMaxSlider').value = state.priceMax;
+    $('#rangeMin').value = state.rangeMin ?? '';
+    $('#rangeMax').value = state.rangeMax ?? '';
+
+    $$('input[name="battery"]').forEach(el => { el.checked = state.battery.includes(el.value); });
+    $$('input[name="speed"]').forEach(el => { el.checked = state.speed.includes(el.value); });
+    $$('#filterSeries input').forEach(el => { el.checked = state.series.includes(el.value); });
+  }
+
+  function readControlsToState() {
+    state.q = $('#plSearch').value.trim();
+    state.sort = $('#plSort').value;
+    state.priceMin = numOrNull($('#priceMin').value);
+    state.priceMax = numOrNull($('#priceMax').value);
+    state.rangeMin = numOrNull($('#rangeMin').value);
+    state.rangeMax = numOrNull($('#rangeMax').value);
+    state.battery = $$('input[name="battery"]:checked').map(el => el.value);
+    state.speed = $$('input[name="speed"]:checked').map(el => el.value);
+    state.series = $$('#filterSeries input:checked').map(el => el.value);
+  }
+
+  function apply({ push = false } = {}) {
+    readControlsToState();
+    writeURL(!push);
+    renderGrid();
+    $('#plSearchClear').hidden = !state.q;
+  }
+
+  function clearAll() {
+    state.q = ''; state.priceMin = null; state.priceMax = null; state.rangeMin = null; state.rangeMax = null;
+    state.series = []; state.battery = []; state.speed = []; state.sort = 'featured';
+    syncControlsFromState();
+    writeURL(true);
+    renderGrid();
+    $('#plSuggest').hidden = true;
+  }
+
+  function removeChip(key, value) {
+    if (key === 'all') return clearAll();
+    if (key === 'q') state.q = '';
+    if (key === 'price') { state.priceMin = null; state.priceMax = null; }
+    if (key === 'range') { state.rangeMin = null; state.rangeMax = null; }
+    if (key === 'series') state.series = state.series.filter(s => s !== value);
+    if (key === 'battery') state.battery = state.battery.filter(s => s !== value);
+    if (key === 'speed') state.speed = state.speed.filter(s => s !== value);
+    syncControlsFromState();
+    writeURL(true);
+    renderGrid();
+  }
+
+  function renderSuggest(q) {
+    const box = $('#plSuggest');
+    if (!q || q.length < 1) { box.hidden = true; box.innerHTML = ''; return; }
+    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = CATALOG.filter(item => {
+      const hay = [item.name, item.series, item.company, ...(item.tags || [])].join(' ').toLowerCase();
+      return tokens.every(t => hay.includes(t));
+    }).slice(0, 6);
+    if (!hits.length) {
+      box.innerHTML = `<div class="pl-suggest__empty">No matches for “${q}”</div>`;
+      box.hidden = false;
+      return;
+    }
+    box.innerHTML = hits.map(h => `
+      <button type="button" class="pl-suggest__row" data-slug="${h.slug}" role="option">
+        <img src="${h.image}" alt="">
+        <span><b>${h.name}</b><small>${h.rangeKm} km · from ₹${h.priceFrom.toLocaleString('en-IN')}</small></span>
+      </button>`).join('');
+    box.hidden = false;
+  }
+
+  function buildSeriesFilters() {
+    const series = [...new Set(CATALOG.map(c => c.series))];
+    $('#filterSeries').innerHTML = series.map(s => `<label><input type="checkbox" name="series" value="${s}"> ${s}</label>`).join('');
+  }
+
+  function bind() {
+    let t = null;
+    $('#plSearch').addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        state.q = $('#plSearch').value.trim();
+        renderSuggest(state.q);
+        apply();
+      }, 160);
+    });
+    $('#plSearch').addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        $('#plSuggest').hidden = true;
+        $('#plSearch').blur();
+      }
+    });
+    $('#plSearchClear').addEventListener('click', () => {
+      state.q = ''; $('#plSearch').value = ''; $('#plSuggest').hidden = true; apply();
+    });
+    $('#plSuggest').addEventListener('click', e => {
+      const row = e.target.closest('[data-slug]');
+      if (!row) return;
+      location.href = `${baseUrl}/product-detail?slug=${row.dataset.slug}`;
+    });
+    document.addEventListener('click', e => {
+      if (!$('#plSearchWrap').contains(e.target)) $('#plSuggest').hidden = true;
+    });
+
+    ['priceMin', 'priceMax', 'rangeMin', 'rangeMax'].forEach(id => {
+      $(`#${id}`).addEventListener('change', () => apply());
+    });
+    $('#priceMaxSlider').addEventListener('input', e => { $('#priceMax').value = e.target.value; });
+    $('#priceMaxSlider').addEventListener('change', () => apply());
+
+    $$('[data-group="rangePreset"] button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.rangeMin = Number(btn.dataset.rmin);
+        state.rangeMax = Number(btn.dataset.rmax);
+        syncControlsFromState(); writeURL(true); renderGrid();
+      });
+    });
+
+    $('#filterSeries').addEventListener('change', () => apply());
+    $$('input[name="battery"], input[name="speed"]').forEach(el => el.addEventListener('change', () => apply()));
+    $('#plSort').addEventListener('change', () => apply());
+
+    $('#plClearAll').addEventListener('click', clearAll);
+    $('#plEmptyClear').addEventListener('click', clearAll);
+    $('#plChips').addEventListener('click', e => {
+      const chip = e.target.closest('[data-chip-key]');
+      if (!chip) return;
+      removeChip(chip.dataset.chipKey, chip.dataset.chipValue);
+    });
+
+    const backdrop = $('#plFiltersBackdrop');
+    const setFiltersOpen = (open) => {
+      $('#plFilters').classList.toggle('is-open', open);
+      $('#plFilterToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (backdrop) {
+        backdrop.hidden = !open;
+        backdrop.classList.toggle('is-on', open);
+      }
+      document.body.style.overflow = open && window.innerWidth <= 960 ? 'hidden' : '';
+    };
+    $('#plFilterToggle').addEventListener('click', () => setFiltersOpen(!$('#plFilters').classList.contains('is-open')));
+    backdrop?.addEventListener('click', () => setFiltersOpen(false));
+
+    $$('[data-filter-speed]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.speed = [btn.dataset.filterSpeed];
+        syncControlsFromState(); writeURL(true); renderGrid();
+        $('#plFilters').classList.add('is-open');
+      });
+    });
+
+    window.addEventListener('popstate', () => {
+      readURL(); syncControlsFromState(); renderGrid();
+    });
+  }
+
+  buildSeriesFilters();
+  readURL();
+  syncControlsFromState();
+  bind();
+  renderGrid();
+  if (window.lucide) lucide.createIcons();
+});
+</script>
+<!-- ========== UNIQUE PAGE CONTENT END ========== -->
+
+<?php App::render('footer'); ?>

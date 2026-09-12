@@ -1,55 +1,126 @@
 <?php
-$pageTitle = "Battery Care Guide | Hazra Electrical Bike";
-$pageDescription = "Six essential battery routines to maximize range, lifespan, and safety of your Hazra EV Lithium-ion battery.";
+App::render('head', [
+    'pageTitle'       => 'Battery Care Guide | Hazra',
+    'pageDescription' => 'Six simple routines that add years to your battery pack and maximize range on your Hazra electric scooter.',
+    'extraCss'        => ['assets/css/styles/pages/battery-use.css'],
+]);
 
-include __BASEDIR__ . '/app/components/head.php';
-include __BASEDIR__ . '/app/components/header.php';
+App::render('header', ['isStickyOnly' => true]);
 ?>
 
-<main class="page-body">
-  <section class="hero" style="text-align: center; padding: clamp(60px, 9vw, 120px) 26px; background: radial-gradient(circle at 50% 0%, rgb(var(--chip-rgb) / .6), transparent 70%);">
-    <div style="width: min(800px, 93vw); margin: 0 auto;">
-      <span style="font-size: 11px; font-weight: 800; letter-spacing: .2em; color: var(--accent); text-transform: uppercase;">BATTERY HEALTH</span>
-      <h1 class="hero__title" style="font-family: 'Montserrat', sans-serif; font-size: clamp(34px, 4.5vw, 64px); font-weight: 900; margin: 12px 0 20px; line-height: 1.1; color: var(--ink-0);">
-        Battery Care & Maintenance
-      </h1>
-      <p class="hero__lead" style="font-size: clamp(15px, 1.8vw, 18px); color: var(--ink-soft-0); line-height: 1.6;">
-        Simple daily habits to extend your Lithium-ion battery pack lifespan and maintain peak riding range.
-      </p>
-    </div>
-  </section>
+<!-- ========== UNIQUE PAGE CONTENT START ========== -->
+<section class="hero">
+  <h1 class="hero__title">Battery Care Guide</h1>
+  <p class="hero__lead">
+    Six simple routines that add years to your battery pack and maximize range.
+  </p>
+</section>
 
-  <section class="guide" style="padding: clamp(60px, 9vw, 100px) 26px; background: var(--surface-0);">
-    <div style="width: min(1000px, 93vw); margin: 0 auto;">
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
-        
-        <div style="padding: 28px; background: rgb(var(--chip-rgb) / .3); border: 1px solid var(--hair-0); border-radius: 22px;">
-          <div style="width: 44px; height: 44px; border-radius: 12px; background: var(--brand-grad); color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+<section class="guide">
+  <div class="guide__in">
+    <div class="steps">
+      <div class="step" style="--i: 0">
+        <div class="step__body">
+          <div class="step__icon">
             <i data-lucide="plug"></i>
           </div>
-          <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: 800; color: var(--ink-0); margin-bottom: 8px;">1. Charge Between 20%–80%</h3>
-          <p style="font-size: 13.5px; color: var(--ink-soft-0); line-height: 1.6;">Avoid draining the battery to 0%. Plugging in around 20% and unplugging near 80%–90% keeps chemical stress low and doubles cycle life.</p>
+          <div class="step__num">Step 1</div>
+          <h3 class="step__title">Charge Smart</h3>
+          <p class="step__desc">Charge between 20-80% for daily use. Avoid frequent full charges. Use the charger provided—it's matched to your battery.</p>
         </div>
+        <div class="step__img">
+          <img src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Smart Charging">
+        </div>
+      </div>
 
-        <div style="padding: 28px; background: rgb(var(--chip-rgb) / .3); border: 1px solid var(--hair-0); border-radius: 22px;">
-          <div style="width: 44px; height: 44px; border-radius: 12px; background: var(--brand-grad); color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-            <i data-lucide="thermometer-snowflake"></i>
+      <div class="step" style="--i: 1">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="thermometer"></i>
           </div>
-          <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: 800; color: var(--ink-0); margin-bottom: 8px;">2. Thermal Management</h3>
-          <p style="font-size: 13.5px; color: var(--ink-soft-0); line-height: 1.6;">Never charge immediately after a long high-speed ride. Allow the pack to cool down for 20 minutes before plugging in.</p>
+          <div class="step__num">Step 2</div>
+          <h3 class="step__title">Mind the Temperature</h3>
+          <p class="step__desc">Charge in cool, dry environments. Avoid hot and humid places. If your scooter gets too hot during riding, let it cool before charging.</p>
         </div>
+        <div class="step__img">
+          <img src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Temperature Control">
+        </div>
+      </div>
 
-        <div style="padding: 28px; background: rgb(var(--chip-rgb) / .3); border: 1px solid var(--hair-0); border-radius: 22px;">
-          <div style="width: 44px; height: 44px; border-radius: 12px; background: var(--brand-grad); color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+      <div class="step" style="--i: 2">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="calendar"></i>
+          </div>
+          <div class="step__num">Step 3</div>
+          <h3 class="step__title">Regular Use</h3>
+          <p class="step__desc">Ride regularly. Batteries thrive on regular use. If unused for over a month, charge to 50% and store in a cool place.</p>
+        </div>
+        <div class="step__img">
+          <img src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Regular Usage">
+        </div>
+      </div>
+
+      <div class="step" style="--i: 3">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="droplet"></i>
+          </div>
+          <div class="step__num">Step 4</div>
+          <h3 class="step__title">Keep it Dry</h3>
+          <p class="step__desc">Avoid waterlogging. Don't ride through deep puddles or flooded roads. Water damage voids warranty and damages battery health.</p>
+        </div>
+        <div class="step__img">
+          <img src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Water Protection">
+        </div>
+      </div>
+
+      <div class="step" style="--i: 4">
+        <div class="step__body">
+          <div class="step__icon">
+            <i data-lucide="wrench"></i>
+          </div>
+          <div class="step__num">Step 5</div>
+          <h3 class="step__title">Professional Service</h3>
+          <p class="step__desc">Get your battery checked annually at authorized service centers. Preventive maintenance catches issues early and extends life.</p>
+        </div>
+        <div class="step__img">
+          <img src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Professional Service">
+        </div>
+      </div>
+
+      <div class="step" style="--i: 5">
+        <div class="step__body">
+          <div class="step__icon">
             <i data-lucide="shield-check"></i>
           </div>
-          <h3 style="font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: 800; color: var(--ink-0); margin-bottom: 8px;">3. Use Original Charger</h3>
-          <p style="font-size: 13.5px; color: var(--ink-soft-0); line-height: 1.6;">Only use official Hazra EV smart chargers fitted with auto-cut off and over-voltage BMS communication protection.</p>
+          <div class="step__num">Step 6</div>
+          <h3 class="step__title">Know Your Warranty</h3>
+          <p class="step__desc">Register your battery immediately after purchase. Hazra batteries come with 4-5 year warranties. Know the terms and coverage.</p>
         </div>
-
+        <div class="step__img">
+          <img src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Warranty">
+        </div>
       </div>
     </div>
-  </section>
-</main>
+  </div>
+</section>
 
-<?php include __BASEDIR__ . '/app/components/footer.php'; ?>
+<section class="footer" style="padding: 48px 0; text-align: center;">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
+    Follow these tips to maximize battery life and get more from every charge
+  </p>
+  <a class="footer__link" href="<?= e(base_url('index')) ?>">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.lucide) lucide.createIcons();
+});
+</script>
+<!-- ========== UNIQUE PAGE CONTENT END ========== -->
+
+<?php App::render('footer'); ?>

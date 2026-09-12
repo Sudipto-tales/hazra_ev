@@ -93,7 +93,7 @@
           <div class="fcol">
             <h4>Support</h4>
             <a href="<?= e(base_url('our-story')) ?>">FAQs</a>
-            <a href="<?= e(base_url('dealership-enquiry')) ?>">Contact us</a>
+            <a href="<?= e(base_url('contact')) ?>">Contact us</a>
             <a href="<?= e(base_url('dealership-enquiry')) ?>">Register complaint</a>
             <a href="<?= e(base_url('warranty-free')) ?>">Warranty registration</a>
             <a href="<?= e(base_url('warranty-paid')) ?>">Paid warranty</a>

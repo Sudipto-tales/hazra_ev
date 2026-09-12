@@ -66,9 +66,24 @@ class Page extends BaseController
         return $this->respond('/app/page/ev-future.php');
     }
 
+    public function contact()
+    {
+        return $this->respond('/app/page/contact.php');
+    }
+
     public function blog()
     {
         return $this->respond('/app/page/blog.php');
+    }
+
+    public function blogSingle()
+    {
+        return $this->respond('/app/page/blog-single.php');
+    }
+
+    public function newsSingle()
+    {
+        return $this->respond('/app/page/news-single.php');
     }
 
     public function contest()

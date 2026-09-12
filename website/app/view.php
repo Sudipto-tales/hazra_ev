@@ -47,8 +47,17 @@ class ViewRouteProvider extends RouteProvider
             'ev-future' => ['Page', 'evFuture'],
             'ev-future.php' => ['Page', 'evFuture'],
 
+            'contact' => ['Page', 'contact'],
+            'contact.php' => ['Page', 'contact'],
+
             'blog' => ['Page', 'blog'],
             'blog.php' => ['Page', 'blog'],
+
+            'blog-single' => ['Page', 'blogSingle'],
+            'blog-single.php' => ['Page', 'blogSingle'],
+
+            'news-single' => ['Page', 'newsSingle'],
+            'news-single.php' => ['Page', 'newsSingle'],
 
             'contest' => ['Page', 'contest'],
             'contest.php' => ['Page', 'contest'],
