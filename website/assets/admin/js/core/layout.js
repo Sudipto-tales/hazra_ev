@@ -371,20 +371,12 @@
                     <i class="fa-solid fa-chevron-down"></i>
                 </button>
                 <div class="menu hidden" id="accountMenu" role="menu">
-                    <a href="profile" role="menuitem"><i class="fa-solid fa-circle-user"></i> My profile</a>
-                    <a href="profile?tab=security" role="menuitem"><i class="fa-solid fa-key"></i> Change password</a>
-                    <a href="settings" role="menuitem"><i class="fa-solid fa-sliders"></i> Settings</a>
+                    <a href="/admin/profile" role="menuitem"><i class="fa-solid fa-circle-user"></i> My profile</a>
+                    <a href="/admin/profile?tab=security" role="menuitem"><i class="fa-solid fa-key"></i> Change password</a>
+                    <a href="/admin/settings" role="menuitem"><i class="fa-solid fa-sliders"></i> Settings</a>
                     <a href="${SITE}" target="_blank" rel="noopener" role="menuitem"><i class="fa-solid fa-arrow-up-right-from-square"></i> View website</a>
                     <hr>
-                    <!-- "Reset demo data" was here, and is gone with the mock
-                         it emptied. There is no demo data to go back to now,
-                         and a button that would have to mean "delete the
-                         hospital's content" is not a menu item.
-
-                         Sign out is GET /admin/logout — a link, not the API's
-                         CSRF-guarded POST, because a link is what a menu item
-                         is. It ends a session and creates nothing. -->
-                    <a href="logout" class="danger" role="menuitem"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</a>
+                    <a href="/admin/logout" class="danger" role="menuitem"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</a>
                 </div>
             </div>
         </header>`;

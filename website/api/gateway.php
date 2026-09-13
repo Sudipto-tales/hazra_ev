@@ -125,13 +125,16 @@ class ApiGatewayProvider extends RouteProvider
             'DELETE:api/v1/jobs/{id}'       => ['ContentController', 'deleteJob', 'auth'],
 
             // --- Admin Shell Auth & Dashboard -----------------------------
-            'GET:api/v1/admin/me'        => ['AdminAuthController', 'me'],
-            'POST:api/v1/admin/login'    => ['AdminAuthController', 'login'],
-            'POST:api/v1/admin/logout'   => ['AdminAuthController', 'logout'],
-            'GET:api/v1/admin/bootstrap' => ['AdminController', 'bootstrap'],
-            'GET:api/v1/admin/summary'   => ['AdminController', 'summary'],
-            'GET:api/v1/settings'        => ['AdminController', 'getSettings'],
-            'PATCH:api/v1/settings/{group}' => ['AdminController', 'patchSettings'],
+            'GET:api/v1/admin/me'            => ['AdminAuthController', 'me'],
+            'POST:api/v1/admin/me/password'   => ['AdminAuthController', 'changePassword'],
+            'POST:api/v1/admin/login'        => ['AdminAuthController', 'login'],
+            'POST:api/v1/admin/logout'       => ['AdminAuthController', 'logout'],
+            'GET:api/v1/admin/bootstrap'     => ['AdminController', 'bootstrap'],
+            'GET:api/v1/admin/summary'       => ['AdminController', 'summary'],
+            'POST:api/v1/admin/mail/test'    => ['AdminController', 'testMail'],
+            'GET:api/v1/settings'            => ['AdminController', 'getSettings'],
+            'PATCH:api/v1/settings/{group}'  => ['AdminController', 'patchSettings'],
+            'DELETE:api/v1/website/leads/{id}' => ['WebsiteController', 'deleteLead', 'auth'],
 
             // --- Admin Content: Job Applications --------------------------------
             'GET:api/v1/job-applications'           => ['ContentController', 'listApplications',  'auth'],

@@ -84,4 +84,41 @@ final class AdminAuthController extends V1Controller
 
         Envelope::ok(['signedOut' => true]);
     }
+
+    public function changePassword(): never
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (empty($_SESSION['admin_logged_in']) || empty($_SESSION['user_id'])) {
+            Envelope::unauthorized('Admin sign-in required');
+        }
+
+        $body = ApiRequest::body();
+        $currentPassword = (string) ($body['currentPassword'] ?? $body['current_password'] ?? '');
+        $newPassword = (string) ($body['newPassword'] ?? $body['new_password'] ?? '');
+
+        if ($currentPassword === '' || $newPassword === '') {
+            Envelope::invalid('Current password and new password are required');
+        }
+
+        if (strlen($newPassword) < 6) {
+            Envelope::invalid('New password must be at least 6 characters long', 'newPassword');
+        }
+
+        $userId = $_SESSION['user_id'];
+        $user = db_fetch_one("SELECT * FROM users WHERE id = ?", [$userId]);
+
+        if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+            Envelope::fail('INVALID_PASSWORD', 'Current password is incorrect', 400);
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $now = Wire::now();
+
+        db_execute("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?", [$newHash, $now, $userId]);
+
+        Envelope::ok(['message' => 'Password updated successfully']);
+    }
 }

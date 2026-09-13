@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../support/V1Controller.php';
 require_once __BASEDIR__ . '/core/Mailer.php';
+require_once __BASEDIR__ . '/core/EmailService.php';
 
 final class WebsiteController extends V1Controller
 {
@@ -128,7 +129,13 @@ final class WebsiteController extends V1Controller
     {
         $body = ApiRequest::body();
 
-        $type  = Wire::enumIn((string) ($body['type'] ?? 'contact'), ['contact', 'test_ride', 'dealer']) ?? 'contact';
+        $rawType = (string) ($body['type'] ?? 'contact');
+        $type = match ($rawType) {
+            'test_drive', 'test_ride', 'test-drive' => 'test_drive',
+            'dealership', 'dealer', 'dealership_enquiry' => 'dealership',
+            default => 'contact',
+        };
+
         $name  = trim((string) ($body['name'] ?? $body['owner'] ?? $body['fullName'] ?? ''));
         $phone = trim((string) ($body['phone'] ?? $body['mobile'] ?? ''));
         $email = trim((string) ($body['email'] ?? ''));
@@ -147,29 +154,19 @@ final class WebsiteController extends V1Controller
             [$id, $type, $name, $phone, $email, $detailsJson, $now, $now]
         );
 
-        // Try to dispatch notification email to site admins if SMTP configured
-        try {
-            $recipientsStr = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'recipient_emails'")['setting_value'] ?? '';
-            if ($recipientsStr) {
-                $recipients = array_filter(array_map('trim', explode(',', $recipientsStr)));
-                $subject = "New " . strtoupper($type) . " Lead: " . ($name ?: $phone);
-                $bodyText = "You have received a new inquiry on Hazra EV Website:\n\n" .
-                            "Type: {$type}\n" .
-                            "Name: {$name}\n" .
-                            "Phone: {$phone}\n" .
-                            "Email: {$email}\n" .
-                            "Details:\n" . json_encode($body, JSON_PRETTY_PRINT) . "\n\n" .
-                            "Submitted at: {$now}";
-                foreach ($recipients as $recipient) {
-                    if (filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
-                        Mailer::send($recipient, $subject, $bodyText);
-                    }
-                }
-            }
-        } catch (Throwable $e) {
-            // Log or ignore email failures so lead submission succeeds
-            error_log("Lead mailer error: " . $e->getMessage());
-        }
+        $leadRecord = [
+            'id' => $id,
+            'type' => $type,
+            'name' => $name,
+            'phone' => $phone,
+            'email' => $email,
+            'details' => $body,
+            'status' => 'new',
+            'created_at' => $now,
+        ];
+
+        // Trigger email notification
+        EmailService::notifyNewLead($leadRecord);
 
         Envelope::created([
             'id' => $id,
@@ -185,14 +182,22 @@ final class WebsiteController extends V1Controller
         $where = ['1=1'];
         $params = [];
 
-        if ($type = Wire::enumIn((string) $this->query('type', ''), ['contact', 'test_ride', 'dealer'])) {
-            $where[] = 'type = ?';
-            $params[] = $type;
+        $typeQuery = (string) $this->query('type', '');
+        if ($typeQuery !== '') {
+            if (in_array($typeQuery, ['test_drive', 'test_ride', 'test-drive'], true)) {
+                $where[] = "type IN ('test_drive', 'test_ride', 'test-drive')";
+            } elseif (in_array($typeQuery, ['dealership', 'dealer', 'dealership_enquiry'], true)) {
+                $where[] = "type IN ('dealership', 'dealer', 'dealership_enquiry')";
+            } else {
+                $where[] = 'type = ?';
+                $params[] = $typeQuery;
+            }
         }
 
-        if ($status = Wire::enumIn((string) $this->query('status', ''), ['new', 'read', 'archived', 'contacted'])) {
+        $statusQuery = (string) $this->query('status', '');
+        if ($statusQuery !== '' && $statusQuery !== 'all') {
             $where[] = 'status = ?';
-            $params[] = $status;
+            $params[] = $statusQuery;
         }
 
         $clause = implode(' AND ', $where);
@@ -203,7 +208,10 @@ final class WebsiteController extends V1Controller
         );
 
         $leads = array_map(function ($r) {
-            $r['details'] = json_decode($r['details_json'], true) ?? [];
+            $r['details'] = json_decode($r['details_json'] ?? '{}', true) ?? [];
+            $r['subject'] = $r['details']['subject'] ?? $r['details']['model'] ?? ucwords(str_replace('_', ' ', $r['type'])) . ' Enquiry';
+            $r['message'] = $r['details']['message'] ?? $r['details']['city'] ?? $r['phone'] ?? '';
+            $r['receivedAt'] = $r['created_at'];
             return $r;
         }, $rows);
 
@@ -218,23 +226,61 @@ final class WebsiteController extends V1Controller
         $id = (string) $this->param('id');
         $body = ApiRequest::body();
 
-        $status = Wire::enumIn((string) ($body['status'] ?? ''), ['new', 'read', 'archived', 'contacted']);
-
-        if (!$status) {
-            Envelope::invalid('Valid status (new, read, archived, contacted) is required');
-        }
-
-        $now = Wire::now();
-
-        $updated = db_execute(
-            "UPDATE website_leads SET status = ?, updated_at = ? WHERE id = ?",
-            [$status, $now, $id]
-        );
-
-        if (!$updated) {
+        $existing = db_fetch_one("SELECT * FROM website_leads WHERE id = ?", [$id]);
+        if (!$existing) {
             Envelope::notFound('Lead not found');
         }
 
-        Envelope::ok(['id' => $id, 'status' => $status, 'updated_at' => $now]);
+        $status = Wire::enumIn((string) ($body['status'] ?? $existing['status']), ['new', 'read', 'archived', 'contacted', 'approved', 'rejected', 'replied', 'closed', 'spam']) ?? $existing['status'];
+        $scheduledAt = isset($body['scheduled_at']) ? (string)$body['scheduled_at'] : ($existing['scheduled_at'] ?? null);
+        $adminNote = isset($body['admin_note']) ? (string)$body['admin_note'] : ($existing['admin_note'] ?? null);
+
+        $now = Wire::now();
+
+        try {
+            db_execute(
+                "UPDATE website_leads SET status = ?, scheduled_at = ?, admin_note = ?, updated_at = ? WHERE id = ?",
+                [$status, $scheduledAt, $adminNote, $now, $id]
+            );
+        } catch (\Throwable $e) {
+            // Fallback if migration 017 hasn't run yet
+            db_execute(
+                "UPDATE website_leads SET status = ?, updated_at = ? WHERE id = ?",
+                [$status, $now, $id]
+            );
+        }
+
+        $updatedLead = array_merge($existing, [
+            'status' => $status,
+            'scheduled_at' => $scheduledAt,
+            'admin_note' => $adminNote,
+            'updated_at' => $now,
+            'details' => json_decode($existing['details_json'] ?? '{}', true) ?? [],
+        ]);
+
+        if ($status === 'approved' && $existing['status'] !== 'approved') {
+            EmailService::notifyLeadApproved($updatedLead);
+        } elseif ($status === 'rejected' && $existing['status'] !== 'rejected') {
+            EmailService::notifyLeadRejected($updatedLead);
+        }
+
+        Envelope::ok($updatedLead);
+    }
+
+    /** DELETE /api/v1/website/leads/{id} (Admin only) */
+    public function deleteLead(): never
+    {
+        $this->requireAdmin();
+
+        $id = (string) $this->param('id');
+        $existing = db_fetch_one("SELECT * FROM website_leads WHERE id = ?", [$id]);
+
+        if (!$existing) {
+            Envelope::notFound('Lead not found');
+        }
+
+        db_execute("DELETE FROM website_leads WHERE id = ?", [$id]);
+
+        Envelope::ok(['deleted' => true, 'id' => $id]);
     }
 }

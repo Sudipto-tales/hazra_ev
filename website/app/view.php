@@ -96,6 +96,8 @@ class ViewRouteProvider extends RouteProvider
             'admin/dealership' => ['Page', 'adminDealership'],
             'admin/contact' => ['Page', 'adminContact'],
             'admin/settings' => ['Page', 'adminSettings'],
+            'admin/profile' => ['Page', 'adminProfile'],
+            'admin/profile.php' => ['Page', 'adminProfile'],
         ];
     }
 }

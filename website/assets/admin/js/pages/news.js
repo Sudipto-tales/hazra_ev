@@ -14,7 +14,11 @@
             actions: `<a class="btn btn--primary" href="news-form"><i class="fa-solid fa-plus"></i> New News Article</a>`,
         });
 
-        document.getElementById('view').innerHTML = `<div id="listCard"></div>`;
+        document.getElementById('view').innerHTML = `
+            <div id="statStrip" class="mb-4"></div>
+            <div id="listCard"></div>`;
+
+        paintStats();
 
         const list = table.create({
             mount: '#listCard',
@@ -64,5 +68,21 @@
             ],
             onRowClick: (row) => { location.href = `news-form?id=${encodeURIComponent(row.id)}`; },
         });
+    }
+
+    async function paintStats() {
+        const rows = await store.all('news');
+        const total = rows.length;
+        const published = rows.filter(r => r.status === 'published').length;
+        const draft = rows.filter(r => r.status === 'draft').length;
+
+        const slot = document.getElementById('statStrip');
+        if (slot) {
+            slot.innerHTML = U.statStrip([
+                ['fa-newspaper', 'blue', total, 'News Articles', 'Press updates'],
+                ['fa-bullhorn', 'navy', published, 'Published', 'Live on site'],
+                ['fa-file-lines', 'warn', draft, 'Drafts', 'Unpublished'],
+            ]);
+        }
     }
 }());

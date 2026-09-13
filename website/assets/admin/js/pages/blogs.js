@@ -17,7 +17,11 @@
                     <i class="fa-solid fa-plus"></i> New Blog Post</a>`,
         });
 
-        document.getElementById('view').innerHTML = `<div id="listCard"></div>`;
+        document.getElementById('view').innerHTML = `
+            <div id="statStrip" class="mb-4"></div>
+            <div id="listCard"></div>`;
+
+        paintStats();
 
         const list = table.create({
             mount: '#listCard',
@@ -67,5 +71,21 @@
             ],
             onRowClick: (row) => { location.href = `blog-form?id=${encodeURIComponent(row.id)}`; },
         });
+    }
+
+    async function paintStats() {
+        const rows = await store.all('blogs');
+        const total = rows.length;
+        const published = rows.filter(r => r.status === 'published').length;
+        const draft = rows.filter(r => r.status === 'draft').length;
+
+        const slot = document.getElementById('statStrip');
+        if (slot) {
+            slot.innerHTML = U.statStrip([
+                ['fa-pen-nib', 'navy', total, 'Total Blogs', 'Articles on record'],
+                ['fa-globe', 'blue', published, 'Published', 'Live on website'],
+                ['fa-file-pen', 'warn', draft, 'Drafts', 'In progress'],
+            ]);
+        }
     }
 }());

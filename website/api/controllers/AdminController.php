@@ -45,32 +45,22 @@ final class AdminController extends V1Controller
         ]);
     }
 
-    // public function bootstrap(): never
-    // {
-    //     $this->requireAdminSession();
-
-    //     Envelope::ok([
-    //         'products' => db_fetch_all("SELECT * FROM products WHERE active = 1 ORDER BY created_at DESC") ?? [],
-    //         'posts' => db_fetch_all("SELECT * FROM posts ORDER BY created_at DESC") ?? [],
-    //         'jobs' => db_fetch_all("SELECT * FROM jobs ORDER BY created_at DESC") ?? [],
-    //     ]);
-    // }
     public function bootstrap(): never
-{
-    $this->requireAdminSession();
+    {
+        $this->requireAdminSession();
 
-    Envelope::ok([
-        'products' => db_fetch_all(
-            "SELECT * FROM products WHERE active = 1 ORDER BY updated_at DESC"
-        ) ?? [],
-        'posts' => db_fetch_all(
-            "SELECT * FROM posts ORDER BY created_at DESC"
-        ) ?? [],
-        'jobs' => db_fetch_all(
-            "SELECT * FROM jobs ORDER BY created_at DESC"
-        ) ?? [],
-    ]);
-}
+        Envelope::ok([
+            'products' => db_fetch_all(
+                "SELECT * FROM products WHERE active = 1 ORDER BY updated_at DESC"
+            ) ?? [],
+            'posts' => db_fetch_all(
+                "SELECT * FROM posts ORDER BY created_at DESC"
+            ) ?? [],
+            'jobs' => db_fetch_all(
+                "SELECT * FROM jobs ORDER BY created_at DESC"
+            ) ?? [],
+        ]);
+    }
 
     public function getSettings(): never
     {
@@ -133,5 +123,26 @@ final class AdminController extends V1Controller
         }
 
         Envelope::ok($body ?? []);
+    }
+
+    public function testMail(): never
+    {
+        $this->requireAdminSession();
+
+        $body = ApiRequest::body();
+        $target = trim((string) ($body['email'] ?? ''));
+
+        if (!$target || !filter_var($target, FILTER_VALIDATE_EMAIL)) {
+            Envelope::invalid('A valid recipient email address is required', 'email');
+        }
+
+        require_once __BASEDIR__ . '/core/Mailer.php';
+
+        try {
+            Mailer::send($target, "Test Email from Hazra EV Admin", "This is a test email sent from your Hazra EV Admin Panel. Your SMTP settings are working correctly!");
+            Envelope::ok(['message' => "Test email successfully sent to {$target}"]);
+        } catch (\Throwable $e) {
+            Envelope::fail('MAIL_ERROR', 'Failed to send test email: ' . $e->getMessage(), 400);
+        }
     }
 }

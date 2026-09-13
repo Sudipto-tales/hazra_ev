@@ -31,7 +31,7 @@
             entity: 'products',
             searchFields: ['name', 'model_code', 'category', 'brand'],
             searchPlaceholder: 'Search products by name or model code',
-            sort: 'created_at',
+            sort: 'updated_at',
             empty: {
                 icon: 'fa-charging-station',
                 title: 'No products found',
@@ -110,20 +110,14 @@
         const rows = await store.all('products');
         const total = rows.length;
         const featured = rows.filter(r => r.is_featured).length;
+        const scooties = rows.filter(r => (r.category || '').toLowerCase() === 'scooty').length;
+        const others = total - scooties;
 
-        document.getElementById('statStrip').innerHTML = `
-            <article class="card stat anim-item">
-                <div class="stat__icon navy"><i class="fa-solid fa-charging-station"></i></div>
-                <h3>${total}</h3>
-                <p>Total Products</p>
-                <span class="delta flat">In database</span>
-            </article>
-            <article class="card stat anim-item">
-                <div class="stat__icon blue"><i class="fa-solid fa-star"></i></div>
-                <h3>${featured}</h3>
-                <p>Featured Products</p>
-                <span class="delta flat">Shown on home slider</span>
-            </article>
-        `;
+        document.getElementById('statStrip').innerHTML = U.statStrip([
+            ['fa-charging-station', 'navy', total, 'Total Products', 'In database'],
+            ['fa-star', 'blue', featured, 'Featured Models', 'Home slider'],
+            ['fa-motorcycle', 'red', scooties, 'Scooters', 'E-scooty lineup'],
+            ['fa-bicycle', 'magenta', others, 'Other Models', 'Bikes & custom'],
+        ]);
     }
 }());

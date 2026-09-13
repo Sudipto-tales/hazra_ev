@@ -117,26 +117,16 @@
         const total = apps.length;
         const newCount = apps.filter((a) => a.status === 'new' || !a.status).length;
         const shortlisted = apps.filter((a) => a.status === 'shortlisted').length;
+        const rejected = apps.filter((a) => a.status === 'rejected').length;
 
-        document.getElementById('statStrip').innerHTML = `
-            <article class="card stat anim-item">
-                <div class="stat__icon navy"><i class="fa-solid fa-users"></i></div>
-                <h3>${total}</h3>
-                <p>Total Applications</p>
-                <span class="delta flat">All time</span>
-            </article>
-            <article class="card stat anim-item">
-                <div class="stat__icon blue"><i class="fa-solid fa-user-clock"></i></div>
-                <h3>${newCount}</h3>
-                <p>New Applications</p>
-                <span class="delta flat">Pending review</span>
-            </article>
-            <article class="card stat anim-item">
-                <div class="stat__icon green"><i class="fa-solid fa-user-check"></i></div>
-                <h3>${shortlisted}</h3>
-                <p>Shortlisted</p>
-                <span class="delta flat">Candidates selected</span>
-            </article>
-        `;
+        const slot = document.getElementById('statStrip');
+        if (slot) {
+            slot.innerHTML = U.statStrip([
+                ['fa-file-signature', 'red', total, 'Total Applications', 'All time candidates'],
+                ['fa-user-clock', 'warn', newCount, 'New Applications', 'Pending review'],
+                ['fa-user-check', 'blue', shortlisted, 'Shortlisted', 'Selected candidates'],
+                ['fa-user-xmark', 'navy', rejected, 'Rejected', 'Not selected'],
+            ]);
+        }
     }
 }());

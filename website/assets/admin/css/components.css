@@ -467,10 +467,18 @@ body[data-page="login"] .adm-auth__submit {
 /* =========================================================
    STAT CARD
    ========================================================= */
+.grid-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
 .stat {
     display: flex;
     flex-direction: column;
-    gap: var(--s2);
+    gap: var(--s1, 4px);
+    padding: 18px 20px;
 }
 
 /* Tinted disc, coloured glyph — a fleet of gradient-filled tiles fights the

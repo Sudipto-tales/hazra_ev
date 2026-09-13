@@ -319,7 +319,7 @@
                 return;
             }
 
-            me = await session.changePassword(me.id, data.newPassword);
+            me = await session.changePassword(me.id, data.newPassword, data.currentPassword);
 
             /* Emptied by hand rather than through validate(), which would
                immediately mark all three as required again. */

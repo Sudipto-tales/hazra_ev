@@ -231,4 +231,10 @@ class Page extends BaseController
         $this->guardAdmin();
         return $this->respond('/app/page/admin/settings.php');
     }
+
+    public function adminProfile()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/profile.php');
+    }
 }

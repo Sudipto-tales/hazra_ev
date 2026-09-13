@@ -1,110 +1,89 @@
-/* Contact Enquiries — filtered enquiries list. */
+/* Contact Enquiries — list & message management. */
 (function () {
     'use strict';
 
     const { util: U, store, table, layout, toast, confirm: confirmDialog } = window.HAZRA;
 
     const STATUS = [
-        { value: 'all', label: 'All' },
+        { value: 'all', label: 'All Statuses' },
         { value: 'new', label: 'New' },
-        { value: 'replied', label: 'Replied' },
-        { value: 'closed', label: 'Closed' },
-        { value: 'spam', label: 'Spam' },
+        { value: 'contacted', label: 'Contacted' },
+        { value: 'read', label: 'Read' },
+        { value: 'archived', label: 'Archived' },
     ];
 
     const TONE = {
-        new: 'warn', replied: 'info', closed: 'ok', spam: 'off',
+        new: 'warn', contacted: 'info', read: 'ok', archived: 'off',
     };
 
     let list = null;
-    let users = [];
 
     window.HAZRA.boot(init);
 
     async function init() {
-        users = (await store.all('users')).filter((u) => u.status !== 'hidden');
-
         document.getElementById('pageHead').innerHTML = layout.pageHead({
             crumb: [{ label: 'Leads' }, { label: 'Contact' }],
             title: 'Contact Enquiries',
-            sub: 'Contact form submissions from the website.',
+            sub: 'Contact form submissions and messages received from the website.',
             actions: `
-                <a class="btn btn--ghost" href="settings-contact">
-                    <i class="fa-solid fa-bell"></i> Who gets notified</a>`,
+                <a class="btn btn--ghost" href="/admin/settings">
+                    <i class="fa-solid fa-sliders"></i> Email Rules</a>`,
         });
 
-        document.getElementById('view').innerHTML = `<article class="card card--flush" id="listCard"></article>`;
+        document.getElementById('view').innerHTML = `
+            <div id="statStrip" class="mb-4"></div>
+            <article class="card card--flush" id="listCard"></article>`;
+
+        paintStats();
 
         list = table.create({
             mount: '#listCard',
-            entity: 'enquiries',
-            searchFields: ['name', 'email', 'phone', 'subject', 'message'],
-            searchPlaceholder: 'Search name, subject or message',
+            entity: 'contact',
+            searchFields: ['name', 'email', 'phone', 'details'],
+            searchPlaceholder: 'Search name, subject, phone or email',
             statusOptions: STATUS,
-            filters: [
-                { key: 'source', label: 'Source', options: [{ value: 'contact', label: 'Contact Form' }] },
-                {
-                    key: 'assignedTo',
-                    label: 'Assigned',
-                    options: [{ value: '__none', label: 'Unassigned' }]
-                        .concat(users.map((u) => ({ value: u.id, label: u.name }))),
-                    match: (r, v) => (v === '__none' ? !r.assignedTo : r.assignedTo === v),
-                },
-            ],
-            sort: 'receivedAt',
+            sort: 'created_at',
             dir: 'desc',
             rowClass: (r) => (r.status === 'new' ? 'is-unread' : ''),
             columns: [
                 {
-                    label: 'From', sort: 'name', width: '22%',
+                    label: 'From', sort: 'name', width: '25%',
                     render: (r, s) => `
                         <div class="cell-media">
-                            <span class="avatar" style="display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-mid)">${U.esc(U.initials(r.name))}</span>
+                            <span class="avatar" style="display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-mid);background:var(--surface-3);border-radius:50%;width:32px;height:32px;">${U.esc(U.initials(r.name || 'CE'))}</span>
                             <span>
-                                <span class="cell-main">${U.mark(r.name, s.q)}</span>
-                                <span class="cell-sub">${U.esc(r.email || r.phone || 'No contact given')}</span>
+                                <span class="cell-main">${U.mark(r.name || 'Anonymous', s.q)}</span>
+                                <span class="cell-sub">${U.esc(r.email || r.phone || 'No contact')}</span>
                             </span>
                         </div>`,
                 },
                 {
-                    label: 'Message', sort: 'subject', width: '30%',
-                    render: (r, s) => `
-                        <span class="cell-main">${r.priority === 'high' ? '<i class="fa-solid fa-circle-exclamation" style="color:var(--accent-orange)" title="High priority"></i> ' : ''}${U.mark(r.subject, s.q)}</span>
-                        <span class="cell-sub clamp-2">${U.esc(r.message)}</span>`,
-                },
-                {
-                    label: 'Assigned', sort: 'assignedTo', width: '15%',
-                    render: (r) => {
-                        const u = users.find((x) => x.id === r.assignedTo);
-                        return u ? U.esc(u.name) : '<span class="muted">Unassigned</span>';
+                    label: 'Message / Subject', width: '35%',
+                    render: (r, s) => {
+                        const d = r.details || {};
+                        const subject = d.subject || r.subject || 'General Inquiry';
+                        const msg = d.message || r.message || d.comments || '';
+                        return `
+                            <span class="cell-main">${U.mark(subject, s.q)}</span>
+                            ${msg ? `<span class="cell-sub clamp-2">${U.esc(msg)}</span>` : ''}`;
                     },
                 },
                 {
-                    label: 'Received', sort: 'receivedAt', width: '15%',
-                    render: (r) => `<span title="${U.esc(U.fmtDateTime(r.receivedAt))}">${U.esc(U.ago(r.receivedAt))}</span>`,
+                    label: 'Received', sort: 'created_at', width: '15%',
+                    render: (r) => `<span title="${U.esc(U.fmtDateTime(r.created_at))}">${U.esc(U.ago(r.created_at))}</span>`,
                 },
                 {
-                    label: 'Status', sort: 'status', width: '12%',
+                    label: 'Status', sort: 'status', width: '13%',
                     render: (r) => statusTag(r.status),
                 },
             ],
             rowActions: (row) => [
-                { label: 'Open', icon: 'fa-envelope-open', onClick: () => open(row) },
-                { label: 'Reply', icon: 'fa-reply', onClick: () => open(row, true) },
-                { divider: true },
-                ...(row.assignedTo === 'usr-001'
-                    ? []
-                    : [{ label: 'Assign to me', icon: 'fa-user-check', onClick: () => assign(row, 'usr-001') }]),
-                ...(row.status === 'closed'
-                    ? [{ label: 'Reopen', icon: 'fa-rotate-left', onClick: () => setStatus(row, 'new') }]
-                    : [{ label: 'Mark closed', icon: 'fa-circle-check', onClick: () => setStatus(row, 'closed') }]),
-                ...(row.status === 'spam'
-                    ? [{ label: 'Not spam', icon: 'fa-inbox', onClick: () => setStatus(row, 'new') }]
-                    : [{ label: 'Mark spam', icon: 'fa-ban', onClick: () => setStatus(row, 'spam') }]),
+                { label: 'Mark Contacted', icon: 'fa-phone', onClick: () => updateStatus(row, 'contacted') },
+                { label: 'Mark Read', icon: 'fa-check', onClick: () => updateStatus(row, 'read') },
+                { label: 'Archive', icon: 'fa-box-archive', onClick: () => updateStatus(row, 'archived') },
                 { divider: true },
                 { label: 'Delete', icon: 'fa-trash', danger: true, onClick: () => remove(row) },
             ],
-            onRowClick: (row) => open(row),
             empty: {
                 icon: 'fa-envelope', title: 'No contact enquiries',
                 text: 'Contact form submissions will appear here.',
@@ -114,56 +93,54 @@
 
     function statusTag(status) {
         const s = STATUS.find((x) => x.value === status);
-        return `<span class="tag ${TONE[status] || 'off'}">${U.esc(s ? s.label : status || 'Unknown')}</span>`;
+        const label = s ? s.label : (status ? status.toUpperCase() : 'NEW');
+        return `<span class="tag ${TONE[status] || 'off'}">${U.esc(label)}</span>`;
     }
 
-    function open(row, reply) {
-        window.location.href = `enquiry-view?id=${encodeURIComponent(row.id)}${reply ? '&reply=1' : ''}`;
-    }
-
-    async function setStatus(row, status) {
-        await store.update('enquiries', row.id, { status });
-        const label = (STATUS.find((s) => s.value === status) || {}).label;
-        toast.success(`${row.name} marked ${String(label).toLowerCase()}`, {
-            undo: async () => {
-                await store.update('enquiries', row.id, { status: row.status });
-                toast.success('Reverted');
-                list.load();
-            },
-        });
-        list.load();
-    }
-
-    async function assign(row, userId) {
-        const user = users.find((u) => u.id === userId);
-        await store.update('enquiries', row.id, { assignedTo: userId });
-        toast.success(`Assigned to ${user ? user.name : 'nobody'}`, {
-            undo: async () => {
-                await store.update('enquiries', row.id, { assignedTo: row.assignedTo || '' });
-                toast.success('Assignment reverted');
-                list.load();
-            },
-        });
-        list.load();
+    async function updateStatus(row, status) {
+        try {
+            await store.update('contact', row.id, { status });
+            toast.success(`Enquiry marked ${status}`);
+            list.load();
+        } catch (err) {
+            toast.error('Failed to update status: ' + (err.message || 'Error'));
+        }
     }
 
     async function remove(row) {
         const ok = await confirmDialog({
-            title: 'Delete this contact enquiry?',
-            body: `${row.name} — "${row.subject}". The message and its replies go with it.`,
+            title: 'Delete contact enquiry?',
+            body: `Delete enquiry from ${row.name || 'Customer'}. This action cannot be undone.`,
             danger: true,
-            confirmLabel: 'Delete',
+            confirmLabel: 'Delete Permanently',
         });
         if (!ok) return;
 
-        const removed = await store.remove('enquiries', row.id);
-        toast.success('Contact enquiry deleted', {
-            undo: async () => {
-                await store.restore('enquiries', removed.row, removed.index);
-                toast.success('Restored');
-                list.load();
-            },
-        });
-        list.load();
+        try {
+            await store.remove('contact', row.id);
+            toast.success('Contact enquiry deleted');
+            list.load();
+            paintStats();
+        } catch (err) {
+            toast.error('Failed to delete enquiry: ' + (err.message || 'Error'));
+        }
+    }
+
+    async function paintStats() {
+        const rows = await store.all('contact');
+        const total = rows.length;
+        const pending = rows.filter(r => r.status === 'new').length;
+        const contacted = rows.filter(r => r.status === 'contacted').length;
+        const read = rows.filter(r => r.status === 'read' || r.status === 'archived').length;
+
+        const slot = document.getElementById('statStrip');
+        if (slot) {
+            slot.innerHTML = U.statStrip([
+                ['fa-envelope', 'red', total, 'Total Enquiries', 'Website form submissions'],
+                ['fa-circle-exclamation', 'warn', pending, 'New Messages', 'Needs response'],
+                ['fa-reply', 'navy', contacted, 'Contacted', 'Replied to customer'],
+                ['fa-box-archive', 'blue', read, 'Read / Archived', 'Processed'],
+            ]);
+        }
     }
 }());

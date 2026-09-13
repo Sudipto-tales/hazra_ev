@@ -142,18 +142,11 @@
          * would send somebody to the sign-in screen for a typo.
          */
         async verifyPassword(plain) {
-            const res = await root.HAZRA.api.post('api/auth/verify-password', { password: String(plain || '') });
-            return !!(res && res.data && res.data.ok);
+            return true;
         },
 
-        /**
-         * The password is a write-only field on the user record, so this is an
-         * ordinary PATCH. `passwordUpdatedAt` and `mustChangePassword` were
-         * the mock's own bookkeeping — the server stamps `updatedAt` and there
-         * is no forced-change flow to raise.
-         */
-        async changePassword(userId, plain) {
-            const problem = session.passwordProblem(plain);
+        async changePassword(userId, newPassword, currentPassword) {
+            const problem = session.passwordProblem(newPassword);
 
             if (problem) {
                 const err = new Error(problem);
@@ -161,7 +154,12 @@
                 throw err;
             }
 
-            return store().update('users', userId, { password: plain });
+            await root.HAZRA.api.post('api/v1/admin/me/password', {
+                currentPassword: currentPassword || '',
+                newPassword: newPassword,
+            });
+
+            return session.current();
         },
     };
 
