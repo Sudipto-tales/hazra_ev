@@ -29,7 +29,7 @@
             name: '',
             brand: 'Hazra EV',
             model_code: '',
-            category: 'High Speed',
+            category: 'scooty',
             range_km: '100',
             top_speed_kmph: '65',
             battery_capacity: '72V 30Ah',
@@ -51,7 +51,12 @@
                 { name: 'brand', label: 'Brand', type: 'text', required: true },
                 { name: 'model_code', label: 'Model Code', type: 'text', required: true },
                 { name: 'slug', label: 'URL Slug', type: 'text' },
-                { name: 'category', label: 'Category', type: 'select', options: ['High Speed', 'Low Speed', 'Eco'] },
+                { name: 'category', label: 'Category', type: 'select', options: [
+                    { value: 'scooty', label: 'Scooty' },
+                    { value: 'bike', label: 'Bike' },
+                    { value: 'bicycle', label: 'E-Bicycle' },
+                    { value: 'others', label: 'Others' }
+                ] },
                 { name: 'range_km', label: 'Range (km)', type: 'text' },
                 { name: 'top_speed_kmph', label: 'Top Speed (km/h)', type: 'text' },
                 { name: 'battery_capacity', label: 'Battery Capacity', type: 'text' },
@@ -64,6 +69,16 @@
                 { name: 'status', label: 'Status', type: 'select', options: ['published', 'draft', 'hidden'] },
             ],
             onSave: async (data) => {
+                data.modelCode = data.model_code || data.modelCode;
+                data.rangeKm = parseInt(data.range_km || data.rangeKm || 0, 10);
+                data.topSpeedKmph = parseInt(data.top_speed_kmph || data.topSpeedKmph || 0, 10);
+                data.warrantyYears = parseInt(data.warranty_years || data.warrantyYears || 0, 10);
+                data.batteryCapacity = data.battery_capacity || data.batteryCapacity || '';
+                data.motorPower = data.motor_power || data.motorPower || '';
+                data.warrantyNote = data.warranty_note || data.warrantyNote || '';
+                if (!data.colors || !data.colors.length) {
+                    data.colors = [{ name: 'Default', argb: 0, inStock: true, imageUrls: [] }];
+                }
                 if (isEdit) {
                     await store.update('products', id, data);
                     toast.success('Product updated');

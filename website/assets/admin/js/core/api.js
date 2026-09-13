@@ -148,6 +148,7 @@ const PATHS = {
     gallery: 'api/v1/gallery',
     media: 'api/v1/gallery',      // gallery.js uses 'media'
     jobs: 'api/v1/jobs',
+    users: 'api/v1/employees',
     'test-drive': 'api/v1/website/leads',
     dealership: 'api/v1/website/leads',
     contact: 'api/v1/website/leads',
@@ -224,9 +225,12 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
      * thing most of them do is read a lookup collection synchronously.
      */
     function boot(fn) {
-        /* The rejection is already reported and painted by the handler above;
-           swallowing it here only stops a second unhandled one per screen. */
-        const start = () => { ready.then(fn).catch(() => {}); };
+        /* Log errors occurring inside mount() or init() during page initialization */
+        const start = () => {
+            ready.then(fn).catch((err) => {
+                console.error('[boot] page init failed', err);
+            });
+        };
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', start);
@@ -312,10 +316,15 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
             const query = { pageSize: 0 };
             if (POST_TYPE[entity]) query.type = POST_TYPE[entity];
             if (LEAD_TYPE[entity]) query.type = LEAD_TYPE[entity];
-            // enquiries = all leads (no type filter)
-            const res = await get(pathFor(entity), query);
-            cache[entity] = res.data || [];
-            return clone(cache[entity]);
+            try {
+                const res = await get(pathFor(entity), query);
+                cache[entity] = res.data || [];
+                return clone(cache[entity]);
+            } catch (err) {
+                console.warn('[store.all] Failed to load entity', entity, err);
+                cache[entity] = cache[entity] || [];
+                return clone(cache[entity]);
+            }
         },
 
         /**
@@ -570,10 +579,10 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
         },
     };
 
-    root.TMH = root.TMH || {};
-    root.TMH.store = store;
-    root.TMH.boot = boot;
-    root.TMH.api = {
+    root.HAZRA = root.HAZRA || {};
+    root.HAZRA.store = store;
+    root.HAZRA.boot = boot;
+    root.HAZRA.api = {
         request, get, post, patch, del, base: BASE, ready,
         /* {user, permissions}, as GET /api/auth/me answered at boot. Read
            rather than pushed, so api.js does not have to know that session.js
@@ -582,4 +591,5 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
            got wrong. */
         me: () => identity,
     };
+    root.TMH = root.HAZRA;
 }(window));

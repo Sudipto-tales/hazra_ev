@@ -37,6 +37,17 @@ final class JwtAuth
         $token = ApiRequest::bearerToken();
 
         if (!$token) {
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            if (!empty($_SESSION['logged_in']) || !empty($_SESSION['admin_logged_in'])) {
+                return [
+                    'sub' => $_SESSION['user_id'] ?? 'usr-admin-01',
+                    'role' => $_SESSION['user_role'] ?? 'admin',
+                    'email' => $_SESSION['user_email'] ?? '',
+                    'name' => $_SESSION['user_name'] ?? '',
+                ];
+            }
             return false;
         }
 
