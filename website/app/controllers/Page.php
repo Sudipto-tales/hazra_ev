@@ -71,6 +71,11 @@ class Page extends BaseController
         return $this->respond('/app/page/contact.php');
     }
 
+    public function gallery()
+    {
+        return $this->respond('/app/page/gallery.php');
+    }
+
     public function blog()
     {
         return $this->respond('/app/page/blog.php');

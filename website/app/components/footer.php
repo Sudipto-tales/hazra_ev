@@ -85,6 +85,7 @@
           <div class="fcol">
             <h4>Company</h4>
             <a href="<?= e(base_url('our-story')) ?>">Our story</a>
+            <a href="<?= e(base_url('gallery')) ?>">Gallery</a>
             <a href="<?= e(base_url('blog')) ?>">Blog</a>
             <a href="<?= e(base_url('ev-future')) ?>">News & Insights</a>
             <a href="<?= e(base_url('career')) ?>">Careers</a>

@@ -118,7 +118,8 @@
             <div class="tile__foot">
                 ${U.statusTag(row.status)}
                 <span class="pill pill--soft"><i class="fa-${row.type === 'youtube' ? 'brands' : 'solid'} ${U.esc(kind.icon)}"></i> ${U.esc(kind.label)}</span>
-                ${row.album ? `<span class="pill pill--soft"><i class="fa-solid fa-folder"></i> ${U.esc(row.album)}</span>` : ''}
+                ${row.category || row.album ? `<span class="pill pill--soft"><i class="fa-solid fa-folder"></i> ${U.esc(row.category || row.album)}</span>` : ''}
+                ${row.size ? `<span class="pill pill--soft"><i class="fa-solid fa-expand"></i> ${U.esc(row.size.toUpperCase())}</span>` : ''}
                 ${poster ? '' : '<span class="pill pill--soft"><i class="fa-solid fa-triangle-exclamation"></i> No poster</span>'}
                 ${row.sizeBytes ? `<span class="pill pill--soft">${U.esc(U.bytes(row.sizeBytes))}</span>` : ''}
                 <span class="grow"></span>
@@ -225,7 +226,7 @@
             subtitle: 'A photograph, a video file, or a YouTube talk.',
             icon: 'fa-photo-film',
             record,
-            defaults: { status: 'published', type: 'image', album },
+            defaults: { status: 'published', type: 'image', album: 'Products', category: 'Products', size: 'sm' },
             html: F.section({
                 fields: [
                     F.select({
@@ -237,11 +238,20 @@
                         ],
                     }),
                     F.text({
-                        name: 'album', label: 'Album', list: 'galAlbums',
-                        placeholder: 'The Hospital',
-                        hint: 'Becomes a filter chip on the page. Left empty, the item only appears under All.',
+                        name: 'album', label: 'Category / Album', list: 'galAlbums',
+                        placeholder: 'Products',
+                        hint: 'Becomes a filter chip on the public gallery page (e.g. Products, Events, Factory, Riders).',
                     }),
                     `<datalist id="galAlbums">${known.map((a) => `<option value="${U.esc(a)}"></option>`).join('')}</datalist>`,
+                    F.select({
+                        name: 'size', label: 'Tile Size (Masonry Grid)', required: true,
+                        options: [
+                            { value: 'sm', label: 'Small (1×1 Square)' },
+                            { value: 'wide', label: 'Wide (2×1 Landscape)' },
+                            { value: 'tall', label: 'Tall (1×2 Portrait)' },
+                            { value: 'lg', label: 'Large (2×2 Big Tile)' },
+                        ],
+                    }),
                     F.text({
                         name: 'title', label: 'Title', required: true, wide: true,
                         placeholder: 'Modular theatre',
@@ -280,6 +290,8 @@
         if (!data) return;
 
         blankUnused(data);
+        data.category = data.album || data.category || 'General';
+        data.album = data.category;
 
         if (record) {
             await store.update('gallery', record.id, data);

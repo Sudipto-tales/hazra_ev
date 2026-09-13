@@ -50,6 +50,9 @@ class ViewRouteProvider extends RouteProvider
             'contact' => ['Page', 'contact'],
             'contact.php' => ['Page', 'contact'],
 
+            'gallery' => ['Page', 'gallery'],
+            'gallery.php' => ['Page', 'gallery'],
+
             'blog' => ['Page', 'blog'],
             'blog.php' => ['Page', 'blog'],
 

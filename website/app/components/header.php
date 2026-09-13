@@ -71,10 +71,11 @@ try {
       </div>
 
       <div class="nav__grp">
-        <button class="nav__i nav__i--t <?= in_array($currentRoute, ['contest', 'blog', 'battery-use', 'ev-future']) ? 'is-on' : '' ?>" aria-expanded="false">
+        <button class="nav__i nav__i--t <?= in_array($currentRoute, ['gallery', 'contest', 'blog', 'battery-use', 'ev-future']) ? 'is-on' : '' ?>" aria-expanded="false">
           Social <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
+          <a href="<?= e(base_url('gallery')) ?>" class="nav__s <?= nav_active('gallery', $currentRoute) ?>">Gallery</a>
           <a href="<?= e(base_url('contest')) ?>" class="nav__s <?= nav_active('contest', $currentRoute) ?>">Reels Contest</a>
           <a href="<?= e(base_url('blog')) ?>" class="nav__s <?= nav_active('blog', $currentRoute) ?>">Blog</a>
           <a href="<?= e(base_url('index#news')) ?>" class="nav__s">News</a>

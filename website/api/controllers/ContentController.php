@@ -126,6 +126,9 @@ final class ContentController extends V1Controller
         'image_path' => 'image_path',
         'alt'        => 'alt',
         'caption'    => 'caption',
+        'category'   => 'category',
+        'album'      => 'album',
+        'size'       => 'size',
         'order_num'  => 'order_num',
         'status'     => 'status',
     ];
@@ -159,9 +162,20 @@ final class ContentController extends V1Controller
         $columns = ['id', 'created_at', 'updated_at'];
         $values  = [$id,  $now,         $now];
 
+        $category = trim((string)($body['category'] ?? $body['album'] ?? 'General'));
+        if ($category === '') $category = 'General';
+        $size = trim((string)($body['size'] ?? 'sm'));
+        if (!in_array($size, ['sm', 'wide', 'tall', 'lg'], true)) $size = 'sm';
+
         foreach (self::GALLERY_WRITABLE as $wire => $col) {
             $columns[] = $col;
-            $values[]  = $body[$wire] ?? ($col === 'image_url' ? ($body['image_path'] ?? '') : ($col === 'image_path' ? ($body['image_url'] ?? '') : null));
+            if ($col === 'category' || $col === 'album') {
+                $values[] = $category;
+            } elseif ($col === 'size') {
+                $values[] = $size;
+            } else {
+                $values[] = $body[$wire] ?? ($col === 'image_url' ? ($body['image_path'] ?? '') : ($col === 'image_path' ? ($body['image_url'] ?? '') : null));
+            }
         }
 
         $query = 'INSERT INTO %s (' . implode(', ', $columns) . ') VALUES ('
@@ -180,6 +194,12 @@ final class ContentController extends V1Controller
         $body   = ApiRequest::body();
         $sets   = [];
         $params = [];
+
+        if (isset($body['category']) && !isset($body['album'])) {
+            $body['album'] = $body['category'];
+        } elseif (isset($body['album']) && !isset($body['category'])) {
+            $body['category'] = $body['album'];
+        }
 
         foreach (self::GALLERY_WRITABLE as $wire => $col) {
             if (!array_key_exists($wire, $body)) continue;
