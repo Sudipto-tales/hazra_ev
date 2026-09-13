@@ -130,16 +130,45 @@
     const patch = (path, body) => request('PATCH', path, { body });
     const del = (path, query) => request('DELETE', path, { query });
 
-    /* ---------------------------------------------------------
-       Where a collection lives
+/* ---------------------------------------------------------
+   Where a collection lives — mapped to Hazra API endpoints.
 
-       Most are the generic block in api/gateway.php. Three are
-       not: pages and media have controllers of their own, and
-       the activity log is a report rather than a resource.
-       --------------------------------------------------------- */
+   Teresa entity names → Hazra /api/v1/... paths.
+   Blogs & News share /posts with a type filter.
+   Test-drive / Dealership / Contact are lead types under /website/leads.
+   Enquiries inbox = all leads.
+   Media/Gallery = /gallery.
+   Missing: users, departments, applications (no admin endpoints yet).
+   --------------------------------------------------------- */
 
-    const PATHS = { activity: 'api/activity', pages: 'api/pages', media: 'api/media' };
-    const pathFor = (entity) => PATHS[entity] || `api/${entity}`;
+const PATHS = {
+    products: 'api/v1/products',
+    blogs: 'api/v1/posts',
+    news: 'api/v1/posts',
+    gallery: 'api/v1/gallery',
+    media: 'api/v1/gallery',      // gallery.js uses 'media'
+    jobs: 'api/v1/jobs',
+    'test-drive': 'api/v1/website/leads',
+    dealership: 'api/v1/website/leads',
+    contact: 'api/v1/website/leads',
+    enquiries: 'api/v1/website/leads',  // all-leads inbox
+    'career-apps': 'api/v1/job-applications',
+    applications: 'api/v1/job-applications', // jobs.js uses 'applications'
+    settings: 'api/v1/settings',
+};
+
+const LEAD_TYPE = {
+    'test-drive': 'test_drive',
+    dealership: 'dealership',
+    contact: 'contact',
+};
+
+const POST_TYPE = {
+    blogs: 'blog',
+    news: 'news',
+};
+
+const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
 
     /* ---------------------------------------------------------
        Boot
@@ -157,7 +186,15 @@
             get('api/v1/admin/me'),
         ]);
 
-        Object.assign(cache, collections.data || {});
+        const data = collections.data || {};
+        Object.assign(cache, data);
+
+        // Bootstrap returns combined posts; split into blogs & news for the panel
+        if (Array.isArray(data.posts)) {
+            cache.blogs = data.posts.filter(p => p.type === 'blog');
+            cache.news = data.posts.filter(p => p.type === 'news');
+        }
+
         cache.pages = [];
 
         settingsDoc = settings.data || {};
@@ -240,6 +277,16 @@
 
             Object.entries(o.filters || {}).forEach(([k, v]) => { query[k] = v; });
 
+            // Blogs & News share /posts — filter by type server-side
+            if (POST_TYPE[entity]) {
+                query.type = POST_TYPE[entity];
+            }
+            // Leads: test-drive / dealership / contact share /website/leads
+            // enquiries = all leads (no type filter)
+            if (LEAD_TYPE[entity]) {
+                query.type = LEAD_TYPE[entity];
+            }
+
             const res = await get(pathFor(entity), query);
             const meta_ = res.meta || {};
 
@@ -254,7 +301,11 @@
 
         /** Every row, unfiltered — for pickers and cross-entity lookups. */
         async all(entity) {
-            const res = await get(pathFor(entity), { pageSize: 0 });
+            const query = { pageSize: 0 };
+            if (POST_TYPE[entity]) query.type = POST_TYPE[entity];
+            if (LEAD_TYPE[entity]) query.type = LEAD_TYPE[entity];
+            // enquiries = all leads (no type filter)
+            const res = await get(pathFor(entity), query);
             cache[entity] = res.data || [];
             return clone(cache[entity]);
         },
@@ -286,13 +337,20 @@
 
         /* ----- write ----- */
 
+        /** Add type for posts & leads so the server routes to the right table. */
+        function withType(entity, body) {
+            if (POST_TYPE[entity]) body.type = POST_TYPE[entity];
+            if (LEAD_TYPE[entity]) body.type = LEAD_TYPE[entity];
+            return body;
+        }
+
         async create(entity, data) {
-            const res = await post(pathFor(entity), data);
+            const res = await post(pathFor(entity), withType(entity, data));
             return store.remember(entity, res.data);
         },
 
         async update(entity, id, patchBody) {
-            const res = await patch(`${pathFor(entity)}/${encodeURIComponent(id)}`, patchBody);
+            const res = await patch(`${pathFor(entity)}/${encodeURIComponent(id)}`, withType(entity, patchBody));
             return store.remember(entity, res.data, id);
         },
 
