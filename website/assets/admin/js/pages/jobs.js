@@ -1,13 +1,13 @@
-/* Vacancies — list. Replaces window.TMH_JOBS in assets/jobs.js. */
+/* Vacancies — list. Replaces window.HAZRA_JOBS in assets/jobs.js. */
 (function () {
     'use strict';
 
-    const { util: U, store, table, layout, toast } = window.TMH;
+    const { util: U, store, table, layout, toast } = window.HAZRA;
 
     /* The public site's root, absolute — see core/layout.js. */
-    const SITE = window.TMH.api.base;
+    const SITE = window.HAZRA.api.base;
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         document.getElementById('pageHead').innerHTML = layout.pageHead({

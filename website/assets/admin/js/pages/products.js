@@ -1,10 +1,10 @@
 (function () {
     'use strict';
 
-    const { util: U, store, table, layout, toast } = window.TMH;
-    const SITE = window.TMH.api.base;
+    const { util: U, store, table, layout, toast } = window.HAZRA;
+    const SITE = window.HAZRA.api.base;
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     function init() {
         document.getElementById('pageHead').innerHTML = layout.pageHead({

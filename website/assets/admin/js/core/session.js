@@ -33,8 +33,8 @@
         suspended: { tone: 'off', label: 'Suspended' },
     };
 
-    const store = () => root.TMH && root.TMH.store;
-    const identity = () => (root.TMH.api ? root.TMH.api.me() : null) || {};
+    const store = () => root.HAZRA && root.HAZRA.store;
+    const identity = () => (root.HAZRA.api ? root.HAZRA.api.me() : null) || {};
 
     const session = {
 
@@ -95,7 +95,7 @@
 
         statusTag(status) {
             const meta = USER_STATUS[status] || { tone: 'off', label: status || 'Unknown' };
-            const esc = root.TMH.util.esc;
+            const esc = root.HAZRA.util.esc;
             return `<span class="tag ${meta.tone}">${esc(meta.label)}</span>`;
         },
 
@@ -142,7 +142,7 @@
          * would send somebody to the sign-in screen for a typo.
          */
         async verifyPassword(plain) {
-            const res = await root.TMH.api.post('api/auth/verify-password', { password: String(plain || '') });
+            const res = await root.HAZRA.api.post('api/auth/verify-password', { password: String(plain || '') });
             return !!(res && res.data && res.data.ok);
         },
 
@@ -165,6 +165,6 @@
         },
     };
 
-    root.TMH = root.TMH || {};
-    root.TMH.session = session;
+    root.HAZRA = root.HAZRA || {};
+    root.HAZRA.session = session;
 }(window));

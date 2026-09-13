@@ -8,7 +8,7 @@
 (function () {
     'use strict';
 
-    const { util: U, store, layout, toast, modal, confirm: confirmDialog } = window.TMH;
+    const { util: U, store, layout, toast, modal, confirm: confirmDialog } = window.HAZRA;
 
     const STATUS = [
         { value: 'new', label: 'New', tone: 'warn' },
@@ -52,7 +52,7 @@
     let departments = [];
     let phone = '+91 90460 05557';
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         const id = U.param('id');

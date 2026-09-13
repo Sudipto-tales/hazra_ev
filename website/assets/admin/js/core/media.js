@@ -19,7 +19,7 @@
 (function (root) {
     'use strict';
 
-    const U = root.TMH.util;
+    const U = root.HAZRA.util;
     const esc = U.esc;
 
     const MAX_BYTES = 5 * 1024 * 1024;
@@ -93,7 +93,7 @@
             form.append('caption', '');
 
             try {
-                const res = await root.TMH.api.request('POST', 'api/media', { form });
+                const res = await root.HAZRA.api.request('POST', 'api/media', { form });
                 created.push(res.data);
             } catch (err) {
                 failed.push(`${file.name}: ${err.message}`);
@@ -101,15 +101,15 @@
         }
 
         if (created.length) {
-            root.TMH.toast.success(`${created.length} file${created.length === 1 ? '' : 's'} uploaded`, {
+            root.HAZRA.toast.success(`${created.length} file${created.length === 1 ? '' : 's'} uploaded`, {
                 body: created.some((c) => !c.alt) ? 'Add alt text before using them on a published page.' : '',
             });
         }
         if (failed.length) {
-            root.TMH.toast.error(`${failed.length} file${failed.length === 1 ? '' : 's'} rejected`, {
+            root.HAZRA.toast.error(`${failed.length} file${failed.length === 1 ? '' : 's'} rejected`, {
                 action: {
                     label: 'Why',
-                    onClick: () => root.TMH.confirm({
+                    onClick: () => root.HAZRA.confirm({
                         title: 'Rejected files',
                         blocked: true,
                         danger: true,
@@ -126,12 +126,12 @@
        The picker drawer
        --------------------------------------------------------- */
     async function pick(current) {
-        const all = await root.TMH.store.all('media');
+        const all = await root.HAZRA.store.all('media');
         const folders = [...new Set(all.map((m) => m.folder || 'Uploads'))];
         let filter = { q: '', folder: 'all' };
         let selected = current || '';
 
-        return root.TMH.modal.drawer({
+        return root.HAZRA.modal.drawer({
             title: 'Media gallery',
             html: `
                 <div class="col gap-4">
@@ -216,7 +216,7 @@
                 async function handleFiles(files) {
                     if (!files || !files.length) return;
                     const created = await upload(files, filter.folder === 'all' ? 'Uploads' : filter.folder);
-                    rows = await root.TMH.store.all('media');
+                    rows = await root.HAZRA.store.all('media');
                     if (created.length) {
                         selected = created[0].url;
                         useBtn.disabled = false;
@@ -274,7 +274,7 @@
         });
     }
 
-    root.TMH.media = { paintAll, wire, pick, upload };
+    root.HAZRA.media = { paintAll, wire, pick, upload };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => wire(document));

@@ -19,8 +19,8 @@
          <input type="hidden" name="tags">
      </div>
 
-     TMH.multiselect.paintAll(scope, record);
-     TMH.multiselect.collectAll(scope);   // -> {tags: ['heart', …]}
+     HAZRA.multiselect.paintAll(scope, record);
+     HAZRA.multiselect.collectAll(scope);   // -> {tags: ['heart', …]}
 
    The hidden input is the value store, so core/form.js validates
    it like any other named control. It holds a JSON array, or the
@@ -31,7 +31,7 @@
 (function (root) {
     'use strict';
 
-    const U = root.TMH.util;
+    const U = root.HAZRA.util;
     const esc = U.esc;
 
     let seq = 0;
@@ -319,7 +319,7 @@
         paintControl(el);
     }
 
-    root.TMH.multiselect = {
+    root.HAZRA.multiselect = {
         mount: paint, paintAll, collectAll, value, set: (el, v) => paint(el, v), setOptions,
     };
 }(window));

@@ -5,7 +5,7 @@
 (function () {
     'use strict';
 
-    const { util: U, store, table, layout, toast, confirm: confirmDialog } = window.TMH;
+    const { util: U, store, table, layout, toast, confirm: confirmDialog } = window.HAZRA;
 
     const STATUS = [
         { value: 'all', label: 'All' },
@@ -44,7 +44,7 @@
     let list = null;
     let users = [];
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         users = (await store.all('users')).filter((u) => u.status !== 'hidden');
@@ -246,7 +246,7 @@
     /* ---------- bulk actions ---------- */
 
     async function bulkAssign(ids, ctl) {
-        const userId = await window.TMH.modal.open({
+        const userId = await window.HAZRA.modal.open({
             title: `Assign ${ids.length} enquir${ids.length === 1 ? 'y' : 'ies'}`,
             icon: 'fa-user-check',
             html: `

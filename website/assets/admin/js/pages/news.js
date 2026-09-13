@@ -1,9 +1,9 @@
 (function () {
     'use strict';
 
-    const { util: U, store, table, layout } = window.TMH;
+    const { util: U, store, table, layout } = window.HAZRA;
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     function init() {
         document.getElementById('pageHead').innerHTML = layout.pageHead({

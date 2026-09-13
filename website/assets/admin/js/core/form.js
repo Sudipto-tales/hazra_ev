@@ -10,7 +10,7 @@
 (function (root) {
     'use strict';
 
-    const U = root.TMH.util;
+    const U = root.HAZRA.util;
 
     /* ---------------------------------------------------------
        Validation rules. `data-rule` on a control picks one.
@@ -143,9 +143,9 @@
             if (body) body.innerHTML = data[name] || '';
         });
 
-        if (root.TMH.repeater) root.TMH.repeater.mountAll(scope, data);
-        if (root.TMH.media) root.TMH.media.paintAll(scope, data);
-        if (root.TMH.multiselect) root.TMH.multiselect.paintAll(scope, data);
+        if (root.HAZRA.repeater) root.HAZRA.repeater.mountAll(scope, data);
+        if (root.HAZRA.media) root.HAZRA.media.paintAll(scope, data);
+        if (root.HAZRA.multiselect) root.HAZRA.multiselect.paintAll(scope, data);
 
         refreshMeters(scope);
     }
@@ -170,8 +170,8 @@
 
         /* Both overwrite the raw control value the loop above already wrote:
            the hidden input holds a JSON string, the record wants the array. */
-        if (root.TMH.multiselect) Object.assign(out, root.TMH.multiselect.collectAll(scope));
-        if (root.TMH.repeater) Object.assign(out, root.TMH.repeater.collectAll(scope));
+        if (root.HAZRA.multiselect) Object.assign(out, root.HAZRA.multiselect.collectAll(scope));
+        if (root.HAZRA.repeater) Object.assign(out, root.HAZRA.repeater.collectAll(scope));
         return out;
     }
 
@@ -220,7 +220,7 @@
         const target = focusTarget(result.first);
         if (typeof target.focus === 'function') target.focus();
         target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        root.TMH.toast.error(
+        root.HAZRA.toast.error(
             `${result.count} field${result.count === 1 ? '' : 's'} need${result.count === 1 ? 's' : ''} attention`,
         );
     }
@@ -315,7 +315,7 @@
             if (!link || !dirty || saving) return;
             if (link.target === '_blank' || link.getAttribute('href').startsWith('#')) return;
             e.preventDefault();
-            const leave = await root.TMH.confirm({
+            const leave = await root.HAZRA.confirm({
                 title: 'Discard your changes?',
                 body: 'This form has edits that have not been saved.',
                 danger: true,
@@ -336,7 +336,7 @@
             autosaveTimer = setInterval(() => {
                 if (!dirty) return;
                 try {
-                    localStorage.setItem(`tmh-draft:${cfg.autosaveKey}`,
+                    localStorage.setItem(`hazra-draft:${cfg.autosaveKey}`,
                         JSON.stringify({ at: Date.now(), data: collect(scope) }));
                 } catch (e) { /* quota — nothing useful to do */ }
             }, 20000);
@@ -345,7 +345,7 @@
         function restorableDraft() {
             if (!cfg.autosaveKey) return null;
             try {
-                const raw = localStorage.getItem(`tmh-draft:${cfg.autosaveKey}`);
+                const raw = localStorage.getItem(`hazra-draft:${cfg.autosaveKey}`);
                 return raw ? JSON.parse(raw) : null;
             } catch (e) {
                 return null;
@@ -353,7 +353,7 @@
         }
 
         function clearDraft() {
-            if (cfg.autosaveKey) localStorage.removeItem(`tmh-draft:${cfg.autosaveKey}`);
+            if (cfg.autosaveKey) localStorage.removeItem(`hazra-draft:${cfg.autosaveKey}`);
         }
 
         async function submit(publish, btn) {
@@ -379,7 +379,7 @@
                         if (c) setError(c, msg);
                     });
                 }
-                root.TMH.toast.error(err && err.message ? err.message : 'Could not save', {
+                root.HAZRA.toast.error(err && err.message ? err.message : 'Could not save', {
                     action: { label: 'Retry', onClick: () => submit(publish, btn) },
                 });
             } finally {
@@ -432,9 +432,9 @@
        on one screen: facilities, FAQs, testimonials, lab tests,
        categories, counters, redirects, nav links.
 
-         const saved = await TMH.form.editModal({
+         const saved = await HAZRA.form.editModal({
              title: 'Add facility', icon: 'fa-bed-pulse',
-             html: TMH.fields.section({fields: […]}),
+             html: HAZRA.fields.section({fields: […]}),
              record,                       // null = create
              onReady(scope) { … },         // optional; after fields are bound
          });
@@ -442,7 +442,7 @@
        --------------------------------------------------------- */
     function editModal(opts) {
         const o = opts || {};
-        return root.TMH.modal.open({
+        return root.HAZRA.modal.open({
             title: o.title || (o.record ? 'Edit' : 'Add'),
             subtitle: o.subtitle || '',
             icon: o.icon || (o.record ? 'fa-pen' : 'fa-plus'),
@@ -460,10 +460,10 @@
                    so binding first would write the value into a div that is
                    about to be thrown away, and the field would open empty.
                    blog-form.js does the same in the same order. */
-                if (root.TMH.editor) root.TMH.editor.upgradeAll(scope);
+                if (root.HAZRA.editor) root.HAZRA.editor.upgradeAll(scope);
                 bind(scope, o.record || o.defaults || {});
-                if (root.TMH.fields) root.TMH.fields.wirePreviews(scope);
-                if (root.TMH.media) root.TMH.media.wire(scope);
+                if (root.HAZRA.fields) root.HAZRA.fields.wirePreviews(scope);
+                if (root.HAZRA.media) root.HAZRA.media.wire(scope);
 
                 /* For a dialog whose fields depend on each other — the gallery
                    asks for a YouTube id or a video file or neither, depending
@@ -484,7 +484,7 @@
                     const result = validate(scope, {});
                     if (!result.ok) {
                         focusTarget(result.first).focus();
-                        root.TMH.toast.error(
+                        root.HAZRA.toast.error(
                             `${result.count} field${result.count === 1 ? '' : 's'} need${result.count === 1 ? 's' : ''} attention`,
                         );
                         return;
@@ -507,7 +507,7 @@
         });
     }
 
-    root.TMH.form = {
+    root.HAZRA.form = {
         create, bind, collect, validate, reportInvalid, setError, editModal, RULES,
     };
 }(window));

@@ -18,7 +18,7 @@
 
     const {
         util: U, store, fields: F, form: formLib, layout, toast, api,
-    } = window.TMH;
+    } = window.HAZRA;
 
     /* The public site's root, absolute — see core/layout.js. */
     const SITE = api.base;
@@ -32,7 +32,7 @@
     /* Which album the grid is showing. '' is everything. */
     let album = '';
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         document.getElementById('pageHead').innerHTML = layout.pageHead({
@@ -381,7 +381,7 @@
     /**
      * The upload.
      *
-     * XMLHttpRequest rather than TMH.api, for the one thing fetch cannot do:
+     * XMLHttpRequest rather than HAZRA.api, for the one thing fetch cannot do:
      * report progress. A 100 MB clip on a hospital's connection is a minute of
      * silence otherwise, and silence is indistinguishable from a hung dialog.
      * The transcode that follows is not something the bar can see, so the note
@@ -503,7 +503,7 @@
 
     /** Repaints a media picker's visible half after its hidden input is set. */
     function repaintMedia(scope) {
-        if (window.TMH.media && window.TMH.media.paintAll) window.TMH.media.paintAll(scope);
+        if (window.HAZRA.media && window.HAZRA.media.paintAll) window.HAZRA.media.paintAll(scope);
     }
 
     /**
@@ -537,7 +537,7 @@
     }
 
     async function remove(row) {
-        const ok = await window.TMH.confirm({
+        const ok = await window.HAZRA.confirm({
             title: `Delete “${row.title}”?`,
             body: 'It disappears from /gallery. The uploaded file stays on the server; hiding it keeps the record too.',
             danger: true,

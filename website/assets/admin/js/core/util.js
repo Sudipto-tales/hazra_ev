@@ -344,6 +344,6 @@
         },
     };
 
-    root.TMH = root.TMH || {};
-    root.TMH.util = util;
+    root.HAZRA = root.HAZRA || {};
+    root.HAZRA.util = util;
 }(window));

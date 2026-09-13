@@ -11,8 +11,8 @@
                         {"key":"number","placeholder":"+91 …"},
                         {"key":"isPrimary","type":"checkbox","label":"Primary"}]'></div>
 
-     TMH.repeater.mount(el, rows);
-     TMH.repeater.value(el);   // -> [{label, number, isPrimary}, …]
+     HAZRA.repeater.mount(el, rows);
+     HAZRA.repeater.value(el);   // -> [{label, number, isPrimary}, …]
 
    A single-value repeater (one field, key "text") accepts a
    multiline paste and splits it into one row per line — which
@@ -22,7 +22,7 @@
 (function (root) {
     'use strict';
 
-    const U = root.TMH.util;
+    const U = root.HAZRA.util;
     const esc = U.esc;
 
     function fieldsOf(el) {
@@ -144,7 +144,7 @@
                     });
                     refreshButtons(el, min, max);
                     notify();
-                    root.TMH.toast.info(`${lines.length} rows added from your paste`);
+                    root.HAZRA.toast.info(`${lines.length} rows added from your paste`);
                 });
             }
         }
@@ -208,5 +208,5 @@
         return out;
     }
 
-    root.TMH.repeater = { mount: render, mountAll, value, collectAll };
+    root.HAZRA.repeater = { mount: render, mountAll, value, collectAll };
 }(window));

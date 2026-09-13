@@ -2,7 +2,7 @@
    Modals, confirms and drawers.
 
    Deletes are never one-click anywhere in the panel — they
-   route through TMH.confirm(), which is also where a blocked
+   route through HAZRA.confirm(), which is also where a blocked
    delete explains itself by listing its dependents.
    See docs/04-crud-flows.md.
    ========================================================= */
@@ -258,7 +258,7 @@
         });
     }
 
-    root.TMH = root.TMH || {};
-    root.TMH.confirm = confirmDialog;
-    root.TMH.modal = { open, drawer };
+    root.HAZRA = root.HAZRA || {};
+    root.HAZRA.confirm = confirmDialog;
+    root.HAZRA.modal = { open, drawer };
 }(window));

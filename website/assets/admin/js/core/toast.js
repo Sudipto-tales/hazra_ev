@@ -5,12 +5,12 @@
    no silent success. See docs/05-components.md for the rules
    and docs/04-crud-flows.md for the message table.
 
-     TMH.toast.success('Doctor published', {
+     HAZRA.toast.success('Doctor published', {
          action: { label: 'View on site', href: '…' }
      });
-     TMH.toast.success('Doctor deleted', { undo: () => restore() });
-     TMH.toast.error('Could not save', { action: { label: 'Retry', onClick: save } });
-     TMH.toast.warning('Site is in maintenance mode', { persistent: true, id: 'maint' });
+     HAZRA.toast.success('Doctor deleted', { undo: () => restore() });
+     HAZRA.toast.error('Could not save', { action: { label: 'Retry', onClick: save } });
+     HAZRA.toast.warning('Site is in maintenance mode', { persistent: true, id: 'maint' });
    ========================================================= */
 (function (root) {
     'use strict';
@@ -153,8 +153,8 @@
         return render(config);
     }
 
-    root.TMH = root.TMH || {};
-    root.TMH.toast = {
+    root.HAZRA = root.HAZRA || {};
+    root.HAZRA.toast = {
         success: (title, opts) => show('success', title, opts),
         error: (title, opts) => show('error', title, opts),
         warning: (title, opts) => show('warning', title, opts),

@@ -2,7 +2,7 @@
 (function () {
     'use strict';
 
-    const { util: U, store, table, layout, toast, confirm: confirmDialog } = window.TMH;
+    const { util: U, store, table, layout, toast, confirm: confirmDialog } = window.HAZRA;
 
     const STATUS = [
         { value: 'all', label: 'All' },
@@ -19,7 +19,7 @@
     let list = null;
     let users = [];
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         users = (await store.all('users')).filter((u) => u.status !== 'hidden');

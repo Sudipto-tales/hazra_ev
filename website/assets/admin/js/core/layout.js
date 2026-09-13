@@ -1,6 +1,6 @@
 /* =========================================================
    Panel shell. Renders the sidebar and topbar into every page
-   from window.TMH_NAV, so the navigation lives in one file
+   from window.HAZRA_NAV, so the navigation lives in one file
    rather than being copy-pasted into 42.
 
    Page markup is only ever:
@@ -17,14 +17,14 @@
 (function (root) {
     'use strict';
 
-    const esc = (s) => (root.TMH.util ? root.TMH.util.esc(s) : String(s));
+    const esc = (s) => (root.HAZRA.util ? root.HAZRA.util.esc(s) : String(s));
 
     /* The public site's root, absolute. Panel screens are all served from
        /admin/, so a link to a *sibling* screen stays relative — but a link
        out to the site cannot be, because the site may sit in a subdirectory
        and its pages are not all one segment deep. core/api.js reads the base
        from <meta name="app-base"> and parses before this file. */
-    const SITE = root.TMH.api.base;
+    const SITE = root.HAZRA.api.base;
 
     const THEME_KEY = 'hazra-admin-theme';
     const COLLAPSE_KEY = 'hazra-admin-collapsed';
@@ -43,7 +43,7 @@
             try {
                 localStorage.setItem(THEME_KEY, value);
             } catch (e) { /* private mode — the choice just will not persist */ }
-            root.dispatchEvent(new CustomEvent('tmh:theme', { detail: value }));
+            root.dispatchEvent(new CustomEvent('hazra:theme', { detail: value }));
         },
         toggle() {
             theme.set(theme.get() === 'dark' ? 'light' : 'dark');
@@ -54,16 +54,16 @@
        SIDEBAR
        --------------------------------------------------------- */
     /* The shell shows whoever is signed in. GET /api/auth/me has already
-       answered by the time this mounts — see TMH.boot at the foot of the file
+       answered by the time this mounts — see HAZRA.boot at the foot of the file
        — so the fallback is only what a browser sees if the shell is somehow
        painted without it. */
     function me() {
-        const user = root.TMH.session ? root.TMH.session.currentSync() : null;
+        const user = root.HAZRA.session ? root.HAZRA.session.currentSync() : null;
         const name = (user && user.name) || 'Signed in';
         return {
             name,
-            role: user ? root.TMH.session.roleName(user.roleId) : '',
-            initials: root.TMH.util ? root.TMH.util.initials(name) : '··',
+            role: user ? root.HAZRA.session.roleName(user.roleId) : '',
+            initials: root.HAZRA.util ? root.HAZRA.util.initials(name) : '··',
             avatar: (user && user.avatar) || '',
         };
     }
@@ -78,7 +78,7 @@
 
         const user = me();
 
-        const groups = (root.TMH_NAV || []).map((group) => `
+        const groups = (root.HAZRA_NAV || []).map((group) => `
             <div class="nav-group">
                 <div class="nav-group__label">${esc(group.label)}</div>
                 ${group.items.map((item) => `
@@ -155,7 +155,7 @@
        because the server has never heard of the sidebar. */
     function navHits(needle) {
         const out = [];
-        (root.TMH_NAV || []).forEach((group) => group.items.forEach((item) => {
+        (root.HAZRA_NAV || []).forEach((group) => group.items.forEach((item) => {
             const hay = `${item.label} ${group.label}`.toLowerCase();
             const at = hay.indexOf(needle);
             if (at < 0) return;
@@ -186,7 +186,7 @@
         let groups = [];
 
         try {
-            groups = await root.TMH.store.search(q.trim());
+            groups = await root.HAZRA.store.search(q.trim());
         } catch (e) {
             /* A failed search is not worth a toast in the middle of typing —
                the sidebar matches above are still a useful answer. */
@@ -262,7 +262,7 @@
                        href="${esc(h.href)}" role="option" aria-selected="${i === 0}">
                         <i class="fa-solid ${esc(h.icon)}"></i>
                         <span class="search-results__text">
-                            <b>${root.TMH.util.mark(h.title, q)}</b>
+                            <b>${root.HAZRA.util.mark(h.title, q)}</b>
                             ${h.sub ? `<small>${esc(h.sub)}</small>` : ''}
                         </span>
                         <span class="search-results__group">${esc(h.group)}</span>
@@ -273,7 +273,7 @@
             input.setAttribute('aria-expanded', 'true');
         }
 
-        input.addEventListener('input', root.TMH.util.debounce(render, 120));
+        input.addEventListener('input', root.HAZRA.util.debounce(render, 120));
         input.addEventListener('focus', () => {
             if (input.value.trim().length >= 2) render();
         });
@@ -505,9 +505,9 @@
         const markAllReadBtn = document.getElementById('markAllReadBtn');
 
         async function loadNotifications() {
-            if (!root.TMH.store) return;
+            if (!root.HAZRA.store) return;
             try {
-                const data = await root.TMH.store.getNotifications?.() || { items: [], unread: 0 };
+                const data = await root.HAZRA.store.getNotifications?.() || { items: [], unread: 0 };
                 renderNotifications(data);
             } catch (e) {
                 console.warn('[notifications] failed to load', e);
@@ -528,11 +528,11 @@
             }
 
             notifList.innerHTML = items.map(item => `
-                <a class="notif-item${item.read ? '' : ' unread'}" href="${root.TMH.util.esc(item.href)}" role="menuitem" data-id="${root.TMH.util.esc(item.id)}">
-                    <div class="notif-icon ${root.TMH.util.esc(item.type || 'info')}"><i class="fa-solid ${root.TMH.util.esc(item.icon || 'fa-bell')}"></i></div>
+                <a class="notif-item${item.read ? '' : ' unread'}" href="${root.HAZRA.util.esc(item.href)}" role="menuitem" data-id="${root.HAZRA.util.esc(item.id)}">
+                    <div class="notif-icon ${root.HAZRA.util.esc(item.type || 'info')}"><i class="fa-solid ${root.HAZRA.util.esc(item.icon || 'fa-bell')}"></i></div>
                     <div class="notif-content">
-                        <p class="notif-title">${root.TMH.util.esc(item.title)}</p>
-                        <p class="notif-time">${root.TMH.util.esc(item.time)}</p>
+                        <p class="notif-title">${root.HAZRA.util.esc(item.title)}</p>
+                        <p class="notif-time">${root.HAZRA.util.esc(item.time)}</p>
                     </div>
                     ${!item.read ? '<span class="notif-badge"></span>' : ''}
                 </a>`).join('');
@@ -558,7 +558,7 @@
             if (markAllReadBtn) {
                 markAllReadBtn.addEventListener('click', async () => {
                     try {
-                        await root.TMH.store.markAllNotificationsRead?.();
+                        await root.HAZRA.store.markAllNotificationsRead?.();
                         loadNotifications();
                     } catch (e) {
                         console.warn('[notifications] mark all read failed', e);
@@ -572,7 +572,7 @@
                 const id = item.dataset.id;
                 if (id && !item.classList.contains('unread')) return;
                 try {
-                    await root.TMH.store.markNotificationRead?.(id);
+                    await root.HAZRA.store.markNotificationRead?.(id);
                     item.classList.remove('unread');
                     const unreadCount = notifList.querySelectorAll('.notif-item.unread').length;
                     notifDot.classList.toggle('has-unread', unreadCount > 0);
@@ -606,12 +606,12 @@
         }
     }
 
-    root.TMH = root.TMH || {};
-    root.TMH.layout = { mount, pageHead, syncPill, theme };
+    root.HAZRA = root.HAZRA || {};
+    root.HAZRA.layout = { mount, pageHead, syncPill, theme };
 
-    /* Through TMH.boot rather than DOMContentLoaded, like every page script:
+    /* Through HAZRA.boot rather than DOMContentLoaded, like every page script:
        the shell prints the signed-in name and two sidebar badges counted off
        the collections, and none of those exist until api.js has finished its
        boot request. */
-    root.TMH.boot(mount);
+    root.HAZRA.boot(mount);
 }(window));

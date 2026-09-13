@@ -16,7 +16,7 @@
 (function (root) {
     'use strict';
 
-    const U = root.TMH.util;
+    const U = root.HAZRA.util;
     const esc = U.esc;
 
     const ALLOWED = new Set(['P', 'BR', 'H2', 'H3', 'H4', 'STRONG', 'B', 'EM', 'I', 'U',
@@ -198,7 +198,7 @@
                 }
 
                 case 'image': {
-                    const url = await root.TMH.media.pick('');
+                    const url = await root.HAZRA.media.pick('');
                     if (!url) return;
                     exec('insertHTML',
                         `<figure><img src="${esc(url)}" alt=""><figcaption>Add a caption</figcaption></figure><p><br></p>`);
@@ -221,7 +221,7 @@
             if (html) {
                 const cleaned = sanitise(html);
                 document.execCommand('insertHTML', false, cleaned);
-                root.TMH.toast.info('Pasted text was cleaned', {
+                root.HAZRA.toast.info('Pasted text was cleaned', {
                     body: 'Fonts, colours and inline styles were stripped so the article matches the site.',
                     id: 'paste-clean',
                 });
@@ -270,7 +270,7 @@
     /* Small prompt modal — window.prompt() is blocked in some embeds and
        looks nothing like the rest of the panel. */
     function promptFor(title, placeholder, subtitle) {
-        return root.TMH.modal.open({
+        return root.HAZRA.modal.open({
             title,
             subtitle: subtitle || '',
             icon: 'fa-link',
@@ -292,5 +292,5 @@
         (scope || document).querySelectorAll('[data-editor]').forEach(upgrade);
     }
 
-    root.TMH.editor = { upgradeAll, upgrade, sanitise };
+    root.HAZRA.editor = { upgradeAll, upgrade, sanitise };
 }(window));

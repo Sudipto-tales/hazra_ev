@@ -20,7 +20,7 @@
 
     const {
         util: U, store, layout, toast, modal, media,
-    } = window.TMH;
+    } = window.HAZRA;
 
     /* Every place a media URL can end up, and where an editor goes to change
        it. Adding an image field to a form means adding it here too — the
@@ -66,7 +66,7 @@
     const isImage = (row) => String(row.mime || 'image/jpeg').startsWith('image/');
     const extOf = (row) => (String(row.filename || '').split('.').pop() || 'file').toUpperCase();
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         document.getElementById('pageHead').innerHTML = layout.pageHead({
@@ -612,7 +612,7 @@
         const uses = usedBy(row);
 
         if (uses.length) {
-            await window.TMH.confirm({
+            await window.HAZRA.confirm({
                 title: `${row.filename} is in use`,
                 body: 'Change or clear the image on each of these first. Deleting it now would leave a broken picture on a published page.',
                 blocked: true,
@@ -623,7 +623,7 @@
             return false;
         }
 
-        const ok = await window.TMH.confirm({
+        const ok = await window.HAZRA.confirm({
             title: `Delete ${row.filename}?`,
             body: 'Nothing points at it today. Anything you paste its URL into later will break.',
             danger: true,
@@ -654,7 +654,7 @@
         const free = picked.filter((r) => !usedBy(r).length);
 
         if (!free.length) {
-            await window.TMH.confirm({
+            await window.HAZRA.confirm({
                 title: 'All of those are in use',
                 body: 'None of the selected files can go while something on the site points at them.',
                 blocked: true,
@@ -665,7 +665,7 @@
             return;
         }
 
-        const ok = await window.TMH.confirm({
+        const ok = await window.HAZRA.confirm({
             title: `Delete ${free.length} file${free.length === 1 ? '' : 's'}?`,
             body: blocked.length
                 ? `${blocked.length} of the ${picked.length} selected are in use and will be skipped.`
@@ -685,7 +685,7 @@
             toast.warning(`${res.succeeded.length} deleted, ${res.failed.length} could not be`, {
                 action: {
                     label: 'Why',
-                    onClick: () => window.TMH.confirm({
+                    onClick: () => window.HAZRA.confirm({
                         title: 'Files that were kept',
                         blocked: true,
                         danger: true,

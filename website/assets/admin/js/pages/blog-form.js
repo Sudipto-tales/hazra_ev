@@ -9,17 +9,17 @@
 (function () {
     'use strict';
 
-    const { util: U, store, fields: F, form: formLib, layout, toast, media, editor } = window.TMH;
+    const { util: U, store, fields: F, form: formLib, layout, toast, media, editor } = window.HAZRA;
 
     /* The public site's root, absolute — see core/layout.js. */
-    const SITE = window.TMH.api.base;
+    const SITE = window.HAZRA.api.base;
 
     const id = U.param('id');
     const isEdit = !!id;
     let record = null;
     let ctrl = null;
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         record = isEdit ? await store.get('posts', id) : null;
@@ -214,7 +214,7 @@
 
         if (isEdit) {
             document.getElementById('delBtn').addEventListener('click', async () => {
-                const ok = await window.TMH.confirm({
+                const ok = await window.HAZRA.confirm({
                     title: `Delete “${record.title}”?`,
                     body: 'The article and its card on the blog index are removed.',
                     danger: true, confirmLabel: 'Delete post',

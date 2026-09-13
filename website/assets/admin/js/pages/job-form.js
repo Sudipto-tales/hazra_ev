@@ -4,17 +4,17 @@
 (function () {
     'use strict';
 
-    const { util: U, store, fields: F, form: formLib, layout, toast } = window.TMH;
+    const { util: U, store, fields: F, form: formLib, layout, toast } = window.HAZRA;
 
     /* The public site's root, absolute — see core/layout.js. */
-    const SITE = window.TMH.api.base;
+    const SITE = window.HAZRA.api.base;
 
     const id = U.param('id');
     const isEdit = !!id;
     let record = null;
     let ctrl = null;
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         record = isEdit ? await store.get('jobs', id) : null;

@@ -1,10 +1,10 @@
 (function () {
     'use strict';
 
-    const { util: U, store, form: TMHForm, layout, toast } = window.TMH;
-    const SITE = window.TMH.api.base;
+    const { util: U, store, form: HAZRAForm, layout, toast } = window.HAZRA;
+    const SITE = window.HAZRA.api.base;
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         const id = U.param('id');
@@ -43,7 +43,7 @@
             status: 'published'
         };
 
-        const f = TMHForm.create({
+        const f = HAZRAForm.create({
             mount: '#view',
             initial,
             fields: [

@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    const { util: U, store, layout } = window.TMH;
-    const SITE = window.TMH.api.base;
+    const { util: U, store, layout } = window.HAZRA;
+    const SITE = window.HAZRA.api.base;
 
     const STAT_TILES = [
         ['products', 'Products', 'fa-bicycle', 'red'],
@@ -25,10 +25,10 @@
         </article>`;
     }
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
-        const who = window.TMH.session ? window.TMH.session.currentSync() : null;
+        const who = window.HAZRA.session ? window.HAZRA.session.currentSync() : null;
         const hour = new Date().getHours();
         const greeting = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
         const firstName = who && who.name ? who.name.split(' ')[0] : 'there';

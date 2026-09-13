@@ -246,6 +246,14 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
         });
     }
 
+    /** Add type for posts & leads so the server routes to the right table. */
+    function withType(entity, body) {
+        const b = Object.assign({}, body || {});
+        if (POST_TYPE[entity]) b.type = POST_TYPE[entity];
+        if (LEAD_TYPE[entity]) b.type = LEAD_TYPE[entity];
+        return b;
+    }
+
     /* ---------------------------------------------------------
        The store
        --------------------------------------------------------- */
@@ -336,13 +344,6 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
         },
 
         /* ----- write ----- */
-
-        /** Add type for posts & leads so the server routes to the right table. */
-        function withType(entity, body) {
-            if (POST_TYPE[entity]) body.type = POST_TYPE[entity];
-            if (LEAD_TYPE[entity]) body.type = LEAD_TYPE[entity];
-            return body;
-        }
 
         async create(entity, data) {
             const res = await post(pathFor(entity), withType(entity, data));

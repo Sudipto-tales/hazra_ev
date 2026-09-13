@@ -15,12 +15,12 @@
 
     const {
         util: U, store, fields: F, form: formLib, layout, toast, media, session,
-    } = window.TMH;
+    } = window.HAZRA;
 
     let me = null;
     let ctrl = null;
 
-    window.TMH.boot(init);
+    window.HAZRA.boot(init);
 
     async function init() {
         me = await session.current();
@@ -357,7 +357,7 @@
                 <i class="fa-solid fa-right-from-bracket"></i> Sign out everywhere else</button>`;
 
         document.getElementById('signOutAllBtn').addEventListener('click', async () => {
-            const ok = await window.TMH.confirm({
+            const ok = await window.HAZRA.confirm({
                 title: 'Sign out every other device?',
                 body: 'Anyone signed in as you elsewhere has to sign in again. This browser is unaffected.',
                 confirmLabel: 'Sign out everywhere else',

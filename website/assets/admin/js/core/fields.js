@@ -13,7 +13,7 @@
 (function (root) {
     'use strict';
 
-    const U = root.TMH.util;
+    const U = root.HAZRA.util;
     const esc = U.esc;
 
     /* Common attributes every control shares. */
@@ -387,5 +387,5 @@
     }
 
     F.wirePreviews = wirePreviews;
-    root.TMH.fields = F;
+    root.HAZRA.fields = F;
 }(window));

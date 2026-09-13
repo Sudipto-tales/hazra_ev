@@ -9,7 +9,7 @@
          href  relative to /admin/, which is where every screen is
          served from — `products` resolves to /admin/products, and
          keeps resolving when the site is in a subdirectory.
-         Nothing here may reference TMH.api.base: this file
+         Nothing here may reference HAZRA.api.base: this file
          parses before core/api.js defines it.
    badge optional; a number renders as a red count bubble.
          A function is called at mount time, which is after the
@@ -18,19 +18,19 @@
    ========================================================= */
 (function () {
     /* Counts what the collection actually holds, at the moment the shell is
-       painted. TMH.boot is what guarantees there is something to count. */
+       painted. HAZRA.boot is what guarantees there is something to count. */
     function count(entity, test) {
         try {
-            return (window.TMH.store.allSync(entity) || []).filter(test).length;
+            return (window.HAZRA.store.allSync(entity) || []).filter(test).length;
         } catch (e) {
             return 0;
         }
     }
 
-    window.TMH_NAV_COUNT = count;
+    window.HAZRA_NAV_COUNT = count;
 }());
 
-window.TMH_NAV = [
+window.HAZRA_NAV = [
     {
         label: 'Main',
         items: [

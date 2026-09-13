@@ -3,14 +3,14 @@
    selection, bulk bar, pagination, drag-reorder, empty and
    skeleton states.
 
-   Every list page in the panel is a call to TMH.table.create()
+   Every list page in the panel is a call to HAZRA.table.create()
    plus a column definition — see assets/js/pages/doctors.js
    for the reference use.
    ========================================================= */
 (function (root) {
     'use strict';
 
-    const U = root.TMH.util;
+    const U = root.HAZRA.util;
     const esc = U.esc;
 
     function create(config) {
@@ -476,8 +476,8 @@
                     const to = all.indexOf(tr);
                     body.insertBefore(dragged, from < to ? tr.nextSibling : tr);
                     const ids = [...body.children].map((r) => r.dataset.id);
-                    await root.TMH.store.reorder(cfg.entity, ids);
-                    root.TMH.toast.success('Order saved');
+                    await root.HAZRA.store.reorder(cfg.entity, ids);
+                    root.HAZRA.toast.success('Order saved');
                     load();
                 });
             });
@@ -502,7 +502,7 @@
                         const r = state.rows.find((x) => String(x.id) === id);
                         return r ? (r.name || r.title || id) : id;
                     });
-                const ok = await root.TMH.confirm({
+                const ok = await root.HAZRA.confirm({
                     title: `Delete ${ids.length} record${ids.length === 1 ? '' : 's'}?`,
                     body: `${sample.join(', ')}${ids.length > 3 ? ` and ${ids.length - 3} more` : ''}. This cannot be undone in bulk.`,
                     danger: true,
@@ -512,17 +512,17 @@
                 if (!ok) return;
             }
 
-            const res = await root.TMH.store.bulk(cfg.entity, ids, action);
+            const res = await root.HAZRA.store.bulk(cfg.entity, ids, action);
             state.selected.clear();
 
             if (res.failed.length) {
-                root.TMH.toast.warning(
+                root.HAZRA.toast.warning(
                     `${res.succeeded.length} of ${ids.length} ${action === 'delete' ? 'deleted' : `${action}ed`}`,
                     {
                         body: `${res.failed.length} could not be processed.`,
                         action: {
                             label: 'View details',
-                            onClick: () => root.TMH.confirm({
+                            onClick: () => root.HAZRA.confirm({
                                 title: 'What failed',
                                 blocked: true,
                                 icon: 'fa-triangle-exclamation',
@@ -533,7 +533,7 @@
                 );
             } else {
                 const verb = { publish: 'published', hide: 'hidden', delete: 'deleted' }[action] || 'updated';
-                root.TMH.toast.success(`${res.succeeded.length} record${res.succeeded.length === 1 ? '' : 's'} ${verb}`);
+                root.HAZRA.toast.success(`${res.succeeded.length} record${res.succeeded.length === 1 ? '' : 's'} ${verb}`);
             }
             load();
         }
@@ -563,7 +563,7 @@
                 if (f.match) filterFns[f.key] = f.match;
             });
 
-            const res = await root.TMH.store.list(cfg.entity, {
+            const res = await root.HAZRA.store.list(cfg.entity, {
                 q: state.q.trim(),
                 searchFields: cfg.searchFields,
                 status: state.status,
@@ -610,10 +610,10 @@
             async confirmDelete(row, opts) {
                 const o = opts || {};
                 const label = o.label || row.name || row.title || row.id;
-                const deps = root.TMH.store.dependents(cfg.entity, row.id);
+                const deps = root.HAZRA.store.dependents(cfg.entity, row.id);
 
                 if (deps.length && !o.allowForce) {
-                    await root.TMH.confirm({
+                    await root.HAZRA.confirm({
                         title: `Cannot delete ${label}`,
                         body: 'Other records depend on it. Reassign them first.',
                         blocked: true,
@@ -624,7 +624,7 @@
                     return false;
                 }
 
-                const ok = await root.TMH.confirm({
+                const ok = await root.HAZRA.confirm({
                     title: `Delete ${label}?`,
                     body: o.body || 'This removes it from the website immediately.',
                     danger: true,
@@ -633,11 +633,11 @@
                 });
                 if (!ok) return false;
 
-                const removed = await root.TMH.store.remove(cfg.entity, row.id);
-                root.TMH.toast.success(`${label} deleted`, {
+                const removed = await root.HAZRA.store.remove(cfg.entity, row.id);
+                root.HAZRA.toast.success(`${label} deleted`, {
                     undo: async () => {
-                        await root.TMH.store.restore(cfg.entity, removed.row, removed.index);
-                        root.TMH.toast.success('Restored');
+                        await root.HAZRA.store.restore(cfg.entity, removed.row, removed.index);
+                        root.HAZRA.toast.success('Restored');
                         load();
                     },
                 });
@@ -650,5 +650,5 @@
         return api;
     }
 
-    root.TMH.table = { create };
+    root.HAZRA.table = { create };
 }(window));
