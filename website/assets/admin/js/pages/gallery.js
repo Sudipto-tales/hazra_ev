@@ -139,7 +139,8 @@
     }
 
     function usedBy(row) {
-        return usage[fileKey(row.url)] || [];
+        const url = row.url || row.image_url || row.image_path;
+        return usage[fileKey(url)] || [];
     }
 
     /* ---------------------------------------------------------
@@ -154,9 +155,7 @@
             if (state.kind === 'noalt' && r.alt) return false;
             const q = state.q.trim().toLowerCase();
             if (q) {
-                /* Filtered before joining — an absent alt or caption would
-                   otherwise read as the string "undefined" and match. */
-                const hay = [r.filename, r.alt, r.caption, r.folder]
+                const hay = [r.filename, r.title, r.alt, r.caption, r.folder]
                     .filter(Boolean).join(' ').toLowerCase();
                 if (!hay.includes(q)) return false;
             }
@@ -173,7 +172,7 @@
         const list = visible();
         const noAlt = rows.filter((r) => !r.alt).length;
         const unused = rows.filter((r) => !usedBy(r).length).length;
-        const bytes = rows.reduce((n, r) => n + (r.sizeBytes || 0), 0);
+        const bytes = rows.reduce((n, r) => n + (r.sizeBytes || r.size || 0), 0);
 
         document.getElementById('view').innerHTML = `
             ${U.statStrip([
@@ -187,7 +186,7 @@
                 <input type="file" multiple accept="image/*" hidden id="fileInput">
                 <i class="fa-solid fa-cloud-arrow-up" style="font-size:22px"></i>
                 <div class="mt-2"><b>Drop files anywhere on this page</b> — or click to browse</div>
-                <small class="muted">JPG, PNG, WebP or SVG · up to 5 MB each · they land in
+                <small class="muted">JPG, PNG, WebP or SVG · up to 10 MB each · they land in
                     ${U.esc(state.folder === 'all' ? 'Uploads' : state.folder)}</small>
             </label>
 
@@ -228,10 +227,6 @@
         wire();
     }
 
-    /* Ticking a box swaps the toolbar for the bulk bar and marks the tile —
-       and nothing else. A full render() here would rebuild every tile in the
-       grid between two clicks, which is both wasteful and how a shift-select
-       loses the box you are still on. */
     function syncSelection() {
         const view = document.getElementById('view');
 
@@ -242,7 +237,6 @@
         const bar = view.querySelector('.gallery .bulk-bar, .gallery .toolbar');
         const wantBulk = state.selected.size > 0;
         if (bar.classList.contains('bulk-bar') === wantBulk) {
-            /* Same bar, only the count changed. */
             if (wantBulk) bar.querySelector('[data-count]').innerHTML = countLabel();
             return;
         }
@@ -267,13 +261,8 @@
     }
 
     function onSearch(e) {
-        /* Held raw. Trimming here would render the box without the space the
-           user just typed between two words, and the next letter would land
-           against the previous one. */
         state.q = e.target.value;
         U.setParams({ q: state.q.trim() });
-        /* Re-rendering blows away the box being typed in, so the caret is put
-           back where it was. */
         const start = e.target.selectionStart;
         const end = e.target.selectionEnd;
         render();
@@ -282,7 +271,7 @@
             next.focus();
             try {
                 next.setSelectionRange(start, end);
-            } catch (err) { /* no selection range on this control */ }
+            } catch (err) {}
         }
     }
 
@@ -321,18 +310,20 @@
     function tileHtml(row) {
         const uses = usedBy(row);
         const picked = state.selected.has(row.id);
+        const imgUrl = row.url || row.image_url || row.image_path || '';
+        const name = row.filename || row.title || 'Image';
 
         return `
         <div class="media-tile ${isImage(row) ? '' : 'media-tile--doc'}"
              data-id="${U.esc(row.id)}" role="button" tabindex="0"
-             aria-selected="${picked}" aria-label="${U.esc(row.filename)}">
+             aria-selected="${picked}" aria-label="${U.esc(name)}">
             ${isImage(row)
-                ? `<img src="${U.esc(row.url)}" alt="${U.esc(row.alt || row.filename)}" loading="lazy">`
+                ? `<img src="${U.esc(U.resolveUrl(imgUrl))}" alt="${U.esc(row.alt || name)}" loading="lazy" onError="this.style.display='none';">`
                 : `<span class="media-tile__doc"><i class="fa-solid fa-file-lines"></i><b>${U.esc(extOf(row))}</b></span>`}
 
             <label class="media-tile__check">
                 <input type="checkbox" data-pick="${U.esc(row.id)}" ${picked ? 'checked' : ''}
-                       aria-label="Select ${U.esc(row.filename)}">
+                       aria-label="Select ${U.esc(name)}">
             </label>
 
             ${!row.alt ? '<span class="media-tile__flag">No alt</span>' : ''}
@@ -340,7 +331,7 @@
                 ? `<span class="media-tile__used" title="Used by ${U.esc(uses.map((u) => u.name).join(', '))}"><i class="fa-solid fa-link"></i> ${uses.length}</span>`
                 : '<span class="media-tile__used media-tile__used--none" title="Nothing on the site points at this file"><i class="fa-solid fa-link-slash"></i></span>'}
 
-            <span class="media-tile__bar">${U.esc(row.filename)}</span>
+            <span class="media-tile__bar">${U.esc(name)}</span>
         </div>`;
     }
 
@@ -510,7 +501,7 @@
             html: `
                 <div class="col gap-4">
                     ${isImage(row)
-                        ? `<img src="${U.esc(row.url)}" alt="${U.esc(row.alt || row.filename)}"
+                        ? `<img src="${U.esc(U.resolveUrl(row.url || row.image_url || row.image_path))}" alt="${U.esc(row.alt || row.filename || row.title || 'Image')}"
                                 style="width:100%;border-radius:var(--radius-sm);background:var(--surface-3)">`
                         : `<div class="media-tile media-tile--doc" style="aspect-ratio:16/9;cursor:default">
                                <span class="media-tile__doc"><i class="fa-solid fa-file-lines"></i><b>${U.esc(extOf(row))}</b></span>

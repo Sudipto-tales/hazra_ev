@@ -61,9 +61,13 @@
             return identity().permissions || {};
         },
 
-        current() {
+        async current() {
             const id = session.CURRENT_ID;
-            return id ? store().get('users', id) : Promise.resolve(null);
+            if (id && store() && store().available && store().available('users')) {
+                const u = await store().get('users', id);
+                if (u) return u;
+            }
+            return session.currentSync();
         },
 
         isSuper(user) {

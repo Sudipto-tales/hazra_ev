@@ -109,7 +109,7 @@
                  aria-label="Edit ${U.esc(row.title)}">
             <span class="drag-handle tile__grip" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></span>
             ${poster
-                ? `<img class="tile__thumb" src="${U.esc(poster)}" alt="" loading="lazy">`
+                ? `<img class="tile__thumb" src="${U.esc(U.resolveUrl(poster))}" alt="" loading="lazy">`
                 : `<div class="tile__icon"><i class="fa-${row.type === 'youtube' ? 'brands' : 'solid'} ${U.esc(kind.icon)}"></i></div>`}
             <div class="tile__body">
                 <h4>${U.esc(row.title)}</h4>

@@ -66,10 +66,12 @@
      */
     function apiError(status, body) {
         const error = (body && body.error) || {};
-        const err = new Error(error.message || `Request failed (${status})`);
+        const msg = error.message || (body && body.message) || `Request failed (${status})`;
+        console.error('[HAZRA API]', { status, code: error.code || 'SERVER_ERROR', message: msg, body });
+        const err = new Error(msg);
         err.status = status;
         err.code = error.code || 'SERVER_ERROR';
-        if (error.fields) err.fields = error.fields;
+        if (error.fields || (body && body.fields)) err.fields = error.fields || body.fields;
         if (error.dependents) err.dependents = error.dependents;
         return err;
     }
@@ -225,10 +227,21 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
      * thing most of them do is read a lookup collection synchronously.
      */
     function boot(fn) {
-        /* Log errors occurring inside mount() or init() during page initialization */
         const start = () => {
             ready.then(fn).catch((err) => {
                 console.error('[boot] page init failed', err);
+                const viewSlot = document.getElementById('view') || document.querySelector('.main');
+                if (viewSlot) {
+                    viewSlot.innerHTML = `
+                        <article class="card"><div class="empty">
+                            <div class="empty__art"><i class="fa-solid fa-triangle-exclamation" style="color:var(--bad)"></i></div>
+                            <h3>Page Failed to Load</h3>
+                            <p>${root.HAZRA?.util?.esc(err.message || 'An unexpected error occurred while loading this section.')}</p>
+                            <button type="button" class="btn btn--primary mt-3" onclick="location.reload()">
+                                <i class="fa-solid fa-rotate-right"></i> Retry
+                            </button>
+                        </div></article>`;
+                }
             });
         };
 

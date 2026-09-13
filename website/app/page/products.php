@@ -576,6 +576,42 @@ document.addEventListener('DOMContentLoaded', () => {
   syncControlsFromState();
   bind();
   renderGrid();
+
+  // Dynamically load live products from API
+  fetch(baseUrl + '/api/v1/website/products')
+    .then(r => r.json())
+    .then(res => {
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        const liveProducts = res.data.map(p => ({
+          id: p.slug || p.id,
+          slug: p.slug || p.id,
+          name: p.name || 'Hazra Scooter',
+          series: p.series || 'CHALO',
+          company: 'Hazra',
+          rangeKm: Number(p.range_km || p.rangeKm || 100),
+          speed: p.speed_type || p.speed || 'high',
+          battery: Array.isArray(p.battery) ? p.battery : [p.battery_type || 'graphene'],
+          priceFrom: Number(p.price_from || p.priceFrom || p.price || 50000),
+          priceTo: Number(p.price_to || p.priceTo || p.price || 70000),
+          rating: Number(p.rating || 4.8),
+          reviews: Number(p.reviews || 100),
+          color: p.color || '#7b2ff7',
+          badge: p.badge || 'Warranty Guaranteed',
+          chips: [`${p.range_km || 100} km Range`, p.speed_type === 'city' ? 'Low Speed' : 'High Speed'],
+          variants: Array.isArray(p.variants) && p.variants.length ? p.variants : [
+            { price: `₹${Number(p.price_from || p.price || 50000).toLocaleString('en-IN')}`, label: p.battery_type || 'Standard' }
+          ],
+          image: p.image || p.avatar || (baseUrl + '/assets/scutie_light.webp'),
+          tags: [p.name, p.series, p.battery_type].filter(Boolean)
+        }));
+        CATALOG.length = 0;
+        CATALOG.push(...liveProducts);
+        buildSeriesFilters();
+        renderGrid();
+      }
+    })
+    .catch(() => {});
+
   if (window.lucide) lucide.createIcons();
 });
 </script>

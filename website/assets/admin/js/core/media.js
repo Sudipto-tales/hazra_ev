@@ -27,7 +27,7 @@
                 <div class="media-pick-preview row gap-3 items-center" style="padding:8px 12px; border:1px dashed var(--hairline); border-radius:var(--radius-sm); background:var(--surface-2)">
                     <div class="media-pick__thumb-box" style="width:48px; height:48px; border-radius:var(--radius-xs); overflow:hidden; background:var(--surface-1); display:flex; align-items:center; justify-content:center; flex-shrink:0; border:1px solid var(--hairline);">
                         ${has
-                            ? `<img class="media-pick__thumb" src="${esc(url)}" alt="" style="width:100%; height:100%; object-fit:cover;" onError="this.style.display='none';this.nextElementSibling.style.display='block';">
+                            ? `<img class="media-pick__thumb" src="${esc(U.resolveUrl(url))}" alt="" style="width:100%; height:100%; object-fit:cover;" onError="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='block';">
                                <i class="fa-solid fa-triangle-exclamation" style="display:none; color:var(--brand-red);" title="Invalid image URL"></i>`
                             : '<i class="fa-solid fa-image" style="font-size:18px; color:var(--muted);"></i>'}
                     </div>
@@ -180,7 +180,7 @@
                         return `
                         <div class="media-tile" data-url="${esc(imgUrl)}"
                              aria-selected="${selected === imgUrl}" role="button" tabindex="0">
-                            <img src="${esc(imgUrl)}" alt="${esc(m.filename || 'Image')}" loading="lazy">
+                            <img src="${esc(U.resolveUrl(imgUrl))}" alt="${esc(m.filename || 'Image')}" loading="lazy">
                             <span class="media-tile__bar">${esc(m.filename || m.title || 'Image')}</span>
                         </div>`;
                     }).join('')
@@ -270,7 +270,7 @@
                     const thumb = el.querySelector('.media-pick__thumb-box');
                     if (thumb) {
                         thumb.innerHTML = val
-                            ? `<img class="media-pick__thumb" src="${esc(val)}" alt="" style="width:100%; height:100%; object-fit:cover;" onError="this.style.display='none';this.nextElementSibling.style.display='block';">
+                            ? `<img class="media-pick__thumb" src="${esc(U.resolveUrl(val))}" alt="" style="width:100%; height:100%; object-fit:cover;" onError="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='block';">
                                <i class="fa-solid fa-triangle-exclamation" style="display:none; color:var(--brand-red);" title="Invalid image URL"></i>`
                             : '<i class="fa-solid fa-image" style="font-size:18px; color:var(--muted);"></i>';
                     }

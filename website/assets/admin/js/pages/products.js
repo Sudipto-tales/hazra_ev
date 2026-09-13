@@ -45,7 +45,7 @@
                     render: (r, s) => `
                         <div class="cell-media">
                             ${r.hero_image || r.image_path || r.image_url
-                                ? `<img class="avatar avatar--sq" src="${U.esc(r.hero_image || r.image_path || r.image_url)}" alt="" loading="lazy">`
+                                ? `<img class="avatar avatar--sq" src="${U.esc(U.resolveUrl(r.hero_image || r.image_path || r.image_url))}" alt="" loading="lazy">`
                                 : `<span class="avatar avatar--sq" style="display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-mid)">EV</span>`}
                             <span>
                                 <span class="cell-main">${U.mark(r.name, s.q)}</span>

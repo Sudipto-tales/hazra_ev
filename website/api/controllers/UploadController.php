@@ -66,25 +66,38 @@ final class UploadController extends V1Controller
 
         $relativeUrl = 'assets/uploads/images/' . $filename;
 
-        // Try inserting into gallery database if gallery table exists
+        // Save upload entry in gallery database tables so it appears immediately across admin panel & website
         $id = Uuid::v4();
         $now = Wire::now();
+        $title = pathinfo($file['name'], PATHINFO_FILENAME);
+
         try {
             db_execute(
-                "INSERT INTO gallery (id, title, image_url, type, mime, filename, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                [$id, pathinfo($file['name'], PATHINFO_FILENAME), $relativeUrl, 'image', $mime, $filename, $now, $now]
+                "INSERT INTO gallery_items (id, title, image_url, image_path, alt, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [$id, $title, $relativeUrl, $relativeUrl, $title, $now, $now]
+            );
+        } catch (Throwable) {}
+
+        try {
+            db_execute(
+                "INSERT INTO admin_gallery_items (id, title, image_url, image_path, alt, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [$id, $title, $relativeUrl, $relativeUrl, $title, $now, $now]
             );
         } catch (Throwable) {}
 
         Envelope::ok([
-            'id'       => $id,
-            'url'      => $relativeUrl,
-            'path'     => $relativeUrl,
-            'filename' => $filename,
+            'id'            => $id,
+            'url'           => $relativeUrl,
+            'image_url'     => $relativeUrl,
+            'path'          => $relativeUrl,
+            'filename'      => $filename,
+            'title'         => $title,
             'original_name' => $file['name'],
-            'size'     => $file['size'],
-            'mime'     => $mime,
+            'size'          => $file['size'],
+            'sizeBytes'     => $file['size'],
+            'mime'          => $mime,
         ]);
     }
 }

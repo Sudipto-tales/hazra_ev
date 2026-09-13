@@ -42,7 +42,7 @@
                     render: (r, s) => `
                         <div class="cell-media">
                             ${r.cover_image
-                                ? `<img class="avatar avatar--sq" src="${U.esc(r.cover_image)}" alt="" loading="lazy">`
+                                ? `<img class="avatar avatar--sq" src="${U.esc(U.resolveUrl(r.cover_image))}" alt="" loading="lazy">`
                                 : `<span class="avatar avatar--sq" style="display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-mid)">POST</span>`}
                             <span>
                                 <span class="cell-main">${U.mark(r.title, s.q)}</span>

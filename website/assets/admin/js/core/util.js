@@ -9,6 +9,15 @@
 
     const util = {
 
+        resolveUrl(url) {
+            if (!url) return '';
+            const s = String(url).trim();
+            if (!s) return '';
+            if (/^(https?:|\/\/|data:|blob:)/i.test(s)) return s;
+            const base = (root.HAZRA && root.HAZRA.api && root.HAZRA.api.base ? root.HAZRA.api.base : '/').replace(/\/+$/, '') + '/';
+            return base + s.replace(/^\/+/, '');
+        },
+
         /* Escape for interpolation into innerHTML. Used on every value that
            came from the store — mock data today, user input tomorrow. */
         esc(s) {
