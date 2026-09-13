@@ -168,12 +168,15 @@
 
     ready.catch((err) => {
         /* A 401 has already navigated away. Anything else means the panel has
-           no data at all, and a screen that paints an empty table over that is
-           a screen that says the hospital has no doctors. */
+           no data at all. Don't wipe the shell — layout.js still mounts the
+           sidebar/topbar so the user has chrome even if data failed. */
         console.error('[api] could not load the panel', err);
-        document.body.innerHTML = '<div class="empty" style="padding:80px 24px;text-align:center">'
-            + '<h3>The panel could not be loaded</h3>'
-            + '<p>The server did not answer. Reload the page, and tell whoever runs this site if it keeps happening.</p></div>';
+        const view = document.querySelector('.main');
+        if (view) {
+            view.innerHTML = '<div class="empty" style="padding:80px 24px;text-align:center">'
+                + '<h3>The panel could not be loaded</h3>'
+                + '<p>The server did not answer. Reload the page, and tell whoever runs this site if it keeps happening.</p></div>';
+        }
     });
 
     /**

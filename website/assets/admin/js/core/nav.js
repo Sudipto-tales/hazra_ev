@@ -34,22 +34,22 @@ window.TMH_NAV = [
     {
         label: 'Main',
         items: [
-            { key: 'dashboard', label: 'Dashboard', icon: 'fa-house', href: 'dashboard' },
-            { key: 'products', label: 'Products', icon: 'fa-bicycle', href: 'products' },
-            { key: 'blogs', label: 'Blogs', icon: 'fa-pen-nib', href: 'blogs' },
-            { key: 'news', label: 'News', icon: 'fa-newspaper', href: 'news' },
-            { key: 'gallery', label: 'Gallery', icon: 'fa-images', href: 'gallery' },
-            { key: 'jobs', label: 'Jobs', icon: 'fa-briefcase', href: 'jobs' },
-            { key: 'test-drive', label: 'Test Drive', icon: 'fa-road', href: 'test-drive' },
-            { key: 'dealership', label: 'Dealership', icon: 'fa-store', href: 'dealership' },
-            { key: 'contact', label: 'Contact', icon: 'fa-envelope', href: 'contact' },
-            { key: 'career-apps', label: 'Career Apps', icon: 'fa-file-signature', href: 'career-apps' },
+            { key: 'dashboard', label: 'Dashboard', icon: 'fa-house', href: '/admin/dashboard' },
+            { key: 'products', label: 'Products', icon: 'fa-bicycle', href: '/admin/products' },
+            { key: 'blogs', label: 'Blogs', icon: 'fa-pen-nib', href: '/admin/blogs' },
+            { key: 'news', label: 'News', icon: 'fa-newspaper', href: '/admin/news' },
+            { key: 'gallery', label: 'Gallery', icon: 'fa-images', href: '/admin/gallery' },
+            { key: 'jobs', label: 'Jobs', icon: 'fa-briefcase', href: '/admin/jobs' },
+            { key: 'test-drive', label: 'Test Drive', icon: 'fa-road', href: '/admin/test-drive' },
+            { key: 'dealership', label: 'Dealership', icon: 'fa-store', href: '/admin/dealership' },
+            { key: 'contact', label: 'Contact', icon: 'fa-envelope', href: '/admin/contact' },
+            { key: 'career-apps', label: 'Career Apps', icon: 'fa-file-signature', href: '/admin/career-apps' },
         ],
     },
     {
         label: 'System',
         items: [
-            { key: 'settings', label: 'Settings', icon: 'fa-sliders', href: 'settings' },
+            { key: 'settings', label: 'Settings', icon: 'fa-sliders', href: '/admin/settings' },
         ],
     },
 ];

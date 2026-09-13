@@ -95,7 +95,7 @@
         return `
         <aside class="sidebar" id="sidebarEl">
             <div class="sidebar__brand">
-                <img class="sidebar__logo" src="${esc(base_url('assets/hazraevLogo.jpg'))}" alt="Hazra EV" width="32" height="32">
+                <img class="sidebar__logo" src="${esc(SITE + 'assets/hazraevLogo.jpg')}" alt="Hazra EV" width="32" height="32">
                 <div class="sidebar__name">Hazra EV<small>Admin</small></div>
             </div>
             <nav class="sidebar__nav" id="navTrack" aria-label="Main">
