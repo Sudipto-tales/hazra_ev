@@ -123,9 +123,9 @@
 }
 
 .btn--primary {
-    background: linear-gradient(135deg, var(--brand-red), var(--brand-magenta-deep));
+    background: linear-gradient(135deg, var(--hazra-purple), var(--hazra-purple-dark));
     color: #fff;
-    box-shadow: 0 8px 18px -10px var(--brand-magenta-deep);
+    box-shadow: 0 8px 18px -10px var(--hazra-purple-dark);
 }
 
 .btn--primary:hover:not(:disabled) {
@@ -293,8 +293,8 @@
     padding: 12px 18px;
     border: 0;
     border-radius: var(--radius-full);
-    background: linear-gradient(135deg, var(--brand-red), var(--brand-magenta));
-    color: var(--text-on-brand);
+    background: linear-gradient(135deg, var(--hazra-purple), var(--hazra-purple-dark));
+    color: var(--text-on-dark);
     font-family: var(--font-body);
     font-size: var(--fs-body);
     font-weight: 600;
@@ -330,7 +330,7 @@
 }
 
 body[data-page="login"] .adm-auth__submit {
-    background: linear-gradient(135deg, #7b2ff7, #f97316);
+    background: linear-gradient(135deg, var(--hazra-purple), var(--hazra-orange));
 }
 
 /* Spinner shown in place of the label while a form submits. */
@@ -486,23 +486,23 @@ body[data-page="login"] .adm-auth__submit {
 }
 
 .stat__icon.red {
-    background: color-mix(in srgb, var(--brand-red) 10%, transparent);
-    color: var(--brand-red);
+    background: color-mix(in srgb, var(--hazra-purple) 10%, transparent);
+    color: var(--hazra-purple);
 }
 
 .stat__icon.blue {
-    background: color-mix(in srgb, var(--brand-blue) 12%, transparent);
-    color: var(--brand-blue);
+    background: color-mix(in srgb, var(--hazra-blue) 12%, transparent);
+    color: var(--hazra-blue);
 }
 
 .stat__icon.navy {
-    background: color-mix(in srgb, var(--brand-navy) 10%, transparent);
-    color: var(--brand-navy);
+    background: color-mix(in srgb, var(--hazra-blue) 10%, transparent);
+    color: var(--hazra-blue);
 }
 
 .stat__icon.magenta {
-    background: color-mix(in srgb, var(--brand-magenta) 10%, transparent);
-    color: var(--brand-magenta);
+    background: color-mix(in srgb, var(--hazra-purple-dark) 10%, transparent);
+    color: var(--hazra-purple-dark);
 }
 
 .stat h3 {
@@ -646,13 +646,13 @@ body[data-page="login"] .adm-auth__submit {
 .data-table th[aria-sort='ascending']::after {
     content: '\f0de';
     opacity: 1;
-    color: var(--brand-red);
+    color: var(--hazra-purple);
 }
 
 .data-table th[aria-sort='descending']::after {
     content: '\f0dd';
     opacity: 1;
-    color: var(--brand-red);
+    color: var(--hazra-purple);
 }
 
 .data-table td {

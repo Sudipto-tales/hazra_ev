@@ -6,18 +6,20 @@
 
 :root {
     /* ---- brand ---- */
-    --brand-purple: #6B4C9A;
-    --brand-purple-soft: #9B7ED6;
-    --brand-blue: #3A7BD5;
-    --brand-blue-soft: #6EA8F0;
-    --brand-orange: #FF6B00;
-    --brand-orange-soft: #FF9F40;
+    --hazra-purple: #5D158C;
+    --hazra-purple-dark: #3B0C64;
+    --hazra-purple-soft: #8B5FCF;
+    --hazra-blue: #206B89;
+    --hazra-blue-soft: #5BB3D6;
+    --hazra-cyan: #31B9E1;
+    --hazra-orange: #E27A1E;
+    --hazra-orange-soft: #F5A65C;
 
     /* ---- semantic ---- */
-    --good: #2E7D32;
+    --good: #1E7A2E;
     --bad: #C62828;
-    --warn: #FF6B00;
-    --info: #3A7BD5;
+    --warn: #E27A1E;
+    --info: #206B89;
 
     /* Tinted backgrounds for badges, banners and toast discs. Kept as
        explicit hex rather than colour-mix so the dark theme can retune
@@ -28,19 +30,18 @@
     --info-bg: #E7EFF9;
 
     /* ---- surfaces ---- */
-    --bg: #F5F0FA;
-    --surface: #FFFFFF;
-    --surface-2: #F0EBF5;
-    --surface-3: #E6DCEF;
-    --sidebar-bg: #FFFFFF;
-    --hairline: #E0D5E8;
-    --hairline-strong: #D0C0DB;
+    --admin-bg: #F7F8FA;
+    --admin-card: #FFFFFF;
+    --sidebar-bg: #3B0C64;
+    --hairline: #E5E7EB;
+    --hairline-strong: #D1D5DB;
 
     /* ---- text ---- */
-    --text-dark: #2D2433;
-    --text-mid: #6B5A7A;
-    --text-muted: #9C8BA8;
-    --text-on-brand: #FFFFFF;
+    --text-primary: #25202B;
+    --text-secondary: #6F6A76;
+    --text-muted: #9CA3AF;
+    --text-on-dark: #FFFFFF;
+    --text-muted-on-dark: #D8CDE2;
 
     /* ---- type ----
        One family for body and headings, exactly as the mockup
@@ -93,11 +94,11 @@
     --radius-full: 999px;
 
     /* ---- elevation ---- */
-    --card-shadow: 0 10px 24px -12px rgba(107, 76, 154, .22), 0 2px 6px -2px rgba(0, 0, 0, .05);
-    --card-shadow-hover: 0 22px 40px -18px rgba(107, 76, 154, .32), 0 4px 10px -4px rgba(0, 0, 0, .07);
-    --overlay-shadow: 0 32px 64px -24px rgba(43, 18, 65, .45);
+    --card-shadow: 0 10px 24px -12px rgba(93, 21, 140, .22), 0 2px 6px -2px rgba(0, 0, 0, .05);
+    --card-shadow-hover: 0 22px 40px -18px rgba(93, 21, 140, .32), 0 4px 10px -4px rgba(0, 0, 0, .07);
+    --overlay-shadow: 0 32px 64px -24px rgba(59, 12, 100, .45);
     --inset-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
-    --sidebar-shadow: 6px 0 24px -12px rgba(80, 35, 120, .25);
+    --sidebar-shadow: 6px 0 24px -12px rgba(59, 12, 100, .35);
 
     /* Cards sit on a tinted background and are edged in white rather than a
        hairline, so the surface reads as lifted instead of outlined. Dark
@@ -111,14 +112,31 @@
     --dur-slow: 260ms;
 
     /* ---- focus ---- */
-    --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand-blue);
+    --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--hazra-blue);
 
     /* ---- chart series (fixed order, never cycled) ---- */
-    --series-1: var(--brand-purple);
-    --series-2: var(--brand-blue);
-    --series-3: var(--brand-orange);
-    --series-4: var(--brand-purple-soft);
-    --grid-line: #E0D5E8;
+    --series-1: var(--hazra-purple);
+    --series-2: var(--hazra-blue);
+    --series-3: var(--hazra-orange);
+    --series-4: var(--hazra-purple-soft);
+    --grid-line: #E5E7EB;
+
+    /* ---- legacy aliases (for any old refs) ---- */
+    --brand-purple: var(--hazra-purple);
+    --brand-purple-soft: var(--hazra-purple-soft);
+    --brand-blue: var(--hazra-blue);
+    --brand-blue-soft: var(--hazra-blue-soft);
+    --brand-orange: var(--hazra-orange);
+    --brand-orange-soft: var(--hazra-orange-soft);
+    --brand-red: var(--hazra-purple);
+    --brand-magenta: var(--hazra-purple-dark);
+    --bg: var(--admin-bg);
+    --surface: var(--admin-card);
+    --surface-2: var(--admin-bg);
+    --surface-3: var(--hairline);
+    --text-dark: var(--text-primary);
+    --text-mid: var(--text-secondary);
+    --text-on-brand: var(--text-on-dark);
 
     color-scheme: light;
 }
@@ -132,12 +150,14 @@
    AA target moves when the background does.
    ========================================================= */
 [data-theme='dark'] {
-    --brand-purple: #B39DDB;
-    --brand-purple-soft: #D1C4E9;
-    --brand-blue: #64B5F6;
-    --brand-blue-soft: #90CAF9;
-    --brand-orange: #FFB74D;
-    --brand-orange-soft: #FFCC80;
+    --hazra-purple: #B39DDB;
+    --hazra-purple-dark: #8B5FCF;
+    --hazra-purple-soft: #D1C4E9;
+    --hazra-blue: #64B5F6;
+    --hazra-blue-soft: #90CAF9;
+    --hazra-cyan: #7DD3FC;
+    --hazra-orange: #FFB74D;
+    --hazra-orange-soft: #FFCC80;
 
     --good: #6ABF6E;
     --bad: #EF5350;
@@ -149,17 +169,17 @@
     --warn-bg: #33281A;
     --info-bg: #1C2733;
 
-    --bg: #1A1423;
-    --surface: #231D2E;
-    --surface-2: #2D243D;
-    --surface-3: #382D4A;
+    --admin-bg: #1A1423;
+    --admin-card: #231D2E;
     --sidebar-bg: #1F182A;
     --hairline: #3D304A;
     --hairline-strong: #4A3D5A;
 
-    --text-dark: #F3EAF7;
-    --text-mid: #B9A8C8;
+    --text-primary: #F3EAF7;
+    --text-secondary: #B9A8C8;
     --text-muted: #8B7B95;
+    --text-on-dark: #FFFFFF;
+    --text-muted-on-dark: #D8CDE2;
 
     --card-shadow: 0 10px 24px -14px rgba(0, 0, 0, .7), 0 2px 6px -2px rgba(0, 0, 0, .4);
     --card-shadow-hover: 0 22px 40px -20px rgba(0, 0, 0, .8), 0 4px 10px -4px rgba(0, 0, 0, .5);
@@ -169,6 +189,23 @@
     --card-edge: var(--hairline);
 
     --grid-line: #3D304A;
+
+    /* ---- legacy aliases ---- */
+    --brand-purple: var(--hazra-purple);
+    --brand-purple-soft: var(--hazra-purple-soft);
+    --brand-blue: var(--hazra-blue);
+    --brand-blue-soft: var(--hazra-blue-soft);
+    --brand-orange: var(--hazra-orange);
+    --brand-orange-soft: var(--hazra-orange-soft);
+    --brand-red: var(--hazra-purple);
+    --brand-magenta: var(--hazra-purple-dark);
+    --bg: var(--admin-bg);
+    --surface: var(--admin-card);
+    --surface-2: var(--admin-bg);
+    --surface-3: var(--hairline);
+    --text-dark: var(--text-primary);
+    --text-mid: var(--text-secondary);
+    --text-on-brand: var(--text-on-dark);
 
     color-scheme: dark;
 }
