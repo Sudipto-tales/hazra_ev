@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const { util: U, store, table, layout, toast } = window.HAZRA;
+    const { util: U, store, table, layout } = window.HAZRA;
     const SITE = window.HAZRA.api.base;
 
     window.HAZRA.boot(init);
@@ -21,8 +21,7 @@
 
         const list = table.create({
             mount: '#listCard',
-            entity: 'posts',
-            filters: { type: 'blog' },
+            entity: 'blogs',
             searchFields: ['title', 'slug', 'author'],
             searchPlaceholder: 'Search blogs...',
             sort: 'created_at',
@@ -43,7 +42,7 @@
                                 : `<span class="avatar avatar--sq" style="display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-mid)">POST</span>`}
                             <span>
                                 <span class="cell-main">${U.mark(r.title, s.q)}</span>
-                                <span class="cell-sub">by ${U.esc(r.author || 'Admin')}</span>
+                                <span class="cell-sub">by ${U.esc(r.author || 'Hazra EV Team')}</span>
                             </span>
                         </div>`,
                 },

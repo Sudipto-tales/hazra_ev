@@ -138,6 +138,10 @@ class ApiGatewayProvider extends RouteProvider
             'POST:api/v1/job-applications'          => ['ContentController', 'storeApplication'],
             'PATCH:api/v1/job-applications/{id}'    => ['ContentController', 'updateApplication', 'auth'],
             'DELETE:api/v1/job-applications/{id}'   => ['ContentController', 'deleteApplication', 'auth'],
+
+            // --- Media & File Uploads ---------------------------------------------
+            'POST:api/v1/upload'                    => ['UploadController', 'upload'],
+            'POST:api/media'                         => ['UploadController', 'upload'],
         ];
     }
 }

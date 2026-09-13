@@ -177,6 +177,10 @@
             </div>`;
         },
 
+        image(o) {
+            return F.media(o);
+        },
+
         icon(o) {
             const c = Object.assign({ id: o.name, placeholder: 'fa-heart-pulse' }, o);
             return shell(c, `

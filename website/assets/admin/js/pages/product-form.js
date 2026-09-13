@@ -63,7 +63,7 @@
                 { name: 'motor_power', label: 'Motor Power', type: 'text' },
                 { name: 'warranty_years', label: 'Warranty (Years)', type: 'number' },
                 { name: 'warranty_note', label: 'Warranty Note', type: 'text' },
-                { name: 'hero_image', label: 'Hero Image URL', type: 'text' },
+                { name: 'hero_image', label: 'Hero Image', type: 'image' },
                 { name: 'is_featured', label: 'Featured Product (Show on Homepage)', type: 'checkbox' },
                 { name: 'featured_order', label: 'Featured Display Order', type: 'number' },
                 { name: 'status', label: 'Status', type: 'select', options: ['published', 'draft', 'hidden'] },

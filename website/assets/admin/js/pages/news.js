@@ -18,8 +18,7 @@
 
         const list = table.create({
             mount: '#listCard',
-            entity: 'posts',
-            filters: { type: 'news' },
+            entity: 'news',
             searchFields: ['title', 'author'],
             searchPlaceholder: 'Search news...',
             sort: 'created_at',
@@ -40,7 +39,7 @@
                                 : `<span class="avatar avatar--sq" style="display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-mid)">NEWS</span>`}
                             <span>
                                 <span class="cell-main">${U.mark(r.title, s.q)}</span>
-                                <span class="cell-sub">by ${U.esc(r.author || 'Admin')}</span>
+                                <span class="cell-sub">by ${U.esc(r.author || 'Hazra EV Team')}</span>
                             </span>
                         </div>`,
                 },
