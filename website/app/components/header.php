@@ -41,12 +41,13 @@ try {
       <a href="<?= e(base_url('index')) ?>" class="nav__i <?= nav_active('index', $currentRoute) ?>">Home</a>
 
       <div class="nav__grp">
-        <button class="nav__i nav__i--t <?= in_array($currentRoute, ['our-story', 'career', 'faq']) ? 'is-on' : '' ?>" aria-expanded="false">
+        <button class="nav__i nav__i--t <?= in_array($currentRoute, ['our-story', 'career', 'faq', 'gallery']) ? 'is-on' : '' ?>" aria-expanded="false">
           About <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('our-story')) ?>" class="nav__s <?= nav_active('our-story', $currentRoute) ?>">Our Story</a>
           <a href="<?= e(base_url('career')) ?>" class="nav__s <?= nav_active('career', $currentRoute) ?>">Careers</a>
+          <a href="<?= e(base_url('gallery')) ?>" class="nav__s <?= nav_active('gallery', $currentRoute) ?>">Gallery</a>
           <a href="<?= e(base_url('index#faq')) ?>" class="nav__s">FAQ</a>
         </div>
       </div>
@@ -71,27 +72,24 @@ try {
       </div>
 
       <div class="nav__grp">
-        <button class="nav__i nav__i--t <?= in_array($currentRoute, ['gallery', 'contest', 'blog', 'battery-use', 'ev-future']) ? 'is-on' : '' ?>" aria-expanded="false">
+        <button class="nav__i nav__i--t <?= in_array($currentRoute, ['contest', 'blog', 'ev-future']) ? 'is-on' : '' ?>" aria-expanded="false">
           Social <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
-          <a href="<?= e(base_url('gallery')) ?>" class="nav__s <?= nav_active('gallery', $currentRoute) ?>">Gallery</a>
           <a href="<?= e(base_url('contest')) ?>" class="nav__s <?= nav_active('contest', $currentRoute) ?>">Reels Contest</a>
           <a href="<?= e(base_url('blog')) ?>" class="nav__s <?= nav_active('blog', $currentRoute) ?>">Blog</a>
           <a href="<?= e(base_url('index#news')) ?>" class="nav__s">News</a>
-          <a href="<?= e(base_url('battery-use')) ?>" class="nav__s <?= nav_active('battery-use', $currentRoute) ?>">Battery Use</a>
           <a href="<?= e(base_url('ev-future')) ?>" class="nav__s <?= nav_active('ev-future', $currentRoute) ?>">EV Future</a>
         </div>
       </div>
 
       <div class="nav__grp">
-        <button class="nav__i nav__i--t <?= in_array($currentRoute, ['dealer-locator', 'become-a-dealer', 'dealership-enquiry']) ? 'is-on' : '' ?>" aria-expanded="false">
+        <button class="nav__i nav__i--t <?= in_array($currentRoute, ['dealer-locator', 'become-a-dealer']) ? 'is-on' : '' ?>" aria-expanded="false">
           Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('dealer-locator')) ?>" class="nav__s <?= nav_active('dealer-locator', $currentRoute) ?>">Locate Dealers</a>
           <a href="<?= e(base_url('become-a-dealer')) ?>" class="nav__s <?= nav_active('become-a-dealer', $currentRoute) ?>">Become a Dealer</a>
-          <a href="<?= e(base_url('dealership-enquiry')) ?>" class="nav__s <?= nav_active('dealership-enquiry', $currentRoute) ?>">Dealership Enquiry</a>
         </div>
       </div>
 
@@ -102,7 +100,6 @@ try {
         <div class="nav__menu">
           <a href="<?= e(base_url('warranty-free')) ?>" class="nav__s <?= nav_active('warranty-free', $currentRoute) ?>">Warranty (Free)</a>
           <a href="<?= e(base_url('warranty-paid')) ?>" class="nav__s <?= nav_active('warranty-paid', $currentRoute) ?>">Warranty (Paid)</a>
-          <a href="<?= e(base_url('battery-use')) ?>" class="nav__s <?= nav_active('battery-use', $currentRoute) ?>">Battery Care</a>
         </div>
       </div>
 

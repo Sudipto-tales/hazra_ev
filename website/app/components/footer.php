@@ -5,7 +5,7 @@
     <span class="dock__lb">Test Drive</span>
   </a>
 
-  <a class="dock__i" href="<?= e(base_url('dealership-enquiry')) ?>" data-dock="dealership" aria-label="Dealership enquiry">
+  <a class="dock__i" href="<?= e(base_url('become-a-dealer')) ?>" data-dock="dealership" aria-label="Become a dealer">
     <i data-lucide="store"></i>
     <span class="dock__lb">Dealership</span>
   </a>
