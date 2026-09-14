@@ -14,9 +14,20 @@ function nav_active($route, $current) {
 $navProducts = [];
 try {
     if (function_exists('db_fetch_all')) {
-        $navProducts = db_fetch_all("SELECT id, name, category, top_speed_kmph FROM products WHERE active = 1 ORDER BY updated_at DESC LIMIT 8");
+        $navProducts = db_fetch_all("SELECT id, name, category, top_speed_kmph, hero_image, slug FROM products WHERE active = 1 ORDER BY updated_at DESC LIMIT 6");
     }
 } catch (Throwable $e) {}
+
+if (empty($navProducts)) {
+    $navProducts = [
+        ['id' => 'chalo-1000-v2', 'name' => 'CHALO 1000 V2', 'slug' => 'chalo-1000-v2', 'top_speed_kmph' => 65, 'hero_image' => 'assets/scutie_light.webp'],
+        ['id' => 'chalo-smart-pro', 'name' => 'CHALO SMART PRO', 'slug' => 'chalo-smart-pro', 'top_speed_kmph' => 45, 'hero_image' => 'assets/dark_scutie.webp'],
+        ['id' => 'chalo-smart-plus', 'name' => 'CHALO SMART PLUS', 'slug' => 'chalo-smart-plus', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scutie_light.webp'],
+        ['id' => 'chalo-smart-eco', 'name' => 'CHALO SMART ECO', 'slug' => 'chalo-smart-eco', 'top_speed_kmph' => 40, 'hero_image' => 'assets/dark_scutie.webp'],
+        ['id' => 'chalo-neo', 'name' => 'CHALO NEO', 'slug' => 'chalo-neo', 'top_speed_kmph' => 35, 'hero_image' => 'assets/scutie_light.webp'],
+        ['id' => 'nja-7', 'name' => 'NJA ~ 7', 'slug' => 'nja-7', 'top_speed_kmph' => 40, 'hero_image' => 'assets/storm.png']
+    ];
+}
 ?>
 <!-- ══════════ NAVBAR ══════════ -->
 <header class="<?= $headerClass ?>" <?= $headerId ? 'id="'.$headerId.'"' : '' ?> <?= $isStickyOnly ? 'aria-hidden="false"' : '' ?>>
@@ -56,18 +67,30 @@ try {
         <button class="nav__i nav__i--t <?= in_array($currentRoute, ['products', 'product-detail']) ? 'is-on' : '' ?>" aria-expanded="false">
           Products <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
-        <div class="nav__menu nav__menu--wide">
-          <a href="<?= e(base_url('products')) ?>" class="nav__s" style="font-weight: 700; color: var(--accent);">View All Models &rarr;</a>
-          <?php if (!empty($navProducts)): ?>
-            <?php foreach ($navProducts as $np): ?>
-              <a href="<?= e(base_url('product-detail?id=' . urlencode($np['id']))) ?>" class="nav__s">
-                <?= e($np['name']) ?>
-                <em><?= (int)$np['top_speed_kmph'] > 50 ? 'High Speed' : 'Low Speed' ?></em>
+        <div class="nav__menu nav__menu--products">
+          <div class="nav__products-header">
+            <span class="nav__products-title">Scooter Collection</span>
+            <a href="<?= e(base_url('products')) ?>" class="nav__products-all">View All Models &rarr;</a>
+          </div>
+          <div class="nav__product-grid">
+            <?php foreach ($navProducts as $np): 
+              $imgSrc = !empty($np['hero_image']) ? base_url($np['hero_image']) : base_url('assets/scutie_light.webp');
+              $isHigh = ((int)($np['top_speed_kmph'] ?? 0)) >= 55;
+              $productUrl = !empty($np['slug']) 
+                ? base_url('product-detail?slug=' . urlencode($np['slug'])) 
+                : base_url('product-detail?id=' . urlencode($np['id']));
+            ?>
+              <a href="<?= e($productUrl) ?>" class="nav__product">
+                <div class="nav__product-img-wrap">
+                  <img class="nav__product-img" src="<?= e($imgSrc) ?>" alt="<?= e($np['name']) ?>" loading="lazy">
+                </div>
+                <span class="nav__product-name"><?= e($np['name']) ?></span>
+                <span class="nav__product-badge <?= $isHigh ? 'is-high' : 'is-low' ?>">
+                  <?= $isHigh ? 'High Speed' : 'Low Speed' ?>
+                </span>
               </a>
             <?php endforeach; ?>
-          <?php else: ?>
-            <a href="<?= e(base_url('products')) ?>" class="nav__s">Catalogue</a>
-          <?php endif; ?>
+          </div>
         </div>
       </div>
 

@@ -67,12 +67,43 @@ App::render('head', [
           <button class="nav__i nav__i--t" aria-expanded="false">
             Products <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
-          <div class="nav__menu nav__menu--wide">
-            <a href="<?= e(base_url('products')) ?>" class="nav__s" style="font-weight:700; color:var(--accent);">View All Models &rarr;</a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-smart-pro')) ?>" class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-smart-plus')) ?>" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
-            <a href="<?= e(base_url('products')) ?>" class="nav__s">All Scooters <em>Catalogue</em></a>
+          <div class="nav__menu nav__menu--products">
+            <div class="nav__products-header">
+              <span class="nav__products-title">Scooter Collection</span>
+              <a href="<?= e(base_url('products')) ?>" class="nav__products-all">View All Models &rarr;</a>
+            </div>
+            <div class="nav__product-grid">
+              <a href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>" class="nav__product">
+                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO 1000 V2"></div>
+                <span class="nav__product-name">CHALO 1000 V2</span>
+                <span class="nav__product-badge is-high">High Speed</span>
+              </a>
+              <a href="<?= e(base_url('product-detail?slug=chalo-smart-pro')) ?>" class="nav__product">
+                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART PRO"></div>
+                <span class="nav__product-name">CHALO SMART PRO</span>
+                <span class="nav__product-badge is-low">Low Speed</span>
+              </a>
+              <a href="<?= e(base_url('product-detail?slug=chalo-smart-plus')) ?>" class="nav__product">
+                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO SMART PLUS"></div>
+                <span class="nav__product-name">CHALO SMART PLUS</span>
+                <span class="nav__product-badge is-low">Low Speed</span>
+              </a>
+              <a href="<?= e(base_url('product-detail?slug=chalo-smart-eco')) ?>" class="nav__product">
+                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART ECO"></div>
+                <span class="nav__product-name">CHALO SMART ECO</span>
+                <span class="nav__product-badge is-low">Low Speed</span>
+              </a>
+              <a href="<?= e(base_url('product-detail?slug=chalo-neo')) ?>" class="nav__product">
+                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO NEO"></div>
+                <span class="nav__product-name">CHALO NEO</span>
+                <span class="nav__product-badge is-low">Low Speed</span>
+              </a>
+              <a href="<?= e(base_url('product-detail?slug=nja-7')) ?>" class="nav__product">
+                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/storm.png')) ?>" alt="NJA ~ 7"></div>
+                <span class="nav__product-name">NJA ~ 7</span>
+                <span class="nav__product-badge is-low">Low Speed</span>
+              </a>
+            </div>
           </div>
         </div>
 
@@ -205,13 +236,43 @@ App::render('head', [
         <button class="nav__i nav__i--t" aria-expanded="false">
           Products <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
-        <div class="nav__menu nav__menu--wide">
-          <a href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
-          <a href="<?= e(base_url('product-detail?slug=chalo-smart-pro')) ?>"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
-          <a href="<?= e(base_url('product-detail?slug=chalo-smart-plus')) ?>" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
-          <a href="<?= e(base_url('product-detail?slug=chalo-smart-eco')) ?>"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>
-          <a href="<?= e(base_url('product-detail?slug=chalo-neo')) ?>"        class="nav__s">CHALO NEO <em>Low Speed</em></a>
-          <a href="<?= e(base_url('products')) ?>"            class="nav__s">All Scooters <em>Catalogue</em></a>
+        <div class="nav__menu nav__menu--products">
+          <div class="nav__products-header">
+            <span class="nav__products-title">Scooter Collection</span>
+            <a href="<?= e(base_url('products')) ?>" class="nav__products-all">View All Models &rarr;</a>
+          </div>
+          <div class="nav__product-grid">
+            <a href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>" class="nav__product">
+              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO 1000 V2"></div>
+              <span class="nav__product-name">CHALO 1000 V2</span>
+              <span class="nav__product-badge is-high">High Speed</span>
+            </a>
+            <a href="<?= e(base_url('product-detail?slug=chalo-smart-pro')) ?>" class="nav__product">
+              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART PRO"></div>
+              <span class="nav__product-name">CHALO SMART PRO</span>
+              <span class="nav__product-badge is-low">Low Speed</span>
+            </a>
+            <a href="<?= e(base_url('product-detail?slug=chalo-smart-plus')) ?>" class="nav__product">
+              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO SMART PLUS"></div>
+              <span class="nav__product-name">CHALO SMART PLUS</span>
+              <span class="nav__product-badge is-low">Low Speed</span>
+            </a>
+            <a href="<?= e(base_url('product-detail?slug=chalo-smart-eco')) ?>" class="nav__product">
+              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART ECO"></div>
+              <span class="nav__product-name">CHALO SMART ECO</span>
+              <span class="nav__product-badge is-low">Low Speed</span>
+            </a>
+            <a href="<?= e(base_url('product-detail?slug=chalo-neo')) ?>" class="nav__product">
+              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO NEO"></div>
+              <span class="nav__product-name">CHALO NEO</span>
+              <span class="nav__product-badge is-low">Low Speed</span>
+            </a>
+            <a href="<?= e(base_url('product-detail?slug=nja-7')) ?>" class="nav__product">
+              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/storm.png')) ?>" alt="NJA ~ 7"></div>
+              <span class="nav__product-name">NJA ~ 7</span>
+              <span class="nav__product-badge is-low">Low Speed</span>
+            </a>
+          </div>
         </div>
       </div>
 
