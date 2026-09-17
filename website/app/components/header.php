@@ -14,18 +14,18 @@ function nav_active($route, $current) {
 $navProducts = [];
 try {
     if (function_exists('db_fetch_all')) {
-        $navProducts = db_fetch_all("SELECT id, name, category, top_speed_kmph, hero_image, slug FROM products WHERE active = 1 ORDER BY updated_at DESC LIMIT 6");
+        $navProducts = db_fetch_all("SELECT id, name, category, top_speed_kmph, hero_image, slug FROM products WHERE active = 1 AND hero_image IS NOT NULL AND hero_image != '' ORDER BY is_featured DESC, updated_at DESC LIMIT 6");
     }
 } catch (Throwable $e) {}
 
 if (empty($navProducts)) {
     $navProducts = [
-        ['id' => 'chalo-1000-v2', 'name' => 'CHALO 1000 V2', 'slug' => 'chalo-1000-v2', 'top_speed_kmph' => 65, 'hero_image' => 'assets/scutie_light.webp'],
-        ['id' => 'chalo-smart-pro', 'name' => 'CHALO SMART PRO', 'slug' => 'chalo-smart-pro', 'top_speed_kmph' => 45, 'hero_image' => 'assets/dark_scutie.webp'],
-        ['id' => 'chalo-smart-plus', 'name' => 'CHALO SMART PLUS', 'slug' => 'chalo-smart-plus', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scutie_light.webp'],
-        ['id' => 'chalo-smart-eco', 'name' => 'CHALO SMART ECO', 'slug' => 'chalo-smart-eco', 'top_speed_kmph' => 40, 'hero_image' => 'assets/dark_scutie.webp'],
-        ['id' => 'chalo-neo', 'name' => 'CHALO NEO', 'slug' => 'chalo-neo', 'top_speed_kmph' => 35, 'hero_image' => 'assets/scutie_light.webp'],
-        ['id' => 'nja-7', 'name' => 'NJA ~ 7', 'slug' => 'nja-7', 'top_speed_kmph' => 40, 'hero_image' => 'assets/storm.png']
+        ['id' => 'striker', 'name' => 'Striker', 'slug' => 'hazra-striker', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png'],
+        ['id' => 'wind', 'name' => 'Wind', 'slug' => 'hazra-wind', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png'],
+        ['id' => 'wind-pro', 'name' => 'Wind Pro', 'slug' => 'hazra-wind-pro', 'top_speed_kmph' => 50, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png'],
+        ['id' => 'soul-pro', 'name' => 'Soul Pro', 'slug' => 'hazra-soul-pro', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png'],
+        ['id' => 'max-e4', 'name' => 'Max E4', 'slug' => 'hazra-max-e4', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png'],
+        ['id' => 'spark', 'name' => 'Spark', 'slug' => 'hazra-spark', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png']
     ];
 }
 ?>

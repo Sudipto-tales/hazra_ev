@@ -1,4 +1,22 @@
 <?php
+$navProducts = [];
+try {
+    if (function_exists('db_fetch_all')) {
+        $navProducts = db_fetch_all("SELECT id, name, category, top_speed_kmph, hero_image, slug FROM products WHERE active = 1 AND hero_image IS NOT NULL AND hero_image != '' ORDER BY is_featured DESC, updated_at DESC LIMIT 6");
+    }
+} catch (Throwable $e) {}
+
+if (empty($navProducts)) {
+    $navProducts = [
+        ['name' => 'Striker', 'slug' => 'hazra-striker', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png'],
+        ['name' => 'Soul Pro', 'slug' => 'hazra-soul-pro', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png'],
+        ['name' => 'Wind Pro', 'slug' => 'hazra-wind-pro', 'top_speed_kmph' => 50, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png'],
+        ['name' => 'Wind', 'slug' => 'hazra-wind', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png'],
+        ['name' => 'Max E4', 'slug' => 'hazra-max-e4', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png'],
+        ['name' => 'Spark', 'slug' => 'hazra-spark', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png'],
+    ];
+}
+
 App::render('head', [
     'pageTitle' => 'Hazra Electrical Bike — Follow Elegant',
     'pageDescription' => 'Hazra Electrical Bike — electric scooters built for everyday Indian riding. Book a test drive or find a dealership near you.'
@@ -17,8 +35,8 @@ App::render('head', [
 
     <!-- photo sits underneath; white plates notch into it -->
     <figure class="photo">
-      <img class="photo__img photo__img--light" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Hazra Electrical Bike in daylight">
-      <img class="photo__img photo__img--dark"  src="<?= e(base_url('assets/dark_scutie.webp')) ?>"  alt="Hazra Electrical Bike at night" aria-hidden="true">
+      <img class="photo__img photo__img--light" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_12.png')) ?>" alt="Hazra Electrical Bike in daylight">
+      <img class="photo__img photo__img--dark"  src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_16.png')) ?>"  alt="Hazra Electrical Bike at night" aria-hidden="true">
       <div class="photo__shade"></div>
 
       <div class="pill pill--b reveal-pop"><i data-lucide="gauge"></i><span>120&nbsp;km/hour</span></div>
@@ -73,36 +91,21 @@ App::render('head', [
               <a href="<?= e(base_url('products')) ?>" class="nav__products-all">View All Models &rarr;</a>
             </div>
             <div class="nav__product-grid">
-              <a href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>" class="nav__product">
-                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO 1000 V2"></div>
-                <span class="nav__product-name">CHALO 1000 V2</span>
-                <span class="nav__product-badge is-high">High Speed</span>
-              </a>
-              <a href="<?= e(base_url('product-detail?slug=chalo-smart-pro')) ?>" class="nav__product">
-                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART PRO"></div>
-                <span class="nav__product-name">CHALO SMART PRO</span>
-                <span class="nav__product-badge is-low">Low Speed</span>
-              </a>
-              <a href="<?= e(base_url('product-detail?slug=chalo-smart-plus')) ?>" class="nav__product">
-                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO SMART PLUS"></div>
-                <span class="nav__product-name">CHALO SMART PLUS</span>
-                <span class="nav__product-badge is-low">Low Speed</span>
-              </a>
-              <a href="<?= e(base_url('product-detail?slug=chalo-smart-eco')) ?>" class="nav__product">
-                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART ECO"></div>
-                <span class="nav__product-name">CHALO SMART ECO</span>
-                <span class="nav__product-badge is-low">Low Speed</span>
-              </a>
-              <a href="<?= e(base_url('product-detail?slug=chalo-neo')) ?>" class="nav__product">
-                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO NEO"></div>
-                <span class="nav__product-name">CHALO NEO</span>
-                <span class="nav__product-badge is-low">Low Speed</span>
-              </a>
-              <a href="<?= e(base_url('product-detail?slug=nja-7')) ?>" class="nav__product">
-                <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/storm.png')) ?>" alt="NJA ~ 7"></div>
-                <span class="nav__product-name">NJA ~ 7</span>
-                <span class="nav__product-badge is-low">Low Speed</span>
-              </a>
+              <?php foreach ($navProducts as $np): 
+                $imgSrc = !empty($np['hero_image']) ? base_url($np['hero_image']) : base_url('assets/scooters/hazra_broucher_6_scooter_9.png');
+                $isHigh = ((int)($np['top_speed_kmph'] ?? 0)) >= 50;
+                $productUrl = !empty($np['slug']) 
+                  ? base_url('product-detail?slug=' . urlencode($np['slug'])) 
+                  : base_url('product-detail?id=' . urlencode($np['id'] ?? ''));
+              ?>
+                <a href="<?= e($productUrl) ?>" class="nav__product">
+                  <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e($imgSrc) ?>" alt="<?= e($np['name']) ?>" loading="lazy"></div>
+                  <span class="nav__product-name"><?= e($np['name']) ?></span>
+                  <span class="nav__product-badge <?= $isHigh ? 'is-high' : 'is-low' ?>">
+                    <?= $isHigh ? 'High Speed' : 'Low Speed' ?>
+                  </span>
+                </a>
+              <?php endforeach; ?>
             </div>
           </div>
         </div>
@@ -242,36 +245,21 @@ App::render('head', [
             <a href="<?= e(base_url('products')) ?>" class="nav__products-all">View All Models &rarr;</a>
           </div>
           <div class="nav__product-grid">
-            <a href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>" class="nav__product">
-              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO 1000 V2"></div>
-              <span class="nav__product-name">CHALO 1000 V2</span>
-              <span class="nav__product-badge is-high">High Speed</span>
-            </a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-smart-pro')) ?>" class="nav__product">
-              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART PRO"></div>
-              <span class="nav__product-name">CHALO SMART PRO</span>
-              <span class="nav__product-badge is-low">Low Speed</span>
-            </a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-smart-plus')) ?>" class="nav__product">
-              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO SMART PLUS"></div>
-              <span class="nav__product-name">CHALO SMART PLUS</span>
-              <span class="nav__product-badge is-low">Low Speed</span>
-            </a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-smart-eco')) ?>" class="nav__product">
-              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART ECO"></div>
-              <span class="nav__product-name">CHALO SMART ECO</span>
-              <span class="nav__product-badge is-low">Low Speed</span>
-            </a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-neo')) ?>" class="nav__product">
-              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO NEO"></div>
-              <span class="nav__product-name">CHALO NEO</span>
-              <span class="nav__product-badge is-low">Low Speed</span>
-            </a>
-            <a href="<?= e(base_url('product-detail?slug=nja-7')) ?>" class="nav__product">
-              <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e(base_url('assets/storm.png')) ?>" alt="NJA ~ 7"></div>
-              <span class="nav__product-name">NJA ~ 7</span>
-              <span class="nav__product-badge is-low">Low Speed</span>
-            </a>
+              <?php foreach ($navProducts as $np): 
+                $imgSrc = !empty($np['hero_image']) ? base_url($np['hero_image']) : base_url('assets/scooters/hazra_broucher_6_scooter_9.png');
+                $isHigh = ((int)($np['top_speed_kmph'] ?? 0)) >= 50;
+                $productUrl = !empty($np['slug']) 
+                  ? base_url('product-detail?slug=' . urlencode($np['slug'])) 
+                  : base_url('product-detail?id=' . urlencode($np['id'] ?? ''));
+              ?>
+                <a href="<?= e($productUrl) ?>" class="nav__product">
+                  <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e($imgSrc) ?>" alt="<?= e($np['name']) ?>" loading="lazy"></div>
+                  <span class="nav__product-name"><?= e($np['name']) ?></span>
+                  <span class="nav__product-badge <?= $isHigh ? 'is-high' : 'is-low' ?>">
+                    <?= $isHigh ? 'High Speed' : 'Low Speed' ?>
+                  </span>
+                </a>
+              <?php endforeach; ?>
           </div>
         </div>
       </div>
@@ -405,7 +393,7 @@ App::render('head', [
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
           <span class="card__360">360&deg;</span>
-          <img class="card__img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO 1000 V2">
+          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_9.png')) ?>" alt="CHALO 1000 V2">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -439,7 +427,7 @@ App::render('head', [
       <article class="card" style="--c:#241640">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART PRO">
+          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_14.png')) ?>" alt="CHALO SMART PRO">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -473,7 +461,7 @@ App::render('head', [
       <article class="card" style="--c:#f0532b">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO SMART PLUS">
+          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_13.png')) ?>" alt="CHALO SMART PLUS">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -507,7 +495,7 @@ App::render('head', [
       <article class="card" style="--c:#a41fbf">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO SMART ECO">
+          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_12.png')) ?>" alt="CHALO SMART ECO">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -541,7 +529,7 @@ App::render('head', [
       <article class="card" style="--c:#f7941d">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="CHALO NEO">
+          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_15.png')) ?>" alt="CHALO NEO">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -575,7 +563,7 @@ App::render('head', [
       <article class="card" style="--c:#efeaf8">
         <div class="card__media">
           <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="CHALO PRO MAX">
+          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_16.png')) ?>" alt="CHALO PRO MAX">
           <i class="card__wash"></i>
           <i class="card__shine"></i>
         </div>
@@ -600,7 +588,7 @@ App::render('head', [
             <p class="card__note">*Without GST</p>
           </div>
           <div class="card__acts">
-            <a class="btn btn--ghost" href="<?= e(base_url('products')) ?>">Explore</a>
+            <a class="btn btn--ghost" href="<?= e(base_url('product-detail?slug=nja-7')) ?>">Explore</a>
             <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
           </div>
         </div>
@@ -749,11 +737,11 @@ App::render('head', [
         <!-- the product deck -->
         <div class="feat__deck" id="featDeck">
 
-          <article class="fslide" style="--n:0;--c:#7b2ff7;--fx:hue-rotate(238deg) saturate(1.18)">
+          <article class="fslide" style="--n:0;--c:#2563eb">
             <div class="fslide__media">
               <i class="fslide__halo"></i>
               <i class="fslide__floor"></i>
-              <img class="fslide__img" src="<?= e(base_url('assets/storm.png')) ?>" alt="CHALO 1000 V2 in violet" decoding="async">
+              <img class="fslide__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_9.png')) ?>" alt="CHALO 1000 V2 in ocean blue" decoding="async">
             </div>
             <div class="fslide__body">
               <h3 class="fslide__name">CHALO 1000 V2</h3>
@@ -761,11 +749,11 @@ App::render('head', [
             </div>
           </article>
 
-          <article class="fslide" style="--n:1;--c:#241640;--fx:hue-rotate(206deg) saturate(.5) brightness(.86)">
+          <article class="fslide" style="--n:1;--c:#1e1b4b">
             <div class="fslide__media">
               <i class="fslide__halo"></i>
               <i class="fslide__floor"></i>
-              <img class="fslide__img" src="<?= e(base_url('assets/storm.png')) ?>" alt="CHALO SMART PRO in matte indigo" loading="lazy" decoding="async">
+              <img class="fslide__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_14.png')) ?>" alt="CHALO SMART PRO in midnight indigo" loading="lazy" decoding="async">
             </div>
             <div class="fslide__body">
               <h3 class="fslide__name">CHALO SMART PRO</h3>
@@ -773,11 +761,11 @@ App::render('head', [
             </div>
           </article>
 
-          <article class="fslide" style="--n:2;--c:#f0532b;--fx:hue-rotate(-14deg) saturate(1.3)">
+          <article class="fslide" style="--n:2;--c:#ea580c">
             <div class="fslide__media">
               <i class="fslide__halo"></i>
               <i class="fslide__floor"></i>
-              <img class="fslide__img" src="<?= e(base_url('assets/storm.png')) ?>" alt="CHALO SMART PLUS in signal flame" loading="lazy" decoding="async">
+              <img class="fslide__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_13.png')) ?>" alt="CHALO SMART PLUS in sunset flame" loading="lazy" decoding="async">
             </div>
             <div class="fslide__body">
               <h3 class="fslide__name">CHALO SMART PLUS</h3>
@@ -785,11 +773,11 @@ App::render('head', [
             </div>
           </article>
 
-          <article class="fslide" style="--n:3;--c:#eee9f7;--fx:saturate(.1) brightness(1.24)">
+          <article class="fslide" style="--n:3;--c:#b45309">
             <div class="fslide__media">
               <i class="fslide__halo"></i>
               <i class="fslide__floor"></i>
-              <img class="fslide__img" src="<?= e(base_url('assets/storm.png')) ?>" alt="CHALO NEO in pearl white" loading="lazy" decoding="async">
+              <img class="fslide__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_12.png')) ?>" alt="CHALO NEO in champagne gold" loading="lazy" decoding="async">
             </div>
             <div class="fslide__body">
               <h3 class="fslide__name">CHALO NEO</h3>
@@ -809,7 +797,7 @@ App::render('head', [
 
         <!-- bottom-left SKU / bottom-right finish, both swap on --fi -->
         <p class="feat__item"><span class="swap" style="--n:0">ITEM: 10009601</span><span class="swap" style="--n:1">ITEM: 10009602</span><span class="swap" style="--n:2">ITEM: 10009603</span><span class="swap" style="--n:3">ITEM: 10009604</span></p>
-        <p class="feat__finish"><span class="swap" style="--n:0">VIOLET GLOSS</span><span class="swap" style="--n:1">MATTE INDIGO</span><span class="swap" style="--n:2">SIGNAL FLAME</span><span class="swap" style="--n:3">PEARL WHITE</span></p>
+        <p class="feat__finish"><span class="swap" style="--n:0">OCEAN BLUE</span><span class="swap" style="--n:1">MIDNIGHT INDIGO</span><span class="swap" style="--n:2">SUNSET FLAME</span><span class="swap" style="--n:3">CHAMPAGNE GOLD</span></p>
 
         <!-- arc dial: ticks sit still, the name ring rotates under the cursor -->
         <div class="feat__arc" aria-hidden="true">
@@ -891,7 +879,7 @@ App::render('head', [
     <div class="bento">
 
       <article class="bento__c bento__c--lead" style="--pos:38% 62%;--tint:var(--brand-violet)">
-        <img class="bento__img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Battery pack detail">
+        <img class="bento__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_14.png')) ?>" alt="Battery pack detail">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="battery-charging"></i>Battery</span>
         <div class="bento__body">
@@ -901,7 +889,7 @@ App::render('head', [
       </article>
 
       <article class="bento__c bento__c--wide" style="--pos:72% 34%;--tint:var(--brand-blue)">
-        <img class="bento__img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Cockpit and controls">
+        <img class="bento__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_16.png')) ?>" alt="Cockpit and controls">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="zap"></i>Control</span>
         <div class="bento__body">
@@ -911,7 +899,7 @@ App::render('head', [
       </article>
 
       <article class="bento__c" style="--pos:24% 78%;--tint:var(--brand-magenta)">
-        <img class="bento__img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Dealer handover">
+        <img class="bento__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_12.png')) ?>" alt="Dealer handover">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="map-pin"></i>Network</span>
         <div class="bento__body">
@@ -921,7 +909,7 @@ App::render('head', [
       </article>
 
       <article class="bento__c" style="--pos:84% 66%;--tint:var(--brand-flame)">
-        <img class="bento__img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Suspension and warranty seal">
+        <img class="bento__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_9.png')) ?>" alt="Suspension and warranty seal">
         <i class="bento__scrim"></i>
         <span class="bento__tag"><i data-lucide="shield-check"></i>Warranty</span>
         <div class="bento__body">
@@ -941,7 +929,7 @@ App::render('head', [
     <div class="ride__grid">
 
       <figure class="ride__media reveal-up">
-        <img class="ride__img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Hazra EV scooter">
+        <img class="ride__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_14.png')) ?>" alt="Hazra EV scooter">
         <i class="ride__wash"></i>
         <figcaption class="ride__offer">
           <b>Season offer</b>
@@ -1087,7 +1075,7 @@ App::render('head', [
 
       <a class="post" href="<?= e(base_url('blog-single')) ?>" style="--i:0;--pos:30% 58%;--tint:var(--brand-violet)">
         <figure class="post__media">
-          <img class="post__img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="EV Trends">
+          <img class="post__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_16.png')) ?>" alt="EV Trends">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">
@@ -1100,7 +1088,7 @@ App::render('head', [
 
       <a class="post" href="<?= e(base_url('blog-single')) ?>" style="--i:1;--pos:66% 44%;--tint:var(--brand-blue)">
         <figure class="post__media">
-          <img class="post__img" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Battery Care">
+          <img class="post__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_13.png')) ?>" alt="Battery Care">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">
@@ -1113,11 +1101,10 @@ App::render('head', [
 
       <a class="post" href="<?= e(base_url('blog-single')) ?>" style="--i:2;--pos:20% 70%;--tint:var(--brand-flame)">
         <figure class="post__media">
-          <img class="post__img" src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Dealership Growth">
+          <img class="post__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_15.png')) ?>" alt="Dealership Growth">
           <i class="post__wash"></i>
         </figure>
         <div class="post__body">
-          <div class="post__body">
           <span class="post__cat">Dealership</span>
           <h3 class="post__t">Why EV Dealerships Are a High&#8209;Growth Local Business</h3>
           <p class="post__d">Demand signals, service revenue and local trust &mdash; what actually makes a two&#8209;wheeler EV counter work.</p>

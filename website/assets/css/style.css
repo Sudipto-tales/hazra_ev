@@ -1590,7 +1590,7 @@ html[data-theme="dark"] .theme__moon{display:block}
   position:relative;z-index:2;
   width:100%;height:100%;display:block;
   object-fit:contain;object-position:center 46%;
-  filter:var(--fx) drop-shadow(0 26px 30px rgba(10,5,20,calc(var(--sh-a) * .45)));
+  filter:var(--fx, ) drop-shadow(0 26px 30px rgba(10,5,20,calc(var(--sh-a) * .45)));
   transform:translateZ(30px);
 }
 
@@ -1607,7 +1607,7 @@ html[data-theme="dark"] .theme__moon{display:block}
 /* a soft lift on the one in front, so the deck has a clear subject */
 .fslide.is-live .fslide__halo{filter:blur(30px)}
 .fslide.is-live .fslide__img{
-  filter:var(--fx) drop-shadow(0 30px 38px rgba(10,5,20,calc(var(--sh-a) * .5)));
+  filter:var(--fx, ) drop-shadow(0 30px 38px rgba(10,5,20,calc(var(--sh-a) * .5)));
 }
 
 @media (prefers-reduced-motion:reduce){
