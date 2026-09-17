@@ -54,7 +54,19 @@ final class WebsiteController extends V1Controller
         }
 
         $result = array_map(
-            static fn(array $p) => Present::product($p, $byProduct[$p['id']] ?? []),
+            static function (array $p) use ($byProduct) {
+                $item = Present::product($p, $byProduct[$p['id']] ?? []);
+                $firstColor = $item['colors'][0] ?? null;
+                $rawImg = ($firstColor && !empty($firstColor['imageUrls'])) ? $firstColor['imageUrls'][0] : ($p['hero_image'] ?? 'assets/scutie_light.webp');
+                $imgUrl = ($rawImg && (str_starts_with($rawImg, 'http') || str_starts_with($rawImg, '/'))) ? $rawImg : base_url($rawImg);
+
+                $item['slug'] = $p['slug'] ?? '';
+                $item['heroImage'] = $imgUrl;
+                $item['image'] = $imgUrl;
+                $item['series'] = $p['brand'] ?? 'Hazra';
+                $item['speed_type'] = ($item['topSpeedKmph'] ?? 45) >= 55 ? 'high' : 'city';
+                return $item;
+            },
             $rows
         );
 

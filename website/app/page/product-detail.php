@@ -67,7 +67,8 @@ App::render('head', [
 App::render('header', ['isStickyOnly' => true]);
 
 $activeColor = $product['colors'][0] ?? null;
-$heroImg = ($activeColor && !empty($activeColor['images'])) ? $activeColor['images'][0] : base_url('assets/scutie_light.webp');
+$rawHero = ($activeColor && !empty($activeColor['images'])) ? $activeColor['images'][0] : ($product['hero_image'] ?? 'assets/scutie_light.webp');
+$heroImg = ($rawHero && (str_starts_with($rawHero, 'http') || str_starts_with($rawHero, '/'))) ? $rawHero : base_url($rawHero);
 ?>
 
 <!-- ========== UNIQUE PAGE CONTENT START ========== -->
@@ -101,7 +102,8 @@ $heroImg = ($activeColor && !empty($activeColor['images'])) ? $activeColor['imag
               <?php foreach ($product['colors'] as $idx => $c): ?>
                 <?php
                   $hex = '#' . substr(dechex($c['argb'] & 0xFFFFFF), -6);
-                  $cImg = !empty($c['images']) ? $c['images'][0] : $heroImg;
+                  $rawC = !empty($c['images']) ? $c['images'][0] : $rawHero;
+                  $cImg = ($rawC && (str_starts_with($rawC, 'http') || str_starts_with($rawC, '/'))) ? $rawC : base_url($rawC);
                 ?>
                 <button onclick="selectColor('<?= e($cImg) ?>', '<?= e($c['name']) ?>', this)"
                         style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; border: 2px solid <?= $idx === 0 ? 'var(--ink-0)' : 'var(--hair-0)' ?>; background: var(--surface-0); cursor: pointer; transition: all .25s;">
