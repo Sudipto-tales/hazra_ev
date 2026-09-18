@@ -35,8 +35,8 @@ App::render('header', ['isStickyOnly' => true]);
             <li>
               <span class="ct-info__icon"><i data-lucide="map-pin"></i></span>
               <div>
-                <strong>Head office</strong>
-                <p>Hazra Electrical Bike<br>India — dealer network nationwide</p>
+                <strong>Showroom & Head Office</strong>
+                <p>Ghordourchati More, Below LIC Division Office<br>Bardhaman, West Bengal 713103</p>
               </div>
             </li>
             <li>
@@ -50,7 +50,7 @@ App::render('header', ['isStickyOnly' => true]);
               <span class="ct-info__icon"><i data-lucide="phone"></i></span>
               <div>
                 <strong>Call us</strong>
-                <p><a href="tel:+919829016542">+91 98290 16542</a></p>
+                <p><a href="tel:+919002921509">+91 90029 21509</a> / <a href="tel:+919242752316">+91 92427 52316</a></p>
               </div>
             </li>
           </ul>
@@ -58,10 +58,10 @@ App::render('header', ['isStickyOnly' => true]);
           <div class="ct-info__social">
             <p>Follow our social media</p>
             <div class="ct-socials">
-              <a href="#" aria-label="Facebook"><i data-lucide="facebook"></i></a>
-              <a href="#" aria-label="Instagram"><i data-lucide="instagram"></i></a>
-              <a href="https://wa.me/919829016542" target="_blank" rel="noopener" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
-              <a href="#" aria-label="YouTube"><i data-lucide="youtube"></i></a>
+              <a href="https://www.facebook.com/hazraelectricalbike/" target="_blank" rel="noopener" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+              <a href="https://www.instagram.com/hazraelectrical/" target="_blank" rel="noopener" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+              <a href="https://wa.me/919002921509" target="_blank" rel="noopener" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
+              <a href="https://www.google.com/maps/place/Hazra+Electrical+Bike/@23.2198619,87.8848343,17z" target="_blank" rel="noopener" aria-label="Google Maps" title="Google Maps"><i data-lucide="map-pin"></i></a>
             </div>
           </div>
         </aside>

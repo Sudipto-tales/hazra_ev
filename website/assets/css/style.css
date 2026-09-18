@@ -2414,6 +2414,12 @@ html[data-theme="light"] .foot__bg--dark{display:none}
   box-shadow:0 8px 18px -8px rgba(37, 211, 102, .5);
   transform:translateY(-3px);
 }
+.foot__social--map:hover{
+  background:#ea4335;
+  border-color:#ea4335;
+  box-shadow:0 8px 18px -8px rgba(234, 67, 53, .5);
+  transform:translateY(-3px);
+}
 
 .foot__base{
   display:flex;align-items:center;justify-content:space-between;

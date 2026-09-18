@@ -10,12 +10,12 @@
     <span class="dock__lb">Dealership</span>
   </a>
 
-  <a class="dock__i" href="tel:+919829016542" aria-label="Call Hazra Electrical Bike">
+  <a class="dock__i" href="tel:+919002921509" aria-label="Call Hazra Electrical Bike">
     <i data-lucide="phone"></i>
     <span class="dock__lb">Call Us</span>
   </a>
 
-  <a class="dock__i" href="https://wa.me/919829016542" target="_blank" rel="noopener noreferrer"
+  <a class="dock__i" href="https://wa.me/919002921509" target="_blank" rel="noopener noreferrer"
      aria-label="Chat on WhatsApp (opens in a new tab)">
     <i data-lucide="message-circle"></i>
     <span class="dock__lb">WhatsApp</span>
@@ -49,9 +49,22 @@
             affordable mobility.
           </p>
           <ul class="foot__contact">
-            <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
-            <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
-            <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
+            <li>
+              <i data-lucide="phone"></i>
+              <a href="tel:+919002921509">+91 90029 21509</a>
+            </li>
+            <li>
+              <i data-lucide="phone"></i>
+              <a href="tel:+919242752316">+91 92427 52316</a>
+            </li>
+            <li>
+              <i data-lucide="mail"></i>
+              <a href="mailto:info@hazraev.com">info@hazraev.com</a>
+            </li>
+            <li>
+              <i data-lucide="map-pin"></i>
+              <span>Ghordourchati More, Below LIC Division Office, Bardhaman, West Bengal 713103</span>
+            </li>
           </ul>
         </div>
 
@@ -106,17 +119,32 @@
       <aside class="foot__social-section">
         <h3 class="foot__social-title">Follow us</h3>
         <div class="foot__socials">
-          <a href="#" class="foot__social-link foot__social--instagram" aria-label="Instagram" title="Instagram">
+          <a href="https://www.instagram.com/hazraelectrical/" 
+             class="foot__social-link foot__social--instagram" 
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Instagram" title="Instagram">
             <i data-lucide="instagram"></i>
           </a>
-          <a href="#" class="foot__social-link foot__social--facebook" aria-label="Facebook" title="Facebook">
+
+          <a href="https://www.facebook.com/hazraelectricalbike/" 
+             class="foot__social-link foot__social--facebook" 
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Facebook" title="Facebook">
             <i data-lucide="facebook"></i>
           </a>
-          <a href="#" class="foot__social-link foot__social--youtube" aria-label="YouTube" title="YouTube">
-            <i data-lucide="youtube"></i>
-          </a>
-          <a href="#" class="foot__social-link foot__social--whatsapp" aria-label="WhatsApp" title="WhatsApp">
+
+          <a href="https://wa.me/919002921509" 
+             class="foot__social-link foot__social--whatsapp" 
+             target="_blank" rel="noopener noreferrer"
+             aria-label="WhatsApp" title="WhatsApp">
             <i data-lucide="message-circle"></i>
+          </a>
+
+          <a href="https://www.google.com/maps/place/Hazra+Electrical+Bike/@23.2198619,87.8848343,17z" 
+             class="foot__social-link foot__social--map" 
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Google Maps" title="Location">
+            <i data-lucide="map-pin"></i>
           </a>
         </div>
       </aside>
@@ -134,5 +162,10 @@
 </footer>
 
 <script src="<?= e(base_url('assets/js/script.js')) ?>"></script>
+<script>
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+</script>
 </body>
 </html>

@@ -1139,9 +1139,22 @@
             affordable mobility.
           </p>
           <ul class="foot__contact">
-            <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
-            <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
-            <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
+            <li>
+              <i data-lucide="phone"></i>
+              <a href="tel:+919002921509">+91 90029 21509</a>
+            </li>
+            <li>
+              <i data-lucide="phone"></i>
+              <a href="tel:+919242752316">+91 92427 52316</a>
+            </li>
+            <li>
+              <i data-lucide="mail"></i>
+              <a href="mailto:info@hazraev.com">info@hazraev.com</a>
+            </li>
+            <li>
+              <i data-lucide="map-pin"></i>
+              <span>Ghordourchati More, Below LIC Division Office, Bardhaman, West Bengal 713103</span>
+            </li>
           </ul>
         </div>
 
@@ -1195,17 +1208,32 @@
       <aside class="foot__social-section">
         <h3 class="foot__social-title">Follow us</h3>
         <div class="foot__socials">
-          <a href="#" class="foot__social-link foot__social--instagram" aria-label="Instagram" title="Instagram">
+          <a href="https://www.instagram.com/hazraelectrical/" 
+             class="foot__social-link foot__social--instagram" 
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Instagram" title="Instagram">
             <i data-lucide="instagram"></i>
           </a>
-          <a href="#" class="foot__social-link foot__social--facebook" aria-label="Facebook" title="Facebook">
+
+          <a href="https://www.facebook.com/hazraelectricalbike/" 
+             class="foot__social-link foot__social--facebook" 
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Facebook" title="Facebook">
             <i data-lucide="facebook"></i>
           </a>
-          <a href="#" class="foot__social-link foot__social--youtube" aria-label="YouTube" title="YouTube">
-            <i data-lucide="youtube"></i>
-          </a>
-          <a href="#" class="foot__social-link foot__social--whatsapp" aria-label="WhatsApp" title="WhatsApp">
+
+          <a href="https://wa.me/919002921509" 
+             class="foot__social-link foot__social--whatsapp" 
+             target="_blank" rel="noopener noreferrer"
+             aria-label="WhatsApp" title="WhatsApp">
             <i data-lucide="message-circle"></i>
+          </a>
+
+          <a href="https://www.google.com/maps/place/Hazra+Electrical+Bike/@23.2198619,87.8848343,17z" 
+             class="foot__social-link foot__social--map" 
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Google Maps" title="Location">
+            <i data-lucide="map-pin"></i>
           </a>
         </div>
       </aside>
@@ -1213,7 +1241,7 @@
 
     <!-- Footer base: Legal and copyright -->
     <div class="foot__base">
-      <p>&copy; 2026 Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
+      <p>&copy; <?= date('Y') ?> Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
       <div class="foot__legal">
         <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a>
       </div>
@@ -1222,35 +1250,36 @@
   </div>
 </footer>
 
-<!-- ══════════ FLOATING ACTION DOCK ══════════
-     Fixed to the right edge, vertically centred, above every section. Icon
-     only; the label slides out to the LEFT on hover/focus so it never leaves
-     the viewport. Colours come from the glass tokens, so it follows the
-     theme toggle and the hero's --p ramp without a single hard-coded hex. -->
+<!-- ══════════ FLOATING ACTION DOCK ══════════ -->
 <aside class="dock" aria-label="Quick actions">
   <a class="dock__i" href="#test-ride" data-dock="test-drive" aria-label="Book a test drive">
     <i data-lucide="bike"></i>
     <span class="dock__lb">Test Drive</span>
   </a>
 
-  <a class="dock__i" href="dealership-enquiry.html" data-dock="dealership" aria-label="Dealership enquiry">
+  <a class="dock__i" href="<?= e(base_url('become-a-dealer')) ?>" data-dock="dealership" aria-label="Dealership enquiry">
     <i data-lucide="store"></i>
     <span class="dock__lb">Dealership</span>
   </a>
 
-  <a class="dock__i" href="tel:+919829016542" aria-label="Call Hazra Electrical Bike">
+  <a class="dock__i" href="tel:+919002921509" aria-label="Call Hazra Electrical Bike">
     <i data-lucide="phone"></i>
     <span class="dock__lb">Call Us</span>
   </a>
 
-  <a class="dock__i" href="https://wa.me/919829016542" target="_blank" rel="noopener noreferrer"
+  <a class="dock__i" href="https://wa.me/919002921509" target="_blank" rel="noopener noreferrer"
      aria-label="Chat on WhatsApp (opens in a new tab)">
     <i data-lucide="message-circle"></i>
     <span class="dock__lb">WhatsApp</span>
   </a>
 </aside>
 
-<script src="https://hazraelectricalbike.com/assets/js/script.js"></script>
+<script src="<?= e(base_url('assets/js/script.js')) ?>"></script>
+<script>
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+</script>
 </body>
 </html>
 
