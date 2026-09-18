@@ -298,21 +298,25 @@ final class ProductsController extends V1Controller
                 continue;
             }
 
-            $colorId = Uuid::v4();
+            $colorId = !empty($color['id']) && is_string($color['id']) ? $color['id'] : Uuid::v4();
+            $pos = isset($color['position']) ? Wire::int($color['position']) : $position;
 
             db_execute(
                 "INSERT INTO product_colors (id, product_id, name, argb, in_stock, position)
                  VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     $colorId, $productId, (string) $color['name'], Wire::int($color['argb'] ?? 0),
-                    Wire::bool($color['inStock'] ?? true) ? 1 : 0, $position,
+                    Wire::bool($color['inStock'] ?? $color['in_stock'] ?? true) ? 1 : 0, $pos,
                 ],
             );
 
-            foreach (array_values((array) ($color['imageUrls'] ?? [])) as $i => $url) {
+            $rawImages = $color['imageUrls'] ?? $color['images'] ?? [];
+            foreach (array_values((array) $rawImages) as $i => $item) {
+                $url = is_array($item) ? ($item['url'] ?? '') : (string) $item;
+                if ($url === '') continue;
                 db_execute(
                     "INSERT INTO product_color_images (id, color_id, url, position) VALUES (?, ?, ?, ?)",
-                    [Uuid::v4(), $colorId, (string) $url, $i],
+                    [Uuid::v4(), $colorId, $url, $i],
                 );
             }
         }

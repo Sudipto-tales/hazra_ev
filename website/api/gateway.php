@@ -97,6 +97,7 @@ class ApiGatewayProvider extends RouteProvider
 
             // --- Website Public & Admin Management --------------------------------
             'GET:api/v1/website/products'        => ['WebsiteController', 'products'],
+            'GET:api/v1/website/products/{id}'   => ['WebsiteController', 'product'],
             'GET:api/v1/website/settings'        => ['WebsiteController', 'settings'],
             'POST:api/v1/website/settings'       => ['WebsiteController', 'updateSettings', 'auth'],
             'POST:api/v1/website/leads'          => ['WebsiteController', 'storeLead'],

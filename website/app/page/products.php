@@ -30,10 +30,10 @@ App::render('header', ['isStickyOnly' => true]);
       <img src="<?= e(base_url('assets/storm.webp')) ?>" alt="City scooters">
       <span>City / Daily</span>
     </button>
-    <button type="button" class="pl-show__tile" data-filter-speed="high">
+    <!-- <button type="button" class="pl-show__tile" data-filter-speed="high">
       <img src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Performance scooters">
       <span>High speed</span>
-    </button>
+    </button> -->
   </div>
 </section>
 

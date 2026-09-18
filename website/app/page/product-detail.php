@@ -8,7 +8,7 @@ $relatedProducts = [];
 try {
     if (function_exists('db_fetch_one')) {
         if ($reqId !== '') {
-            $product = db_fetch_one("SELECT * FROM products WHERE (id = ? OR model_code = ? OR name = ?) AND active = 1", [$reqId, $reqId, $reqId]);
+            $product = db_fetch_one("SELECT * FROM products WHERE (id = ? OR model_code = ? OR name = ? OR slug = ?) AND active = 1", [$reqId, $reqId, $reqId, $reqId]);
         }
         if (!$product) {
             $product = db_fetch_one("SELECT * FROM products WHERE active = 1 ORDER BY updated_at DESC LIMIT 1");
@@ -58,17 +58,52 @@ if (!$product) {
 $pageTitle = $product['brand'] . ' ' . $product['name'] . " — Hazra Electrical Bike";
 $pageDescription = "Experience the " . $product['name'] . " with " . $product['range_km'] . "km range, " . $product['top_speed_kmph'] . "km/h top speed, and premium build quality.";
 
-App::render('head', [
-    'pageTitle'       => $pageTitle,
-    'pageDescription' => $pageDescription,
-    'extraCss'        => ['assets/css/styles/product.css'],
-]);
-
-App::render('header', ['isStickyOnly' => true]);
-
 $activeColor = $product['colors'][0] ?? null;
 $rawHero = ($activeColor && !empty($activeColor['images'])) ? $activeColor['images'][0] : ($product['hero_image'] ?? 'assets/scutie_light.webp');
 $heroImg = ($rawHero && (str_starts_with($rawHero, 'http') || str_starts_with($rawHero, '/'))) ? $rawHero : base_url($rawHero);
+
+$colorsData = [];
+if (!empty($product['colors'])) {
+    foreach ($product['colors'] as $c) {
+        $hex = '#' . substr(dechex($c['argb'] & 0xFFFFFF), -6);
+        $imgs = [];
+        if (!empty($c['images'])) {
+            foreach ($c['images'] as $u) {
+                $imgs[] = ($u && (str_starts_with($u, 'http') || str_starts_with($u, '/'))) ? $u : base_url($u);
+            }
+        }
+        if (empty($imgs)) {
+            $imgs[] = $heroImg;
+        }
+        $colorsData[] = [
+            'id'       => $c['id'],
+            'name'     => $c['name'],
+            'hex'      => $hex,
+            'in_stock' => (bool) ($c['in_stock'] ?? 1),
+            'images'   => $imgs,
+        ];
+    }
+} else {
+    $colorsData[] = [
+        'id'       => 'default',
+        'name'     => 'Standard',
+        'hex'      => '#1a1a1a',
+        'in_stock' => true,
+        'images'   => [$heroImg],
+    ];
+}
+
+App::render('head', [
+    'pageTitle'       => $pageTitle,
+    'pageDescription' => $pageDescription,
+    'extraCss'        => [
+        'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+        'https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css',
+        'assets/css/styles/product.css'
+    ],
+]);
+
+App::render('header', ['isStickyOnly' => true]);
 ?>
 
 <!-- ========== UNIQUE PAGE CONTENT START ========== -->
@@ -88,32 +123,69 @@ $heroImg = ($rawHero && (str_starts_with($rawHero, 'http') || str_starts_with($r
   <section style="padding: 30px 26px clamp(40px, 6vw, 80px);">
     <div style="width: min(1280px, 93vw); margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: clamp(30px, 5vw, 60px); align-items: center;">
       
-      <!-- Product Gallery Display -->
-      <div>
-        <div style="position: relative; width: 100%; height: clamp(320px, 45vh, 480px); background: radial-gradient(circle at 50% 50%, rgb(var(--chip-rgb) / .7), var(--surface-0)); border: 1px solid var(--hair-0); border-radius: 32px; display: grid; place-items: center; overflow: hidden; box-shadow: 0 20px 40px -15px rgba(0,0,0,.08);">
-          <img id="main-scooter-img" src="<?= e($heroImg) ?>" alt="<?= e($product['name']) ?>" style="max-width: 85%; max-height: 85%; object-fit: contain; transition: transform .4s var(--ease), opacity .3s;">
+      <!-- Product Gallery Display with Swiper, Glass Zoom & Swatches -->
+      <div class="product-gallery-wrap">
+        <div class="gallery-stage" id="galleryStage">
+          <!-- Main Swiper Carousel -->
+          <div class="swiper product-swiper-main" id="productSwiperMain">
+            <div class="swiper-wrapper" id="swiper-main-wrapper">
+              <?php foreach ($colorsData[0]['images'] as $idx => $img): ?>
+                <div class="swiper-slide" data-img-index="<?= $idx ?>">
+                  <img src="<?= e($img) ?>" alt="<?= e($product['name']) ?>" loading="<?= $idx === 0 ? 'eager' : 'lazy' ?>">
+                </div>
+              <?php endforeach; ?>
+            </div>
+            
+            <!-- Navigation Arrows -->
+            <button type="button" class="gallery-nav-btn gallery-nav-prev" id="galleryPrevBtn" aria-label="Previous image">
+              <i data-lucide="chevron-left"></i>
+            </button>
+            <button type="button" class="gallery-nav-btn gallery-nav-next" id="galleryNextBtn" aria-label="Next image">
+              <i data-lucide="chevron-right"></i>
+            </button>
+
+            <!-- Lightbox Expand Button -->
+            <button type="button" class="gallery-expand-btn" id="galleryExpandBtn" aria-label="Full screen view" title="Click to view full screen">
+              <i data-lucide="maximize-2" style="width: 14px; height: 14px;"></i>
+              <span>Full View</span>
+            </button>
+
+            <!-- Glass Hover Magnifier Lens -->
+            <div class="glass-magnifier-lens" id="glassMagnifierLens"></div>
+          </div>
+
+          <!-- Pagination dots -->
+          <div class="swiper-pagination product-swiper-pagination" id="galleryPagination"></div>
         </div>
 
-        <!-- Color Picker & Gallery Thumbnails -->
-        <?php if (!empty($product['colors'])): ?>
-          <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
-            <span style="font-size: 12px; font-weight: 700; color: var(--ink-soft-0); text-transform: uppercase; letter-spacing: .08em;">Available Colorways</span>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-              <?php foreach ($product['colors'] as $idx => $c): ?>
-                <?php
-                  $hex = '#' . substr(dechex($c['argb'] & 0xFFFFFF), -6);
-                  $rawC = !empty($c['images']) ? $c['images'][0] : $rawHero;
-                  $cImg = ($rawC && (str_starts_with($rawC, 'http') || str_starts_with($rawC, '/'))) ? $rawC : base_url($rawC);
-                ?>
-                <button onclick="selectColor('<?= e($cImg) ?>', '<?= e($c['name']) ?>', this)"
-                        style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; border: 2px solid <?= $idx === 0 ? 'var(--ink-0)' : 'var(--hair-0)' ?>; background: var(--surface-0); cursor: pointer; transition: all .25s;">
-                  <span style="width: 16px; height: 16px; border-radius: 50%; background: <?= $hex ?>; display: inline-block;"></span>
-                  <span style="font-size: 13px; font-weight: 600; color: var(--ink-0);"><?= e($c['name']) ?></span>
-                </button>
+        <!-- Thumbnails Strip -->
+        <div class="gallery-thumbs-row">
+          <div class="swiper product-swiper-thumbs" id="productSwiperThumbs">
+            <div class="swiper-wrapper" id="swiper-thumbs-wrapper">
+              <?php foreach ($colorsData[0]['images'] as $idx => $img): ?>
+                <div class="swiper-slide <?= $idx === 0 ? 'swiper-slide-thumb-active' : '' ?>" data-index="<?= $idx ?>">
+                  <img src="<?= e($img) ?>" alt="<?= e($product['name'] . ' thumbnail ' . ($idx + 1)) ?>">
+                </div>
               <?php endforeach; ?>
             </div>
           </div>
-        <?php endif; ?>
+        </div>
+
+        <!-- Color Picker Swatches -->
+        <div class="gallery-swatches-block">
+          <div class="gallery-swatches-header">
+            <span class="gallery-swatches-title">Available Colorways</span>
+            <span class="gallery-swatches-selected" id="selectedColorLabel"><?= e($colorsData[0]['name']) ?></span>
+          </div>
+          <div class="gallery-swatches-list" id="swatchesContainer">
+            <?php foreach ($colorsData as $idx => $c): ?>
+              <button type="button" class="color-swatch-btn <?= $idx === 0 ? 'is-active' : '' ?>" data-color-index="<?= $idx ?>" onclick="switchColorway(<?= $idx ?>)">
+                <span class="color-swatch-dot" style="background: <?= e($c['hex']) ?>;"></span>
+                <span><?= e($c['name']) ?></span>
+              </button>
+            <?php endforeach; ?>
+          </div>
+        </div>
       </div>
 
       <!-- Product Details & Specs -->
@@ -255,22 +327,192 @@ $heroImg = ($rawHero && (str_starts_with($rawHero, 'http') || str_starts_with($r
   <?php endif; ?>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
 <script>
+window.__PRODUCT_COLORS__ = <?= json_encode($colorsData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+let currentColorIndex = 0;
+let mainSwiper = null;
+let thumbsSwiper = null;
+let galleryLightbox = null;
+const ZOOM_LEVEL = 2.2;
+
 document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) lucide.createIcons();
+  initSwipers();
+  initLightbox();
+  initGlassMagnifier();
 });
 
-function selectColor(imgUrl, colorName, btn) {
-  const img = document.getElementById('main-scooter-img');
-  if (img) {
-    img.style.opacity = '0';
-    setTimeout(() => {
-      img.src = imgUrl;
-      img.style.opacity = '1';
-    }, 200);
+function initSwipers() {
+  thumbsSwiper = new Swiper('#productSwiperThumbs', {
+    slidesPerView: 'auto',
+    spaceBetween: 10,
+    freeMode: true,
+    watchSlidesProgress: true,
+  });
+
+  mainSwiper = new Swiper('#productSwiperMain', {
+    slidesPerView: 1,
+    spaceBetween: 20,
+    speed: 400,
+    grabCursor: true,
+    keyboard: {
+      enabled: true,
+    },
+    navigation: {
+      nextEl: '#galleryNextBtn',
+      prevEl: '#galleryPrevBtn',
+    },
+    pagination: {
+      el: '#galleryPagination',
+      clickable: true,
+    },
+    thumbs: {
+      swiper: thumbsSwiper,
+    },
+    on: {
+      slideChange: () => {
+        updateLensBackground();
+      }
+    }
+  });
+}
+
+function initLightbox() {
+  if (galleryLightbox) {
+    try { galleryLightbox.destroy(); } catch (e) {}
   }
-  btn.parentElement.querySelectorAll('button').forEach(b => b.style.borderColor = 'var(--hair-0)');
-  btn.style.borderColor = 'var(--ink-0)';
+  const color = window.__PRODUCT_COLORS__[currentColorIndex] || window.__PRODUCT_COLORS__[0];
+  const elements = (color.images || []).map(img => ({
+    href: img,
+    type: 'image',
+    title: <?= json_encode($product['name']) ?> + ' — ' + color.name,
+  }));
+
+  galleryLightbox = GLightbox({
+    elements: elements,
+    touchNavigation: true,
+    loop: true,
+    zoomable: true,
+    autoplayVideos: false
+  });
+
+  const stage = document.getElementById('productSwiperMain');
+  if (stage && !stage._lbWired) {
+    stage._lbWired = true;
+    stage.addEventListener('click', (e) => {
+      if (e.target.closest('.gallery-nav-btn')) return;
+      if (galleryLightbox) {
+        galleryLightbox.openAt(mainSwiper ? mainSwiper.activeIndex : 0);
+      }
+    });
+
+    const expandBtn = document.getElementById('galleryExpandBtn');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (galleryLightbox) {
+          galleryLightbox.openAt(mainSwiper ? mainSwiper.activeIndex : 0);
+        }
+      });
+    }
+  }
+}
+
+function initGlassMagnifier() {
+  const stage = document.getElementById('galleryStage');
+  const lens = document.getElementById('glassMagnifierLens');
+  if (!stage || !lens) return;
+
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if (isTouch) {
+    lens.style.display = 'none';
+    return;
+  }
+
+  stage.addEventListener('mouseenter', () => {
+    updateLensBackground();
+    lens.style.display = 'block';
+  });
+
+  stage.addEventListener('mouseleave', () => {
+    lens.style.display = 'none';
+  });
+
+  stage.addEventListener('mousemove', (e) => {
+    const rect = stage.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const lensWidth = lens.offsetWidth || 160;
+    const lensHeight = lens.offsetHeight || 160;
+
+    lens.style.left = (x - lensWidth / 2) + 'px';
+    lens.style.top = (y - lensHeight / 2) + 'px';
+
+    const bgX = (x * ZOOM_LEVEL) - (lensWidth / 2);
+    const bgY = (y * ZOOM_LEVEL) - (lensHeight / 2);
+
+    lens.style.backgroundPosition = `-${bgX}px -${bgY}px`;
+    lens.style.backgroundSize = `${rect.width * ZOOM_LEVEL}px ${rect.height * ZOOM_LEVEL}px`;
+  });
+}
+
+function updateLensBackground() {
+  const lens = document.getElementById('glassMagnifierLens');
+  if (!lens) return;
+  const activeSlideImg = document.querySelector('#productSwiperMain .swiper-slide-active img');
+  if (activeSlideImg) {
+    lens.style.backgroundImage = `url("${activeSlideImg.src}")`;
+  }
+}
+
+function switchColorway(colorIndex) {
+  const colors = window.__PRODUCT_COLORS__;
+  if (!colors || !colors[colorIndex]) return;
+
+  currentColorIndex = colorIndex;
+  const color = colors[colorIndex];
+
+  const label = document.getElementById('selectedColorLabel');
+  if (label) label.textContent = color.name;
+
+  document.querySelectorAll('.color-swatch-btn').forEach((btn, idx) => {
+    btn.classList.toggle('is-active', idx === colorIndex);
+  });
+
+  const mainWrapper = document.getElementById('swiper-main-wrapper');
+  if (mainWrapper) {
+    mainWrapper.innerHTML = color.images.map((img, idx) => `
+      <div class="swiper-slide" data-img-index="${idx}">
+        <img src="${img}" alt="${color.name}" loading="${idx === 0 ? 'eager' : 'lazy'}">
+      </div>
+    `).join('');
+  }
+
+  const thumbsWrapper = document.getElementById('swiper-thumbs-wrapper');
+  if (thumbsWrapper) {
+    thumbsWrapper.innerHTML = color.images.map((img, idx) => `
+      <div class="swiper-slide ${idx === 0 ? 'swiper-slide-thumb-active' : ''}" data-index="${idx}">
+        <img src="${img}" alt="${color.name} thumbnail ${idx + 1}">
+      </div>
+    `).join('');
+  }
+
+  if (thumbsSwiper) {
+    thumbsSwiper.update();
+    thumbsSwiper.slideTo(0, 0);
+  }
+  if (mainSwiper) {
+    mainSwiper.update();
+    mainSwiper.slideTo(0, 0);
+  }
+
+  initLightbox();
+  setTimeout(updateLensBackground, 100);
+  if (window.lucide) lucide.createIcons();
 }
 </script>
 <!-- ========== UNIQUE PAGE CONTENT END ========== -->

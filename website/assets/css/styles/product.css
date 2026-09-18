@@ -52,3 +52,270 @@
 @keyframes product-rise { from { opacity: 0; transform: translateY(24px) scale(.97); } to { opacity: 1; transform: none; } }
 @media (max-width: 800px) { .product-page__intro { display: block; } .product-page__intro p { margin-top: 20px; } .product-hero { min-height: 680px; } .product-hero__copy { width: 100%; padding: 44px 30px; } .product-hero__image { right: -18%; bottom: 0; width: 115%; max-height: 55%; } .product-stats { grid-template-columns: repeat(2, 1fr); width: 88vw; margin-top: -26px; } .product-stat:nth-child(2) { border-right: 0; } .product-stat:nth-child(-n+2) { border-bottom: 1px solid var(--hair-0); } .product-section__heading, .product-range { grid-template-columns: 1fr; gap: 24px; } .product-spec-grid, .product-feature-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 520px) { .product-section, .product-cta { width: 88vw; } .product-spec-grid, .product-feature-grid { grid-template-columns: 1fr; } .product-stat { padding: 18px; } .product-stat strong { font-size: 28px; } }
+
+/* =========================================================
+   Product Gallery: Swiper Slider, Glass Magnifier & Lightbox
+   ========================================================= */
+.product-gallery-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.gallery-stage {
+  position: relative;
+  width: 100%;
+  height: clamp(340px, 48vh, 500px);
+  background: radial-gradient(circle at 50% 50%, rgb(var(--chip-rgb) / .7), var(--surface-0));
+  border: 1px solid var(--hair-0);
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.product-swiper-main {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.product-swiper-main .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-in;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.product-swiper-main .swiper-slide img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+  pointer-events: auto;
+}
+
+/* Glass magnifier lens */
+.glass-magnifier-lens {
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.28), inset 0 0 20px rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+  display: none;
+  background-repeat: no-repeat;
+  z-index: 30;
+  backdrop-filter: brightness(1.06);
+}
+
+/* Gallery Navigation Arrows */
+.gallery-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgb(var(--surface-rgb) / .85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--hair-0);
+  color: var(--ink-0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 25;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+
+.gallery-nav-btn:hover {
+  background: var(--surface-0);
+  color: var(--brand-violet);
+  transform: translateY(-50%) scale(1.08);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+}
+
+.gallery-nav-btn.swiper-button-disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.gallery-nav-prev { left: 16px; }
+.gallery-nav-next { right: 16px; }
+
+/* Expand / Lightbox CTA badge */
+.gallery-expand-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgb(var(--surface-rgb) / .85);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--hair-0);
+  color: var(--ink-0);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.gallery-expand-btn:hover {
+  background: var(--surface-0);
+  color: var(--brand-violet);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+/* Pagination Dots */
+.product-swiper-pagination {
+  position: absolute;
+  bottom: 12px !important;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.product-swiper-pagination .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background: var(--ink-soft-0);
+  opacity: 0.35;
+  transition: all 0.25s ease;
+}
+
+.product-swiper-pagination .swiper-pagination-bullet-active {
+  width: 24px;
+  border-radius: 4px;
+  background: var(--brand-orange, #f0532b);
+  opacity: 1;
+}
+
+/* Thumbnails */
+.gallery-thumbs-row {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.product-swiper-thumbs {
+  width: 100%;
+  padding: 4px 2px;
+}
+
+.product-swiper-thumbs .swiper-slide {
+  width: 76px !important;
+  height: 76px;
+  border-radius: 16px;
+  border: 2px solid var(--hair-0);
+  background: var(--surface-0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.25s ease;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.product-swiper-thumbs .swiper-slide:hover {
+  border-color: var(--ink-soft-0);
+  transform: translateY(-2px);
+}
+
+.product-swiper-thumbs .swiper-slide-thumb-active {
+  border-color: var(--ink-0) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: scale(1.02);
+}
+
+.product-swiper-thumbs .swiper-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Colorways */
+.gallery-swatches-block {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gallery-swatches-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gallery-swatches-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-soft-0);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.gallery-swatches-selected {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-0);
+}
+
+.gallery-swatches-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.color-swatch-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--hair-0);
+  background: var(--surface-0);
+  color: var(--ink-0);
+  cursor: pointer;
+  transition: all .25s ease;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.color-swatch-btn:hover {
+  border-color: var(--ink-soft-0);
+  transform: translateY(-1px);
+}
+
+.color-swatch-btn.is-active {
+  border-color: var(--ink-0);
+  background: rgb(var(--chip-rgb) / 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.color-swatch-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+

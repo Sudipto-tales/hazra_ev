@@ -73,6 +73,55 @@ final class WebsiteController extends V1Controller
         Envelope::ok($result);
     }
 
+    /** Public GET /api/v1/website/products/{id} (where {id} can be id, slug, or model_code) */
+    public function product(): never
+    {
+        $idOrSlug = (string) $this->param('id');
+        $p = db_fetch_one(
+            "SELECT * FROM products WHERE (id = ? OR slug = ? OR model_code = ?) AND active = 1 LIMIT 1",
+            [$idOrSlug, $idOrSlug, $idOrSlug]
+        );
+
+        if (!$p) {
+            Envelope::notFound('PRODUCT_NOT_FOUND', 'Product not found');
+        }
+
+        $colors = db_fetch_all(
+            "SELECT * FROM product_colors WHERE product_id = ? ORDER BY position, name",
+            [$p['id']]
+        );
+
+        $images = [];
+        if ($colors) {
+            $colorIds = array_column($colors, 'id');
+            $cph = implode(',', array_fill(0, count($colorIds), '?'));
+            foreach (db_fetch_all(
+                "SELECT * FROM product_color_images WHERE color_id IN ({$cph}) ORDER BY position",
+                $colorIds
+            ) as $image) {
+                $images[$image['color_id']][] = $image['url'];
+            }
+        }
+
+        $colorList = [];
+        foreach ($colors as $color) {
+            $colorList[] = Present::productColor($color, $images[$color['id']] ?? []);
+        }
+
+        $item = Present::product($p, $colorList);
+        $firstColor = $item['colors'][0] ?? null;
+        $rawImg = ($firstColor && !empty($firstColor['imageUrls'])) ? $firstColor['imageUrls'][0] : ($p['hero_image'] ?? 'assets/scutie_light.webp');
+        $imgUrl = ($rawImg && (str_starts_with($rawImg, 'http') || str_starts_with($rawImg, '/'))) ? $rawImg : base_url($rawImg);
+
+        $item['slug'] = $p['slug'] ?? '';
+        $item['heroImage'] = $imgUrl;
+        $item['image'] = $imgUrl;
+        $item['series'] = $p['brand'] ?? 'Hazra';
+        $item['speed_type'] = ($item['topSpeedKmph'] ?? 45) >= 55 ? 'high' : 'city';
+
+        Envelope::ok($item);
+    }
+
     /** GET /api/v1/website/settings (Public get) */
     public function settings(): never
     {

@@ -29,7 +29,7 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 <link rel="stylesheet" href="<?= e(base_url('assets/css/styles/components/page-chrome.css')) ?>">
 <?php if (isset($extraCss)): ?>
     <?php foreach ($extraCss as $css): ?>
-        <link rel="stylesheet" href="<?= e(base_url($css)) ?>">
+        <link rel="stylesheet" href="<?= e((str_starts_with($css, 'http://') || str_starts_with($css, 'https://') || str_starts_with($css, '//')) ? $css : base_url($css)) ?>">
     <?php endforeach; ?>
 <?php endif; ?>
 <script src="https://unpkg.com/lucide@latest"></script>
