@@ -1,8 +1,76 @@
 <?php
+require_once __DIR__ . '/../../core/SafeHtml.php';
+
+$category = isset($_GET['category']) ? (string)$_GET['category'] : '';
+$tag      = isset($_GET['tag']) ? (string)$_GET['tag'] : '';
+$page     = max(1, (int)($_GET['page'] ?? 1));
+$limit    = 6;
+
+$featuredPost = db_fetch_one(
+    "SELECT * FROM posts WHERE type = 'blog' AND status = 'published' AND is_featured = 1 ORDER BY published_at DESC LIMIT 1"
+);
+
+$featuredPost = $featuredPost ?: db_fetch_one(
+    "SELECT * FROM posts WHERE type = 'blog' AND status = 'published' ORDER BY published_at DESC LIMIT 1"
+);
+
+$secondaryPost = $featuredPost ? db_fetch_one(
+    "SELECT * FROM posts WHERE type = 'blog' AND status = 'published' AND id != ? ORDER BY published_at DESC LIMIT 1",
+    [$featuredPost['id']]
+) : null;
+
+$offset = ($page - 1) * $limit;
+$where  = "type = 'blog' AND status = 'published'";
+$params = [];
+
+if ($category) {
+    $where .= " AND category = ?";
+    $params[] = $category;
+}
+if ($tag) {
+    $where .= " AND (tags LIKE ? OR tags LIKE ? OR tags LIKE ?)";
+    // Match with # prefix, without #, or as part of comma-separated list
+    $params[] = '%#' . $tag . '%';
+    $params[] = '%' . $tag . ',%';
+    $params[] = '%,' . $tag . '%';
+}
+
+$totalPosts = (int)db_fetch_one("SELECT COUNT(*) FROM posts WHERE {$where}", $params)['COUNT(*)'];
+$totalPages = max(1, (int)ceil($totalPosts / $limit));
+
+$posts = db_fetch_all(
+    "SELECT * FROM posts WHERE {$where} ORDER BY published_at DESC LIMIT {$limit} OFFSET {$offset}",
+    $params
+);
+
+$flashNews = db_fetch_all(
+    "SELECT * FROM posts WHERE type = 'news' AND status = 'published' ORDER BY published_at DESC LIMIT 6"
+);
+
+$categories = db_fetch_all(
+    "SELECT category, COUNT(*) as cnt FROM posts WHERE type = 'blog' AND status = 'published' GROUP BY category ORDER BY cnt DESC"
+);
+
+$canonicalUrl = base_url('blog');
+if ($category) {
+    $canonicalUrl = base_url("blog/category/{$category}");
+} elseif ($tag) {
+    $canonicalUrl = base_url("blog?tag={$tag}");
+} elseif ($page > 1) {
+    $canonicalUrl = base_url("blog?page={$page}");
+}
+
+$pageTitle = 'Blog — Hazra Electrical Bike';
+if ($category) {
+    $pageTitle = ucfirst($category) . ' — Blog — Hazra Electrical Bike';
+}
+$pageDescription = 'Stories on electric mobility, battery care, city riding and the road ahead from Hazra Electrical Bike.';
+
 App::render('head', [
-    'pageTitle'       => 'Blog — Hazra Electrical Bike',
-    'pageDescription' => 'Stories on electric mobility, battery care, city riding and the road ahead from Hazra Electrical Bike.',
+    'pageTitle'       => $pageTitle,
+    'pageDescription' => $pageDescription,
     'extraCss'        => ['assets/css/styles/pages/blog.css'],
+    'canonicalUrl'    => $canonicalUrl,
 ]);
 
 App::render('header', ['isStickyOnly' => true]);
@@ -38,103 +106,115 @@ App::render('header', ['isStickyOnly' => true]);
       <!-- MAIN COLUMN -->
       <div>
         <!-- Featured -->
+        <?php if ($featuredPost): ?>
         <div class="bl-feat">
           <article class="bl-feat__main">
             <div class="bl-feat__copy">
-              <span class="bl-cat">Lifestyle</span>
-              <h3><a href="<?= e(base_url('blog-single')) ?>">Returning to the unnamed wild beyond the maps</a></h3>
-              <p>There are places that refuse to be mapped — not because they’re far, but because they still belong to the rider and the road.</p>
+              <span class="bl-cat"><?= e(ucfirst($featuredPost['category'] ?? 'EV Trends')) ?></span>
+              <h3><a href="<?= e(base_url("blog/{$featuredPost['slug']}")) ?>"><?= e($featuredPost['title']) ?></a></h3>
+              <p><?= e($featuredPost['excerpt']) ?></p>
               <div class="bl-meta">
-                <img src="https://i.pravatar.cc/56?u=lora" alt="">
-                <span>Lora</span>
-                <span>· Jun 13, 2026</span>
+                <img src="<?= e(base_url($featuredPost['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" width="32" height="32" style="border-radius:50%;object-fit:cover">
+                <span><?= e($featuredPost['author']) ?></span>
+                <span>· <?= e(date('M j, Y', strtotime($featuredPost['published_at']))) ?></span>
+                <span>·</span>
+                <span><?= e($featuredPost['read_minutes'] ?? 4) ?> min read</span>
               </div>
               <div class="bl-tags">
-                <span>silence</span><span>noise</span><span>solitude</span><span>landscape</span>
+                <?php
+                $tags = array_filter(array_map('trim', explode(',', str_replace('#', ',', $featuredPost['tags'] ?? ''))));
+                foreach (array_slice($tags, 0, 4) as $tagItem): ?>
+                  <span><?= e($tagItem) ?></span>
+                <?php endforeach; ?>
               </div>
             </div>
             <div class="bl-feat__media">
-              <img src="https://images.unsplash.com/photo-1474519811234-466cb63bf5d2?auto=format&fit=crop&w=800&q=80" alt="Featured" loading="lazy">
+              <img src="<?= e(base_url($featuredPost['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="<?= e($featuredPost['title']) ?>" loading="lazy">
             </div>
           </article>
+          <?php if ($secondaryPost): ?>
           <div class="bl-feat__side">
             <article class="bl-side-card">
-              <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80" alt="" loading="lazy">
+              <img src="<?= e(base_url($secondaryPost['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" loading="lazy">
               <div class="bl-side-card__body">
-                <h4><a href="<?= e(base_url('blog-single')) ?>">When machines begin to dream of trees</a></h4>
-                <p>A calm space for slow thoughts. No noise — just reflection.</p>
-                <div class="bl-meta"><span>Jun 13, 2026</span></div>
+                <h4><a href="<?= e(base_url("blog/{$secondaryPost['slug']}")) ?>"><?= e($secondaryPost['title']) ?></a></h4>
+                <p><?= e($secondaryPost['excerpt']) ?></p>
+                <div class="bl-meta"><span><?= e(date('M j, Y', strtotime($secondaryPost['published_at']))) ?></span></div>
               </div>
             </article>
           </div>
+          <?php endif; ?>
         </div>
+        <?php endif; ?>
 
-        <!-- Breaking news -->
+        <!-- Category/Tag Filter Pills -->
+        <?php if ($category || $tag): ?>
+        <div class="bl-filter-pills" style="margin: 16px 0;">
+          <?php if ($category): ?>
+            <span class="bl-filter-pill">
+              Category: <?= e(ucfirst($category)) ?>
+              <a href="<?= e(base_url('blog')) ?>" style="margin-left:8px">×</a>
+            </span>
+          <?php endif; ?>
+          <?php if ($tag): ?>
+            <span class="bl-filter-pill">
+              Tag: <?= e($tag) ?>
+              <a href="<?= e(base_url('blog')) ?>" style="margin-left:8px">×</a>
+            </span>
+          <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Breaking news / Main post grid -->
         <div class="bl-break">
-          <div class="bl-break__head"><i data-lucide="hash"></i> Breaking News</div>
+          <div class="bl-break__head"><i data-lucide="hash"></i> Articles</div>
 
-          <article class="bl-post">
-            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
-            <div class="bl-post__body">
-              <span class="bl-cat">World</span>
-              <h3><a href="<?= e(base_url('blog-single')) ?>">When nature stops waiting for us to return</a></h3>
-              <p>There comes a time when the wild no longer looks for us. Forests learn to grow without footsteps…</p>
-              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=tair" alt=""><span>Tair</span><span>· Jun 13, 2026</span></div>
+          <?php if (empty($posts)): ?>
+            <div class="bl-empty">
+              <i data-lucide="file-text" style="width:48px;height:48px;color:var(--ink-soft-0)"></i>
+              <h3>No articles found</h3>
+              <p>No blog posts match the current filter.</p>
+              <a class="btn btn--ink" href="<?= e(base_url('blog')) ?>">View all articles</a>
             </div>
-          </article>
-
-          <article class="bl-post">
-            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
-            <div class="bl-post__body">
-              <span class="bl-cat">Entertainment</span>
-              <h3><a href="<?= e(base_url('blog-single')) ?>">Beneath the soil, seeds whisper about another day</a></h3>
-              <p>Even in stillness, life speaks softly. Hidden under the quiet earth, small voices promise a future.</p>
-              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=sera" alt=""><span>Sera</span><span>· Jun 13, 2026</span></div>
-            </div>
-          </article>
-
-          <article class="bl-post">
-            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
-            <div class="bl-post__body">
-              <span class="bl-cat">Fashion</span>
-              <h3><a href="<?= e(base_url('blog-single')) ?>">Stories the stones keep to themselves</a></h3>
-              <p>The earth remembers everything — our footsteps, our fires, our silence.</p>
-              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=nira" alt=""><span>Nira</span><span>· Jun 13, 2026</span></div>
-            </div>
-          </article>
-
-          <article class="bl-post">
-            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1483728642387-6c3bdddeba27?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
-            <div class="bl-post__body">
-              <span class="bl-cat">Solitude</span>
-              <h3><a href="<?= e(base_url('blog-single')) ?>">When the mountains breathe at first dawn</a></h3>
-              <p>Morning finds its way through mist and memory. The mountains inhale light.</p>
-              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=liar" alt=""><span>Liar</span><span>· Jun 13, 2026</span></div>
-            </div>
-          </article>
-
-          <article class="bl-post">
-            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
-            <div class="bl-post__body">
-              <span class="bl-cat">Reflection</span>
-              <h3><a href="<?= e(base_url('blog-single')) ?>">Listening to the earth between storms</a></h3>
-              <p>There’s a calm voice in the pause before thunder. Sometimes, silence is the loudest form of understanding.</p>
-              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=arin" alt=""><span>Arin</span><span>· Jun 13, 2026</span></div>
-            </div>
-          </article>
-
-          <article class="bl-post">
-            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
-            <div class="bl-post__body">
-              <span class="bl-cat">Renewal</span>
-              <h3><a href="<?= e(base_url('blog-single')) ?>">Beneath the soil, seeds whisper about another day</a></h3>
-              <p>In the quiet dark, life hums beneath our forgetting. Tiny seeds dream of sunlight.</p>
-              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=keen" alt=""><span>Keen</span><span>· Jun 13, 2026</span></div>
-            </div>
-          </article>
+          <?php else: ?>
+            <?php foreach ($posts as $post): ?>
+              <?php if ($featuredPost && $post['id'] === $featuredPost['id']) continue; ?>
+              <?php if ($secondaryPost && $post['id'] === $secondaryPost['id']) continue; ?>
+              <article class="bl-post">
+                <div class="bl-post__img"><img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" loading="lazy"></div>
+                <div class="bl-post__body">
+                  <span class="bl-cat"><?= e(ucfirst($post['category'] ?? 'EV Trends')) ?></span>
+                  <h3><a href="<?= e(base_url("blog/{$post['slug']}")) ?>"><?= e($post['title']) ?></a></h3>
+                  <p><?= e($post['excerpt']) ?></p>
+                  <div class="bl-meta">
+                    <img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" width="28" height="28" style="border-radius:50%;object-fit:cover">
+                    <span><?= e($post['author']) ?></span>
+                    <span>· <?= e(date('M j, Y', strtotime($post['published_at']))) ?></span>
+                    <span>·</span>
+                    <span><?= e($post['read_minutes'] ?? 4) ?> min read</span>
+                  </div>
+                </div>
+              </article>
+            <?php endforeach; ?>
+          <?php endif; ?>
         </div>
 
-        <div class="bl-more"><a href="#">Show more posts <i data-lucide="arrow-down"></i></a></div>
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+        <nav class="bl-pagination" aria-label="Blog pagination">
+          <?php if ($page > 1): ?>
+            <a class="btn btn--ghost" href="<?= e(base_url("blog?page=" . ($page - 1) . ($category ? "&category={$category}" : '') . ($tag ? "&tag={$tag}" : ''))) ?>">
+              <i data-lucide="chevron-left"></i> Previous
+            </a>
+          <?php endif; ?>
+          <span class="bl-page-info">Page <?= $page ?> of <?= $totalPages ?></span>
+          <?php if ($page < $totalPages): ?>
+            <a class="btn btn--ink" href="<?= e(base_url("blog?page=" . ($page + 1) . ($category ? "&category={$category}" : '') . ($tag ? "&tag={$tag}" : ''))) ?>">
+              Next <i data-lucide="chevron-right"></i>
+            </a>
+          <?php endif; ?>
+        </nav>
+        <?php endif; ?>
       </div>
 
       <!-- SIDEBAR -->
@@ -142,107 +222,58 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="bl-widget">
           <h3 class="bl-widget__title">Flash news</h3>
           <div class="bl-flash">
-            <a class="bl-flash__row" href="<?= e(base_url('news-single')) ?>">
-              <div>
-                <h4>Time slowly fades where moss grows</h4>
-                <time>Jun 13, 2026</time>
-              </div>
-              <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=120&q=80" alt="">
-            </a>
-            <a class="bl-flash__row" href="<?= e(base_url('news-single')) ?>">
-              <div>
-                <h4>The weight of light in endless fields</h4>
-                <time>Jun 13, 2026</time>
-              </div>
-              <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=120&q=80" alt="">
-            </a>
-            <a class="bl-flash__row" href="<?= e(base_url('news-single')) ?>">
-              <div>
-                <h4>What the fire gently leaves behind</h4>
-                <time>Jun 13, 2026</time>
-              </div>
-              <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=120&q=80" alt="">
-            </a>
-            <a class="bl-flash__row" href="<?= e(base_url('news-single')) ?>">
-              <div>
-                <h4>A meadow quietly built from memory</h4>
-                <time>Jun 13, 2026</time>
-              </div>
-              <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=120&q=80" alt="">
-            </a>
-          </div>
-        </div>
-
-        <div class="bl-widget">
-          <h3 class="bl-widget__title">Top authors</h3>
-          <div class="bl-authors">
-            <div class="bl-author">
-              <span class="bl-author__n">1</span>
-              <div style="display:flex;gap:10px;align-items:center">
-                <img src="https://i.pravatar.cc/72?u=a1" alt="">
-                <div><b>Laura Bennett</b><span>Elite author</span></div>
-              </div>
-              <button type="button">Follow</button>
-            </div>
-            <div class="bl-author">
-              <span class="bl-author__n">2</span>
-              <div style="display:flex;gap:10px;align-items:center">
-                <img src="https://i.pravatar.cc/72?u=a2" alt="">
-                <div><b>Robert Edition</b><span>Exclusive author</span></div>
-              </div>
-              <button type="button">Follow</button>
-            </div>
-            <div class="bl-author">
-              <span class="bl-author__n">3</span>
-              <div style="display:flex;gap:10px;align-items:center">
-                <img src="https://i.pravatar.cc/72?u=a3" alt="">
-                <div><b>Daniel Cross</b><span>Author favorite</span></div>
-              </div>
-              <button type="button">Follow</button>
-            </div>
-            <div class="bl-author">
-              <span class="bl-author__n">4</span>
-              <div style="display:flex;gap:10px;align-items:center">
-                <img src="https://i.pravatar.cc/72?u=a4" alt="">
-                <div><b>Sophia Turner</b><span>Author favorite</span></div>
-              </div>
-              <button type="button">Follow</button>
-            </div>
+            <?php foreach ($flashNews as $news): ?>
+              <a class="bl-flash__row" href="<?= e(base_url("news/{$news['slug']}")) ?>">
+                <div>
+                  <h4><?= e($news['title']) ?></h4>
+                  <time><?= e(date('M j, Y', strtotime($news['published_at']))) ?></time>
+                </div>
+                <?php if ($news['cover_image']): ?>
+                  <img src="<?= e(base_url($news['cover_image'])) ?>" alt="" width="80" height="60" style="object-fit:cover;border-radius:6px">
+                <?php endif; ?>
+              </a>
+            <?php endforeach; ?>
+            <?php if (empty($flashNews)): ?>
+              <p style="color: var(--ink-soft-0); font-size: 13px;">No news items available.</p>
+            <?php endif; ?>
           </div>
         </div>
 
         <div class="bl-widget">
           <h3 class="bl-widget__title">Follow us</h3>
           <div class="bl-socials">
-            <a href="#"><i data-lucide="facebook"></i> Facebook <em>12k</em></a>
-            <a href="#"><i data-lucide="twitter"></i> Twitter <em>12k</em></a>
-            <a href="#"><i data-lucide="instagram"></i> Instagram <em>12k</em></a>
-            <a href="#"><i data-lucide="youtube"></i> Youtube <em>12k</em></a>
+            <a href="https://facebook.com/hazraev" target="_blank" rel="noopener"><i data-lucide="facebook"></i> Facebook</a>
+            <a href="https://instagram.com/hazraev" target="_blank" rel="noopener"><i data-lucide="instagram"></i> Instagram</a>
+            <a href="https://wa.me/919830012345" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> WhatsApp</a>
+            <a href="https://maps.app.goo.gl/hazraev" target="_blank" rel="noopener"><i data-lucide="map-pin"></i> Locate Us</a>
           </div>
         </div>
 
         <div class="bl-widget">
           <h3 class="bl-widget__title">Trending topics</h3>
           <div class="bl-topics">
-            <a class="bl-topic" href="#">
-              <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=120&q=80" alt="">
-              <div><b>Range &amp; battery</b><span>24 articles</span></div>
-            </a>
-            <a class="bl-topic" href="#">
-              <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=120&q=80" alt="">
-              <div><b>City riding</b><span>18 articles</span></div>
-            </a>
-            <a class="bl-topic" href="#">
-              <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=120&q=80" alt="">
-              <div><b>Dealer stories</b><span>11 articles</span></div>
-            </a>
+            <?php foreach ($categories as $cat): ?>
+              <a class="bl-topic" href="<?= e(base_url("blog/category/{$cat['category']}")) ?>">
+                <div>
+                  <b><?= e(ucfirst($cat['category'])) ?></b>
+                  <span><?= (int)$cat['cnt'] ?> articles</span>
+                </div>
+              </a>
+            <?php endforeach; ?>
+            <?php if (empty($categories)): ?>
+              <p style="color: var(--ink-soft-0); font-size: 13px;">No categories yet.</p>
+            <?php endif; ?>
           </div>
         </div>
 
-        <div class="bl-ad">
-          <span>Your banner here<br>310 × 220</span>
-          <p>Partner with Hazra on the journal.</p>
-          <a class="btn btn--ink" href="<?= e(base_url('contact')) ?>"><span>Contact</span><i data-lucide="arrow-right"></i></a>
+        <div class="bl-widget" id="newsletter">
+          <h3 class="bl-widget__title">Subscribe to our Journal</h3>
+          <p style="font-size:13px;color:var(--ink-soft-0);margin-bottom:12px">Weekly insights on electric mobility, rider stories, and product updates. No spam.</p>
+          <form id="newsletterForm" style="display:flex;gap:8px;flex-direction:column">
+            <input type="email" name="email" placeholder="Your email" required style="padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit">
+            <button type="submit" class="btn btn--ink" style="width:100%"><span>Subscribe</span></button>
+          </form>
+          <p id="newsletterMsg" style="font-size:12px;margin-top:8px;display:none"></p>
         </div>
       </aside>
     </div>
@@ -252,41 +283,38 @@ App::render('header', ['isStickyOnly' => true]);
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) lucide.createIcons();
-  try {
-    const apiPath = <?= json_encode(base_url('api/v1/posts?status=published')) ?>;
-    const res = await fetch(apiPath);
-    if (!res.ok) return;
-    const data = await res.json();
-    const posts = data.data || [];
-    const blogs = posts.filter(p => p.type === 'blog');
-    const news = posts.filter(p => p.type === 'news');
-    if (blogs.length > 0) {
-      const feat = blogs[0];
-      const mainTitle = document.querySelector('.bl-feat__main h3 a');
-      const mainExcerpt = document.querySelector('.bl-feat__main p');
-      const mainImg = document.querySelector('.bl-feat__media img');
-      if (mainTitle && feat.title) {
-        mainTitle.textContent = feat.title;
-        mainTitle.href = <?= json_encode(base_url('blog-single?id=')) ?> + feat.id;
+
+  // Newsletter form
+  const form = document.getElementById('newsletterForm');
+  const msg = document.getElementById('newsletterMsg');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = form.querySelector('input[name="email"]').value.trim();
+      if (!email) return;
+      try {
+        const res = await fetch('<?= e(base_url('api/v1/website/leads')) ?>', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, type: 'newsletter', source: 'blog' })
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          msg.textContent = 'Thanks for subscribing!';
+          msg.style.color = 'var(--success)';
+          form.reset();
+        } else {
+          msg.textContent = data.error || 'Something went wrong. Please try again.';
+          msg.style.color = 'var(--danger)';
+        }
+        msg.style.display = 'block';
+      } catch (err) {
+        msg.textContent = 'Network error. Please try again.';
+        msg.style.color = 'var(--danger)';
+        msg.style.display = 'block';
       }
-      if (mainExcerpt && (feat.excerpt || feat.content)) mainExcerpt.textContent = feat.excerpt || feat.content.substring(0, 120) + '...';
-      if (mainImg && feat.cover_image) mainImg.src = feat.cover_image;
-    }
-    if (news.length > 0) {
-      const flashContainer = document.querySelector('.bl-flash');
-      if (flashContainer) {
-        flashContainer.innerHTML = news.map(n => `
-          <a class="bl-flash__row" href="<?= e(base_url('news-single?id=')) ?>${n.id}">
-            <div>
-              <h4>${n.title}</h4>
-              <time>${n.created_at ? n.created_at.substring(0,10) : ''}</time>
-            </div>
-            ${n.cover_image ? `<img src="${n.cover_image}" alt="">` : ''}
-          </a>
-        `).join('');
-      }
-    }
-  } catch (e) {}
+    });
+  }
 });
 </script>
 <!-- ========== UNIQUE PAGE CONTENT END ========== -->

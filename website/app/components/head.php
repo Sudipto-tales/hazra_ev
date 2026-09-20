@@ -1,6 +1,10 @@
 <?php
-$pageTitle = $pageTitle ?? 'Hazra Electrical Bike — Follow Elegant';
-$pageDescription = $pageDescription ?? 'Hazra Electrical Bike — electric scooters built for everyday Indian riding. Book a test drive or find a dealership near you.';
+$pageTitle = $metaTitle ?? $pageTitle ?? 'Hazra Electrical Bike — Follow Elegant';
+$pageDescription = $metaDescription ?? $pageDescription ?? 'Hazra Electrical Bike — electric scooters built for everyday Indian riding. Book a test drive or find a dealership near you.';
+$canonicalUrl = $canonicalUrl ?? null;
+$ogImage = $ogImage ?? base_url('assets/hazraev.png');
+$ogType = $ogType ?? 'website';
+$jsonLd = $jsonLd ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -12,6 +16,23 @@ $pageDescription = $pageDescription ?? 'Hazra Electrical Bike — electric scoot
 <link rel="icon" href="<?= e(base_url('assets/hazraev.png')) ?>" type="image/png">
 <link rel="apple-touch-icon" href="<?= e(base_url('assets/hazraev.png')) ?>">
 <meta name="description" content="<?= e($pageDescription) ?>">
+<?php if ($canonicalUrl): ?>
+<link rel="canonical" href="<?= e($canonicalUrl) ?>">
+<?php endif; ?>
+<meta property="og:type" content="<?= e($ogType) ?>">
+<meta property="og:title" content="<?= e($pageTitle) ?>">
+<meta property="og:description" content="<?= e($pageDescription) ?>">
+<meta property="og:image" content="<?= e((str_starts_with($ogImage, 'http://') || str_starts_with($ogImage, 'https://')) ? $ogImage : base_url($ogImage)) ?>">
+<meta property="og:url" content="<?= e($canonicalUrl ?? base_url()) ?>">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<?= e($pageTitle) ?>">
+<meta name="twitter:description" content="<?= e($pageDescription) ?>">
+<meta name="twitter:image" content="<?= e((str_starts_with($ogImage, 'http://') || str_starts_with($ogImage, 'https://')) ? $ogImage : base_url($ogImage)) ?>">
+<?php if ($jsonLd): ?>
+<script type="application/ld+json">
+<?= json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
+</script>
+<?php endif; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">

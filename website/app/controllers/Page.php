@@ -91,6 +91,11 @@ class Page extends BaseController
         return $this->respond('/app/page/news-single.php');
     }
 
+    public function news()
+    {
+        return $this->respond('/app/page/news.php');
+    }
+
     public function contest()
     {
         return $this->respond('/app/page/contest.php');
@@ -241,5 +246,70 @@ class Page extends BaseController
     {
         $this->guardAdmin();
         return $this->respond('/app/page/admin/profile.php');
+    }
+
+    public function sitemap()
+    {
+        header('Content-Type: application/xml; charset=utf-8');
+        
+        $baseUrl = rtrim(base_url('/'), '/');
+        $now = date('c');
+        
+        $urls = [
+            ['loc' => $baseUrl, 'lastmod' => $now, 'changefreq' => 'daily', 'priority' => '1.0'],
+            ['loc' => $baseUrl . 'our-story', 'lastmod' => $now, 'changefreq' => 'monthly', 'priority' => '0.8'],
+            ['loc' => $baseUrl . 'products', 'lastmod' => $now, 'changefreq' => 'weekly', 'priority' => '0.9'],
+            ['loc' => $baseUrl . 'blog', 'lastmod' => $now, 'changefreq' => 'daily', 'priority' => '0.9'],
+            ['loc' => $baseUrl . 'news', 'lastmod' => $now, 'changefreq' => 'daily', 'priority' => '0.9'],
+            ['loc' => $baseUrl . 'contact', 'lastmod' => $now, 'changefreq' => 'monthly', 'priority' => '0.7'],
+            ['loc' => $baseUrl . 'dealer-locator', 'lastmod' => $now, 'changefreq' => 'monthly', 'priority' => '0.7'],
+            ['loc' => $baseUrl . 'become-a-dealer', 'lastmod' => $now, 'changefreq' => 'monthly', 'priority' => '0.7'],
+        ];
+        
+        // Blog posts
+        $blogPosts = db_fetch_all("SELECT slug, updated_at FROM posts WHERE type = 'blog' AND status = 'published' ORDER BY published_at DESC");
+        foreach ($blogPosts as $post) {
+            $urls[] = [
+                'loc' => $baseUrl . 'blog/' . $post['slug'],
+                'lastmod' => date('c', strtotime($post['updated_at'])),
+                'changefreq' => 'monthly',
+                'priority' => '0.8'
+            ];
+        }
+        
+        // News posts
+        $newsPosts = db_fetch_all("SELECT slug, updated_at FROM posts WHERE type = 'news' AND status = 'published' ORDER BY published_at DESC");
+        foreach ($newsPosts as $post) {
+            $urls[] = [
+                'loc' => $baseUrl . 'news/' . $post['slug'],
+                'lastmod' => date('c', strtotime($post['updated_at'])),
+                'changefreq' => 'monthly',
+                'priority' => '0.8'
+            ];
+        }
+        
+        // Product detail pages
+        $products = db_fetch_all("SELECT slug, updated_at FROM products WHERE status = 'active' ORDER BY created_at DESC");
+        foreach ($products as $product) {
+            $urls[] = [
+                'loc' => $baseUrl . 'product-detail/' . $product['slug'],
+                'lastmod' => date('c', strtotime($product['updated_at'])),
+                'changefreq' => 'monthly',
+                'priority' => '0.8'
+            ];
+        }
+        
+        echo '<?xml version="1.0" encoding="UTF-8"?>';
+        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+        foreach ($urls as $url) {
+            echo '<url>';
+            echo '<loc>' . htmlspecialchars($url['loc']) . '</loc>';
+            echo '<lastmod>' . $url['lastmod'] . '</lastmod>';
+            echo '<changefreq>' . $url['changefreq'] . '</changefreq>';
+            echo '<priority>' . $url['priority'] . '</priority>';
+            echo '</url>';
+        }
+        echo '</urlset>';
+        exit;
     }
 }

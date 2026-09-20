@@ -194,6 +194,7 @@ final class WebsiteController extends V1Controller
         $type = match ($rawType) {
             'test_drive', 'test_ride', 'test-drive' => 'test_drive',
             'dealership', 'dealer', 'dealership_enquiry' => 'dealership',
+            'newsletter' => 'newsletter',
             default => 'contact',
         };
 

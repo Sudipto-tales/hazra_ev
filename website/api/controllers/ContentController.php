@@ -19,42 +19,82 @@ final class ContentController extends V1Controller
     // =========================================================
 
     private const POST_WRITABLE = [
-        'type'        => 'type',
-        'title'       => 'title',
-        'slug'        => 'slug',
-        'excerpt'     => 'excerpt',
-        'content'     => 'content',
-        'cover_image' => 'cover_image',
-        'author'      => 'author',
-        'published_at'=> 'published_at',
-        'status'      => 'status',
+        'type'           => 'type',
+        'title'          => 'title',
+        'slug'           => 'slug',
+        'excerpt'        => 'excerpt',
+        'content'        => 'content',
+        'cover_image'    => 'cover_image',
+        'author'         => 'author',
+        'published_at'   => 'published_at',
+        'status'         => 'status',
+        'category'       => 'category',
+        'tags'           => 'tags',
+        'location'       => 'location',
+        'read_minutes'   => 'read_minutes',
+        'is_featured'    => 'is_featured',
+        'meta_title'     => 'meta_title',
+        'meta_description'=> 'meta_description',
     ];
 
     public function listPosts(): never
     {
-        $type   = (string) $this->query('type', '');
-        $status = (string) $this->query('status', '');
+        $type       = (string) $this->query('type', '');
+        $status     = (string) $this->query('status', '');
+        $category   = (string) $this->query('category', '');
+        $tag        = (string) $this->query('tag', '');
+        $featured   = (string) $this->query('featured', '');
+        $q          = (string) $this->query('q', '');
+        $page       = max(1, (int) $this->query('page', 1));
+        $limit      = min(50, max(1, (int) $this->query('limit', $this->query('pageSize', 10))));
+        $offset     = ($page - 1) * $limit;
+
         $where  = [];
         $params = [];
 
-        if ($type)   { $where[] = 'type = ?';   $params[] = $type;   }
-        if ($status) { $where[] = 'status = ?'; $params[] = $status; }
+        if ($type)     { $where[] = 'type = ?';       $params[] = $type;     }
+        if ($status)   { $where[] = 'status = ?';     $params[] = $status;   }
+        else           { $where[] = "status = 'published'"; }
+        if ($category) { $where[] = 'category = ?';   $params[] = $category; }
+        if ($tag)      { $where[] = "tags LIKE ?";    $params[] = '%' . $tag . '%'; }
+        if ($featured) { $where[] = 'is_featured = 1'; }
+        if ($q) {
+            $where[] = '(title LIKE ? OR excerpt LIKE ? OR content LIKE ?)';
+            $searchTerm = '%' . $q . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
 
         $clause = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
-        $rows   = db_fetch_all("SELECT * FROM posts {$clause} ORDER BY created_at DESC", $params);
-        if (!$rows) {
-            $rows = db_fetch_all("SELECT * FROM admin_posts {$clause} ORDER BY created_at DESC", $params);
-        }
-        Envelope::ok($rows);
+
+        $countParams = $params;
+        $total = (int) db_fetch_one("SELECT COUNT(*) FROM posts {$clause}", $countParams)['COUNT(*)'];
+
+        $params[] = $limit;
+        $params[] = $offset;
+        $rows = db_fetch_all("SELECT * FROM posts {$clause} ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?", $params);
+
+        Envelope::ok([
+            'data'       => $rows,
+            'total'      => $total,
+            'page'       => $page,
+            'limit'      => $limit,
+            'pages'      => (int) ceil($total / $limit),
+        ]);
     }
 
     public function showPost(): never
     {
         $id  = (string) $this->param('id');
-        $row = db_fetch_one('SELECT * FROM posts WHERE id = ?', [$id]);
-        if (!$row) {
-            $row = db_fetch_one('SELECT * FROM admin_posts WHERE id = ?', [$id]);
+
+        $row = null;
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id)) {
+            $row = db_fetch_one('SELECT * FROM posts WHERE id = ?', [$id]);
+        } else {
+            $row = db_fetch_one('SELECT * FROM posts WHERE slug = ?', [$id]);
         }
+
         if (!$row) Envelope::notFound('POST_NOT_FOUND', 'No such post');
         Envelope::ok($row);
     }

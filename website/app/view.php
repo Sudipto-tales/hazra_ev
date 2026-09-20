@@ -56,8 +56,16 @@ class ViewRouteProvider extends RouteProvider
             'blog' => ['Page', 'blog'],
             'blog.php' => ['Page', 'blog'],
 
+            'blog/{slug}' => ['Page', 'blogSingle'],
+            'blog/category/{category}' => ['Page', 'blog'],
+
             'blog-single' => ['Page', 'blogSingle'],
             'blog-single.php' => ['Page', 'blogSingle'],
+
+            'news' => ['Page', 'news'],
+            'news.php' => ['Page', 'news'],
+
+            'news/{slug}' => ['Page', 'newsSingle'],
 
             'news-single' => ['Page', 'newsSingle'],
             'news-single.php' => ['Page', 'newsSingle'],
@@ -101,6 +109,8 @@ class ViewRouteProvider extends RouteProvider
             'admin/settings' => ['Page', 'adminSettings'],
             'admin/profile' => ['Page', 'adminProfile'],
             'admin/profile.php' => ['Page', 'adminProfile'],
+
+            'sitemap.xml' => ['Page', 'sitemap'],
         ];
     }
 }

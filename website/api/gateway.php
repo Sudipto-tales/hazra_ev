@@ -107,6 +107,7 @@ class ApiGatewayProvider extends RouteProvider
             // --- Admin Content: Posts (Blogs & News) ----------------------------
             'GET:api/v1/posts'              => ['ContentController', 'listPosts'],
             'GET:api/v1/posts/{id}'         => ['ContentController', 'showPost'],
+            'GET:api/v1/posts/by-slug/{slug}' => ['ContentController', 'showPost'],
             'POST:api/v1/posts'             => ['ContentController', 'storePost',  'auth'],
             'PATCH:api/v1/posts/{id}'       => ['ContentController', 'updatePost', 'auth'],
             'DELETE:api/v1/posts/{id}'      => ['ContentController', 'deletePost', 'auth'],

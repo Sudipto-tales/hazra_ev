@@ -29,6 +29,44 @@ class RouteManager
             return;
         }
 
+        // Match parameterized web routes: e.g. blog/{slug}, news/{slug}, blog/category/{category}
+        foreach ($routes as $pattern => $handler) {
+            if (str_starts_with($pattern, 'api/') || !str_contains($pattern, '{')) {
+                continue;
+            }
+
+            $regex = preg_replace('/\{(\w+)\}/', '(?P<$1>[^/]+)', $pattern);
+            $regex = '#^' . $regex . '$#';
+
+            if (preg_match($regex, $route, $matches)) {
+                $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+                foreach ($params as $k => $v) {
+                    if (!isset($_GET[$k])) {
+                        $_GET[$k] = $v;
+                    }
+                }
+
+                [$class, $method] = $handler;
+                if (!class_exists($class)) {
+                    http_response_code(500);
+                    die("Server Error: Controller not found ({$class})");
+                }
+
+                $controller = new $class();
+                if (method_exists($controller, 'setRouteParams')) {
+                    $controller->setRouteParams($params);
+                }
+
+                if (!method_exists($controller, $method)) {
+                    http_response_code(500);
+                    die("Server Error: Controller method not found ({$method})");
+                }
+
+                call_user_func([$controller, $method]);
+                return;
+            }
+        }
+
         http_response_code(404);
         load_view('resources/views/404.php');
     }

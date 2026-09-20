@@ -1,8 +1,79 @@
 <?php
+require_once __DIR__ . '/../../core/SafeHtml.php';
+
+$slug = isset($_GET['slug']) ? (string)$_GET['slug'] : (isset($_GET['id']) ? (string)$_GET['id'] : '');
+
+$post = null;
+if ($slug) {
+    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $slug)) {
+        $post = db_fetch_one("SELECT * FROM posts WHERE id = ? AND type = 'news'", [$slug]);
+    } else {
+        $post = db_fetch_one("SELECT * FROM posts WHERE slug = ? AND type = 'news'", [$slug]);
+    }
+}
+
+if (!$post) {
+    http_response_code(404);
+    require_once __DIR__ . '/../../core/RouteManager.php';
+    load_view('resources/views/404.php');
+    exit;
+}
+
+if ($post['status'] !== 'published' && (empty($_SESSION['admin_logged_in']) || ($_SESSION['user_role'] ?? '') !== 'admin')) {
+    http_response_code(404);
+    load_view('resources/views/404.php');
+    exit;
+}
+
+$canonicalUrl = base_url("news/{$post['slug']}");
+$ogImage = $post['cover_image'] ? base_url($post['cover_image']) : base_url('assets/hazraev.png');
+$metaTitle = $post['meta_title'] ?: $post['title'] . ' — Hazra EV News';
+$metaDescription = $post['meta_description'] ?: $post['excerpt'];
+
+$jsonLd = [
+    '@context' => 'https://schema.org',
+    '@type' => 'NewsArticle',
+    'headline' => $post['title'],
+    'description' => $post['excerpt'],
+    'image' => [$ogImage],
+    'datePublished' => date('c', strtotime($post['published_at'])),
+    'dateModified' => date('c', strtotime($post['updated_at'] ?? $post['published_at'])),
+    'author' => [
+        '@type' => 'Person',
+        'name' => $post['author']
+    ],
+    'publisher' => [
+        '@type' => 'Organization',
+        'name' => 'Hazra Electrical Bike',
+        'logo' => [
+            '@type' => 'ImageObject',
+            'url' => base_url('assets/hazraev.png')
+        ]
+    ],
+    'mainEntityOfPage' => [
+        '@type' => 'WebPage',
+        '@id' => $canonicalUrl
+    ]
+];
+
+$latestNews = db_fetch_all(
+    "SELECT * FROM posts WHERE type = 'news' AND status = 'published' AND id != ? ORDER BY published_at DESC LIMIT 3",
+    [$post['id']]
+);
+
+$contentHtml = SafeHtml::clean($post['content'] ?? '');
+
+$pageTitle = $metaTitle;
+$pageDescription = $metaDescription;
+
 App::render('head', [
-    'pageTitle'       => 'Hazra Opens 50 New Dealership Points Across East India — News',
-    'pageDescription' => 'Expansion strengthens service coverage and brings electric two-wheelers closer to riders in West Bengal, Odisha, Bihar and the North-East.',
+    'pageTitle'       => $pageTitle,
+    'pageDescription' => $pageDescription,
     'extraCss'        => ['assets/css/styles/pages/news-single.css'],
+    'canonicalUrl'    => $canonicalUrl,
+    'ogImage'         => $ogImage,
+    'ogType'          => 'article',
+    'jsonLd'          => $jsonLd,
 ]);
 
 App::render('header', ['isStickyOnly' => true]);
@@ -10,11 +81,9 @@ App::render('header', ['isStickyOnly' => true]);
 
 <!-- ========== UNIQUE PAGE CONTENT START ========== -->
 <section class="hero">
-  <p class="eyebrow" style="margin-bottom:12px">News · Company</p>
-  <h1 class="hero__title" style="font-size:clamp(26px,4.5vw,44px)">Hazra Opens 50 New Dealership Points Across East India</h1>
-  <p class="hero__lead">
-    Expansion strengthens service coverage and brings electric two-wheelers closer to riders in West Bengal, Odisha, Bihar and the North-East.
-  </p>
+  <p class="eyebrow" style="margin-bottom:12px">News · <?= e(ucfirst($post['category'] ?? 'Company')) ?></p>
+  <h1 class="hero__title" style="font-size:clamp(26px,4.5vw,44px)"><?= e($post['title']) ?></h1>
+  <p class="hero__lead"><?= e($post['excerpt']) ?></p>
 </section>
 
 <section class="news">
@@ -22,80 +91,36 @@ App::render('header', ['isStickyOnly' => true]);
 
     <article class="story">
       <div class="story__hero">
-        <img src="<?= e(base_url('assets/dark_scutie.webp')) ?>" alt="Hazra dealership expansion">
+        <img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="<?= e($post['title']) ?>">
         <span class="story__badge">Press Release</span>
       </div>
       <div class="story__body">
         <div class="story__meta">
-          <time datetime="2026-09-02">2 September 2026</time>
+          <time datetime="<?= e(date('c', strtotime($post['published_at']))) ?>"><?= e(date('j F Y', strtotime($post['published_at']))) ?></time>
+          <?php if ($post['location']): ?>
+            <span>·</span>
+            <span><?= e($post['location']) ?></span>
+          <?php endif; ?>
           <span>·</span>
-          <span>Kolkata</span>
-          <span>·</span>
-          <span>4 min read</span>
+          <span><?= e($post['read_minutes'] ?? 4) ?> min read</span>
         </div>
-        <h1 class="story__title">Hazra Opens 50 New Dealership Points Across East India</h1>
-        <p class="story__deck">
-          The company will add authorised dealership and service locations across four states and the North-Eastern region, aiming to cut average travel time to a Hazra point for thousands of riders.
-        </p>
+        <h1 class="story__title"><?= e($post['title']) ?></h1>
+        <p class="story__deck"><?= e($post['excerpt']) ?></p>
 
         <div class="story__prose">
-          <p>
-            Hazra Electrical Bike today announced the opening of 50 new dealership and service points across East India. The network expansion covers key cities and district towns in West Bengal, Odisha, Bihar, Jharkhand and selected locations in the North-East.
-          </p>
-
-          <div class="story__keyfacts">
-            <div>
-              <strong>50</strong>
-              <span>New points</span>
-            </div>
-            <div>
-              <strong>4+</strong>
-              <span>States covered</span>
-            </div>
-            <div>
-              <strong>Q4</strong>
-              <span>2026 target</span>
-            </div>
-          </div>
-
-          <p>
-            The move is part of a broader plan to make ownership of an electric two-wheeler as straightforward as owning a conventional scooter. Every new location will offer sales, test rides, battery care guidance and authorised service.
-          </p>
-
-          <h2>Why East India, why now</h2>
-          <p>
-            Demand for electric scooters in the region has grown steadily over the last two years. Riders cite rising fuel costs, shorter urban trips and improving charging options as the main reasons they are ready to switch. At the same time, many potential buyers still travel long distances to find a trusted showroom or service centre.
-          </p>
-          <p>
-            By placing dealership points closer to where people live and work, Hazra aims to remove that friction. The company will also run local rider clinics and battery education sessions at the new outlets.
-          </p>
-
-          <h2>What customers can expect</h2>
-          <ul>
-            <li>Full product range including CHALO and NJA models</li>
-            <li>On-site test rides and transparent pricing</li>
-            <li>Authorised warranty registration and service</li>
-            <li>Genuine spare parts and battery support</li>
-          </ul>
-
-          <p>
-            Further details on exact city lists and opening dates will be published on the dealer locator page in the coming weeks. Existing customers in the region can already use the nearest new point for service bookings once it goes live.
-          </p>
-
-          <p>
-            “Electric mobility only becomes real when the product, the service and the people are within reach,” said a company spokesperson. “These 50 points are another step toward that everyday reality.”
-          </p>
+          <?= $contentHtml ?>
         </div>
 
         <div class="story__footer">
           <div class="story__share">
-            <a href="#" aria-label="Share on X"><i data-lucide="twitter"></i></a>
-            <a href="#" aria-label="Share on LinkedIn"><i data-lucide="linkedin"></i></a>
-            <a href="#" aria-label="Share on Facebook"><i data-lucide="facebook"></i></a>
-            <a href="#" aria-label="Copy link"><i data-lucide="link"></i></a>
+            <a href="https://twitter.com/intent/tweet?url=<?= urlencode($canonicalUrl) ?>&text=<?= urlencode($post['title']) ?>" target="_blank" rel="noopener" aria-label="Share on X"><i data-lucide="twitter"></i></a>
+            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode($canonicalUrl) ?>" target="_blank" rel="noopener" aria-label="Share on LinkedIn"><i data-lucide="linkedin"></i></a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($canonicalUrl) ?>" target="_blank" rel="noopener" aria-label="Share on Facebook"><i data-lucide="facebook"></i></a>
+            <a href="https://api.whatsapp.com/send?text=<?= urlencode($post['title'] . ' ' . $canonicalUrl) ?>" target="_blank" rel="noopener" aria-label="Share on WhatsApp"><i data-lucide="message-circle"></i></a>
+            <button onclick="copyLink('<?= e($canonicalUrl) ?>')" aria-label="Copy link"><i data-lucide="link"></i></button>
           </div>
-          <a href="<?= e(base_url('blog')) ?>" style="font-size:13px;font-weight:700;color:var(--brand-violet);display:inline-flex;align-items:center;gap:6px">
-            More news &amp; stories <i data-lucide="arrow-right" style="width:14px;height:14px"></i>
+          <a href="<?= e(base_url('news')) ?>" style="font-size:13px;font-weight:700;color:var(--brand-violet);display:inline-flex;align-items:center;gap:6px">
+            More news & stories <i data-lucide="arrow-right" style="width:14px;height:14px"></i>
           </a>
         </div>
       </div>
@@ -105,21 +130,16 @@ App::render('header', ['isStickyOnly' => true]);
       <div class="news-aside__card">
         <h4>Latest news</h4>
         <div class="latest">
-          <a href="<?= e(base_url('news-single')) ?>">
-            <time>28 Aug 2026</time>
-            <strong>Hazra partners with regional charging network</strong>
-            <span>New public charging locations for riders</span>
-          </a>
-          <a href="<?= e(base_url('news-single')) ?>">
-            <time>15 Aug 2026</time>
-            <strong>CHALO 1000 V2 range update announced</strong>
-            <span>Software + battery software improvements</span>
-          </a>
-          <a href="<?= e(base_url('news-single')) ?>">
-            <time>02 Aug 2026</time>
-            <strong>Summer service camps across 12 cities</strong>
-            <span>Free check-ups for existing owners</span>
-          </a>
+          <?php foreach ($latestNews as $news): ?>
+            <a href="<?= e(base_url("news/{$news['slug']}")) ?>">
+              <time><?= e(date('j M Y', strtotime($news['published_at']))) ?></time>
+              <strong><?= e($news['title']) ?></strong>
+              <span><?= e($news['excerpt'] ?? '') ?></span>
+            </a>
+          <?php endforeach; ?>
+          <?php if (empty($latestNews)): ?>
+            <p style="color:var(--ink-soft-0);font-size:13px">No other news items.</p>
+          <?php endif; ?>
         </div>
       </div>
 
@@ -141,41 +161,24 @@ App::render('header', ['isStickyOnly' => true]);
   </p>
   <a class="footer__link" href="<?= e(base_url('index')) ?>">
     <span>Back to home</span>
-    <i data-lucide="arrow-right"></i>
+    <i data-lucide="arrow-right" style="width:16px;height:16px"></i>
   </a>
 </section>
 
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.lucide) lucide.createIcons();
-  const params = new URLSearchParams(location.search);
-  const id = params.get('id');
-  if (id) {
-    try {
-      const apiPath = <?= json_encode(base_url('api/v1/posts/')) ?> + id;
-      const res = await fetch(apiPath);
-      if (res.ok) {
-        const data = await res.json();
-        const p = data.data || data;
-        if (p.title) {
-          document.querySelectorAll('.hero__title, .story__title').forEach(el => el.textContent = p.title);
-          document.title = p.title + ' — News';
-        }
-        if (p.excerpt || p.content) {
-          const deck = document.querySelector('.story__deck');
-          if (deck) deck.textContent = p.excerpt || p.content.substring(0, 150);
-        }
-        if (p.content) {
-          const prose = document.querySelector('.story__prose');
-          if (prose) prose.innerHTML = '<p>' + p.content.replace(/\n/g, '</p><p>') + '</p>';
-        }
-        if (p.cover_image) {
-          const img = document.querySelector('.story__hero img');
-          if (img) img.src = p.cover_image;
-        }
-      }
-    } catch(e) {}
+
+  function copyLink(url) {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = event.target.closest('button');
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i data-lucide="check"></i>';
+      if (window.lucide) lucide.createIcons();
+      setTimeout(() => { btn.innerHTML = original; if (window.lucide) lucide.createIcons(); }, 2000);
+    });
   }
+  window.copyLink = copyLink;
 });
 </script>
 <!-- ========== UNIQUE PAGE CONTENT END ========== -->
