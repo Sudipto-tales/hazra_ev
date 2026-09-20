@@ -45,15 +45,25 @@ final class ContentController extends V1Controller
         $tag        = (string) $this->query('tag', '');
         $featured   = (string) $this->query('featured', '');
         $q          = (string) $this->query('q', '');
-        $page       = max(1, (int) $this->query('page', 1));
-        $limit      = min(50, max(1, (int) $this->query('limit', $this->query('pageSize', 10))));
-        $offset     = ($page - 1) * $limit;
+        $sort       = (string) $this->query('sort', 'created_at');
+        $dir        = strtolower((string) $this->query('dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+
+        $allowedSorts = ['title', 'created_at', 'published_at', 'status', 'read_minutes', 'is_featured', 'order_num'];
+        $orderByCol   = in_array($sort, $allowedSorts, true) ? $sort : 'created_at';
+
+        $pageSizeRaw = $this->query('pageSize');
+        $limitRaw    = $this->query('limit');
+        $isAll       = ($pageSizeRaw !== null && (string) $pageSizeRaw === '0') || ($limitRaw !== null && (string) $limitRaw === '0');
+
+        $page   = max(1, (int) $this->query('page', 1));
+        $limit  = $isAll ? 1000 : min(100, max(1, (int) ($limitRaw ?? $pageSizeRaw ?? 20)));
+        $offset = ($page - 1) * $limit;
 
         $where  = [];
         $params = [];
 
         if ($type)     { $where[] = 'type = ?';       $params[] = $type;     }
-        if ($status)   { $where[] = 'status = ?';     $params[] = $status;   }
+        if ($status && $status !== 'all')   { $where[] = 'status = ?';     $params[] = $status;   }
         elseif (!Ctx::hasAdminSession()) { $where[] = "status = 'published'"; }
         if ($category) { $where[] = 'category = ?';   $params[] = $category; }
         if ($tag)      { $where[] = "tags LIKE ?";    $params[] = '%' . $tag . '%'; }
@@ -71,27 +81,56 @@ final class ContentController extends V1Controller
         $countParams = $params;
         $total = (int) db_fetch_one("SELECT COUNT(*) FROM posts {$clause}", $countParams)['COUNT(*)'];
 
-        $params[] = $limit;
-        $params[] = $offset;
-        $rows = db_fetch_all("SELECT * FROM posts {$clause} ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?", $params);
+        // Compute status counts for filter chips
+        $countQuery = "SELECT status, COUNT(*) AS c FROM posts";
+        $cWhere = [];
+        $cParams = [];
+        if ($type) {
+            $cWhere[] = 'type = ?';
+            $cParams[] = $type;
+        }
+        if (!Ctx::hasAdminSession()) {
+            $cWhere[] = "status = 'published'";
+        }
+        if ($cWhere) {
+            $countQuery .= " WHERE " . implode(' AND ', $cWhere);
+        }
+        $countQuery .= " GROUP BY status";
+        $scRows = db_fetch_all($countQuery, $cParams);
+        $statusCounts = ['all' => 0, 'published' => 0, 'draft' => 0];
+        $totalAll = 0;
+        foreach ($scRows as $sc) {
+            $st  = $sc['status'] ?? '';
+            $cnt = (int) ($sc['c'] ?? 0);
+            $totalAll += $cnt;
+            $statusCounts[$st] = $cnt;
+        }
+        $statusCounts['all'] = $totalAll;
 
-        Envelope::ok([
-            'data'       => $rows,
+        $querySql = "SELECT * FROM posts {$clause} ORDER BY {$orderByCol} {$dir}";
+        if (!$isAll) {
+            $querySql .= " LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+        }
+
+        $rows = db_fetch_all($querySql, $params);
+
+        Envelope::ok($rows, [
             'total'      => $total,
             'page'       => $page,
             'limit'      => $limit,
-            'pages'      => (int) ceil($total / $limit),
+            'pages'      => $isAll ? 1 : (int) ceil($total / max(1, $limit)),
+            'counts'     => $statusCounts,
         ]);
     }
 
     public function showPost(): never
     {
-        $id  = (string) $this->param('id');
+        $id = (string) ($this->param('id') ?? $this->param('slug'));
 
-        $row = null;
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id)) {
-            $row = db_fetch_one('SELECT * FROM posts WHERE id = ?', [$id]);
-        } else {
+        $row = db_fetch_one('SELECT * FROM posts WHERE id = ?', [$id]);
+        if (!$row) {
             $row = db_fetch_one('SELECT * FROM posts WHERE slug = ?', [$id]);
         }
 
@@ -120,7 +159,8 @@ final class ContentController extends V1Controller
         db_execute(sprintf($query, 'posts'), $values);
         try { db_execute(sprintf($query, 'admin_posts'), $values); } catch (Throwable) {}
 
-        Envelope::created(['id' => $id]);
+        $post = db_fetch_one('SELECT * FROM posts WHERE id = ?', [$id]);
+        Envelope::created($post ?: ['id' => $id]);
     }
 
     public function updatePost(): never
@@ -144,7 +184,8 @@ final class ContentController extends V1Controller
             try { db_execute('UPDATE admin_posts SET ' . implode(', ', $sets) . ', updated_at = ? WHERE id = ?', $params); } catch (Throwable) {}
         }
 
-        Envelope::ok();
+        $post = db_fetch_one('SELECT * FROM posts WHERE id = ?', [$id]);
+        Envelope::ok($post ?? ['success' => true]);
     }
 
     public function deletePost(): never
@@ -153,7 +194,7 @@ final class ContentController extends V1Controller
         $id = (string) $this->param('id');
         db_execute('DELETE FROM posts WHERE id = ?', [$id]);
         try { db_execute('DELETE FROM admin_posts WHERE id = ?', [$id]); } catch (Throwable) {}
-        Envelope::ok();
+        Envelope::ok(['deleted' => true, 'id' => $id]);
     }
 
     // =========================================================

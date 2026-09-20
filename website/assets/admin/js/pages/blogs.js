@@ -60,6 +60,7 @@
                 },
             ],
             rowActions: (row) => [
+                { label: 'View on site', icon: 'fa-arrow-up-right-from-square', onClick: () => { window.open(`${SITE}blog/${encodeURIComponent(row.slug || row.id)}`, '_blank'); } },
                 { label: 'Edit', icon: 'fa-pen', onClick: () => { location.href = `blog-form?id=${encodeURIComponent(row.id)}`; } },
                 { divider: true },
                 {

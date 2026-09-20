@@ -3940,8 +3940,9 @@ body.is-file-drag .dropzone {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    max-width: 860px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
 }
 
 .settings-card {
@@ -4026,8 +4027,9 @@ body.is-file-drag .dropzone {
    SETTINGS V2 PREMIUM DESIGN STYLES
    ========================================================= */
 .settings-v2-container {
-    max-width: 920px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;

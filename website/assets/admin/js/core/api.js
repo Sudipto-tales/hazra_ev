@@ -315,12 +315,21 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
             const res = await get(pathFor(entity), query);
             const meta_ = res.meta || {};
 
+            let rows = res.data || [];
+            let total = meta_.total;
+            let counts = meta_.counts || {};
+            if (rows && !Array.isArray(rows) && Array.isArray(rows.data)) {
+                if (total === undefined && rows.total !== undefined) total = rows.total;
+                if (rows.counts) counts = rows.counts;
+                rows = rows.data;
+            }
+
             return {
-                rows: res.data || [],
-                total: meta_.total || 0,
+                rows: Array.isArray(rows) ? rows : [],
+                total: typeof total === 'number' ? total : (Array.isArray(rows) ? rows.length : 0),
                 page: meta_.page || o.page,
                 pageSize: meta_.pageSize === undefined ? o.pageSize : meta_.pageSize,
-                counts: meta_.counts || {},
+                counts,
             };
         },
 
@@ -331,7 +340,11 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
             if (LEAD_TYPE[entity]) query.type = LEAD_TYPE[entity];
             try {
                 const res = await get(pathFor(entity), query);
-                cache[entity] = res.data || [];
+                let rows = res.data || [];
+                if (rows && !Array.isArray(rows) && Array.isArray(rows.data)) {
+                    rows = rows.data;
+                }
+                cache[entity] = Array.isArray(rows) ? rows : [];
                 return clone(cache[entity]);
             } catch (err) {
                 console.warn('[store.all] Failed to load entity', entity, err);
@@ -358,7 +371,11 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
         async get(entity, id) {
             try {
                 const res = await get(`${pathFor(entity)}/${encodeURIComponent(id)}`);
-                return res.data || null;
+                let data = res.data || null;
+                if (data && data.data && !data.title && data.data.title) {
+                    data = data.data;
+                }
+                return data;
             } catch (err) {
                 if (err.status === 404) return null;
                 throw err;

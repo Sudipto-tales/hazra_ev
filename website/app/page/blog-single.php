@@ -1,46 +1,78 @@
 <?php
 require_once __DIR__ . '/../../core/SafeHtml.php';
 
-$slug = isset($_GET['slug']) ? (string)$_GET['slug'] : (isset($_GET['id']) ? (string)$_GET['id'] : '');
+$slug = isset($_GET['slug']) ? trim((string)$_GET['slug']) : (isset($_GET['id']) ? trim((string)$_GET['id']) : '');
 
 $post = null;
-if ($slug) {
+if ($slug !== '') {
     if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $slug)) {
-        $post = db_fetch_one("SELECT * FROM posts WHERE id = ? AND type = 'blog'", [$slug]);
+        $post = db_fetch_one("SELECT * FROM posts WHERE id = ?", [$slug]);
     } else {
-        $post = db_fetch_one("SELECT * FROM posts WHERE slug = ? AND type = 'blog'", [$slug]);
+        $post = db_fetch_one("SELECT * FROM posts WHERE slug = ?", [$slug]);
     }
+}
+
+// Fallback: If no slug/id provided (e.g. clicking direct /blog-single link), load the latest published blog post
+if (!$post && $slug === '') {
+    $post = db_fetch_one("SELECT * FROM posts WHERE type = 'blog' AND status = 'published' ORDER BY is_featured DESC, published_at DESC LIMIT 1");
+    if (!$post) {
+        $post = db_fetch_one("SELECT * FROM posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 1");
+    }
+}
+
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+$isAdmin = !empty($_SESSION['admin_logged_in']) || ($_SESSION['user_role'] ?? '') === 'admin';
+
+if ($post && $post['status'] !== 'published' && !$isAdmin) {
+    $post = null;
 }
 
 if (!$post) {
     http_response_code(404);
-    require_once __DIR__ . '/../../core/RouteManager.php';
-    load_view('resources/views/404.php');
-    exit;
-}
-
-if ($post['status'] !== 'published' && (empty($_SESSION['admin_logged_in']) || ($_SESSION['user_role'] ?? '') !== 'admin')) {
-    http_response_code(404);
-    load_view('resources/views/404.php');
+    $pageTitle = 'Article Not Found — Hazra EV';
+    $pageDescription = 'The requested blog article could not be found.';
+    App::render('head', [
+        'pageTitle'       => $pageTitle,
+        'pageDescription' => $pageDescription,
+        'extraCss'        => ['assets/css/styles/pages/blog-single.css'],
+    ]);
+    App::render('header', ['isStickyOnly' => true]);
+    ?>
+    <section class="hero" style="min-height:55vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px var(--gutter);text-align:center;">
+      <p class="eyebrow"><i class="sq"></i> 404 NOT FOUND</p>
+      <h1 class="hero__title" style="margin-top:12px;">Article Not Found</h1>
+      <p class="hero__lead">The blog article you are looking for may have been moved, renamed, or is currently unpublished.</p>
+      <div style="margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a class="btn btn--ink" href="<?= e(base_url('blog')) ?>"><span>Browse All Articles</span></a>
+        <a class="btn btn--ghost" href="<?= e(base_url()) ?>">Back to Homepage</a>
+      </div>
+    </section>
+    <?php
+    App::render('footer');
     exit;
 }
 
 $canonicalUrl = base_url("blog/{$post['slug']}");
-$ogImage = img_url($post['cover_image'] ?? null);
+$coverUrl = img_url($post['cover_image'] ?? null);
+$ogImage = $coverUrl;
 $metaTitle = $post['meta_title'] ?: $post['title'] . ' — Hazra EV Blog';
-$metaDescription = $post['meta_description'] ?: $post['excerpt'];
+$metaDescription = $post['meta_description'] ?: ($post['excerpt'] ?? '');
+$authorName = $post['author'] ?: 'Hazra EV Team';
+$publishedDate = !empty($post['published_at']) ? strtotime($post['published_at']) : (!empty($post['created_at']) ? strtotime($post['created_at']) : time());
 
 $jsonLd = [
     '@context' => 'https://schema.org',
     '@type' => 'BlogPosting',
     'headline' => $post['title'],
-    'description' => $post['excerpt'],
+    'description' => $post['excerpt'] ?? '',
     'image' => [$ogImage],
-    'datePublished' => date('c', strtotime($post['published_at'])),
-    'dateModified' => date('c', strtotime($post['updated_at'] ?? $post['published_at'])),
+    'datePublished' => date('c', $publishedDate),
+    'dateModified' => date('c', strtotime($post['updated_at'] ?? $post['published_at'] ?? 'now')),
     'author' => [
         '@type' => 'Person',
-        'name' => $post['author']
+        'name' => $authorName
     ],
     'publisher' => [
         '@type' => 'Organization',
@@ -63,6 +95,23 @@ $relatedPosts = db_fetch_all(
 
 $contentHtml = SafeHtml::clean($post['content'] ?? '');
 
+// Auto-inject IDs into h2, h3, h4 headings if missing, so Table of Contents jumps cleanly
+$contentHtml = preg_replace_callback('/<(h[2-4])([^>]*)>(.*?)<\/\1>/i', function ($m) {
+    $tag = $m[1];
+    $attrs = $m[2];
+    $title = $m[3];
+    if (!preg_match('/\bid\s*=/i', $attrs)) {
+        $cleanId = preg_replace('/[^a-z0-9]+/i', '-', trim(strip_tags($title)));
+        $cleanId = strtolower(trim($cleanId, '-')) ?: 'section-' . substr(md5($title), 0, 6);
+        $attrs .= ' id="' . htmlspecialchars($cleanId) . '"';
+    }
+    return "<{$tag}{$attrs}>{$title}</{$tag}>";
+}, $contentHtml);
+
+if (empty(trim(strip_tags($contentHtml))) && !empty($post['excerpt'])) {
+    $contentHtml = '<p style="font-size:1.1em;line-height:1.8;">' . nl2br(e($post['excerpt'])) . '</p>';
+}
+
 $pageTitle = $metaTitle;
 $pageDescription = $metaDescription;
 
@@ -80,13 +129,16 @@ App::render('header', ['isStickyOnly' => true]);
 ?>
 
 <!-- ========== UNIQUE PAGE CONTENT START ========== -->
-<section class="hero">
-  <p class="eyebrow" style="margin-bottom:12px">Blog · <?= e(ucfirst($post['category'] ?? 'EV Trends')) ?></p>
-  <h1 class="hero__title" style="font-size:clamp(28px,5vw,48px)"><?= e($post['title']) ?></h1>
-  <p class="hero__lead"><?= e($post['excerpt']) ?></p>
-</section>
-
 <section class="post">
+  <!-- Breadcrumb -->
+  <div class="article-breadcrumb">
+    <a href="<?= e(base_url()) ?>">Home</a>
+    <span class="sep">/</span>
+    <a href="<?= e(base_url('blog')) ?>">Blog</a>
+    <span class="sep">/</span>
+    <span class="curr"><?= e(ucfirst($post['category'] ?? 'EV Trends')) ?></span>
+  </div>
+
   <div class="post__layout">
 
     <!-- LEFT RAIL -->
@@ -104,13 +156,13 @@ App::render('header', ['isStickyOnly' => true]);
       <div class="toc">
         <div class="rail__label">On this page</div>
         <?php
-        preg_match_all('/<h[2-4][^>]*id="([^"]+)"[^>]*>([^<]+)<\/h[2-4]>/i', $contentHtml, $matches);
-        if (!empty($matches[1])): ?>
-          <?php foreach ($matches[1] as $i => $id): ?>
-            <a href="#<?= e($id) ?>" class="<?= $i === 0 ? 'is-active' : '' ?>"><?= e($matches[2][$i]) ?></a>
+        preg_match_all('/<h([2-4])[^>]*id="([^"]+)"[^>]*>(.*?)<\/h\1>/i', $contentHtml, $matches);
+        if (!empty($matches[2])): ?>
+          <?php foreach ($matches[2] as $i => $id): ?>
+            <a href="#<?= e($id) ?>" class="<?= $i === 0 ? 'is-active' : '' ?>"><?= e(strip_tags($matches[3][$i])) ?></a>
           <?php endforeach; ?>
         <?php else: ?>
-          <a href="#" class="is-active">Article content</a>
+          <a href="#" class="is-active">Article overview</a>
         <?php endif; ?>
       </div>
     </aside>
@@ -118,22 +170,26 @@ App::render('header', ['isStickyOnly' => true]);
     <!-- MAIN ARTICLE -->
     <article class="article">
       <div class="article__hero">
-        <img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="<?= e($post['title']) ?>">
+        <img src="<?= e($coverUrl) ?>" alt="<?= e($post['title']) ?>" onerror="this.onerror=null;this.src='<?= e(base_url('assets/hazraev.png')) ?>';this.style.objectFit='contain';this.style.padding='40px';">
         <div class="article__hero-shade"></div>
       </div>
       <div class="article__body">
         <div class="article__meta">
           <span class="article__cat"><?= e(ucfirst($post['category'] ?? 'EV Trends')) ?></span>
-          <span><?= e(date('d M Y', strtotime($post['published_at']))) ?></span>
+          <span><?= e(date('d M Y', $publishedDate)) ?></span>
           <span>·</span>
           <span><?= e($post['read_minutes'] ?? 4) ?> min read</span>
         </div>
         <h1 class="article__title"><?= e($post['title']) ?></h1>
-        <p class="article__lead"><?= e($post['excerpt']) ?></p>
+        <?php if (!empty($post['excerpt'])): ?>
+          <p class="article__lead"><?= e($post['excerpt']) ?></p>
+        <?php endif; ?>
         <div class="article__author">
-          <img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="<?= e($post['author']) ?>">
+          <div class="article__avatar" style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--brand-violet),var(--brand-flame));display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px;flex-shrink:0;">
+            <?= e(strtoupper(substr($authorName, 0, 2))) ?>
+          </div>
           <div>
-            <strong><?= e($post['author']) ?></strong>
+            <strong><?= e($authorName) ?></strong>
             <span>Hazra EV Journal</span>
           </div>
         </div>
@@ -162,7 +218,7 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="related">
           <?php foreach ($relatedPosts as $rel): ?>
             <a href="<?= e(base_url("blog/{$rel['slug']}")) ?>" class="related__item">
-              <img src="<?= e(img_url($rel['cover_image'] ?? null)) ?>" alt="">
+              <img src="<?= e(img_url($rel['cover_image'] ?? null)) ?>" alt="<?= e($rel['title']) ?>" onerror="this.onerror=null;this.src='<?= e(base_url('assets/hazraev.png')) ?>';">
               <div>
                 <strong><?= e($rel['title']) ?></strong>
                 <span><?= e(ucfirst($rel['category'] ?? 'EV Trends')) ?> · <?= e($rel['read_minutes'] ?? 4) ?> min</span>
@@ -253,7 +309,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function copyLink(url) {
     navigator.clipboard.writeText(url).then(() => {
-      const btn = event.target.closest('button');
+      const btn = (typeof event !== 'undefined' && event && event.target) ? event.target.closest('button') : document.querySelector('button[onclick*="copyLink"]');
+      if (!btn) return;
       const original = btn.innerHTML;
       btn.innerHTML = '<i data-lucide="check"></i> Copied!';
       if (window.lucide) lucide.createIcons();

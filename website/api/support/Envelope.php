@@ -16,7 +16,7 @@ final class Envelope
     public const IMMUTABLE = 'private, max-age=86400';
     public const LIVE      = 'no-store';
 
-    public static function ok(mixed $data, array $meta = [], array $headers = []): never
+    public static function ok(mixed $data = null, array $meta = [], array $headers = []): never
     {
         self::send(['data' => $data, 'meta' => self::meta($meta), 'error' => null], 200, $headers);
     }

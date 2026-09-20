@@ -57,6 +57,7 @@
                 },
             ],
             rowActions: (row) => [
+                { label: 'View on site', icon: 'fa-arrow-up-right-from-square', onClick: () => { window.open(`${SITE}news/${encodeURIComponent(row.slug || row.id)}`, '_blank'); } },
                 { label: 'Edit', icon: 'fa-pen', onClick: () => { location.href = `news-form?id=${encodeURIComponent(row.id)}`; } },
                 { divider: true },
                 {

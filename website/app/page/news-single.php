@@ -1,34 +1,65 @@
 <?php
 require_once __DIR__ . '/../../core/SafeHtml.php';
 
-$slug = isset($_GET['slug']) ? (string)$_GET['slug'] : (isset($_GET['id']) ? (string)$_GET['id'] : '');
+$slug = isset($_GET['slug']) ? trim((string)$_GET['slug']) : (isset($_GET['id']) ? trim((string)$_GET['id']) : '');
 
 $post = null;
-if ($slug) {
+if ($slug !== '') {
     if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $slug)) {
-        $post = db_fetch_one("SELECT * FROM posts WHERE id = ? AND type = 'news'", [$slug]);
+        $post = db_fetch_one("SELECT * FROM posts WHERE id = ?", [$slug]);
     } else {
-        $post = db_fetch_one("SELECT * FROM posts WHERE slug = ? AND type = 'news'", [$slug]);
+        $post = db_fetch_one("SELECT * FROM posts WHERE slug = ?", [$slug]);
     }
+}
+
+// Fallback: If no slug/id provided (e.g. clicking direct /news-single link), load the latest published news article
+if (!$post && $slug === '') {
+    $post = db_fetch_one("SELECT * FROM posts WHERE type = 'news' AND status = 'published' ORDER BY is_featured DESC, published_at DESC LIMIT 1");
+    if (!$post) {
+        $post = db_fetch_one("SELECT * FROM posts WHERE type = 'news' AND status = 'published' ORDER BY published_at DESC LIMIT 1");
+    }
+}
+
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+$isAdmin = !empty($_SESSION['admin_logged_in']) || ($_SESSION['user_role'] ?? '') === 'admin';
+
+if ($post && $post['status'] !== 'published' && !$isAdmin) {
+    $post = null;
 }
 
 if (!$post) {
     http_response_code(404);
-    require_once __DIR__ . '/../../core/RouteManager.php';
-    load_view('resources/views/404.php');
-    exit;
-}
-
-if ($post['status'] !== 'published' && (empty($_SESSION['admin_logged_in']) || ($_SESSION['user_role'] ?? '') !== 'admin')) {
-    http_response_code(404);
-    load_view('resources/views/404.php');
+    $pageTitle = 'News Article Not Found — Hazra EV';
+    $pageDescription = 'The requested news article could not be found.';
+    App::render('head', [
+        'pageTitle'       => $pageTitle,
+        'pageDescription' => $pageDescription,
+        'extraCss'        => ['assets/css/styles/pages/news-single.css'],
+    ]);
+    App::render('header', ['isStickyOnly' => true]);
+    ?>
+    <section class="hero" style="min-height:55vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px var(--gutter);text-align:center;">
+      <p class="eyebrow"><i class="sq"></i> 404 NOT FOUND</p>
+      <h1 class="hero__title" style="margin-top:12px;">News Article Not Found</h1>
+      <p class="hero__lead">The news article you are looking for may have been moved, renamed, or is currently unpublished.</p>
+      <div style="margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a class="btn btn--ink" href="<?= e(base_url('news')) ?>"><span>Browse All News</span></a>
+        <a class="btn btn--ghost" href="<?= e(base_url()) ?>">Back to Homepage</a>
+      </div>
+    </section>
+    <?php
+    App::render('footer');
     exit;
 }
 
 $canonicalUrl = base_url("news/{$post['slug']}");
-$ogImage = img_url($post['cover_image'] ?? null);
+$coverUrl = img_url($post['cover_image'] ?? null);
+$ogImage = $coverUrl;
 $metaTitle = $post['meta_title'] ?: $post['title'] . ' — Hazra EV News';
-$metaDescription = $post['meta_description'] ?: $post['excerpt'];
+$metaDescription = $post['meta_description'] ?: ($post['excerpt'] ?? '');
+$publishedDate = !empty($post['published_at']) ? strtotime($post['published_at']) : (!empty($post['created_at']) ? strtotime($post['created_at']) : time());
 
 $jsonLd = [
     '@context' => 'https://schema.org',
@@ -63,6 +94,10 @@ $latestNews = db_fetch_all(
 
 $contentHtml = SafeHtml::clean($post['content'] ?? '');
 
+if (empty(trim(strip_tags($contentHtml))) && !empty($post['excerpt'])) {
+    $contentHtml = '<p style="font-size:1.1em;line-height:1.8;">' . nl2br(e($post['excerpt'])) . '</p>';
+}
+
 $pageTitle = $metaTitle;
 $pageDescription = $metaDescription;
 
@@ -80,23 +115,26 @@ App::render('header', ['isStickyOnly' => true]);
 ?>
 
 <!-- ========== UNIQUE PAGE CONTENT START ========== -->
-<section class="hero">
-  <p class="eyebrow" style="margin-bottom:12px">News · <?= e(ucfirst($post['category'] ?? 'Company')) ?></p>
-  <h1 class="hero__title" style="font-size:clamp(26px,4.5vw,44px)"><?= e($post['title']) ?></h1>
-  <p class="hero__lead"><?= e($post['excerpt']) ?></p>
-</section>
-
 <section class="news">
+  <!-- Breadcrumb -->
+  <div class="news-breadcrumb" style="width:min(1180px,96vw);margin:0 auto 20px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft-0);">
+    <a href="<?= e(base_url()) ?>" style="color:inherit;text-decoration:none;">Home</a>
+    <span style="opacity:.5;">/</span>
+    <a href="<?= e(base_url('news')) ?>" style="color:inherit;text-decoration:none;">News</a>
+    <span style="opacity:.5;">/</span>
+    <span style="color:var(--ink-0);font-weight:600;"><?= e(ucfirst($post['category'] ?? 'Press Release')) ?></span>
+  </div>
+
   <div class="news__layout">
 
     <article class="story">
       <div class="story__hero">
-        <img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="<?= e($post['title']) ?>">
+        <img src="<?= e($coverUrl) ?>" alt="<?= e($post['title']) ?>" onerror="this.onerror=null;this.src='<?= e(base_url('assets/hazraev.png')) ?>';this.style.objectFit='contain';this.style.padding='40px';">
         <span class="story__badge">Press Release</span>
       </div>
       <div class="story__body">
         <div class="story__meta">
-          <time datetime="<?= e(date('c', strtotime($post['published_at']))) ?>"><?= e(date('j F Y', strtotime($post['published_at']))) ?></time>
+          <time datetime="<?= e(date('c', $publishedDate)) ?>"><?= e(date('j F Y', $publishedDate)) ?></time>
           <?php if ($post['location']): ?>
             <span>·</span>
             <span><?= e($post['location']) ?></span>

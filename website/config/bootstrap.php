@@ -47,9 +47,11 @@ function base_url($path = '') {
  */
 function img_url($path = ''): string {
     if (!$path) return base_url('assets/hazraev.png');
-    $s = (string) $path;
-    if (str_starts_with($s, 'http') || str_starts_with($s, '/')) return $s;
-    return base_url($s);
+    $s = trim((string) $path);
+    if (str_starts_with($s, 'http://') || str_starts_with($s, 'https://') || str_starts_with($s, '//')) {
+        return $s;
+    }
+    return base_url(ltrim($s, '/'));
 }
 
 function e($value): string {

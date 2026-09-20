@@ -111,7 +111,7 @@ App::render('header', ['isStickyOnly' => true]);
         <p>
           Electric scooters already deliver roughly 38% of the total cost of ownership of a petrol equivalent. With most urban trips under 30 km, range anxiety is fading. The next leap is software, connected features and residual-value confidence.
         </p>
-        <a href="<?= e(base_url('blog-single')) ?>" class="fx-link">Urban mobility story <i data-lucide="arrow-right"></i></a>
+        <a href="<?= e(base_url('blog/city-riding-secrets')) ?>" class="fx-link">Urban mobility story <i data-lucide="arrow-right"></i></a>
       </div>
     </article>
 

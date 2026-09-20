@@ -1072,8 +1072,38 @@ App::render('head', [
     </header>
 
     <div class="ins__grid">
-
-      <a class="post" href="<?= e(base_url('blog-single')) ?>" style="--i:0;--pos:30% 58%;--tint:var(--brand-violet)">
+      <?php
+      $homeBlogs = db_fetch_all(
+          "SELECT * FROM posts WHERE type = 'blog' AND status = 'published' ORDER BY is_featured DESC, published_at DESC LIMIT 3"
+      );
+      $tints = ['var(--brand-violet)', 'var(--brand-blue)', 'var(--brand-flame)'];
+      $defaultImages = [
+          'assets/scooters/hazra_broucher_6_scooter_16.png',
+          'assets/scooters/hazra_broucher_6_scooter_13.png',
+          'assets/scooters/hazra_broucher_6_scooter_15.png'
+      ];
+      if (!empty($homeBlogs)):
+        foreach ($homeBlogs as $i => $hb):
+          $tint = $tints[$i % count($tints)];
+          $img = !empty($hb['cover_image']) ? img_url($hb['cover_image']) : base_url($defaultImages[$i % 3]);
+      ?>
+      <a class="post" href="<?= e(base_url("blog/{$hb['slug']}")) ?>" style="--i:<?= $i ?>;--pos:30% 58%;--tint:<?= $tint ?>">
+        <figure class="post__media">
+          <img class="post__img" src="<?= e($img) ?>" alt="<?= e($hb['title']) ?>" onerror="this.onerror=null;this.src='<?= e(base_url($defaultImages[$i % 3])) ?>';">
+          <i class="post__wash"></i>
+        </figure>
+        <div class="post__body">
+          <span class="post__cat"><?= e(ucfirst($hb['category'] ?? 'EV Trends')) ?></span>
+          <h3 class="post__t"><?= e($hb['title']) ?></h3>
+          <p class="post__d"><?= e($hb['excerpt']) ?></p>
+          <span class="post__go">Read<i data-lucide="arrow-up-right"></i></span>
+        </div>
+      </a>
+      <?php
+        endforeach;
+      else:
+      ?>
+      <a class="post" href="<?= e(base_url('blog/battery-care-101')) ?>" style="--i:0;--pos:30% 58%;--tint:var(--brand-violet)">
         <figure class="post__media">
           <img class="post__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_16.png')) ?>" alt="EV Trends">
           <i class="post__wash"></i>
@@ -1086,7 +1116,7 @@ App::render('head', [
         </div>
       </a>
 
-      <a class="post" href="<?= e(base_url('blog-single')) ?>" style="--i:1;--pos:66% 44%;--tint:var(--brand-blue)">
+      <a class="post" href="<?= e(base_url('blog/city-riding-secrets')) ?>" style="--i:1;--pos:66% 44%;--tint:var(--brand-blue)">
         <figure class="post__media">
           <img class="post__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_13.png')) ?>" alt="Battery Care">
           <i class="post__wash"></i>
@@ -1099,7 +1129,7 @@ App::render('head', [
         </div>
       </a>
 
-      <a class="post" href="<?= e(base_url('blog-single')) ?>" style="--i:2;--pos:20% 70%;--tint:var(--brand-flame)">
+      <a class="post" href="<?= e(base_url('blog/the-bardhaman-story')) ?>" style="--i:2;--pos:20% 70%;--tint:var(--brand-flame)">
         <figure class="post__media">
           <img class="post__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_15.png')) ?>" alt="Dealership Growth">
           <i class="post__wash"></i>
@@ -1111,7 +1141,7 @@ App::render('head', [
           <span class="post__go">Read<i data-lucide="arrow-up-right"></i></span>
         </div>
       </a>
-
+      <?php endif; ?>
     </div>
   </div>
 </section>
