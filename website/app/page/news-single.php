@@ -26,7 +26,7 @@ if ($post['status'] !== 'published' && (empty($_SESSION['admin_logged_in']) || (
 }
 
 $canonicalUrl = base_url("news/{$post['slug']}");
-$ogImage = $post['cover_image'] ? base_url($post['cover_image']) : base_url('assets/hazraev.png');
+$ogImage = img_url($post['cover_image'] ?? null);
 $metaTitle = $post['meta_title'] ?: $post['title'] . ' — Hazra EV News';
 $metaDescription = $post['meta_description'] ?: $post['excerpt'];
 
@@ -91,7 +91,7 @@ App::render('header', ['isStickyOnly' => true]);
 
     <article class="story">
       <div class="story__hero">
-        <img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="<?= e($post['title']) ?>">
+        <img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="<?= e($post['title']) ?>">
         <span class="story__badge">Press Release</span>
       </div>
       <div class="story__body">

@@ -114,7 +114,7 @@ App::render('header', ['isStickyOnly' => true]);
               <h3><a href="<?= e(base_url("blog/{$featuredPost['slug']}")) ?>"><?= e($featuredPost['title']) ?></a></h3>
               <p><?= e($featuredPost['excerpt']) ?></p>
               <div class="bl-meta">
-                <img src="<?= e(base_url($featuredPost['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" width="32" height="32" style="border-radius:50%;object-fit:cover">
+                <img src="<?= e(img_url($featuredPost['cover_image'] ?? null)) ?>" alt="" width="32" height="32" style="border-radius:50%;object-fit:cover">
                 <span><?= e($featuredPost['author']) ?></span>
                 <span>· <?= e(date('M j, Y', strtotime($featuredPost['published_at']))) ?></span>
                 <span>·</span>
@@ -129,13 +129,13 @@ App::render('header', ['isStickyOnly' => true]);
               </div>
             </div>
             <div class="bl-feat__media">
-              <img src="<?= e(base_url($featuredPost['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="<?= e($featuredPost['title']) ?>" loading="lazy">
+              <img src="<?= e(img_url($featuredPost['cover_image'] ?? null)) ?>" alt="<?= e($featuredPost['title']) ?>" loading="lazy">
             </div>
           </article>
           <?php if ($secondaryPost): ?>
           <div class="bl-feat__side">
             <article class="bl-side-card">
-              <img src="<?= e(base_url($secondaryPost['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" loading="lazy">
+              <img src="<?= e(img_url($secondaryPost['cover_image'] ?? null)) ?>" alt="" loading="lazy">
               <div class="bl-side-card__body">
                 <h4><a href="<?= e(base_url("blog/{$secondaryPost['slug']}")) ?>"><?= e($secondaryPost['title']) ?></a></h4>
                 <p><?= e($secondaryPost['excerpt']) ?></p>
@@ -181,13 +181,13 @@ App::render('header', ['isStickyOnly' => true]);
               <?php if ($featuredPost && $post['id'] === $featuredPost['id']) continue; ?>
               <?php if ($secondaryPost && $post['id'] === $secondaryPost['id']) continue; ?>
               <article class="bl-post">
-                <div class="bl-post__img"><img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" loading="lazy"></div>
+                <div class="bl-post__img"><img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="" loading="lazy"></div>
                 <div class="bl-post__body">
                   <span class="bl-cat"><?= e(ucfirst($post['category'] ?? 'EV Trends')) ?></span>
                   <h3><a href="<?= e(base_url("blog/{$post['slug']}")) ?>"><?= e($post['title']) ?></a></h3>
                   <p><?= e($post['excerpt']) ?></p>
                   <div class="bl-meta">
-                    <img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" width="28" height="28" style="border-radius:50%;object-fit:cover">
+                    <img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="" width="28" height="28" style="border-radius:50%;object-fit:cover">
                     <span><?= e($post['author']) ?></span>
                     <span>· <?= e(date('M j, Y', strtotime($post['published_at']))) ?></span>
                     <span>·</span>

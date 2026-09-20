@@ -41,6 +41,17 @@ function base_url($path = '') {
     return $path === '' ? $root : $root . '/' . ltrim($path, '/');
 }
 
+/**
+ * Resolve an image URL: if it's already absolute (http/https) or root-relative (/...), use as-is.
+ * Otherwise prepend the base URL.
+ */
+function img_url($path = ''): string {
+    if (!$path) return base_url('assets/hazraev.png');
+    $s = (string) $path;
+    if (str_starts_with($s, 'http') || str_starts_with($s, '/')) return $s;
+    return base_url($s);
+}
+
 function e($value): string {
     return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 }

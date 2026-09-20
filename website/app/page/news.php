@@ -53,7 +53,7 @@ App::render('header', ['isStickyOnly' => true]);
         <?php foreach ($posts as $post): ?>
           <article class="news-card">
             <div class="news-card__img">
-              <img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="" loading="lazy">
+              <img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="" loading="lazy">
               <?php if ($post['location']): ?>
                 <span class="news-card__location"><?= e($post['location']) ?></span>
               <?php endif; ?>

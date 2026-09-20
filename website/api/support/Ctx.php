@@ -93,6 +93,18 @@ final class Ctx
         }
     }
 
+    /**
+     * Checks for an admin session without throwing.
+     * Returns true if the current request has an authenticated admin session.
+     */
+    public static function hasAdminSession(): bool
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        return !empty($_SESSION['admin_logged_in']) && ($_SESSION['user_role'] ?? '') === 'admin';
+    }
+
     public static function orgId(): string
     {
         return self::principal()['org_id'];

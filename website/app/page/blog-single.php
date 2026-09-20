@@ -26,7 +26,7 @@ if ($post['status'] !== 'published' && (empty($_SESSION['admin_logged_in']) || (
 }
 
 $canonicalUrl = base_url("blog/{$post['slug']}");
-$ogImage = $post['cover_image'] ? base_url($post['cover_image']) : base_url('assets/hazraev.png');
+$ogImage = img_url($post['cover_image'] ?? null);
 $metaTitle = $post['meta_title'] ?: $post['title'] . ' — Hazra EV Blog';
 $metaDescription = $post['meta_description'] ?: $post['excerpt'];
 
@@ -118,7 +118,7 @@ App::render('header', ['isStickyOnly' => true]);
     <!-- MAIN ARTICLE -->
     <article class="article">
       <div class="article__hero">
-        <img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="<?= e($post['title']) ?>">
+        <img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="<?= e($post['title']) ?>">
         <div class="article__hero-shade"></div>
       </div>
       <div class="article__body">
@@ -131,7 +131,7 @@ App::render('header', ['isStickyOnly' => true]);
         <h1 class="article__title"><?= e($post['title']) ?></h1>
         <p class="article__lead"><?= e($post['excerpt']) ?></p>
         <div class="article__author">
-          <img src="<?= e(base_url($post['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="<?= e($post['author']) ?>">
+          <img src="<?= e(img_url($post['cover_image'] ?? null)) ?>" alt="<?= e($post['author']) ?>">
           <div>
             <strong><?= e($post['author']) ?></strong>
             <span>Hazra EV Journal</span>
@@ -162,7 +162,7 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="related">
           <?php foreach ($relatedPosts as $rel): ?>
             <a href="<?= e(base_url("blog/{$rel['slug']}")) ?>" class="related__item">
-              <img src="<?= e(base_url($rel['cover_image'] ?? 'assets/hazraev.png')) ?>" alt="">
+              <img src="<?= e(img_url($rel['cover_image'] ?? null)) ?>" alt="">
               <div>
                 <strong><?= e($rel['title']) ?></strong>
                 <span><?= e(ucfirst($rel['category'] ?? 'EV Trends')) ?> · <?= e($rel['read_minutes'] ?? 4) ?> min</span>

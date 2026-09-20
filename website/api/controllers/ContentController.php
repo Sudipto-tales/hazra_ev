@@ -54,7 +54,7 @@ final class ContentController extends V1Controller
 
         if ($type)     { $where[] = 'type = ?';       $params[] = $type;     }
         if ($status)   { $where[] = 'status = ?';     $params[] = $status;   }
-        else           { $where[] = "status = 'published'"; }
+        elseif (!Ctx::hasAdminSession()) { $where[] = "status = 'published'"; }
         if ($category) { $where[] = 'category = ?';   $params[] = $category; }
         if ($tag)      { $where[] = "tags LIKE ?";    $params[] = '%' . $tag . '%'; }
         if ($featured) { $where[] = 'is_featured = 1'; }
