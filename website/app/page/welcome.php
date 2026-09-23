@@ -78,7 +78,7 @@
             Products <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--wide">
-            <a href="<?= $baseUrl ?>/chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
+            <a href="<?= $baseUrl ?>/chalo-1000-v2.html" class="nav__s">Hello 1000 V2 <em>High Speed</em></a>
             <a href="<?= $baseUrl ?>/chalo-smart-pro.html"  class="nav__s">CHALO SMART PRO <em>Low Speed</em></a>
             <a href="<?= $baseUrl ?>/chalo-smart-plus.html" class="nav__s">CHALO SMART PLUS <em>Low Speed</em></a>
             <a href="<?= $baseUrl ?>/chalo-smart-eco.html"  class="nav__s">CHALO SMART ECO <em>Low Speed</em></a>

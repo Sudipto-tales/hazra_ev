@@ -147,6 +147,11 @@ class ApiGatewayProvider extends RouteProvider
             // --- Media & File Uploads ---------------------------------------------
             'POST:api/v1/upload'                    => ['UploadController', 'upload'],
             'POST:api/media'                         => ['UploadController', 'upload'],
+
+            // --- Database Migrations & Status (HTTP Runner) -----------------------
+            'GET:api/v1/system/migrate'             => ['SystemController', 'migrate'],
+            'POST:api/v1/system/migrate'            => ['SystemController', 'migrate'],
+            'GET:api/v1/system/status'              => ['SystemController', 'status'],
         ];
     }
 }

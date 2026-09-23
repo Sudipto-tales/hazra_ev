@@ -72,12 +72,12 @@
         <nav class="foot__cols" aria-label="Footer">
           <div class="fcol">
             <h4>Electric Scooters</h4>
-            <a href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>">CHALO 1000 V2</a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-smart-pro')) ?>">CHALO SMART PRO</a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-smart-plus')) ?>">CHALO SMART PLUS</a>
-            <a href="<?= e(base_url('product-detail?slug=chalo-neo')) ?>">CHALO NEO</a>
+            <a href="<?= e(base_url('products')) ?>">Hazra Lineup</a>
+            <a href="<?= e(base_url('products')) ?>">Dynamo Lineup</a>
+            <a href="<?= e(base_url('products')) ?>">Black Panther</a>
+            <a href="<?= e(base_url('products')) ?>">Oleant Lineup</a>
             <a href="<?= e(base_url('products')) ?>">Compare models</a>
-            <a href="<?= e(base_url('products')) ?>">Book test ride</a>
+            <a href="<?= e(base_url('index#test-ride')) ?>">Book test ride</a>
           </div>
           <div class="fcol">
             <h4>Buy</h4>

@@ -8,13 +8,155 @@ try {
 
 if (empty($navProducts)) {
     $navProducts = [
-        ['name' => 'Striker', 'slug' => 'hazra-striker', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png'],
-        ['name' => 'Soul Pro', 'slug' => 'hazra-soul-pro', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png'],
-        ['name' => 'Wind Pro', 'slug' => 'hazra-wind-pro', 'top_speed_kmph' => 50, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png'],
-        ['name' => 'Wind', 'slug' => 'hazra-wind', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png'],
-        ['name' => 'Max E4', 'slug' => 'hazra-max-e4', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png'],
-        ['name' => 'Spark', 'slug' => 'hazra-spark', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png'],
+        ['id' => 'striker', 'name' => 'Striker', 'slug' => 'hazra-striker', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png'],
+        ['id' => 'soul-pro', 'name' => 'Soul Pro', 'slug' => 'hazra-soul-pro', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png'],
+        ['id' => 'wind-pro', 'name' => 'Wind Pro', 'slug' => 'hazra-wind-pro', 'top_speed_kmph' => 50, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png'],
+        ['id' => 'wind', 'name' => 'Wind', 'slug' => 'hazra-wind', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png'],
+        ['id' => 'max-e4', 'name' => 'Max E4', 'slug' => 'hazra-max-e4', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png'],
+        ['id' => 'spark', 'name' => 'Spark', 'slug' => 'hazra-spark', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png'],
     ];
+}
+
+// Featured products (is_featured = 1)
+$featuredProducts = [];
+try {
+    if (function_exists('db_fetch_all')) {
+        $featuredProducts = db_fetch_all("
+            SELECT id, name, model_code, slug, hero_image, range_km, top_speed_kmph, 
+                   rating, warranty_years, battery_capacity, motor_power, 
+                   category, is_featured, featured_order
+            FROM products 
+            WHERE active = 1 AND is_featured = 1 
+            ORDER BY featured_order ASC, updated_at DESC 
+            LIMIT 6
+        ");
+    }
+} catch (Throwable $e) {}
+
+// Fallback featured products if none returned from DB
+if (empty($featuredProducts)) {
+    $featuredProducts = [
+        ['id' => 'striker', 'name' => 'Striker', 'model_code' => 'HZ-STR', 'slug' => 'hazra-striker', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png', 'range_km' => 80, 'top_speed_kmph' => 45, 'rating' => 4.8, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '60V / 30Ah Li-ion', 'motor_power' => '1200W BLDC'],
+        ['id' => 'soul-pro', 'name' => 'Soul Pro', 'model_code' => 'HZ-SOULPRO', 'slug' => 'hazra-soul-pro', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png', 'range_km' => 100, 'top_speed_kmph' => 55, 'rating' => 4.9, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '72V / 35Ah Li-ion', 'motor_power' => '1500W BLDC'],
+        ['id' => 'wind-pro', 'name' => 'Wind Pro', 'model_code' => 'HZ-WNDPRO', 'slug' => 'hazra-wind-pro', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png', 'range_km' => 90, 'top_speed_kmph' => 50, 'rating' => 4.8, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '60V / 32Ah Li-ion', 'motor_power' => '1200W BLDC'],
+        ['id' => 'wind', 'name' => 'Wind', 'model_code' => 'HZ-WND', 'slug' => 'hazra-wind', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png', 'range_km' => 85, 'top_speed_kmph' => 45, 'rating' => 4.7, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '60V / 28Ah Li-ion', 'motor_power' => '1000W BLDC'],
+        ['id' => 'max-e4', 'name' => 'Max E4', 'model_code' => 'HZ-MAXE4', 'slug' => 'hazra-max-e4', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png', 'range_km' => 110, 'top_speed_kmph' => 55, 'rating' => 4.8, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '72V / 40Ah Li-ion', 'motor_power' => '1800W BLDC'],
+        ['id' => 'spark', 'name' => 'Spark', 'model_code' => 'HZ-SPARK', 'slug' => 'hazra-spark', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png', 'range_km' => 110, 'top_speed_kmph' => 55, 'rating' => 4.8, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '72V / 40Ah Li-ion', 'motor_power' => '1800W BLDC'],
+    ];
+}
+
+// Latest 6 products for Collection section
+$collectionProducts = [];
+try {
+    if (function_exists('db_fetch_all')) {
+        $collectionProducts = db_fetch_all("
+            SELECT id, name, slug, hero_image, range_km, top_speed_kmph, 
+                   rating, warranty_years, battery_capacity, motor_power, 
+                   category
+            FROM products 
+            WHERE active = 1 
+            ORDER BY updated_at DESC 
+            LIMIT 6
+        ");
+    }
+} catch (Throwable $e) {}
+
+// Fallback to hardcoded if no products in DB
+if (empty($collectionProducts)) {
+    $collectionProducts = [
+        ['id' => 'chalo-1000-v2', 'name' => 'CHALO 1000 V2', 'slug' => 'chalo-1000-v2', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png', 'range_km' => 100, 'top_speed_kmph' => 65, 'rating' => 4.8, 'warranty_years' => 4, 'category' => 'scooty', 'battery_capacity' => '60V / 32Ah Graphene', 'motor_power' => '1200W'],
+        ['id' => 'chalo-smart-pro', 'name' => 'CHALO SMART PRO', 'slug' => 'chalo-smart-pro', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png', 'range_km' => 120, 'top_speed_kmph' => 70, 'rating' => 4.9, 'warranty_years' => 4, 'category' => 'scooty', 'battery_capacity' => '72V / 40Ah Li-ion', 'motor_power' => '1500W'],
+        ['id' => 'chalo-smart-eco', 'name' => 'CHALO SMART ECO', 'slug' => 'chalo-smart-eco', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png', 'range_km' => 130, 'top_speed_kmph' => 45, 'rating' => 4.7, 'warranty_years' => 3, 'category' => 'scooty', 'battery_capacity' => '60V / 32Ah Graphene', 'motor_power' => '1000W'],
+        ['id' => 'chalo-smart-plus', 'name' => 'CHALO SMART PLUS', 'slug' => 'chalo-smart-plus', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png', 'range_km' => 85, 'top_speed_kmph' => 45, 'rating' => 4.6, 'warranty_years' => 3, 'category' => 'scooty', 'battery_capacity' => '48V / 28Ah Graphene', 'motor_power' => '1000W'],
+        ['id' => 'chalo-neo', 'name' => 'CHALO NEO', 'slug' => 'chalo-neo', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png', 'range_km' => 50, 'top_speed_kmph' => 40, 'rating' => 4.5, 'warranty_years' => 4, 'category' => 'scooty', 'battery_capacity' => '48V / 24Ah Graphene', 'motor_power' => '800W'],
+        ['id' => 'nja-7', 'name' => 'NJA-7', 'slug' => 'nja-7', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png', 'range_km' => 140, 'top_speed_kmph' => 75, 'rating' => 5.0, 'warranty_years' => 4, 'category' => 'bike', 'battery_capacity' => '72V / 45Ah Li-ion', 'motor_power' => '2000W'],
+    ];
+}
+
+// Fetch colors for all products in both sections
+$allProductIds = array_filter(array_unique(array_merge(
+    array_column($featuredProducts, 'id'),
+    array_column($collectionProducts, 'id')
+)));
+
+$productColorsMap = [];
+if (!empty($allProductIds) && function_exists('db_fetch_all')) {
+    try {
+        $cph = implode(',', array_fill(0, count($allProductIds), '?'));
+        $colorRows = db_fetch_all("
+            SELECT product_id, name, argb, position 
+            FROM product_colors 
+            WHERE product_id IN ($cph) 
+            ORDER BY position ASC, name ASC
+        ", array_values($allProductIds));
+        foreach ($colorRows as $cr) {
+            $productColorsMap[$cr['product_id']][] = $cr;
+        }
+    } catch (Throwable $e) {}
+}
+
+if (!function_exists('renderHomeProductCard')) {
+    function renderHomeProductCard($p, $productColorsMap) {
+        $pId = $p['id'] ?? '';
+        $colors = $productColorsMap[$pId] ?? [];
+        if (empty($colors)) {
+            $colors = [
+                ['name' => 'Matte Black', 'argb' => -14671840],
+                ['name' => 'Ocean Blue',  'argb' => -15555040],
+                ['name' => 'Pearl White', 'argb' => -1050216],
+            ];
+        }
+        $primaryColorHex = sprintf('#%06x', ((int)($colors[0]['argb'] ?? 0)) & 0xFFFFFF);
+        $imgSrc = !empty($p['hero_image']) ? $p['hero_image'] : 'assets/scooters/hazra_broucher_6_scooter_9.png';
+        $isHigh = ((int)($p['top_speed_kmph'] ?? 0)) >= 50;
+        $productUrl = !empty($p['slug']) 
+            ? base_url('product-detail?slug=' . urlencode($p['slug'])) 
+            : base_url('product-detail?id=' . urlencode($p['id'] ?? ''));
+        $rating = !empty($p['rating']) && (float)$p['rating'] > 0 ? number_format((float)$p['rating'], 1) : '4.8';
+        $reviewsCount = 100 + (abs(crc32((string)$pId)) % 250);
+        $warrantyYears = (int)($p['warranty_years'] ?? 3);
+        if ($warrantyYears <= 0) $warrantyYears = 3;
+        ?>
+        <article class="card" style="--c:<?= e($primaryColorHex) ?>">
+          <div class="card__media">
+            <span class="card__badge"><i data-lucide="shield-check"></i><?= $warrantyYears ?> Years Warranty</span>
+            <span class="card__360">360&deg;</span>
+            <img class="card__img" src="<?= e(base_url($imgSrc)) ?>" alt="<?= e($p['name']) ?>" loading="lazy">
+            <i class="card__wash"></i>
+            <i class="card__shine"></i>
+          </div>
+          <div class="card__body">
+            <div class="card__rate"><i data-lucide="star"></i><b><?= e($rating) ?></b><span>· <?= $reviewsCount ?> reviews</span></div>
+            <h3 class="card__name"><?= e($p['name']) ?></h3>
+            <div class="card__chips">
+              <?php if (!empty($p['range_km'])): ?>
+                <span><i data-lucide="battery-charging"></i><?= (int)$p['range_km'] ?> km Range</span>
+              <?php endif; ?>
+              <span><i data-lucide="<?= $isHigh ? 'zap' : 'feather' ?>"></i><?= $isHigh ? 'High Speed' : 'Low Speed' ?></span>
+            </div>
+            <div class="card__colors" role="group" aria-label="Available colours">
+              <?php foreach ($colors as $cIdx => $c): 
+                $cHex = sprintf('#%06x', ((int)$c['argb']) & 0xFFFFFF);
+              ?>
+                <button class="sw <?= $cIdx === 0 ? 'is-on' : '' ?>" style="--c:<?= e($cHex) ?>" aria-label="<?= e($c['name'] ?? 'Colour') ?>" title="<?= e($c['name'] ?? 'Colour') ?>"></button>
+              <?php endforeach; ?>
+            </div>
+            <div class="card__price">
+              <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
+              <div class="card__vars">
+                <button class="var"><b><?= !empty($p['battery_capacity']) ? e($p['battery_capacity']) : 'Standard Pack' ?></b><span>Battery Spec</span></button>
+                <button class="var"><b><?= !empty($p['motor_power']) ? e($p['motor_power']) : 'BLDC Motor' ?></b><span>Motor Power</span></button>
+              </div>
+              <p class="card__note">*Without GST</p>
+            </div>
+            <div class="card__acts">
+              <a class="btn btn--ghost" href="<?= e($productUrl) ?>">Explore</a>
+              <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
+            </div>
+          </div>
+        </article>
+        <?php
+    }
 }
 
 App::render('head', [
@@ -35,8 +177,8 @@ App::render('head', [
 
     <!-- photo sits underneath; white plates notch into it -->
     <figure class="photo">
-      <img class="photo__img photo__img--light" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_12.png')) ?>" alt="Hazra Electrical Bike in daylight">
-      <img class="photo__img photo__img--dark"  src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_16.png')) ?>"  alt="Hazra Electrical Bike at night" aria-hidden="true">
+      <img class="photo__img photo__img--light" src="<?= e(base_url('assets/scutie_light.webp')) ?>" alt="Hazra Electrical Bike in daylight">
+      <img class="photo__img photo__img--dark"  src="<?= e(base_url('assets/dark_scutie.webp')) ?>"  alt="Hazra Electrical Bike at night" aria-hidden="true">
       <div class="photo__shade"></div>
 
       <div class="pill pill--b reveal-pop"><i data-lucide="gauge"></i><span>120&nbsp;km/hour</span></div>
@@ -375,6 +517,8 @@ App::render('head', [
 </section>
 
 
+
+
 <!-- ══════════ COLLECTION ══════════ -->
 <section class="coll" id="collection">
   <div class="wrap">
@@ -388,212 +532,9 @@ App::render('head', [
     </header>
 
     <div class="coll__grid" id="collGrid">
-
-      <article class="card" style="--c:#7b2ff7">
-        <div class="card__media">
-          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <span class="card__360">360&deg;</span>
-          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_9.png')) ?>" alt="CHALO 1000 V2">
-          <i class="card__wash"></i>
-          <i class="card__shine"></i>
-        </div>
-        <div class="card__body">
-          <div class="card__rate"><i data-lucide="star"></i><b>4.8</b><span>· 212 reviews</span></div>
-          <h3 class="card__name">CHALO 1000 V2</h3>
-          <div class="card__chips">
-            <span><i data-lucide="battery-charging"></i>100 km Range</span>
-            <span><i data-lucide="zap"></i>High Speed</span>
-          </div>
-          <div class="card__colors" role="group" aria-label="Available colours">
-            <button class="sw is-on" style="--c:#7b2ff7" aria-label="Violet"></button>
-            <button class="sw" style="--c:#12a5e0" aria-label="Cyan"></button>
-            <button class="sw" style="--c:#f0532b" aria-label="Flame"></button>
-          </div>
-          <div class="card__price">
-            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
-            <div class="card__vars">
-              <button class="var"><b>&#8377;61,062</b><span>60V / 32AH Graphene</span></button>
-              <button class="var"><b>&#8377;72,679</b><span>60V / 25AH Li&#8209;ion</span></button>
-            </div>
-            <p class="card__note">*Without GST</p>
-          </div>
-          <div class="card__acts">
-            <a class="btn btn--ghost" href="<?= e(base_url('product-detail?slug=chalo-1000-v2')) ?>">Explore</a>
-            <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
-          </div>
-        </div>
-      </article>
-
-      <article class="card" style="--c:#241640">
-        <div class="card__media">
-          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_14.png')) ?>" alt="CHALO SMART PRO">
-          <i class="card__wash"></i>
-          <i class="card__shine"></i>
-        </div>
-        <div class="card__body">
-          <div class="card__rate"><i data-lucide="star"></i><b>4.9</b><span>· 388 reviews</span></div>
-          <h3 class="card__name">CHALO SMART PRO</h3>
-          <div class="card__chips">
-            <span><i data-lucide="battery-charging"></i>120 km Range</span>
-            <span><i data-lucide="zap"></i>Low Speed</span>
-          </div>
-          <div class="card__colors" role="group" aria-label="Available colours">
-            <button class="sw is-on" style="--c:#241640" aria-label="Indigo"></button>
-            <button class="sw" style="--c:#f7941d" aria-label="Amber"></button>
-            <button class="sw" style="--c:#a41fbf" aria-label="Magenta"></button>
-          </div>
-          <div class="card__price">
-            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
-            <div class="card__vars">
-              <button class="var"><b>&#8377;79,400</b><span>72V / 40AH Li&#8209;ion</span></button>
-              <button class="var"><b>&#8377;88,150</b><span>72V / 45AH Li&#8209;ion</span></button>
-            </div>
-            <p class="card__note">*Without GST</p>
-          </div>
-          <div class="card__acts">
-            <a class="btn btn--ghost" href="<?= e(base_url('product-detail?slug=chalo-smart-pro')) ?>">Explore</a>
-            <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
-          </div>
-        </div>
-      </article>
-
-      <article class="card" style="--c:#f0532b">
-        <div class="card__media">
-          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_13.png')) ?>" alt="CHALO SMART PLUS">
-          <i class="card__wash"></i>
-          <i class="card__shine"></i>
-        </div>
-        <div class="card__body">
-          <div class="card__rate"><i data-lucide="star"></i><b>4.7</b><span>· 156 reviews</span></div>
-          <h3 class="card__name">CHALO SMART PLUS</h3>
-          <div class="card__chips">
-            <span><i data-lucide="battery-charging"></i>130 km Range</span>
-            <span><i data-lucide="feather"></i>Low Speed</span>
-          </div>
-          <div class="card__colors" role="group" aria-label="Available colours">
-            <button class="sw is-on" style="--c:#f0532b" aria-label="Flame"></button>
-            <button class="sw" style="--c:#efeaf8" aria-label="Pearl"></button>
-            <button class="sw" style="--c:#12a5e0" aria-label="Cyan"></button>
-          </div>
-          <div class="card__price">
-            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
-            <div class="card__vars">
-              <button class="var"><b>&#8377;54,900</b><span>60V / 32AH Graphene</span></button>
-              <button class="var"><b>&#8377;66,300</b><span>60V / 25AH Li&#8209;ion</span></button>
-            </div>
-            <p class="card__note">*Without GST</p>
-          </div>
-          <div class="card__acts">
-            <a class="btn btn--ghost" href="<?= e(base_url('product-detail?slug=chalo-smart-plus')) ?>">Explore</a>
-            <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
-          </div>
-        </div>
-      </article>
-
-      <article class="card" style="--c:#a41fbf">
-        <div class="card__media">
-          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_12.png')) ?>" alt="CHALO SMART ECO">
-          <i class="card__wash"></i>
-          <i class="card__shine"></i>
-        </div>
-        <div class="card__body">
-          <div class="card__rate"><i data-lucide="star"></i><b>4.6</b><span>· 94 reviews</span></div>
-          <h3 class="card__name">CHALO SMART ECO</h3>
-          <div class="card__chips">
-            <span><i data-lucide="battery-charging"></i>85 km Range</span>
-            <span><i data-lucide="feather"></i>Low Speed</span>
-          </div>
-          <div class="card__colors" role="group" aria-label="Available colours">
-            <button class="sw is-on" style="--c:#a41fbf" aria-label="Magenta"></button>
-            <button class="sw" style="--c:#241640" aria-label="Indigo"></button>
-            <button class="sw" style="--c:#7b2ff7" aria-label="Violet"></button>
-          </div>
-          <div class="card__price">
-            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
-            <div class="card__vars">
-              <button class="var"><b>&#8377;49,750</b><span>48V / 28AH Graphene</span></button>
-              <button class="var"><b>&#8377;58,900</b><span>48V / 24AH Li&#8209;ion</span></button>
-            </div>
-            <p class="card__note">*Without GST</p>
-          </div>
-          <div class="card__acts">
-            <a class="btn btn--ghost" href="<?= e(base_url('product-detail?slug=chalo-smart-eco')) ?>">Explore</a>
-            <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
-          </div>
-        </div>
-      </article>
-
-      <article class="card" style="--c:#f7941d">
-        <div class="card__media">
-          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_15.png')) ?>" alt="CHALO NEO">
-          <i class="card__wash"></i>
-          <i class="card__shine"></i>
-        </div>
-        <div class="card__body">
-          <div class="card__rate"><i data-lucide="star"></i><b>4.5</b><span>· 61 reviews</span></div>
-          <h3 class="card__name">CHALO NEO</h3>
-          <div class="card__chips">
-            <span><i data-lucide="battery-charging"></i>50 km Range</span>
-            <span><i data-lucide="feather"></i>Low Speed</span>
-          </div>
-          <div class="card__colors" role="group" aria-label="Available colours">
-            <button class="sw is-on" style="--c:#f7941d" aria-label="Amber"></button>
-            <button class="sw" style="--c:#efeaf8" aria-label="Pearl"></button>
-            <button class="sw" style="--c:#f0532b" aria-label="Flame"></button>
-          </div>
-          <div class="card__price">
-            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
-            <div class="card__vars">
-              <button class="var"><b>&#8377;42,400</b><span>48V / 24AH Graphene</span></button>
-              <button class="var"><b>&#8377;51,100</b><span>48V / 20AH Li&#8209;ion</span></button>
-            </div>
-            <p class="card__note">*Without GST</p>
-          </div>
-          <div class="card__acts">
-            <a class="btn btn--ghost" href="<?= e(base_url('product-detail?slug=chalo-neo')) ?>">Explore</a>
-            <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
-          </div>
-        </div>
-      </article>
-
-      <article class="card" style="--c:#efeaf8">
-        <div class="card__media">
-          <span class="card__badge"><i data-lucide="shield-check"></i>4 Years Warranty</span>
-          <img class="card__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_16.png')) ?>" alt="CHALO PRO MAX">
-          <i class="card__wash"></i>
-          <i class="card__shine"></i>
-        </div>
-        <div class="card__body">
-          <div class="card__rate"><i data-lucide="star"></i><b>5.0</b><span>· 28 reviews</span></div>
-          <h3 class="card__name">CHALO PRO MAX</h3>
-          <div class="card__chips">
-            <span><i data-lucide="battery-charging"></i>140 km Range</span>
-            <span><i data-lucide="zap"></i>High Speed</span>
-          </div>
-          <div class="card__colors" role="group" aria-label="Available colours">
-            <button class="sw is-on" style="--c:#efeaf8" aria-label="Pearl"></button>
-            <button class="sw" style="--c:#241640" aria-label="Indigo"></button>
-            <button class="sw" style="--c:#12a5e0" aria-label="Cyan"></button>
-          </div>
-          <div class="card__price">
-            <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
-            <div class="card__vars">
-              <button class="var"><b>&#8377;1,04,900</b><span>72V / 45AH Li&#8209;ion</span></button>
-              <button class="var"><b>&#8377;1,19,500</b><span>72V / 60AH Li&#8209;ion</span></button>
-            </div>
-            <p class="card__note">*Without GST</p>
-          </div>
-          <div class="card__acts">
-            <a class="btn btn--ghost" href="<?= e(base_url('product-detail?slug=nja-7')) ?>">Explore</a>
-            <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
-          </div>
-        </div>
-      </article>
-
+      <?php foreach ($collectionProducts as $p): ?>
+        <?php renderHomeProductCard($p, $productColorsMap); ?>
+      <?php endforeach; ?>
     </div>
 
     <p class="coll__foot"><i class="sq"></i>
@@ -700,14 +641,21 @@ App::render('head', [
 
 
 <!-- ══════════ FEATURES ══════════ -->
-<section class="feat" id="features">
-  <div class="feat__drive" id="featDrive">
+<?php
+$numFeatured = count($featuredProducts);
+$countWords = [1 => 'one', 2 => 'two', 3 => 'three', 4 => 'four', 5 => 'five', 6 => 'six', 7 => 'seven', 8 => 'eight'];
+$wayWord = $countWords[$numFeatured] ?? $numFeatured;
+$driveHeight = max($numFeatured, 3) * 105;
+$arcStep = $numFeatured > 4 ? '18deg' : '23deg';
+?>
+<section class="feat" id="features" style="--arc-step: <?= $arcStep ?>;">
+  <div class="feat__drive" id="featDrive" style="height: <?= $driveHeight ?>vh;">
     <div class="feat__pin">
       <div class="feat__window">
 
         <header class="feat__head">
           <p class="eyebrow"><i class="sq"></i>THE FEATURE WINDOW</p>
-          <h2 class="feat__title reveal-up">One frame,<br><span class="hl">four ways to ride.</span></h2>
+          <h2 class="feat__title reveal-up">One frame,<br><span class="hl"><?= e($wayWord) ?> ways to ride.</span></h2>
         </header>
 
         <ul class="feat__rail" aria-hidden="true">
@@ -715,99 +663,110 @@ App::render('head', [
             <i class="spec__ico" data-lucide="route"></i>
             <div class="spec__co">
               <span class="spec__k">Range</span>
-              <span class="spec__vs"><b style="--n:0">100<em>km</em></b><b style="--n:1">120<em>km</em></b><b style="--n:2">90<em>km</em></b><b style="--n:3">80<em>km</em></b></span>
+              <span class="spec__vs">
+                <?php foreach ($featuredProducts as $idx => $fp): ?>
+                  <b style="--n:<?= $idx ?>"><?= (int)($fp['range_km'] ?? 100) ?><em>km</em></b>
+                <?php endforeach; ?>
+              </span>
             </div>
           </li>
           <li class="spec">
             <i class="spec__ico" data-lucide="gauge"></i>
             <div class="spec__co">
               <span class="spec__k">Top speed</span>
-              <span class="spec__vs"><b style="--n:0">65<em>km/h</em></b><b style="--n:1">75<em>km/h</em></b><b style="--n:2">70<em>km/h</em></b><b style="--n:3">55<em>km/h</em></b></span>
+              <span class="spec__vs">
+                <?php foreach ($featuredProducts as $idx => $fp): ?>
+                  <b style="--n:<?= $idx ?>"><?= (int)($fp['top_speed_kmph'] ?? 55) ?><em>km/h</em></b>
+                <?php endforeach; ?>
+              </span>
             </div>
           </li>
           <li class="spec">
             <i class="spec__ico" data-lucide="battery-charging"></i>
             <div class="spec__co">
               <span class="spec__k">Battery</span>
-              <span class="spec__vs"><b style="--n:0">60V<em>32AH</em></b><b style="--n:1">72V<em>40AH</em></b><b style="--n:2">60V<em>30AH</em></b><b style="--n:3">48V<em>24AH</em></b></span>
+              <span class="spec__vs">
+                <?php foreach ($featuredProducts as $idx => $fp): 
+                  $bat = !empty($fp['battery_capacity']) ? trim($fp['battery_capacity']) : '60V 30Ah';
+                  if (preg_match('/(\d+V)[^\d]*(\d+Ah)/i', $bat, $bm)) {
+                      $bv = $bm[1];
+                      $bah = strtoupper($bm[2]);
+                  } else {
+                      $parts = explode(' ', $bat, 2);
+                      $bv = $parts[0] ?? '60V';
+                      $bah = strtoupper($parts[1] ?? '30AH');
+                  }
+                ?>
+                  <b style="--n:<?= $idx ?>"><?= e($bv) ?><em><?= e($bah) ?></em></b>
+                <?php endforeach; ?>
+              </span>
             </div>
           </li>
         </ul>
 
         <!-- the product deck -->
         <div class="feat__deck" id="featDeck">
-
-          <article class="fslide" style="--n:0;--c:#2563eb">
-            <div class="fslide__media">
-              <i class="fslide__halo"></i>
-              <i class="fslide__floor"></i>
-              <img class="fslide__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_9.png')) ?>" alt="CHALO 1000 V2 in ocean blue" decoding="async">
-            </div>
-            <div class="fslide__body">
-              <h3 class="fslide__name">CHALO 1000 V2</h3>
-              <p class="fslide__chips"><span>100 km</span><span>65 km/h</span><span>60V 32AH</span></p>
-            </div>
-          </article>
-
-          <article class="fslide" style="--n:1;--c:#1e1b4b">
-            <div class="fslide__media">
-              <i class="fslide__halo"></i>
-              <i class="fslide__floor"></i>
-              <img class="fslide__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_14.png')) ?>" alt="CHALO SMART PRO in midnight indigo" loading="lazy" decoding="async">
-            </div>
-            <div class="fslide__body">
-              <h3 class="fslide__name">CHALO SMART PRO</h3>
-              <p class="fslide__chips"><span>120 km</span><span>75 km/h</span><span>72V 40AH</span></p>
-            </div>
-          </article>
-
-          <article class="fslide" style="--n:2;--c:#ea580c">
-            <div class="fslide__media">
-              <i class="fslide__halo"></i>
-              <i class="fslide__floor"></i>
-              <img class="fslide__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_13.png')) ?>" alt="CHALO SMART PLUS in sunset flame" loading="lazy" decoding="async">
-            </div>
-            <div class="fslide__body">
-              <h3 class="fslide__name">CHALO SMART PLUS</h3>
-              <p class="fslide__chips"><span>90 km</span><span>70 km/h</span><span>60V 30AH</span></p>
-            </div>
-          </article>
-
-          <article class="fslide" style="--n:3;--c:#b45309">
-            <div class="fslide__media">
-              <i class="fslide__halo"></i>
-              <i class="fslide__floor"></i>
-              <img class="fslide__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_12.png')) ?>" alt="CHALO NEO in champagne gold" loading="lazy" decoding="async">
-            </div>
-            <div class="fslide__body">
-              <h3 class="fslide__name">CHALO NEO</h3>
-              <p class="fslide__chips"><span>80 km</span><span>55 km/h</span><span>48V 24AH</span></p>
-            </div>
-          </article>
-
+          <?php foreach ($featuredProducts as $idx => $fp): 
+            $colors = $productColorsMap[$fp['id']] ?? [];
+            $colorHex = !empty($colors[0]['argb']) ? sprintf('#%06x', ((int)$colors[0]['argb']) & 0xFFFFFF) : '#2563eb';
+            $colorName = !empty($colors[0]['name']) ? $colors[0]['name'] : 'Signature';
+            $imgSrc = !empty($fp['hero_image']) ? $fp['hero_image'] : 'assets/scooters/hazra_broucher_6_scooter_9.png';
+            $batDisplay = !empty($fp['battery_capacity']) ? trim($fp['battery_capacity']) : '60V 30Ah';
+          ?>
+            <article class="fslide" style="--n:<?= $idx ?>;--c:<?= e($colorHex) ?>">
+              <div class="fslide__media">
+                <i class="fslide__halo"></i>
+                <i class="fslide__floor"></i>
+                <img class="fslide__img" src="<?= e(base_url($imgSrc)) ?>" alt="<?= e($fp['name']) ?> in <?= e($colorName) ?>" <?= $idx > 0 ? 'loading="lazy"' : '' ?> decoding="async">
+              </div>
+              <div class="fslide__body">
+                <h3 class="fslide__name"><?= e($fp['name']) ?></h3>
+                <p class="fslide__chips">
+                  <span><?= (int)($fp['range_km'] ?? 100) ?> km</span>
+                  <span><?= (int)($fp['top_speed_kmph'] ?? 55) ?> km/h</span>
+                  <span><?= e($batDisplay) ?></span>
+                </p>
+              </div>
+            </article>
+          <?php endforeach; ?>
         </div>
 
         <!-- right edge pagination -->
         <ol class="feat__dots" id="featDots">
-          <li><button class="fdot" style="--n:0" data-go="0" aria-label="CHALO 1000 V2"></button></li>
-          <li><button class="fdot" style="--n:1" data-go="1" aria-label="CHALO SMART PRO"></button></li>
-          <li><button class="fdot" style="--n:2" data-go="2" aria-label="CHALO SMART PLUS"></button></li>
-          <li><button class="fdot" style="--n:3" data-go="3" aria-label="CHALO NEO"></button></li>
+          <?php foreach ($featuredProducts as $idx => $fp): ?>
+            <li><button class="fdot" style="--n:<?= $idx ?>" data-go="<?= $idx ?>" aria-label="<?= e($fp['name']) ?>"></button></li>
+          <?php endforeach; ?>
         </ol>
 
         <!-- bottom-left SKU / bottom-right finish, both swap on --fi -->
-        <p class="feat__item"><span class="swap" style="--n:0">ITEM: 10009601</span><span class="swap" style="--n:1">ITEM: 10009602</span><span class="swap" style="--n:2">ITEM: 10009603</span><span class="swap" style="--n:3">ITEM: 10009604</span></p>
-        <p class="feat__finish"><span class="swap" style="--n:0">OCEAN BLUE</span><span class="swap" style="--n:1">MIDNIGHT INDIGO</span><span class="swap" style="--n:2">SUNSET FLAME</span><span class="swap" style="--n:3">CHAMPAGNE GOLD</span></p>
+        <p class="feat__item">
+          <?php foreach ($featuredProducts as $idx => $fp): 
+            $itemCode = !empty($fp['model_code']) ? $fp['model_code'] : ('ITEM: ' . (10009600 + $idx + 1));
+            if (strpos($itemCode, 'ITEM:') !== 0 && strpos($itemCode, 'MODEL:') !== 0) {
+                $itemCode = 'MODEL: ' . $itemCode;
+            }
+          ?>
+            <span class="swap" style="--n:<?= $idx ?>"><?= e($itemCode) ?></span>
+          <?php endforeach; ?>
+        </p>
+
+        <p class="feat__finish">
+          <?php foreach ($featuredProducts as $idx => $fp): 
+            $colors = $productColorsMap[$fp['id']] ?? [];
+            $colorName = !empty($colors[0]['name']) ? strtoupper($colors[0]['name']) : 'SIGNATURE FINISH';
+          ?>
+            <span class="swap" style="--n:<?= $idx ?>"><?= e($colorName) ?></span>
+          <?php endforeach; ?>
+        </p>
 
         <!-- arc dial: ticks sit still, the name ring rotates under the cursor -->
         <div class="feat__arc" aria-hidden="true">
           <i class="arc__cursor"></i>
           <div class="arc__ticks" id="arcTicks"></div>
           <div class="arc__ring">
-            <b class="arc__name" style="--n:0">CHALO 1000 V2</b>
-            <b class="arc__name" style="--n:1">CHALO SMART PRO</b>
-            <b class="arc__name" style="--n:2">CHALO SMART PLUS</b>
-            <b class="arc__name" style="--n:3">CHALO NEO</b>
+            <?php foreach ($featuredProducts as $idx => $fp): ?>
+              <b class="arc__name" style="--n:<?= $idx ?>"><?= e($fp['name']) ?></b>
+            <?php endforeach; ?>
           </div>
         </div>
 

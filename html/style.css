@@ -677,7 +677,8 @@ html[data-theme="dark"] .theme__moon{display:block}
   /* no zoom on small screens — the card is already the page */
   :root{--p:0!important;--photo-w:auto;--shelf-w:100%;--tab-w:220px;--tab-h:84px;--shelf-h:auto}
   .scroll{height:auto}
-  .stage{position:static;height:auto;padding:26px 0}
+  .stage{position:static;height:auto;padding:26px 0;overflow:hidden}
+  .stage__bg{inset:0}
   .canvas{width:auto;height:auto;min-height:0;padding-bottom:0;margin:0 auto;max-width:93vw}
   .photo{position:relative;top:0;right:0;bottom:0;width:auto;height:320px;margin:var(--pad) var(--pad) 0}
   .topbar,.copy,.tab,.shelf{position:static}
@@ -696,7 +697,7 @@ html[data-theme="dark"] .theme__moon{display:block}
     transition:max-height .4s var(--ease),padding .4s var(--ease),margin .4s var(--ease);
   }
   .nav.is-open{max-height:70vh;overflow-y:auto;padding:7px;margin-top:16px}
-  .nav__i{padding:12px 14px;font-size:14px;border-radius:14px;justify-content:space-between}
+  .nav__i{padding:12px 14px;font-size:14px;border-radius:14px;justify_content:space-between}
   .nav__i.is-on{background:none;color:var(--ink);box-shadow:none}
   .nav__grp{position:static}
 
@@ -740,6 +741,10 @@ html[data-theme="dark"] .theme__moon{display:block}
   .fillet,.cue{display:none}
   .canvas{display:flex;flex-direction:column}
   .vtag,.pill--a{display:none}
+
+  /* prevent horizontal overflow from ticker */
+  .ticker{overflow:hidden;max-width:100%}
+  .ticker__track{max-width:none}
 }
 
 /* ════════════════════════════════════════════════
