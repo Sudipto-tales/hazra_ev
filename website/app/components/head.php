@@ -42,7 +42,8 @@ $jsonLd = $jsonLd ?? null;
 if(!t)t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-<link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>">
+<?php $cssVer = defined('__BASEDIR__') && file_exists(__BASEDIR__ . '/assets/css/style.css') ? filemtime(__BASEDIR__ . '/assets/css/style.css') : time(); ?>
+<link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= $cssVer ?>">
 <link rel="stylesheet" href="<?= e(base_url('assets/css/styles/tokens.css')) ?>">
 <link rel="stylesheet" href="<?= e(base_url('assets/css/styles/typography.css')) ?>">
 <link rel="stylesheet" href="<?= e(base_url('assets/css/styles/global.css')) ?>">

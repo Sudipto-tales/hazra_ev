@@ -9,8 +9,8 @@
 <meta name="description" content="Hazra Electrical Bike — electric scooters built for everyday Indian riding. Book a test drive or find a dealership near you.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://hazraelectricalbike.com/assets/css/style.css">
+<?php $cssVer = defined('__BASEDIR__') && file_exists(__BASEDIR__ . '/assets/css/style.css') ? filemtime(__BASEDIR__ . '/assets/css/style.css') : time(); ?>
+<link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= $cssVer ?>">
 <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -1272,30 +1272,37 @@
 </footer>
 
 <!-- ══════════ FLOATING ACTION DOCK ══════════ -->
-<aside class="dock" aria-label="Quick actions">
+<aside class="dock" id="floatingDock" aria-label="Quick actions">
   <a class="dock__i" href="#test-ride" data-dock="test-drive" aria-label="Book a test drive">
-    <i data-lucide="bike"></i>
+    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+    </svg>
     <span class="dock__lb">Test Drive</span>
   </a>
 
   <a class="dock__i" href="<?= e(base_url('become-a-dealer')) ?>" data-dock="dealership" aria-label="Dealership enquiry">
-    <i data-lucide="store"></i>
+    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/>
+    </svg>
     <span class="dock__lb">Dealership</span>
   </a>
 
   <a class="dock__i" href="tel:+919002921509" aria-label="Call Hazra Electrical Bike">
-    <i data-lucide="phone"></i>
+    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    </svg>
     <span class="dock__lb">Call Us</span>
   </a>
 
   <a class="dock__i" href="https://wa.me/919002921509" target="_blank" rel="noopener noreferrer"
      aria-label="Chat on WhatsApp (opens in a new tab)">
-    <i data-lucide="message-circle"></i>
+    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+    </svg>
     <span class="dock__lb">WhatsApp</span>
   </a>
-</aside>
-
-<script src="<?= e(base_url('assets/js/script.js')) ?>"></script>
+<?php $jsVer = defined('__BASEDIR__') && file_exists(__BASEDIR__ . '/assets/js/script.js') ? filemtime(__BASEDIR__ . '/assets/js/script.js') : time(); ?>
+<script src="<?= e(base_url('assets/js/script.js')) ?>?v=<?= $jsVer ?>"></script>
 <script>
   if (window.lucide && typeof window.lucide.createIcons === 'function') {
     window.lucide.createIcons();

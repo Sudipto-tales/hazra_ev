@@ -98,12 +98,20 @@
     });
   });
 
+  const updateNavLock = () => {
+    const isOpen = Boolean(nav?.classList.contains('is-open') || stickyNav?.classList.contains('is-open'));
+    document.body.classList.toggle('nav-open', isOpen);
+    const dockEl = $('.dock');
+    if (dockEl) dockEl.classList.toggle('is-hidden', isOpen);
+  };
+
   const setMenu = on => {
     nav?.classList.toggle('is-open', on);
     burger?.classList.toggle('is-on', on);
     burger?.setAttribute('aria-expanded', String(on));
     burger?.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
     if (!on) closeAll();
+    updateNavLock();
   };
 
   burger?.addEventListener('click', () => setMenu(!nav.classList.contains('is-open')));
@@ -136,6 +144,8 @@
     stickyBurger?.classList.toggle('is-on', on);
     stickyBurger?.setAttribute('aria-expanded', String(on));
     stickyBurger?.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
+    if (!on) closeAll();
+    updateNavLock();
   };
 
   stickyBurger?.addEventListener('click', () =>
@@ -211,23 +221,40 @@
 
   const onStickyScroll = () => {
     const y = window.scrollY;
-    const threshold = HERO_THRESHOLD();
+    const isPage = Boolean(stickyBar?.classList.contains('is-page'));
 
-    if (y < threshold) {
-      hideStickyBar();
+    /* Never hide when mobile menu is open */
+    if (stickyNav?.classList.contains('is-open') || nav?.classList.contains('is-open')) {
+      showStickyBar();
       lastStickyY = y;
       return;
     }
 
+    if (!isPage) {
+      const threshold = HERO_THRESHOLD();
+      if (y < threshold) {
+        hideStickyBar();
+        lastStickyY = y;
+        return;
+      }
+    } else {
+      /* On secondary pages, keep visible near top of page */
+      if (y <= 40) {
+        showStickyBar();
+        lastStickyY = y;
+        return;
+      }
+    }
+
     if (y < lastStickyY) {
       showStickyBar();
-    } else if (y > lastStickyY) {
+    } else if (y > lastStickyY && y > 80) {
       hideStickyBar();
     }
     lastStickyY = y;
 
     clearTimeout(stickyTimer);
-    stickyTimer = setTimeout(showStickyBar, 400);
+    stickyTimer = setTimeout(showStickyBar, 350);
   };
 
   addEventListener('scroll', onStickyScroll, { passive: true });
@@ -261,13 +288,26 @@
   if (!document.querySelector('.dock')) {
     const dock = document.createElement('aside');
     dock.className = 'dock';
+    dock.id = 'floatingDock';
     dock.setAttribute('aria-label', 'Quick actions');
     dock.innerHTML = `
-      <a class="dock__i" href="#contact" aria-label="Book a test drive"><i data-lucide="bike"></i><span class="dock__lb">Test Drive</span></a>
-      <a class="dock__i" href="dealer-locator.html" aria-label="Find a dealer"><i data-lucide="map-pin"></i><span class="dock__lb">Find Dealer</span></a>
-      <a class="dock__i" href="#contact" aria-label="Contact Hazra"><i data-lucide="phone"></i><span class="dock__lb">Contact</span></a>`;
+      <a class="dock__i" href="#test-ride" aria-label="Book a test drive">
+        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>
+        <span class="dock__lb">Test Drive</span>
+      </a>
+      <a class="dock__i" href="become-a-dealer" aria-label="Become a dealer">
+        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>
+        <span class="dock__lb">Dealership</span>
+      </a>
+      <a class="dock__i" href="tel:+919002921509" aria-label="Call Hazra Electrical Bike">
+        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span class="dock__lb">Call Us</span>
+      </a>
+      <a class="dock__i" href="https://wa.me/919002921509" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
+        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+        <span class="dock__lb">WhatsApp</span>
+      </a>`;
     document.body.appendChild(dock);
-    if (window.lucide) window.lucide.createIcons({ nodes: [dock] });
   }
 
   const slider = document.querySelector('#rangeSlider');
@@ -685,35 +725,24 @@
      is a future form, so its click is swallowed rather than letting the
      browser fall back to jumping to the top of the document. tel: and wa.me
      are plain links and are left alone. */
-  $$('.dock__i[data-dock]').forEach(a => {
-    a.addEventListener('click', e => {
-      const target = $(a.getAttribute('href'));
-      if (!target) { e.preventDefault(); return; }
-      e.preventDefault();
-      target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-      target.querySelector('input, select, textarea')?.focus({ preventScroll: true });
-    });
+  /* ── floating action dock ─────────────────────
+     Smooth scroll for on-page anchors (e.g. #test-ride) when target exists;
+     allow regular navigation for full URLs (e.g. become-a-dealer, tel:, wa.me). */
+  $$('.dock__i').forEach(a => {
+    const href = a.getAttribute('href') || '';
+    if (href.startsWith('#') && href.length > 1) {
+      a.addEventListener('click', e => {
+        try {
+          const target = document.querySelector(href);
+          if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+            target.querySelector('input, select, textarea')?.focus({ preventScroll: true });
+          }
+        } catch (_) {}
+      });
+    }
   });
-
-  /* On phones the dock lies down into a bottom-centre pill (see style.css), so
-     it floats over whatever the reader is scrolling through. Tuck it away on
-     scroll-down, bring it straight back on scroll-up. Desktop keeps the dock
-     pinned at all times — the class is cleared whenever the query stops
-     matching, so a rotate or resize never leaves it stuck off screen. */
-  const dock = $('.dock');
-  const phone = matchMedia('(max-width:640px)');
-  if (dock) {
-    let lastY = window.scrollY;
-    const tuck = () => {
-      const y = window.scrollY;
-      if (!phone.matches) { dock.classList.remove('is-tucked'); lastY = y; return; }
-      if (Math.abs(y - lastY) < 10) return;      /* ignore rubber-band jitter */
-      dock.classList.toggle('is-tucked', y > lastY && y > 140);
-      lastY = y;
-    };
-    addEventListener('scroll', tuck, { passive: true });
-    phone.addEventListener('change', () => dock.classList.remove('is-tucked'));
-  }
 
   /* ── footer reel ──────────────────────────────
      Decoration only: play while on screen, pause when it is not, and stay

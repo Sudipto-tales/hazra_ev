@@ -682,60 +682,225 @@ html[data-theme="dark"] .theme__moon{display:block}
   .canvas{width:auto;height:auto;min-height:0;padding-bottom:0;margin:0 auto;max-width:93vw}
   .photo{position:relative;top:0;right:0;bottom:0;width:auto;height:320px;margin:var(--pad) var(--pad) 0}
   .topbar,.copy,.tab,.shelf{position:static}
-  .topbar{padding:26px 26px 0;order:-1;flex-wrap:wrap;justify-content:flex-start}
-  /* nav has collapsed into the burger, so the wordmark comes back */
-  .brand{margin-right:auto}
-  .brand__txt{display:inline-flex}
-
-  /* the pill becomes a full-width collapsible panel below the bar */
-  .burger{display:block}
-  .nav{
-    order:3;flex-basis:100%;
-    flex-direction:column;align-items:stretch;gap:0;
-    border-radius:22px;
-    max-height:0;padding:0 7px;overflow:hidden;
-    transition:max-height .4s var(--ease),padding .4s var(--ease),margin .4s var(--ease);
+  /* ── Mobile & Tablet Navbar (≤1024px) matching Teresa Hospital ── */
+  .topbar{
+    padding:14px 16px 0;
+    order:-1;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    box-sizing:border-box;
   }
-  .nav.is-open{max-height:70vh;overflow-y:auto;padding:7px;margin-top:16px}
-  .nav__i{padding:12px 14px;font-size:14px;border-radius:14px;justify-content:space-between}
-  .nav__i.is-on{background:none;color:var(--ink);box-shadow:none}
-  .nav__grp{position:static}
+  .brand{
+    margin-right:auto;
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+  }
+  .brand__mark{
+    width:34px;
+    height:34px;
+    border-radius:9px;
+  }
+  .brand__txt{
+    display:inline-flex;
+    font-size:13px;
+    font-weight:700;
+  }
 
-  /* dropdowns turn into inline accordions — no absolute layer on a phone */
+  /* Circular floating burger button matching Teresa */
+  .burger{
+    display:grid !important;
+    place-items:center !important;
+    width:42px !important;
+    height:42px !important;
+    flex:0 0 42px !important;
+    border-radius:50% !important;
+    background:rgb(var(--surface-rgb) / .92) !important;
+    border:1px solid var(--hair-0) !important;
+    box-shadow:0 4px 14px rgba(0,0,0,.08) !important;
+    color:var(--ink-0) !important;
+    cursor:pointer;
+    z-index:1250 !important;
+    transition:background .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease), transform .2s;
+  }
+  .burger:active{
+    transform:scale(.95);
+  }
+  .burger.is-on{
+    background:var(--brand-violet) !important;
+    border-color:var(--brand-violet) !important;
+    color:#fff !important;
+    box-shadow:0 6px 20px rgba(124,58,237,.35) !important;
+  }
+  .burger.is-on span{
+    background:#fff !important;
+  }
+
+  /* Full-viewport mobile drawer menu matching Teresa overlay */
+  .topbar .nav,
+  .sticky-bar .nav{
+    position:fixed !important;
+    top:56px !important;
+    left:0 !important;
+    right:0 !important;
+    bottom:0 !important;
+    width:100% !important;
+    height:calc(100vh - 56px) !important;
+    max-height:0 !important;
+    overflow:hidden !important;
+    border-radius:0 !important;
+    background:rgb(var(--surface-rgb) / .96) !important;
+    backdrop-filter:blur(24px) !important;
+    -webkit-backdrop-filter:blur(24px) !important;
+    border-bottom:1px solid var(--hair-0) !important;
+    box-shadow:0 24px 60px rgba(0,0,0,.2) !important;
+    z-index:1150 !important;
+    padding:0 18px !important;
+    margin:0 !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+    visibility:hidden !important;
+    transition:opacity .3s var(--ease), visibility .3s, max-height 0s .3s;
+    box-sizing:border-box !important;
+  }
+
+  .topbar .nav.is-open,
+  .sticky-bar .nav.is-open{
+    max-height:calc(100vh - 56px) !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
+    visibility:visible !important;
+    overflow-y:auto !important;
+    overscroll-behavior:contain !important;
+    -webkit-overflow-scrolling:touch !important;
+    touch-action:pan-y !important;
+    padding:16px 20px calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:stretch !important;
+    gap:4px !important;
+    transition:opacity .3s var(--ease), visibility .3s, max-height 0s 0s;
+  }
+
+  body.nav-open{
+    overflow:hidden !important;
+  }
+
+  .nav__i{
+    padding:13px 16px !important;
+    font-size:15px !important;
+    font-weight:600 !important;
+    border-radius:12px !important;
+    color:var(--ink-0) !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    background:transparent !important;
+    transition:background .2s var(--ease), color .2s var(--ease) !important;
+  }
+  .nav__i:hover,
+  .nav__i:focus-visible{
+    background:rgb(var(--chip-rgb) / .35) !important;
+  }
+  .nav__i.is-on{
+    background:rgb(var(--chip-rgb) / .5) !important;
+    color:var(--brand-violet) !important;
+    box-shadow:none !important;
+  }
+  .nav__grp{
+    position:static !important;
+    width:100% !important;
+  }
+
+  /* dropdown accordions in mobile drawer */
   .nav__menu{
-    position:static;transform:none;
-    min-width:0;padding:0 0 0 14px;
-    background:none;border:0;border-radius:0;box-shadow:none;
-    max-height:0;overflow:hidden;
-    opacity:0;visibility:visible;pointer-events:auto;
-    transition:max-height .34s var(--ease),opacity .24s var(--ease);
+    position:static !important;
+    transform:none !important;
+    min-width:0 !important;
+    width:100% !important;
+    padding:0 8px !important;
+    background:none !important;
+    border:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    max-height:0 !important;
+    overflow:hidden !important;
+    opacity:0 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+    transition:max-height .34s var(--ease), opacity .24s var(--ease), margin .34s var(--ease);
   }
-  .nav__menu::before{display:none}
-  .nav__grp.is-open > .nav__menu{max-height:500px;opacity:1;transform:none}
-  .nav__menu--products{min-width:0;width:100%;padding:10px 0}
-  .nav__product-grid{grid-template-columns:repeat(2, 1fr);gap:8px}
-  .nav__s{padding:10px 12px;font-size:13px}
-  .nav__s em{margin-left:auto}
+  .nav__menu::before{display:none !important}
+  .nav__grp.is-open > .nav__menu{
+    max-height:1200px !important;
+    opacity:1 !important;
+    transform:none !important;
+    margin:4px 0 10px !important;
+    background:rgb(var(--chip-rgb) / .3) !important;
+    border-radius:14px !important;
+    padding:6px 12px !important;
+  }
+  .nav__menu--products{min-width:0 !important;width:100% !important;padding:10px 8px !important}
+  .nav__product-grid{grid-template-columns:repeat(2, 1fr) !important;gap:8px !important}
+  .nav__s{padding:10px 12px !important;font-size:13px !important}
+  .nav__s em{margin-left:auto !important}
 
   /* sticky bar responsive */
+  .sticky-bar{
+    height:56px !important;
+    position:fixed !important;
+    top:0 !important;
+    left:0 !important;
+    right:0 !important;
+    z-index:1000 !important;
+  }
   .sticky-bar__inner{
-    width:100%;padding:0 26px;height:52px;
+    width:100% !important;
+    padding:0 16px !important;
+    height:100% !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
   }
-  .sticky-bar .nav{
-    order:3;flex-basis:100%;
-    flex-direction:column;align-items:stretch;gap:0;
-    max-height:0;overflow:hidden;border-radius:0;
-    transition:max-height .4s var(--ease),padding .4s var(--ease),margin .4s var(--ease);
+  .sticky-bar__brand{
+    display:inline-flex !important;
+    align-items:center !important;
+    gap:8px !important;
+    margin-right:auto !important;
+    order:1 !important;
   }
-  .sticky-bar .nav.is-open{
-    max-height:calc(100vh - 52px);overflow-y:auto;
-    padding:0;margin-top:0;
+  .sticky-bar__brand .brand__mark{
+    width:34px !important;
+    height:34px !important;
+    border-radius:9px !important;
   }
-  .sticky-bar .burger{display:block;width:36px;height:36px}
-  .sticky-bar__brand{display:none}
-  .sticky-bar__end{margin-left:auto;gap:8px}
-  .sticky-bar__cta{padding:6px 14px;font-size:10.5px}
-  .sticky-bar__cta span{display:none}
+  .sticky-bar__brand .brand__txt{
+    display:inline-flex !important;
+    font-size:12.5px !important;
+    font-weight:700 !important;
+  }
+  .sticky-bar__brand .brand__txt b{
+    font-size:10px !important;
+  }
+  .sticky-bar__end{
+    order:2 !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:8px !important;
+    margin-left:auto !important;
+  }
+  .sticky-bar .burger{
+    order:3 !important;
+    margin-left:6px !important;
+    margin-right:0 !important;
+  }
+  .sticky-bar__cta{
+    padding:6px 14px !important;
+    font-size:10.5px !important;
+  }
+  .sticky-bar__cta span{display:none !important}
 
   .copy{width:auto;padding:24px 26px 0}
   .tab{display:none}
@@ -747,6 +912,15 @@ html[data-theme="dark"] .theme__moon{display:block}
   /* prevent horizontal overflow from ticker */
   .ticker{overflow:hidden;max-width:100%}
   .ticker__track{max-width:none}
+}
+
+@media (max-width:480px){
+  .sticky-bar__inner{padding:0 12px}
+  .sticky-bar__cta{display:none} /* Avoid button crowding on small phones */
+  .sticky-bar__brand .brand__txt b{display:none}
+  .topbar{padding:16px 14px 0}
+  .nav__product-img-wrap{height:60px}
+  .nav__product-name{font-size:11px}
 }
 
 /* ════════════════════════════════════════════════
@@ -1116,16 +1290,15 @@ html[data-theme="dark"] .theme__moon{display:block}
   display:flex;flex-direction:column;
   border:1px solid var(--hair-0);
   border-radius:26px;
-  background:rgb(var(--chip-rgb) / .55);
+  background:var(--surface-0);
   overflow:hidden;
-  /* scroll-in: script.js writes --i, the stagger index */
-  opacity:0;transform:translateY(38px);
+  opacity:1 !important;
+  transform:none !important;
 }
 .card.is-in{
-  opacity:1;transform:none;
-  transition:opacity .8s var(--ease) calc(var(--i,0) * 90ms),
-             transform .9s var(--ease) calc(var(--i,0) * 90ms),
-             border-color .4s var(--ease),box-shadow .4s var(--ease);
+  opacity:1 !important;
+  transform:none !important;
+  transition:border-color .4s var(--ease),box-shadow .4s var(--ease);
 }
 .card:hover{
   border-color:var(--ink-0);
@@ -1136,26 +1309,23 @@ html[data-theme="dark"] .theme__moon{display:block}
   position:relative;
   aspect-ratio:16/11;
   overflow:hidden;
-  background:#1a1a19;
+  background:transparent;
 }
 .card__img{
-  width:100%;height:100%;object-fit:cover;display:block;
-  object-position:62% 60%;
-  filter:saturate(1.06);
+  width:100%;height:100%;object-fit:contain;display:block;
+  object-position:center;
+  opacity:1 !important;
   transform:scale(1.02);
   transition:transform 1.1s var(--ease);
 }
 
-/* the finish grade */
+/* the finish grade — disabled to remove opacity and color wash */
 .card__wash{
-  position:absolute;inset:0;
-  background:var(--c,var(--brand-violet));
-  mix-blend-mode:soft-light;
-  opacity:.78;
-  transition:background .55s var(--ease);
+  display:none !important;
+  opacity:0 !important;
   pointer-events:none;
 }
-.card:hover .card__img{transform:scale(1.09)}
+.card:hover .card__img{transform:scale(1.08)}
 
 /* pointer-tracked sheen; --mx/--my written by script.js on move */
 .card__shine{
@@ -1597,6 +1767,7 @@ html[data-theme="dark"] .theme__moon{display:block}
   object-fit:contain;object-position:center 46%;
   filter:var(--fx, ) drop-shadow(0 26px 30px rgba(10,5,20,calc(var(--sh-a) * .45)));
   transform:translateZ(30px);
+  opacity:1 !important;
 }
 
 /* Only the bike in front breathes — the neighbours hold still so the eye has
@@ -1604,6 +1775,7 @@ html[data-theme="dark"] .theme__moon{display:block}
    .is-live (nearest slide to --fi); the motion lives here. */
 .fslide__media{animation:bikefloat 6.5s ease-in-out infinite paused}
 .fslide.is-live .fslide__media{animation-play-state:running}
+.fslide.is-live{opacity:1 !important}
 @keyframes bikefloat{
   0%,100%{transform:translateY(0)}
   50%    {transform:translateY(-2.2%)}
@@ -1612,6 +1784,7 @@ html[data-theme="dark"] .theme__moon{display:block}
 /* a soft lift on the one in front, so the deck has a clear subject */
 .fslide.is-live .fslide__halo{filter:blur(30px)}
 .fslide.is-live .fslide__img{
+  opacity:1 !important;
   filter:var(--fx, ) drop-shadow(0 30px 38px rgba(10,5,20,calc(var(--sh-a) * .5)));
 }
 
@@ -2459,7 +2632,7 @@ html[data-theme="light"] .foot__bg--dark{display:none}
   }
 }
 @media (max-width:768px){
-  .foot{padding-top:clamp(24px,3vw,36px);padding-bottom:clamp(12px,1.5vw,20px)}
+  .foot{padding-top:clamp(24px,3vw,36px);padding-bottom:clamp(68px,10vw,90px)}
   .foot__cols{grid-template-columns:repeat(3,minmax(0,1fr))}
   .foot__content{gap:16px}
   .foot__social-section{
@@ -2687,99 +2860,259 @@ html[data-theme="light"] .foot__bg--dark{display:none}
 
 /* ════════════════════════════════════════════════
    FLOATING ACTION DOCK
-
-   Fixed capsule on the right edge, vertically centred, alive on every
-   section. The surface is built from --chip-rgb and --hair-0, so it flips
-   with [data-theme] instead of carrying its own colours. Labels slide out
-   to the LEFT — the dock is already against the right edge, so anything
-   opening rightwards would leave the viewport.
+   Slim vertical glass capsule on the right edge.
    ════════════════════════════════════════════════ */
 
 .dock{
-  position:fixed;z-index:40;
-  right:clamp(10px,1.4vw,20px);
-  top:50%;transform:translateY(-50%);
-  display:flex;flex-direction:column;align-items:center;
-  gap:6px;padding:8px;
-  border-radius:999px;
-  background:rgb(var(--chip-rgb) / .58);
-  border:1px solid color-mix(in srgb, var(--hair-0) 70%, transparent);
-  box-shadow:0 18px 46px -14px rgba(0,0,0,.45), inset 0 1px 0 rgb(255 255 255 / .16);
-  backdrop-filter:blur(18px) saturate(140%);
-  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  position:fixed;
+  z-index:1050;
+  box-sizing:border-box;
+  transition:opacity .25s var(--ease), visibility .25s;
 }
 
-.dock__i{
-  position:relative;
-  display:grid;place-items:center;
-  width:46px;height:46px;flex:none;
-  border-radius:999px;
-  background:transparent;
-  color:var(--ink-0);text-decoration:none;
-  transition:background .32s var(--ease),color .32s var(--ease),transform .32s var(--ease);
+/* Hide when mobile nav is open */
+body:has(.nav.is-open) .dock,
+body.nav-open .dock,
+.dock.is-hidden{
+  opacity:0 !important;
+  pointer-events:none !important;
+  visibility:hidden !important;
 }
-.dock__i svg{width:20px;height:20px}
 
-.dock__i:hover,
-.dock__i:focus-visible{
-  background:rgb(var(--surface-rgb) / .22);
-  color:var(--ink-0);
-  transform:translateX(-2px);
+/* Hide labels on all touch screens */
+@media (hover: none){
+  .dock__lb{display:none !important}
+  .dock__i:hover{transform:none}
 }
-.dock__i:focus-visible{outline:2px solid var(--brand-violet);outline-offset:3px}
 
-/* ── label: a second glass chip, parked to the left ── */
-.dock__lb{
-  position:absolute;top:50%;right:calc(100% + 12px);
-  transform:translate(8px,-50%);
-  padding:7px 13px;border-radius:999px;
-  white-space:nowrap;
-  font-size:12px;font-weight:600;letter-spacing:.01em;
-  color:var(--ink-0);
-  background:rgb(var(--chip-rgb) / .9);
-  border:1px solid color-mix(in srgb, var(--hair-0) 70%, transparent);
-  box-shadow:0 10px 26px -10px rgba(0,0,0,.5);
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
-  opacity:0;pointer-events:none;
-  transition:opacity .28s var(--ease),transform .28s var(--ease);
-}
-.dock__i:hover .dock__lb,
-.dock__i:focus-visible .dock__lb{opacity:1;transform:translate(0,-50%)}
-
-/* the mobile nav panel is taller than the dock and shares its edge —
-   fold the dock away while that panel is open */
-body:has(.nav.is-open) .dock{opacity:0;pointer-events:none}
-
-/* ── phone ───────────────────────────────────
-   A right-edge column costs ~60px of a 390px viewport and there is no gutter
-   to spend it in: the capsule lands on top of the hero chips, the range badge
-   and the "Test Ride" button. So on phones the same four actions lie down into
-   a bottom-centre pill — off the reading column, inside thumb reach, and out
-   of the way entirely while the reader is scrolling down (see .is-tucked). */
-@media (max-width:640px){
+/* ── Desktop (>1024px): Slim vertical glass capsule on right edge ── */
+@media (min-width: 1025px){
   .dock{
-    top:auto;right:auto;
-    left:50%;
-    bottom:calc(14px + env(safe-area-inset-bottom, 0px));
-    transform:translateX(-50%);
-    flex-direction:row;
-    gap:4px;padding:6px;
-    transition:transform .42s var(--ease), opacity .3s var(--ease);
+    right:clamp(8px,1.2vw,18px);
+    top:50%;
+    bottom:auto;
+    left:auto;
+    transform:translateY(-50%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    width:50px;
+    min-width:50px;
+    max-width:50px;
+    gap:6px;
+    padding:6px 4px;
+    border-radius:999px;
+    background:rgb(var(--surface-rgb) / .92);
+    border:1px solid color-mix(in srgb, var(--hair-0) 80%, transparent);
+    box-shadow:0 12px 34px -10px rgba(0,0,0,.35), inset 0 1px 0 rgb(255 255 255 / .2);
+    backdrop-filter:blur(20px) saturate(140%);
+    -webkit-backdrop-filter:blur(20px) saturate(140%);
   }
-  .dock__i{width:44px;height:44px}
-  .dock__i svg{width:19px;height:19px}
-  /* the base rule nudges left towards the label; there is no label here */
-  .dock__i:hover,
-  .dock__i:focus-visible{transform:translateY(-2px)}
-  /* no hover on touch: the label would only ever flash on tap */
-  .dock__lb{display:none}
 
-  /* scrolling down = reading; drop the pill below the fold until the reader
-     scrolls back up. Set by script.js, phone widths only. */
-  .dock.is-tucked{
-    transform:translate(-50%, calc(100% + 26px));
-    opacity:0;pointer-events:none;
+  .dock__i{
+    position:relative;
+    display:grid;
+    place-items:center;
+    width:42px;
+    height:42px;
+    flex:0 0 42px;
+    border-radius:999px;
+    background:transparent;
+    color:var(--ink-0);
+    text-decoration:none;
+    transition:background .25s var(--ease), color .25s var(--ease), transform .25s var(--ease);
+    box-sizing:border-box;
+  }
+  .dock__i svg,
+  .dock__i .dock__icon{
+    width:19px;
+    height:19px;
+    display:block;
+    stroke:currentColor;
+    fill:none;
+    flex-shrink:0;
+  }
+
+  .dock__i:hover,
+  .dock__i:focus-visible{
+    background:rgb(var(--surface-rgb) / .35);
+    color:var(--ink-0);
+    transform:translateX(-2px);
+  }
+  .dock__i:focus-visible{outline:2px solid var(--brand-violet);outline-offset:3px}
+
+  .dock__lb{
+    position:absolute;
+    top:50%;
+    right:calc(100% + 12px);
+    transform:translate(8px,-50%);
+    padding:6px 12px;
+    border-radius:999px;
+    white-space:nowrap;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.01em;
+    color:var(--ink-0);
+    background:rgb(var(--surface-rgb) / .96);
+    border:1px solid color-mix(in srgb, var(--hair-0) 80%, transparent);
+    box-shadow:0 10px 24px -10px rgba(0,0,0,.4);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s var(--ease), transform .25s var(--ease);
+  }
+  .dock__i:hover .dock__lb,
+  .dock__i:focus-visible .dock__lb{
+    opacity:1;
+    transform:translate(0,-50%);
+  }
+}
+
+/* ── Tablet & Phone (≤1024px): Horizontal floating glass dock matching Teresa Hospital ── */
+@media (max-width:1024px){
+  body{
+    padding-bottom:68px !important;
+  }
+
+  .dock,
+  #floatingDock,
+  aside.dock{
+    position:fixed !important;
+    left:50% !important;
+    right:auto !important;
+    top:auto !important;
+    bottom:calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    transform:translateX(-50%) !important;
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:min(92vw, 340px) !important;
+    height:58px !important;
+    max-height:58px !important;
+    gap:6px !important;
+    padding:8px 10px !important;
+    border-radius:999px !important;
+    background:rgba(255, 255, 255, .75) !important;
+    border:1px solid rgba(255, 255, 255, .5) !important;
+    box-shadow:0 24px 60px rgba(18, 41, 79, .14), 0 8px 24px rgba(0, 0, 0, .08) !important;
+    backdrop-filter:blur(16px) saturate(140%) !important;
+    -webkit-backdrop-filter:blur(16px) saturate(140%) !important;
+    z-index:1050 !important;
+    box-sizing:border-box !important;
+  }
+
+  [data-theme="dark"] .dock,
+  [data-theme="dark"] #floatingDock{
+    background:rgba(16, 20, 30, .85) !important;
+    border:1px solid rgba(255, 255, 255, .12) !important;
+    box-shadow:0 24px 60px rgba(0, 0, 0, .45), 0 8px 24px rgba(0, 0, 0, .25) !important;
+  }
+
+  .dock__i,
+  #floatingDock .dock__i{
+    position:relative !important;
+    display:grid !important;
+    place-items:center !important;
+    width:40px !important;
+    height:40px !important;
+    flex:0 0 40px !important;
+    min-width:40px !important;
+    max-width:40px !important;
+    aspect-ratio:1 !important;
+    border-radius:50% !important;
+    color:var(--ink-0) !important;
+    background:transparent !important;
+    text-decoration:none !important;
+    transition:background .3s var(--ease), color .3s var(--ease), transform .3s var(--ease) !important;
+    box-sizing:border-box !important;
+  }
+
+  .dock__i svg,
+  .dock__i .dock__icon{
+    width:20px !important;
+    height:20px !important;
+    display:block !important;
+    stroke:currentColor !important;
+    fill:none !important;
+  }
+
+  /* Teresa hover & active button interactions */
+  .dock__i:hover,
+  .dock__i:focus-visible,
+  .dock__i:active{
+    background:linear-gradient(135deg, var(--brand-violet), #6d28d9) !important;
+    color:#fff !important;
+    transform:scale(1.08) !important;
+  }
+
+  .dock__i[href*="wa.me"]:hover,
+  .dock__i[href*="wa.me"]:active{
+    background:linear-gradient(135deg, #25D366, #128C7E) !important;
+    color:#fff !important;
+  }
+
+  .dock__lb,
+  #floatingDock .dock__lb{
+    display:none !important;
+    visibility:hidden !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+    width:0 !important;
+    height:0 !important;
+  }
+}
+
+/* Small phones (≤640px) */
+@media (max-width:640px){
+  body{
+    padding-bottom:68px !important;
+  }
+  .dock{
+    bottom:calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+    height:56px !important;
+    max-height:56px !important;
+    padding:6px 10px !important;
+    gap:6px !important;
+  }
+  .dock__i{
+    width:38px !important;
+    height:38px !important;
+    flex:0 0 38px !important;
+    min-width:38px !important;
+    max-width:38px !important;
+  }
+  .dock__i svg,
+  .dock__i .dock__icon{
+    width:19px !important;
+    height:19px !important;
+  }
+}
+
+/* Very small phones (≤380px) */
+@media (max-width:380px){
+  .dock{
+    bottom:calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    height:50px !important;
+    max-height:50px !important;
+    padding:5px 8px !important;
+    gap:4px !important;
+  }
+  .dock__i{
+    width:34px !important;
+    height:34px !important;
+    flex:0 0 34px !important;
+    min-width:34px !important;
+    max-width:34px !important;
+  }
+  .dock__i svg,
+  .dock__i .dock__icon{
+    width:17px !important;
+    height:17px !important;
   }
 }
 

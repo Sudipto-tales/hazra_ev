@@ -51,9 +51,10 @@ class RebuildSettingsTable extends Migration
         // 4. Restore rows with generated UUIDs and default group_name
         try {
             $rows = $this->pdo->query("SELECT setting_key, setting_value, updated_at FROM _settings_backup")->fetchAll();
-            $stmt = $this->pdo->prepare(
-                "INSERT OR IGNORE INTO website_settings (id, group_name, setting_key, setting_value, updated_at) VALUES (?, 'general', ?, ?, ?)"
-            );
+            $insertSql = Dialect::isMysql()
+                ? "INSERT IGNORE INTO website_settings (id, group_name, setting_key, setting_value, updated_at) VALUES (?, 'general', ?, ?, ?)"
+                : "INSERT OR IGNORE INTO website_settings (id, group_name, setting_key, setting_value, updated_at) VALUES (?, 'general', ?, ?, ?)";
+            $stmt = $this->pdo->prepare($insertSql);
             foreach ($rows as $row) {
                 $uuid = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
                     mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff),

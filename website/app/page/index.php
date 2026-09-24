@@ -6,17 +6,6 @@ try {
     }
 } catch (Throwable $e) {}
 
-if (empty($navProducts)) {
-    $navProducts = [
-        ['id' => 'striker', 'name' => 'Striker', 'slug' => 'hazra-striker', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png'],
-        ['id' => 'soul-pro', 'name' => 'Soul Pro', 'slug' => 'hazra-soul-pro', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png'],
-        ['id' => 'wind-pro', 'name' => 'Wind Pro', 'slug' => 'hazra-wind-pro', 'top_speed_kmph' => 50, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png'],
-        ['id' => 'wind', 'name' => 'Wind', 'slug' => 'hazra-wind', 'top_speed_kmph' => 45, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png'],
-        ['id' => 'max-e4', 'name' => 'Max E4', 'slug' => 'hazra-max-e4', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png'],
-        ['id' => 'spark', 'name' => 'Spark', 'slug' => 'hazra-spark', 'top_speed_kmph' => 55, 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png'],
-    ];
-}
-
 // Featured products (is_featured = 1)
 $featuredProducts = [];
 try {
@@ -33,18 +22,6 @@ try {
     }
 } catch (Throwable $e) {}
 
-// Fallback featured products if none returned from DB
-if (empty($featuredProducts)) {
-    $featuredProducts = [
-        ['id' => 'striker', 'name' => 'Striker', 'model_code' => 'HZ-STR', 'slug' => 'hazra-striker', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png', 'range_km' => 80, 'top_speed_kmph' => 45, 'rating' => 4.8, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '60V / 30Ah Li-ion', 'motor_power' => '1200W BLDC'],
-        ['id' => 'soul-pro', 'name' => 'Soul Pro', 'model_code' => 'HZ-SOULPRO', 'slug' => 'hazra-soul-pro', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png', 'range_km' => 100, 'top_speed_kmph' => 55, 'rating' => 4.9, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '72V / 35Ah Li-ion', 'motor_power' => '1500W BLDC'],
-        ['id' => 'wind-pro', 'name' => 'Wind Pro', 'model_code' => 'HZ-WNDPRO', 'slug' => 'hazra-wind-pro', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png', 'range_km' => 90, 'top_speed_kmph' => 50, 'rating' => 4.8, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '60V / 32Ah Li-ion', 'motor_power' => '1200W BLDC'],
-        ['id' => 'wind', 'name' => 'Wind', 'model_code' => 'HZ-WND', 'slug' => 'hazra-wind', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png', 'range_km' => 85, 'top_speed_kmph' => 45, 'rating' => 4.7, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '60V / 28Ah Li-ion', 'motor_power' => '1000W BLDC'],
-        ['id' => 'max-e4', 'name' => 'Max E4', 'model_code' => 'HZ-MAXE4', 'slug' => 'hazra-max-e4', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png', 'range_km' => 110, 'top_speed_kmph' => 55, 'rating' => 4.8, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '72V / 40Ah Li-ion', 'motor_power' => '1800W BLDC'],
-        ['id' => 'spark', 'name' => 'Spark', 'model_code' => 'HZ-SPARK', 'slug' => 'hazra-spark', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png', 'range_km' => 110, 'top_speed_kmph' => 55, 'rating' => 4.8, 'warranty_years' => 1, 'category' => 'scooty', 'battery_capacity' => '72V / 40Ah Li-ion', 'motor_power' => '1800W BLDC'],
-    ];
-}
-
 // Latest 6 products for Collection section
 $collectionProducts = [];
 try {
@@ -60,18 +37,6 @@ try {
         ");
     }
 } catch (Throwable $e) {}
-
-// Fallback to hardcoded if no products in DB
-if (empty($collectionProducts)) {
-    $collectionProducts = [
-        ['id' => 'chalo-1000-v2', 'name' => 'CHALO 1000 V2', 'slug' => 'chalo-1000-v2', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_9.png', 'range_km' => 100, 'top_speed_kmph' => 65, 'rating' => 4.8, 'warranty_years' => 4, 'category' => 'scooty', 'battery_capacity' => '60V / 32Ah Graphene', 'motor_power' => '1200W'],
-        ['id' => 'chalo-smart-pro', 'name' => 'CHALO SMART PRO', 'slug' => 'chalo-smart-pro', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_14.png', 'range_km' => 120, 'top_speed_kmph' => 70, 'rating' => 4.9, 'warranty_years' => 4, 'category' => 'scooty', 'battery_capacity' => '72V / 40Ah Li-ion', 'motor_power' => '1500W'],
-        ['id' => 'chalo-smart-eco', 'name' => 'CHALO SMART ECO', 'slug' => 'chalo-smart-eco', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_12.png', 'range_km' => 130, 'top_speed_kmph' => 45, 'rating' => 4.7, 'warranty_years' => 3, 'category' => 'scooty', 'battery_capacity' => '60V / 32Ah Graphene', 'motor_power' => '1000W'],
-        ['id' => 'chalo-smart-plus', 'name' => 'CHALO SMART PLUS', 'slug' => 'chalo-smart-plus', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_13.png', 'range_km' => 85, 'top_speed_kmph' => 45, 'rating' => 4.6, 'warranty_years' => 3, 'category' => 'scooty', 'battery_capacity' => '48V / 28Ah Graphene', 'motor_power' => '1000W'],
-        ['id' => 'chalo-neo', 'name' => 'CHALO NEO', 'slug' => 'chalo-neo', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_15.png', 'range_km' => 50, 'top_speed_kmph' => 40, 'rating' => 4.5, 'warranty_years' => 4, 'category' => 'scooty', 'battery_capacity' => '48V / 24Ah Graphene', 'motor_power' => '800W'],
-        ['id' => 'nja-7', 'name' => 'NJA-7', 'slug' => 'nja-7', 'hero_image' => 'assets/scooters/hazra_broucher_6_scooter_16.png', 'range_km' => 140, 'top_speed_kmph' => 75, 'rating' => 5.0, 'warranty_years' => 4, 'category' => 'bike', 'battery_capacity' => '72V / 45Ah Li-ion', 'motor_power' => '2000W'],
-    ];
-}
 
 // Fetch colors for all products in both sections
 $allProductIds = array_filter(array_unique(array_merge(
@@ -99,56 +64,74 @@ if (!function_exists('renderHomeProductCard')) {
     function renderHomeProductCard($p, $productColorsMap) {
         $pId = $p['id'] ?? '';
         $colors = $productColorsMap[$pId] ?? [];
-        if (empty($colors)) {
-            $colors = [
-                ['name' => 'Matte Black', 'argb' => -14671840],
-                ['name' => 'Ocean Blue',  'argb' => -15555040],
-                ['name' => 'Pearl White', 'argb' => -1050216],
-            ];
-        }
-        $primaryColorHex = sprintf('#%06x', ((int)($colors[0]['argb'] ?? 0)) & 0xFFFFFF);
+        $primaryColorHex = !empty($colors[0]['argb']) 
+            ? sprintf('#%06x', ((int)$colors[0]['argb']) & 0xFFFFFF) 
+            : 'var(--brand-violet)';
+        
         $imgSrc = !empty($p['hero_image']) ? $p['hero_image'] : 'assets/scooters/hazra_broucher_6_scooter_9.png';
-        $isHigh = ((int)($p['top_speed_kmph'] ?? 0)) >= 50;
         $productUrl = !empty($p['slug']) 
             ? base_url('product-detail?slug=' . urlencode($p['slug'])) 
             : base_url('product-detail?id=' . urlencode($p['id'] ?? ''));
-        $rating = !empty($p['rating']) && (float)$p['rating'] > 0 ? number_format((float)$p['rating'], 1) : '4.8';
-        $reviewsCount = 100 + (abs(crc32((string)$pId)) % 250);
-        $warrantyYears = (int)($p['warranty_years'] ?? 3);
-        if ($warrantyYears <= 0) $warrantyYears = 3;
+
+        $warrantyYears = !empty($p['warranty_years']) && (int)$p['warranty_years'] > 0 ? (int)$p['warranty_years'] : null;
+        $rating = !empty($p['rating']) && (float)$p['rating'] > 0 ? number_format((float)$p['rating'], 1) : null;
+        
+        $hasRange = !empty($p['range_km']) && (int)$p['range_km'] > 0;
+        $hasSpeed = !empty($p['top_speed_kmph']) && (int)$p['top_speed_kmph'] > 0;
+        $isHigh = $hasSpeed && (((int)$p['top_speed_kmph']) >= 50);
+
+        $hasBattery = !empty($p['battery_capacity']) && trim($p['battery_capacity']) !== '';
+        $hasMotor = !empty($p['motor_power']) && trim($p['motor_power']) !== '';
         ?>
-        <article class="card" style="--c:<?= e($primaryColorHex) ?>">
+        <article class="card is-in" style="--c:<?= e($primaryColorHex) ?>">
           <div class="card__media">
-            <span class="card__badge"><i data-lucide="shield-check"></i><?= $warrantyYears ?> Years Warranty</span>
-            <span class="card__360">360&deg;</span>
+            <?php if ($warrantyYears): ?>
+              <span class="card__badge"><i data-lucide="shield-check"></i><?= $warrantyYears ?> <?= $warrantyYears === 1 ? 'Year' : 'Years' ?> Warranty</span>
+            <?php endif; ?>
             <img class="card__img" src="<?= e(base_url($imgSrc)) ?>" alt="<?= e($p['name']) ?>" loading="lazy">
-            <i class="card__wash"></i>
             <i class="card__shine"></i>
           </div>
           <div class="card__body">
-            <div class="card__rate"><i data-lucide="star"></i><b><?= e($rating) ?></b><span>· <?= $reviewsCount ?> reviews</span></div>
+            <?php if ($rating): ?>
+              <div class="card__rate"><i data-lucide="star"></i><b><?= e($rating) ?></b></div>
+            <?php endif; ?>
+
             <h3 class="card__name"><?= e($p['name']) ?></h3>
-            <div class="card__chips">
-              <?php if (!empty($p['range_km'])): ?>
-                <span><i data-lucide="battery-charging"></i><?= (int)$p['range_km'] ?> km Range</span>
-              <?php endif; ?>
-              <span><i data-lucide="<?= $isHigh ? 'zap' : 'feather' ?>"></i><?= $isHigh ? 'High Speed' : 'Low Speed' ?></span>
-            </div>
-            <div class="card__colors" role="group" aria-label="Available colours">
-              <?php foreach ($colors as $cIdx => $c): 
-                $cHex = sprintf('#%06x', ((int)$c['argb']) & 0xFFFFFF);
-              ?>
-                <button class="sw <?= $cIdx === 0 ? 'is-on' : '' ?>" style="--c:<?= e($cHex) ?>" aria-label="<?= e($c['name'] ?? 'Colour') ?>" title="<?= e($c['name'] ?? 'Colour') ?>"></button>
-              <?php endforeach; ?>
-            </div>
-            <div class="card__price">
-              <p class="card__plabel">Ex&#8209;showroom &mdash; starts at</p>
-              <div class="card__vars">
-                <button class="var"><b><?= !empty($p['battery_capacity']) ? e($p['battery_capacity']) : 'Standard Pack' ?></b><span>Battery Spec</span></button>
-                <button class="var"><b><?= !empty($p['motor_power']) ? e($p['motor_power']) : 'BLDC Motor' ?></b><span>Motor Power</span></button>
+
+            <?php if ($hasRange || $hasSpeed): ?>
+              <div class="card__chips">
+                <?php if ($hasRange): ?>
+                  <span><i data-lucide="battery-charging"></i><?= (int)$p['range_km'] ?> km Range</span>
+                <?php endif; ?>
+                <?php if ($hasSpeed): ?>
+                  <span><i data-lucide="<?= $isHigh ? 'zap' : 'feather' ?>"></i><?= (int)$p['top_speed_kmph'] ?> km/h &middot; <?= $isHigh ? 'High Speed' : 'Low Speed' ?></span>
+                <?php endif; ?>
               </div>
-              <p class="card__note">*Without GST</p>
-            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($colors)): ?>
+              <div class="card__colors" role="group" aria-label="Available colours">
+                <?php foreach ($colors as $cIdx => $c): 
+                  $cHex = sprintf('#%06x', ((int)$c['argb']) & 0xFFFFFF);
+                ?>
+                  <button class="sw <?= $cIdx === 0 ? 'is-on' : '' ?>" style="--c:<?= e($cHex) ?>" aria-label="<?= e($c['name'] ?? 'Colour') ?>" title="<?= e($c['name'] ?? 'Colour') ?>"></button>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+
+            <?php if ($hasBattery || $hasMotor): ?>
+              <div class="card__price">
+                <div class="card__vars">
+                  <?php if ($hasBattery): ?>
+                    <button class="var" type="button"><b><?= e($p['battery_capacity']) ?></b><span>Battery Spec</span></button>
+                  <?php endif; ?>
+                  <?php if ($hasMotor): ?>
+                    <button class="var" type="button"><b><?= e($p['motor_power']) ?></b><span>Motor Power</span></button>
+                  <?php endif; ?>
+                </div>
+              </div>
+            <?php endif; ?>
+
             <div class="card__acts">
               <a class="btn btn--ghost" href="<?= e($productUrl) ?>">Explore</a>
               <a class="btn btn--ink" href="#test-ride"><span>Test Ride</span><i data-lucide="bike"></i></a>
@@ -233,21 +216,28 @@ App::render('head', [
               <a href="<?= e(base_url('products')) ?>" class="nav__products-all">View All Models &rarr;</a>
             </div>
             <div class="nav__product-grid">
-              <?php foreach ($navProducts as $np): 
-                $imgSrc = !empty($np['hero_image']) ? base_url($np['hero_image']) : base_url('assets/scooters/hazra_broucher_6_scooter_9.png');
-                $isHigh = ((int)($np['top_speed_kmph'] ?? 0)) >= 50;
-                $productUrl = !empty($np['slug']) 
-                  ? base_url('product-detail?slug=' . urlencode($np['slug'])) 
-                  : base_url('product-detail?id=' . urlencode($np['id'] ?? ''));
-              ?>
-                <a href="<?= e($productUrl) ?>" class="nav__product">
-                  <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e($imgSrc) ?>" alt="<?= e($np['name']) ?>" loading="lazy"></div>
-                  <span class="nav__product-name"><?= e($np['name']) ?></span>
-                  <span class="nav__product-badge <?= $isHigh ? 'is-high' : 'is-low' ?>">
-                    <?= $isHigh ? 'High Speed' : 'Low Speed' ?>
-                  </span>
-                </a>
-              <?php endforeach; ?>
+              <?php if (!empty($navProducts)): ?>
+                <?php foreach ($navProducts as $np): 
+                  $imgSrc = !empty($np['hero_image']) ? base_url($np['hero_image']) : base_url('assets/scooters/hazra_broucher_6_scooter_9.png');
+                  $hasSpeed = !empty($np['top_speed_kmph']) && (int)$np['top_speed_kmph'] > 0;
+                  $isHigh = $hasSpeed && (((int)$np['top_speed_kmph']) >= 50);
+                  $productUrl = !empty($np['slug']) 
+                    ? base_url('product-detail?slug=' . urlencode($np['slug'])) 
+                    : base_url('product-detail?id=' . urlencode($np['id'] ?? ''));
+                ?>
+                  <a href="<?= e($productUrl) ?>" class="nav__product">
+                    <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e($imgSrc) ?>" alt="<?= e($np['name']) ?>" loading="lazy"></div>
+                    <span class="nav__product-name"><?= e($np['name']) ?></span>
+                    <?php if ($hasSpeed): ?>
+                      <span class="nav__product-badge <?= $isHigh ? 'is-high' : 'is-low' ?>">
+                        <?= $isHigh ? 'High Speed' : 'Low Speed' ?>
+                      </span>
+                    <?php endif; ?>
+                  </a>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <p style="padding: 16px; color: var(--ink-soft-0); font-size: 13px; grid-column: 1 / -1;">No models currently available.</p>
+              <?php endif; ?>
             </div>
           </div>
         </div>
@@ -387,21 +377,28 @@ App::render('head', [
             <a href="<?= e(base_url('products')) ?>" class="nav__products-all">View All Models &rarr;</a>
           </div>
           <div class="nav__product-grid">
-              <?php foreach ($navProducts as $np): 
-                $imgSrc = !empty($np['hero_image']) ? base_url($np['hero_image']) : base_url('assets/scooters/hazra_broucher_6_scooter_9.png');
-                $isHigh = ((int)($np['top_speed_kmph'] ?? 0)) >= 50;
-                $productUrl = !empty($np['slug']) 
-                  ? base_url('product-detail?slug=' . urlencode($np['slug'])) 
-                  : base_url('product-detail?id=' . urlencode($np['id'] ?? ''));
-              ?>
-                <a href="<?= e($productUrl) ?>" class="nav__product">
-                  <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e($imgSrc) ?>" alt="<?= e($np['name']) ?>" loading="lazy"></div>
-                  <span class="nav__product-name"><?= e($np['name']) ?></span>
-                  <span class="nav__product-badge <?= $isHigh ? 'is-high' : 'is-low' ?>">
-                    <?= $isHigh ? 'High Speed' : 'Low Speed' ?>
-                  </span>
-                </a>
-              <?php endforeach; ?>
+              <?php if (!empty($navProducts)): ?>
+                <?php foreach ($navProducts as $np): 
+                  $imgSrc = !empty($np['hero_image']) ? base_url($np['hero_image']) : base_url('assets/scooters/hazra_broucher_6_scooter_9.png');
+                  $hasSpeed = !empty($np['top_speed_kmph']) && (int)$np['top_speed_kmph'] > 0;
+                  $isHigh = $hasSpeed && (((int)$np['top_speed_kmph']) >= 50);
+                  $productUrl = !empty($np['slug']) 
+                    ? base_url('product-detail?slug=' . urlencode($np['slug'])) 
+                    : base_url('product-detail?id=' . urlencode($np['id'] ?? ''));
+                ?>
+                  <a href="<?= e($productUrl) ?>" class="nav__product">
+                    <div class="nav__product-img-wrap"><img class="nav__product-img" src="<?= e($imgSrc) ?>" alt="<?= e($np['name']) ?>" loading="lazy"></div>
+                    <span class="nav__product-name"><?= e($np['name']) ?></span>
+                    <?php if ($hasSpeed): ?>
+                      <span class="nav__product-badge <?= $isHigh ? 'is-high' : 'is-low' ?>">
+                        <?= $isHigh ? 'High Speed' : 'Low Speed' ?>
+                      </span>
+                    <?php endif; ?>
+                  </a>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <p style="padding: 16px; color: var(--ink-soft-0); font-size: 13px; grid-column: 1 / -1;">No models currently available.</p>
+              <?php endif; ?>
           </div>
         </div>
       </div>
@@ -532,14 +529,20 @@ App::render('head', [
     </header>
 
     <div class="coll__grid" id="collGrid">
-      <?php foreach ($collectionProducts as $p): ?>
-        <?php renderHomeProductCard($p, $productColorsMap); ?>
-      <?php endforeach; ?>
+      <?php if (!empty($collectionProducts)): ?>
+        <?php foreach ($collectionProducts as $p): ?>
+          <?php renderHomeProductCard($p, $productColorsMap); ?>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <p style="text-align: center; color: var(--ink-soft-0); font-size: 14px; grid-column: 1 / -1; padding: 40px 0;">No products currently available.</p>
+      <?php endif; ?>
     </div>
 
-    <p class="coll__foot"><i class="sq"></i>
-      Prices are indicative and vary by configuration and location.
-    </p>
+    <?php if (!empty($collectionProducts)): ?>
+      <p class="coll__foot"><i class="sq"></i>
+        Specifications and features vary by configuration and location.
+      </p>
+    <?php endif; ?>
   </div>
 </section>
 
@@ -643,6 +646,7 @@ App::render('head', [
 <!-- ══════════ FEATURES ══════════ -->
 <?php
 $numFeatured = count($featuredProducts);
+if ($numFeatured > 0):
 $countWords = [1 => 'one', 2 => 'two', 3 => 'three', 4 => 'four', 5 => 'five', 6 => 'six', 7 => 'seven', 8 => 'eight'];
 $wayWord = $countWords[$numFeatured] ?? $numFeatured;
 $driveHeight = max($numFeatured, 3) * 105;
@@ -665,7 +669,7 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
               <span class="spec__k">Range</span>
               <span class="spec__vs">
                 <?php foreach ($featuredProducts as $idx => $fp): ?>
-                  <b style="--n:<?= $idx ?>"><?= (int)($fp['range_km'] ?? 100) ?><em>km</em></b>
+                  <b style="--n:<?= $idx ?>"><?= !empty($fp['range_km']) && (int)$fp['range_km'] > 0 ? (int)$fp['range_km'] . '<em>km</em>' : '—' ?></b>
                 <?php endforeach; ?>
               </span>
             </div>
@@ -676,7 +680,7 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
               <span class="spec__k">Top speed</span>
               <span class="spec__vs">
                 <?php foreach ($featuredProducts as $idx => $fp): ?>
-                  <b style="--n:<?= $idx ?>"><?= (int)($fp['top_speed_kmph'] ?? 55) ?><em>km/h</em></b>
+                  <b style="--n:<?= $idx ?>"><?= !empty($fp['top_speed_kmph']) && (int)$fp['top_speed_kmph'] > 0 ? (int)$fp['top_speed_kmph'] . '<em>km/h</em>' : '—' ?></b>
                 <?php endforeach; ?>
               </span>
             </div>
@@ -687,17 +691,22 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
               <span class="spec__k">Battery</span>
               <span class="spec__vs">
                 <?php foreach ($featuredProducts as $idx => $fp): 
-                  $bat = !empty($fp['battery_capacity']) ? trim($fp['battery_capacity']) : '60V 30Ah';
-                  if (preg_match('/(\d+V)[^\d]*(\d+Ah)/i', $bat, $bm)) {
-                      $bv = $bm[1];
-                      $bah = strtoupper($bm[2]);
+                  $bat = !empty($fp['battery_capacity']) ? trim($fp['battery_capacity']) : '';
+                  if ($bat !== '') {
+                      if (preg_match('/(\d+V)[^\d]*(\d+Ah)/i', $bat, $bm)) {
+                          $bv = $bm[1];
+                          $bah = strtoupper($bm[2]);
+                      } else {
+                          $parts = explode(' ', $bat, 2);
+                          $bv = $parts[0] ?? $bat;
+                          $bah = strtoupper($parts[1] ?? '');
+                      }
                   } else {
-                      $parts = explode(' ', $bat, 2);
-                      $bv = $parts[0] ?? '60V';
-                      $bah = strtoupper($parts[1] ?? '30AH');
+                      $bv = '—';
+                      $bah = '';
                   }
                 ?>
-                  <b style="--n:<?= $idx ?>"><?= e($bv) ?><em><?= e($bah) ?></em></b>
+                  <b style="--n:<?= $idx ?>"><?= e($bv) ?><?php if ($bah): ?><em><?= e($bah) ?></em><?php endif; ?></b>
                 <?php endforeach; ?>
               </span>
             </div>
@@ -708,10 +717,12 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
         <div class="feat__deck" id="featDeck">
           <?php foreach ($featuredProducts as $idx => $fp): 
             $colors = $productColorsMap[$fp['id']] ?? [];
-            $colorHex = !empty($colors[0]['argb']) ? sprintf('#%06x', ((int)$colors[0]['argb']) & 0xFFFFFF) : '#2563eb';
+            $colorHex = !empty($colors[0]['argb']) ? sprintf('#%06x', ((int)$colors[0]['argb']) & 0xFFFFFF) : 'var(--brand-violet)';
             $colorName = !empty($colors[0]['name']) ? $colors[0]['name'] : 'Signature';
             $imgSrc = !empty($fp['hero_image']) ? $fp['hero_image'] : 'assets/scooters/hazra_broucher_6_scooter_9.png';
-            $batDisplay = !empty($fp['battery_capacity']) ? trim($fp['battery_capacity']) : '60V 30Ah';
+            $hasRange = !empty($fp['range_km']) && (int)$fp['range_km'] > 0;
+            $hasSpeed = !empty($fp['top_speed_kmph']) && (int)$fp['top_speed_kmph'] > 0;
+            $hasBattery = !empty($fp['battery_capacity']) && trim($fp['battery_capacity']) !== '';
           ?>
             <article class="fslide" style="--n:<?= $idx ?>;--c:<?= e($colorHex) ?>">
               <div class="fslide__media">
@@ -721,11 +732,19 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
               </div>
               <div class="fslide__body">
                 <h3 class="fslide__name"><?= e($fp['name']) ?></h3>
-                <p class="fslide__chips">
-                  <span><?= (int)($fp['range_km'] ?? 100) ?> km</span>
-                  <span><?= (int)($fp['top_speed_kmph'] ?? 55) ?> km/h</span>
-                  <span><?= e($batDisplay) ?></span>
-                </p>
+                <?php if ($hasRange || $hasSpeed || $hasBattery): ?>
+                  <p class="fslide__chips">
+                    <?php if ($hasRange): ?>
+                      <span><?= (int)$fp['range_km'] ?> km</span>
+                    <?php endif; ?>
+                    <?php if ($hasSpeed): ?>
+                      <span><?= (int)$fp['top_speed_kmph'] ?> km/h</span>
+                    <?php endif; ?>
+                    <?php if ($hasBattery): ?>
+                      <span><?= e(trim($fp['battery_capacity'])) ?></span>
+                    <?php endif; ?>
+                  </p>
+                <?php endif; ?>
               </div>
             </article>
           <?php endforeach; ?>
@@ -741,10 +760,7 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
         <!-- bottom-left SKU / bottom-right finish, both swap on --fi -->
         <p class="feat__item">
           <?php foreach ($featuredProducts as $idx => $fp): 
-            $itemCode = !empty($fp['model_code']) ? $fp['model_code'] : ('ITEM: ' . (10009600 + $idx + 1));
-            if (strpos($itemCode, 'ITEM:') !== 0 && strpos($itemCode, 'MODEL:') !== 0) {
-                $itemCode = 'MODEL: ' . $itemCode;
-            }
+            $itemCode = !empty($fp['model_code']) ? 'MODEL: ' . $fp['model_code'] : $fp['name'];
           ?>
             <span class="swap" style="--n:<?= $idx ?>"><?= e($itemCode) ?></span>
           <?php endforeach; ?>
@@ -753,7 +769,7 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
         <p class="feat__finish">
           <?php foreach ($featuredProducts as $idx => $fp): 
             $colors = $productColorsMap[$fp['id']] ?? [];
-            $colorName = !empty($colors[0]['name']) ? strtoupper($colors[0]['name']) : 'SIGNATURE FINISH';
+            $colorName = !empty($colors[0]['name']) ? strtoupper($colors[0]['name']) : 'SIGNATURE';
           ?>
             <span class="swap" style="--n:<?= $idx ?>"><?= e($colorName) ?></span>
           <?php endforeach; ?>
@@ -774,6 +790,7 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
     </div>
   </div>
 </section>
+<?php endif; ?>
 
 
 <!-- ══════════ PERFORMANCE STATS ══════════ -->

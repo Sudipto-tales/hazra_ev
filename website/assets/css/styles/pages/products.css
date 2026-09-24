@@ -372,3 +372,24 @@
 @media (min-width: 961px){
   .pl-filters-backdrop{ display: none !important; }
 }
+
+/* ── Product Card Opacity Overrides ── */
+.pl-grid .card,
+.card {
+  opacity: 1 !important;
+  transform: none !important;
+  background: var(--surface-0) !important;
+}
+.pl-grid .card__img,
+.card__img,
+.pl-show__hero img,
+.pl-show__tile img {
+  opacity: 1 !important;
+}
+.card__wash {
+  display: none !important;
+  opacity: 0 !important;
+}
+.card__media {
+  background: transparent !important;
+}

@@ -83,15 +83,8 @@ if (!empty($product['colors'])) {
             'images'   => $imgs,
         ];
     }
-} else {
-    $colorsData[] = [
-        'id'       => 'default',
-        'name'     => 'Standard',
-        'hex'      => '#1a1a1a',
-        'in_stock' => true,
-        'images'   => [$heroImg],
-    ];
 }
+$initialImages = !empty($colorsData[0]['images']) ? $colorsData[0]['images'] : [$heroImg];
 
 App::render('head', [
     'pageTitle'       => $pageTitle,
@@ -129,7 +122,7 @@ App::render('header', ['isStickyOnly' => true]);
           <!-- Main Swiper Carousel -->
           <div class="swiper product-swiper-main" id="productSwiperMain">
             <div class="swiper-wrapper" id="swiper-main-wrapper">
-              <?php foreach ($colorsData[0]['images'] as $idx => $img): ?>
+              <?php foreach ($initialImages as $idx => $img): ?>
                 <div class="swiper-slide" data-img-index="<?= $idx ?>">
                   <img src="<?= e($img) ?>" alt="<?= e($product['name']) ?>" loading="<?= $idx === 0 ? 'eager' : 'lazy' ?>">
                 </div>
@@ -162,7 +155,7 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="gallery-thumbs-row">
           <div class="swiper product-swiper-thumbs" id="productSwiperThumbs">
             <div class="swiper-wrapper" id="swiper-thumbs-wrapper">
-              <?php foreach ($colorsData[0]['images'] as $idx => $img): ?>
+              <?php foreach ($initialImages as $idx => $img): ?>
                 <div class="swiper-slide <?= $idx === 0 ? 'swiper-slide-thumb-active' : '' ?>" data-index="<?= $idx ?>">
                   <img src="<?= e($img) ?>" alt="<?= e($product['name'] . ' thumbnail ' . ($idx + 1)) ?>">
                 </div>
@@ -172,31 +165,37 @@ App::render('header', ['isStickyOnly' => true]);
         </div>
 
         <!-- Color Picker Swatches -->
-        <div class="gallery-swatches-block">
-          <div class="gallery-swatches-header">
-            <span class="gallery-swatches-title">Available Colorways</span>
-            <span class="gallery-swatches-selected" id="selectedColorLabel"><?= e($colorsData[0]['name']) ?></span>
+        <?php if (!empty($colorsData)): ?>
+          <div class="gallery-swatches-block">
+            <div class="gallery-swatches-header">
+              <span class="gallery-swatches-title">Available Colorways</span>
+              <span class="gallery-swatches-selected" id="selectedColorLabel"><?= e($colorsData[0]['name'] ?? '') ?></span>
+            </div>
+            <div class="gallery-swatches-list" id="swatchesContainer">
+              <?php foreach ($colorsData as $idx => $c): ?>
+                <button type="button" class="color-swatch-btn <?= $idx === 0 ? 'is-active' : '' ?>" data-color-index="<?= $idx ?>" onclick="switchColorway(<?= $idx ?>)">
+                  <span class="color-swatch-dot" style="background: <?= e($c['hex']) ?>;"></span>
+                  <span><?= e($c['name']) ?></span>
+                </button>
+              <?php endforeach; ?>
+            </div>
           </div>
-          <div class="gallery-swatches-list" id="swatchesContainer">
-            <?php foreach ($colorsData as $idx => $c): ?>
-              <button type="button" class="color-swatch-btn <?= $idx === 0 ? 'is-active' : '' ?>" data-color-index="<?= $idx ?>" onclick="switchColorway(<?= $idx ?>)">
-                <span class="color-swatch-dot" style="background: <?= e($c['hex']) ?>;"></span>
-                <span><?= e($c['name']) ?></span>
-              </button>
-            <?php endforeach; ?>
-          </div>
-        </div>
+        <?php endif; ?>
       </div>
 
       <!-- Product Details & Specs -->
       <div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-          <span style="font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-violet); background: rgb(var(--chip-rgb)); padding: 4px 12px; border-radius: 999px;">
-            <?= e(strtoupper($product['category'])) ?>
-          </span>
-          <span style="font-size: 13px; font-weight: 700; color: var(--ink-soft-0);">
-            Model: <?= e($product['model_code']) ?>
-          </span>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+          <?php if (!empty($product['category'])): ?>
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-violet); background: rgb(var(--chip-rgb)); padding: 4px 12px; border-radius: 999px;">
+              <?= e(strtoupper($product['category'])) ?>
+            </span>
+          <?php endif; ?>
+          <?php if (!empty($product['model_code'])): ?>
+            <span style="font-size: 13px; font-weight: 700; color: var(--ink-soft-0);">
+              Model: <?= e($product['model_code']) ?>
+            </span>
+          <?php endif; ?>
         </div>
 
         <h1 style="font-family: 'Montserrat', sans-serif; font-size: clamp(34px, 4vw, 56px); font-weight: 900; color: var(--ink-0); line-height: 1.1; margin-bottom: 16px;">
@@ -233,16 +232,18 @@ App::render('header', ['isStickyOnly' => true]);
         </div>
 
         <!-- Warranty & Coverage Banner -->
-        <?php if ($product['warranty_years'] > 0 || !empty($product['warranty_note'])): ?>
+        <?php if (!empty($product['warranty_years']) && (int)$product['warranty_years'] > 0): ?>
           <div style="padding: 18px 22px; background: rgb(var(--chip-rgb) / .4); border: 1px solid var(--hair-0); border-radius: 18px; display: flex; align-items: center; gap: 14px;">
             <i data-lucide="shield-check" style="width: 28px; height: 28px; color: var(--brand-orange); flex-shrink: 0;"></i>
             <div>
               <div style="font-size: 13.5px; font-weight: 800; color: var(--ink-0);">
-                <?= (int)$product['warranty_years'] ?> Years Official Warranty Coverage
+                <?= (int)$product['warranty_years'] ?> <?= ((int)$product['warranty_years'] === 1 ? 'Year' : 'Years') ?> Official Warranty Coverage
               </div>
-              <div style="font-size: 12px; color: var(--ink-soft-0); margin-top: 2px;">
-                <?= e($product['warranty_note'] ?: 'Includes complete battery and vehicle coverage.') ?>
-              </div>
+              <?php if (!empty($product['warranty_note'])): ?>
+                <div style="font-size: 12px; color: var(--ink-soft-0); margin-top: 2px;">
+                  <?= e($product['warranty_note']) ?>
+                </div>
+              <?php endif; ?>
             </div>
           </div>
         <?php endif; ?>
@@ -251,55 +252,75 @@ App::render('header', ['isStickyOnly' => true]);
   </section>
 
   <!-- Deep Technical Specifications Grid -->
+  <?php
+  $specsCount = 0;
+  if (!empty($product['range_km']) && (int)$product['range_km'] > 0) $specsCount++;
+  if (!empty($product['top_speed_kmph']) && (int)$product['top_speed_kmph'] > 0) $specsCount++;
+  if (!empty($product['battery_capacity']) && trim($product['battery_capacity']) !== '') $specsCount++;
+  if (!empty($product['motor_power']) && trim($product['motor_power']) !== '') $specsCount++;
+  if (!empty($product['charging_time']) && trim($product['charging_time']) !== '') $specsCount++;
+  if (!empty($product['load_capacity_kg']) && (int)$product['load_capacity_kg'] > 0) $specsCount++;
+  ?>
   <section style="padding: 60px 26px; background: rgb(var(--chip-rgb) / .3); border-top: 1px solid var(--hair-0); border-bottom: 1px solid var(--hair-0);">
     <div style="width: min(1280px, 93vw); margin: 0 auto;">
       <h2 style="font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 800; color: var(--ink-0); margin-bottom: 36px; text-align: center;">
         Technical Specifications
       </h2>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
-        <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-          <i data-lucide="zap" style="width: 24px; height: 24px; color: var(--brand-flame); margin-bottom: 12px;"></i>
-          <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">RIDING RANGE</span>
-          <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['range_km'] ?> km</span>
-          <p style="font-size: 11.5px; color: var(--ink-soft-0); margin-top: 4px;">Per full charge under standard riding conditions</p>
-        </div>
+      <?php if ($specsCount > 0): ?>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+          <?php if (!empty($product['range_km']) && (int)$product['range_km'] > 0): ?>
+            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
+              <i data-lucide="zap" style="width: 24px; height: 24px; color: var(--brand-flame); margin-bottom: 12px;"></i>
+              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">RIDING RANGE</span>
+              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['range_km'] ?> km</span>
+              <p style="font-size: 11.5px; color: var(--ink-soft-0); margin-top: 4px;">Per full charge under standard conditions</p>
+            </div>
+          <?php endif; ?>
 
-        <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-          <i data-lucide="gauge" style="width: 24px; height: 24px; color: var(--brand-blue); margin-bottom: 12px;"></i>
-          <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">TOP SPEED</span>
-          <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['top_speed_kmph'] ?> km/h</span>
-          <p style="font-size: 11.5px; color: var(--ink-soft-0); margin-top: 4px;">Smooth acceleration with multi-drive modes</p>
-        </div>
+          <?php if (!empty($product['top_speed_kmph']) && (int)$product['top_speed_kmph'] > 0): ?>
+            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
+              <i data-lucide="gauge" style="width: 24px; height: 24px; color: var(--brand-blue); margin-bottom: 12px;"></i>
+              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">TOP SPEED</span>
+              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['top_speed_kmph'] ?> km/h</span>
+            </div>
+          <?php endif; ?>
 
-        <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-          <i data-lucide="battery-charging" style="width: 24px; height: 24px; color: var(--brand-violet); margin-bottom: 12px;"></i>
-          <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">BATTERY CAPACITY</span>
-          <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['battery_capacity'] ?: 'N/A') ?></span>
-          <p style="font-size: 11.5px; color: var(--ink-soft-0); margin-top: 4px;">Advanced Lithium-ion with Smart BMS protection</p>
-        </div>
+          <?php if (!empty($product['battery_capacity']) && trim($product['battery_capacity']) !== ''): ?>
+            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
+              <i data-lucide="battery-charging" style="width: 24px; height: 24px; color: var(--brand-violet); margin-bottom: 12px;"></i>
+              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">BATTERY CAPACITY</span>
+              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['battery_capacity']) ?></span>
+            </div>
+          <?php endif; ?>
 
-        <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-          <i data-lucide="cpu" style="width: 24px; height: 24px; color: var(--brand-orange); margin-bottom: 12px;"></i>
-          <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">MOTOR POWER</span>
-          <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['motor_power'] ?: 'N/A') ?></span>
-          <p style="font-size: 11.5px; color: var(--ink-soft-0); margin-top: 4px;">High efficiency brushless electric powertrain</p>
-        </div>
+          <?php if (!empty($product['motor_power']) && trim($product['motor_power']) !== ''): ?>
+            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
+              <i data-lucide="cpu" style="width: 24px; height: 24px; color: var(--brand-orange); margin-bottom: 12px;"></i>
+              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">MOTOR POWER</span>
+              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['motor_power']) ?></span>
+            </div>
+          <?php endif; ?>
 
-        <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-          <i data-lucide="clock" style="width: 24px; height: 24px; color: var(--brand-blue); margin-bottom: 12px;"></i>
-          <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">CHARGING TIME</span>
-          <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['charging_time'] ?: 'N/A') ?></span>
-          <p style="font-size: 11.5px; color: var(--ink-soft-0); margin-top: 4px;">Standard home socket fast charging</p>
-        </div>
+          <?php if (!empty($product['charging_time']) && trim($product['charging_time']) !== ''): ?>
+            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
+              <i data-lucide="clock" style="width: 24px; height: 24px; color: var(--brand-blue); margin-bottom: 12px;"></i>
+              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">CHARGING TIME</span>
+              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['charging_time']) ?></span>
+            </div>
+          <?php endif; ?>
 
-        <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-          <i data-lucide="weight" style="width: 24px; height: 24px; color: var(--brand-flame); margin-bottom: 12px;"></i>
-          <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">PAYLOAD CAPACITY</span>
-          <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['load_capacity_kg'] ?> kg</span>
-          <p style="font-size: 11.5px; color: var(--ink-soft-0); margin-top: 4px;">Heavy-duty reinforced chassis</p>
+          <?php if (!empty($product['load_capacity_kg']) && (int)$product['load_capacity_kg'] > 0): ?>
+            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
+              <i data-lucide="weight" style="width: 24px; height: 24px; color: var(--brand-flame); margin-bottom: 12px;"></i>
+              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">PAYLOAD CAPACITY</span>
+              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['load_capacity_kg'] ?> kg</span>
+            </div>
+          <?php endif; ?>
         </div>
-      </div>
+      <?php else: ?>
+        <p style="text-align: center; color: var(--ink-soft-0); font-size: 14px; margin: 0;">Specifications for this model will be updated soon.</p>
+      <?php endif; ?>
     </div>
   </section>
 
@@ -312,11 +333,18 @@ App::render('header', ['isStickyOnly' => true]);
         </h2>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px;">
-          <?php foreach ($relatedProducts as $rel): ?>
+          <?php foreach ($relatedProducts as $rel): 
+            $relChips = [];
+            if (!empty($rel['range_km']) && (int)$rel['range_km'] > 0) $relChips[] = (int)$rel['range_km'] . ' km Range';
+            if (!empty($rel['top_speed_kmph']) && (int)$rel['top_speed_kmph'] > 0) $relChips[] = (int)$rel['top_speed_kmph'] . ' km/h';
+            $relUrl = !empty($rel['slug']) ? base_url('product-detail?slug=' . urlencode($rel['slug'])) : base_url('product-detail?id=' . urlencode($rel['id']));
+          ?>
             <div style="padding: 20px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px; display: flex; flex-direction: column;">
               <h3 style="font-size: 18px; font-weight: 800; color: var(--ink-0); margin-bottom: 4px;"><?= e($rel['name']) ?></h3>
-              <span style="font-size: 12px; color: var(--ink-soft-0); font-weight: 600; margin-bottom: 16px;">Range: <?= (int)$rel['range_km'] ?> km | Speed: <?= (int)$rel['top_speed_kmph'] ?> km/h</span>
-              <a href="<?= e(base_url('product-detail?id=' . urlencode($rel['id']))) ?>" style="margin-top: auto; padding: 10px 18px; background: rgb(var(--chip-rgb)); color: var(--ink-0); text-decoration: none; border-radius: 999px; font-size: 12.5px; font-weight: 700; text-align: center;">
+              <?php if (!empty($relChips)): ?>
+                <span style="font-size: 12px; color: var(--ink-soft-0); font-weight: 600; margin-bottom: 16px;"><?= e(implode(' · ', $relChips)) ?></span>
+              <?php endif; ?>
+              <a href="<?= e($relUrl) ?>" style="margin-top: auto; padding: 10px 18px; background: rgb(var(--chip-rgb)); color: var(--ink-0); text-decoration: none; border-radius: 999px; font-size: 12.5px; font-weight: 700; text-align: center;">
                 View Model &rarr;
               </a>
             </div>

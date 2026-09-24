@@ -16,27 +16,27 @@ class WebsiteAdminExtraTables extends Migration
 {
     public function up()
     {
-        // admin_blogs — standalone blog table (legacy, superseded by admin_posts.type='blog')
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS admin_blogs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            slug TEXT NOT NULL DEFAULT '',
-            content TEXT NOT NULL DEFAULT '',
-            status TEXT NOT NULL DEFAULT 'draft',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );");
+        $this->exec("
+            CREATE TABLE IF NOT EXISTS admin_blogs (
+                id         {autoid},
+                title      {str} NOT NULL,
+                slug       {str} NOT NULL DEFAULT '',
+                content    {text} NOT NULL DEFAULT '',
+                status     {str:32} NOT NULL DEFAULT 'draft',
+                created_at {ts} NOT NULL,
+                updated_at {ts} NOT NULL
+            ) {opts};
 
-        // admin_news — standalone news table (legacy, superseded by admin_posts.type='news')
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS admin_news (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            slug TEXT NOT NULL DEFAULT '',
-            content TEXT NOT NULL DEFAULT '',
-            status TEXT NOT NULL DEFAULT 'draft',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );");
+            CREATE TABLE IF NOT EXISTS admin_news (
+                id         {autoid},
+                title      {str} NOT NULL,
+                slug       {str} NOT NULL DEFAULT '',
+                content    {text} NOT NULL DEFAULT '',
+                status     {str:32} NOT NULL DEFAULT 'draft',
+                created_at {ts} NOT NULL,
+                updated_at {ts} NOT NULL
+            ) {opts};
+        ");
     }
 
     public function down()
