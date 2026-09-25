@@ -81,6 +81,7 @@
 
     trigger?.addEventListener('click', e => {
       e.preventDefault();
+      e.stopPropagation();
       const on = !g.classList.contains('is-open');
       closeAll(g);
       openGrp(g, on);
@@ -113,17 +114,22 @@
     a.addEventListener('click', () => { closeAll(); setMenu(false); }));
 
   document.addEventListener('click', e => {
-    if (!e.target.closest('.topbar')) { closeAll(); setMenu(false); }
+    if (!e.target.closest('.topbar') && !e.target.closest('.sticky-bar')) {
+      closeAll();
+      setMenu(false);
+      setStickyMenu(false);
+    }
   });
 
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
     closeAll();
     setMenu(false);
+    setStickyMenu(false);
   });
 
   /* crossing the breakpoint leaves stale open state behind — clear it */
-  wide.addEventListener('change', () => { closeAll(); setMenu(false); });
+  wide.addEventListener('change', () => { closeAll(); setMenu(false); setStickyMenu(false); });
 
   /* ── sticky bar menu (same logic as topbar) ─────
      The sticky nav groups are picked up by the same groups selector,
@@ -144,11 +150,6 @@
   /* picking a destination closes everything */
   $$('a[href]', stickyNav).forEach(a =>
     a.addEventListener('click', () => { closeAll(); setMenu(false); setStickyMenu(false); }));
-
-  /* clicking outside sticky bar also closes it */
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.sticky-bar')) { setStickyMenu(false); }
-  });
 
   /* ══════════ SCROLL ZOOM ══════════
      .scroll is taller than the viewport; .stage is sticky inside it. The

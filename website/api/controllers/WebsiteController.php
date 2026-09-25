@@ -127,9 +127,18 @@ final class WebsiteController extends V1Controller
     {
         $rows = db_fetch_all("SELECT setting_key, setting_value FROM website_settings");
         $settings = [];
+
+        $isAdmin = false;
+        try {
+            $payload = JwtAuth::authenticate();
+            if ($payload && !empty($payload['sub'])) {
+                $isAdmin = Ctx::isAdmin();
+            }
+        } catch (\Throwable $e) {}
+
         foreach ($rows as $row) {
             // Mask password if non-admin
-            if (!Ctx::isAdmin() && str_contains($row['setting_key'], 'password')) {
+            if (!$isAdmin && str_contains($row['setting_key'], 'password')) {
                 continue;
             }
             $settings[$row['setting_key']] = $row['setting_value'];
@@ -139,14 +148,18 @@ final class WebsiteController extends V1Controller
         $defaults = [
             'hero_title' => 'Follow Elegant',
             'hero_subtitle' => 'Built for everyday Indian riding.',
-            'phone' => '+91 98000 00000',
-            'email' => 'contact@hazraev.com',
-            'address' => 'Bardhaman, West Bengal, India',
+            'phone' => '+91 90029 21509',
+            'email' => 'info@hazraev.com',
+            'address' => 'Ghordourchati More, Below LIC Division Office, Bardhaman, West Bengal 713103',
+            'map_url' => 'https://maps.app.goo.gl/c5sXVm5k3UXsruF26',
+            'map_embed' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3653.8814620831536!2d86.979267779776!3d23.6801967238451!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f7192c9c63acf3%3A0x7348465388943e70!2sHAZRA%20ELECTRIC!5e0!3m2!1sen!2sin!4v1790281277266!5m2!1sen!2sin',
+            'google_site_verification' => 'Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8',
             'smtp_host' => 'smtp.gmail.com',
             'smtp_port' => '587',
-            'smtp_from_email' => 'contact@hazraev.com',
+            'smtp_from_email' => 'info@hazraev.com',
             'smtp_from_name' => 'Hazra EV',
             'recipient_emails' => 'sales@hazraev.com',
+            'show_footer_bg' => '1',
         ];
 
         foreach ($defaults as $k => $v) {
@@ -174,11 +187,14 @@ final class WebsiteController extends V1Controller
             $keyStr = (string) $key;
             $valStr = is_array($value) ? json_encode($value) : (string) $value;
 
+            $existing = db_fetch_one("SELECT group_name FROM website_settings WHERE setting_key = ?", [$keyStr]);
+            $group = $existing['group_name'] ?? (in_array($keyStr, ['address', 'phone', 'email', 'whatsapp', 'map_url', 'map_embed']) ? 'contact' : (in_array($keyStr, ['smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name', 'recipient_emails']) ? 'email' : (in_array($keyStr, ['facebook', 'instagram', 'youtube', 'linkedin']) ? 'social' : 'general')));
+
             db_execute(
-                "INSERT INTO website_settings (setting_key, setting_value, updated_at)
-                 VALUES (?, ?, ?)
-                 ON CONFLICT(setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_at = EXCLUDED.updated_at",
-                [$keyStr, $valStr, $now]
+                "INSERT INTO website_settings (id, group_name, setting_key, setting_value, updated_at)
+                 VALUES (?, ?, ?, ?, ?)
+                 ON CONFLICT(group_name, setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = excluded.updated_at",
+                [Uuid::v4(), $group, $keyStr, $valStr, $now]
             );
         }
 

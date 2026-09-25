@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8" />
   <script>
     (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
     if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
@@ -281,12 +282,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
   lucide.createIcons();
-  document.getElementById('stickyTheme').addEventListener('click', () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-  });
   document.querySelectorAll('.nav__grp').forEach(grp => {
     const btn = grp.querySelector('.nav__i--t');
     if (!btn) return;

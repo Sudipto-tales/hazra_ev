@@ -5,12 +5,18 @@ $canonicalUrl = $canonicalUrl ?? null;
 $ogImage = $ogImage ?? base_url('assets/hazraev.png');
 $ogType = $ogType ?? 'website';
 $jsonLd = $jsonLd ?? null;
+$googleSiteVerification = 'Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8';
+try {
+    $vRow = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'google_site_verification'");
+    if (!empty($vRow['setting_value'])) $googleSiteVerification = $vRow['setting_value'];
+} catch (\Throwable $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="<?= e($googleSiteVerification) ?>" />
 <meta name="app-base" content="<?= e(rtrim(base_url('/'), '/')) ?>/">
 <title><?= e($pageTitle) ?></title>
 <link rel="icon" href="<?= e(base_url('assets/hazraev.png')) ?>" type="image/png">

@@ -905,7 +905,7 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
     <div class="ride__grid">
 
       <figure class="ride__media reveal-up">
-        <img class="ride__img" src="<?= e(base_url('assets/scooters/hazra_broucher_6_scooter_14.png')) ?>" alt="Hazra EV scooter">
+        <img class="ride__img" src="<?= e(base_url('assets/test_drive.webp')) ?>" alt="Hazra EV scooter">
         <i class="ride__wash"></i>
         <figcaption class="ride__offer">
           <b>Season offer</b>

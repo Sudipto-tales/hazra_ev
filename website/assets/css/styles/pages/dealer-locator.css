@@ -158,8 +158,18 @@
       font-size: 11.5px; font-weight: 700; cursor: pointer; transition: transform .2s, box-shadow .2s;
     }
     .dl-fcard__cta:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -6px rgba(123, 47, 247, .4); }
-    .dl-fcard__cta i { width: 13px; height: 13px; }
     .leaflet-container { background: #e8e4f0; font-family: inherit; }
+    html[data-theme="dark"] .dl-map-area,
+    html[data-theme="dark"] .leaflet-container { background: #120e1c; }
+    html[data-theme="dark"] .leaflet-tile-pane {
+      filter: brightness(0.65) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+    }
+    html[data-theme="dark"] .leaflet-popup-content-wrapper,
+    html[data-theme="dark"] .leaflet-popup-tip {
+      background: var(--surface-0);
+      color: var(--ink-0);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    }
     .dl-pin {
       background: var(--brand-grad); width: 26px; height: 26px;
       border-radius: 50% 50% 50% 0; transform: rotate(-45deg);

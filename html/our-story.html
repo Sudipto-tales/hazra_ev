@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8" />
 <script>
 (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
 if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
@@ -623,14 +624,6 @@ document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 <script src="script.js"></script>
 <script>
 lucide.createIcons();
-
-document.getElementById('stickyTheme')?.addEventListener('click',()=>{
-  const html=document.documentElement;
-  const next=html.getAttribute('data-theme')==='dark'?'light':'dark';
-  html.setAttribute('data-theme',next);
-  localStorage.setItem('theme',next);
-  localStorage.setItem('vm-theme',next);
-});
 
 const stickyNav=document.getElementById('stickyNav');
 const stickyBurger=document.getElementById('stickyBurger');

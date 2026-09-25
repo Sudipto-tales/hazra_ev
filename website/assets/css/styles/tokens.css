@@ -33,6 +33,13 @@
   --surface-rgb: 250 248 253;
   --chip-rgb:    240 235 249;
 
+  /* aliases for elements and secondary pages */
+  --ink:         var(--ink-0);
+  --ink-soft:    var(--ink-soft-0);
+  --hair:        var(--hair-0);
+  --surface:     var(--surface-0);
+  --line:        var(--hair-0);
+
   --accent:      var(--brand-orange);
   --accent-ink:  #180f2c;
 

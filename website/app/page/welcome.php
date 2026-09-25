@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8" />
 <title>Hazra Electrical Bike — Follow Elegant</title>
 <link rel="icon" href="assets/hazraev.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/hazraev.png">
@@ -11,6 +12,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <?php $cssVer = defined('__BASEDIR__') && file_exists(__BASEDIR__ . '/assets/css/style.css') ? filemtime(__BASEDIR__ . '/assets/css/style.css') : time(); ?>
 <link rel="stylesheet" href="<?= e(base_url('assets/css/style.css')) ?>?v=<?= $cssVer ?>">
+<script>
+  (function() {
+    var saved = localStorage.getItem('theme');
+    var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
 <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -1113,15 +1121,31 @@
 <!-- ══════════ FOOTER ══════════
      Redesigned with wave effect, compact layout, and social media on right.
      Background images: footer-lightbg.webp (light) / footer-darkbg.webp (dark) -->
-<footer class="foot" id="contact">
+<?php
+$showFooterBg = true;
+$mapUrl = 'https://maps.app.goo.gl/c5sXVm5k3UXsruF26';
+try {
+    $row = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'show_footer_bg'");
+    if ($row && isset($row['setting_value'])) {
+        $showFooterBg = ($row['setting_value'] !== '0' && $row['setting_value'] !== false);
+    }
+    $mapRow = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'map_url'");
+    if (!empty($mapRow['setting_value'])) {
+        $mapUrl = $mapRow['setting_value'];
+    }
+} catch (\Throwable $e) {}
+?>
+<footer class="foot <?= $showFooterBg ? '' : 'foot--no-bg' ?>" id="contact">
 
   <!-- Wave cut effect at the top -->
   <div class="foot__wave"></div>
 
+  <?php if ($showFooterBg): ?>
   <!-- Background with theme support -->
   <div class="foot__bg foot__bg--light" aria-hidden="true"></div>
   <div class="foot__bg foot__bg--dark" aria-hidden="true"></div>
   <i class="foot__veil"></i>
+  <?php endif; ?>
 
   <div class="wrap foot__in">
 
@@ -1168,22 +1192,6 @@
             <a href="<?= $baseUrl ?>/chalo-neo.html">CHALO NEO</a>
             <a href="<?= $baseUrl ?>/#collection">Compare models</a>
             <a href="<?= $baseUrl ?>/#test-ride">Book test ride</a>
-          </div>
-          <div class="fcol">
-            <h4>Buy</h4>
-            <a href="<?= $baseUrl ?>/#book-scooter">Book a scooter</a>
-            <a href="<?= $baseUrl ?>/#emi-calculator">EMI calculator</a>
-            <a href="#">Charging</a>
-            <a href="#">Download brochure</a>
-            <a href="<?= $baseUrl ?>/dealer-locator.html">Locate dealers</a>
-          </div>
-          <div class="fcol">
-            <h4>Ownership</h4>
-            <a href="#">Running cost calculator</a>
-            <a href="<?= $baseUrl ?>/#performance">Range confidence</a>
-            <a href="#">Accessories</a>
-            <a href="#">Battery warranty</a>
-            <a href="<?= $baseUrl ?>/battery-use.html">Battery use</a>
           </div>
           <div class="fcol">
             <h4>Company</h4>
@@ -1245,7 +1253,7 @@
           </a>
 
           <!-- Google Maps / Location -->
-          <a href="https://www.google.com/maps/place/Hazra+Electrical+Bike/@23.2198619,87.8848343,17z"
+          <a href="<?= e($mapUrl) ?>"
              class="foot__social-link foot__social--map"
              target="_blank" rel="noopener noreferrer"
              aria-label="Google Maps" title="Location">

@@ -112,6 +112,7 @@ $jsonLd = [
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="google-site-verification" content="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8" />
   <script>
   (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
   if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
@@ -266,13 +267,6 @@ $jsonLd = [
 <script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
 <script>
   lucide.createIcons();
-  const themeBtn = document.getElementById('theme');
-  themeBtn.addEventListener('click', () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-  });
 
   const copyLinkButton = document.querySelector('[data-copy-link]');
   copyLinkButton.addEventListener('click', async () => {

@@ -101,6 +101,13 @@ final class AdminController extends V1Controller
             ];
         }
 
+        if (!isset($settings['general'])) {
+            $settings['general'] = [];
+        }
+        if (!isset($settings['general']['show_footer_bg'])) {
+            $settings['general']['show_footer_bg'] = '1';
+        }
+
         Envelope::ok($settings);
     }
 

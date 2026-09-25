@@ -1,4 +1,17 @@
 <?php
+$address = "Ghordourchati More, Below LIC Division Office<br>Bardhaman, West Bengal 713103";
+$mapUrl = "https://maps.app.goo.gl/c5sXVm5k3UXsruF26";
+$mapEmbed = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3653.8814620831536!2d86.979267779776!3d23.6801967238451!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39f7192c9c63acf3%3A0x7348465388943e70!2sHAZRA%20ELECTRIC!5e0!3m2!1sen!2sin!4v1790281277266!5m2!1sen!2sin";
+
+try {
+    $rowAddr = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'address'");
+    if (!empty($rowAddr['setting_value'])) $address = nl2br(e($rowAddr['setting_value']));
+    $rowU = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'map_url'");
+    if (!empty($rowU['setting_value'])) $mapUrl = $rowU['setting_value'];
+    $rowE = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'map_embed'");
+    if (!empty($rowE['setting_value'])) $mapEmbed = $rowE['setting_value'];
+} catch (\Throwable $e) {}
+
 App::render('head', [
     'pageTitle'       => 'Contact Us | Hazra Electrical Bike',
     'pageDescription' => 'Get in touch with Hazra Electrical Bike — head office, email, phone, and message form.',
@@ -36,7 +49,8 @@ App::render('header', ['isStickyOnly' => true]);
               <span class="ct-info__icon"><i data-lucide="map-pin"></i></span>
               <div>
                 <strong>Showroom & Head Office</strong>
-                <p>Ghordourchati More, Below LIC Division Office<br>Bardhaman, West Bengal 713103</p>
+                <p><?= $address ?></p>
+                <p class="ct-map-link" style="margin-top:6px;"><a href="<?= e($mapUrl) ?>" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;color:var(--brand-violet,#7b2ff7);font-size:0.875rem;font-weight:600;"><i data-lucide="external-link" style="width:14px;height:14px;"></i> View on Google Maps</a></p>
               </div>
             </li>
             <li>
@@ -67,7 +81,7 @@ App::render('header', ['isStickyOnly' => true]);
               <a href="https://wa.me/919002921509" target="_blank" rel="noopener" aria-label="WhatsApp">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
               </a>
-              <a href="https://www.google.com/maps/place/Hazra+Electrical+Bike/@23.2198619,87.8848343,17z" target="_blank" rel="noopener" aria-label="Google Maps" title="Google Maps">
+              <a href="<?= e($mapUrl) ?>" target="_blank" rel="noopener" aria-label="Google Maps" title="Google Maps">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               </a>
             </div>
@@ -114,10 +128,11 @@ App::render('header', ['isStickyOnly' => true]);
   <!-- MAP -->
   <section class="ct-map" aria-label="Location map">
     <iframe
-      title="Hazra location map"
+      title="HAZRA ELECTRIC location map"
       loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-      src="https://www.google.com/maps?q=India&output=embed">
+      allowfullscreen=""
+      referrerpolicy="strict-origin-when-cross-origin"
+      src="<?= e($mapEmbed) ?>">
     </iframe>
   </section>
 </main>

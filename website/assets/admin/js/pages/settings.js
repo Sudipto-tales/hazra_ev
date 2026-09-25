@@ -62,7 +62,7 @@
                                     <small class="muted">Main header subtitle on homepage.</small>
                                 </div>
                             </div>
-                            <div class="form-grid">
+                            <div class="form-grid mb-4">
                                 <div class="field">
                                     <label>Header Logo</label>
                                     <div data-media="general[logo]"></div>
@@ -70,6 +70,41 @@
                                 <div class="field">
                                     <label>Favicon / App Mark</label>
                                     <div data-media="general[favicon]"></div>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="google_site_verification">Google Search Console Verification Code</label>
+                                    <div class="input-icon-group">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                        <input class="input" type="text" id="google_site_verification" name="general[google_site_verification]" placeholder="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8">
+                                    </div>
+                                    <small class="muted">Code from &lt;meta name="google-site-verification" content="..."&gt;</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Appearance Card -->
+                        <div class="settings-v2-card mt-4">
+                            <div class="settings-v2-card__head">
+                                <div class="settings-v2-icon" style="background:color-mix(in srgb, var(--brand-violet, #7b2ff7) 14%, transparent);color:var(--brand-violet, #7b2ff7)"><i class="fa-solid fa-image"></i></div>
+                                <div>
+                                    <h3>Footer Styling & Background</h3>
+                                    <p>Control the appearance of the graphic background illustration in the public website footer.</p>
+                                </div>
+                            </div>
+                            <div class="st-toggle-card">
+                                <div class="st-toggle-info">
+                                    <strong>Show Footer Background Graphic</strong>
+                                    <span>When enabled (default), displays the skyline graphic illustration. When disabled, renders a clean solid white background in Light Mode and solid dark in Dark Mode.</span>
+                                </div>
+                                <div class="row gap-4 align-center">
+                                    <label class="row gap-2 align-center text-xs font-semibold">
+                                        <span class="st-switch">
+                                            <input type="checkbox" id="show_footer_bg" name="general[show_footer_bg]" value="1">
+                                            <span class="st-slider"></span>
+                                        </span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -114,8 +149,26 @@
                                     <label for="address">Showroom & Corporate Address</label>
                                     <div class="input-icon-group">
                                         <i class="fa-solid fa-location-dot"></i>
-                                        <input class="input" type="text" id="address" name="contact[address]" placeholder="Bardhaman, West Bengal, India">
+                                        <input class="input" type="text" id="address" name="contact[address]" placeholder="Ghordourchati More, Below LIC Division Office, Bardhaman, West Bengal 713103">
                                     </div>
+                                </div>
+                            </div>
+                            <div class="form-grid mt-4">
+                                <div class="field">
+                                    <label for="map_url">Google Maps URL / Direct Link</label>
+                                    <div class="input-icon-group">
+                                        <i class="fa-solid fa-map-location-dot"></i>
+                                        <input class="input" type="url" id="map_url" name="contact[map_url]" placeholder="https://maps.app.goo.gl/c5sXVm5k3UXsruF26">
+                                    </div>
+                                    <small class="muted">Short link or URL used for map buttons and social icons.</small>
+                                </div>
+                                <div class="field">
+                                    <label for="map_embed">Google Maps Embed URL</label>
+                                    <div class="input-icon-group">
+                                        <i class="fa-solid fa-map"></i>
+                                        <input class="input" type="text" id="map_embed" name="contact[map_embed]" placeholder="https://www.google.com/maps/embed?pb=...">
+                                    </div>
+                                    <small class="muted">Embed iframe source URL for the interactive contact map.</small>
                                 </div>
                             </div>
                         </div>
@@ -379,6 +432,13 @@
                 }
             }
         }
+
+        // show_footer_bg is ON by default if not set in DB
+        const footerBgEl = document.getElementById('show_footer_bg');
+        if (footerBgEl && (settingsDoc?.general?.show_footer_bg === undefined || settingsDoc?.general?.show_footer_bg === null || settingsDoc?.general?.show_footer_bg === '')) {
+            footerBgEl.checked = true;
+        }
+
         media.paintAll(document.getElementById('view'), settingsDoc);
     }
 
@@ -392,6 +452,8 @@
             const formData = new FormData(e.target);
             const payload = { general: {}, contact: {}, social: {}, email: {} };
 
+            // Default checkboxes to '0' so unchecking saves '0'
+            payload.general.show_footer_bg = '0';
             const checkboxes = ['notify_team_new_lead', 'notify_customer_new_lead', 'notify_team_on_approve', 'notify_customer_on_approve', 'notify_team_on_reject', 'notify_customer_on_reject'];
             checkboxes.forEach(cb => { payload.email[cb] = '0'; });
 

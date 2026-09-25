@@ -30,16 +30,32 @@
   </a>
 </aside>
 
+<?php
+$showFooterBg = true;
+$mapUrl = 'https://maps.app.goo.gl/c5sXVm5k3UXsruF26';
+try {
+    $row = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'show_footer_bg'");
+    if ($row && isset($row['setting_value'])) {
+        $showFooterBg = ($row['setting_value'] !== '0' && $row['setting_value'] !== false);
+    }
+    $mapRow = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = 'map_url'");
+    if (!empty($mapRow['setting_value'])) {
+        $mapUrl = $mapRow['setting_value'];
+    }
+} catch (\Throwable $e) {}
+?>
 <!-- ══════════ FOOTER ══════════ -->
-<footer class="foot" id="contact">
+<footer class="foot <?= $showFooterBg ? '' : 'foot--no-bg' ?>" id="contact">
 
   <!-- Wave cut effect at the top -->
   <div class="foot__wave"></div>
 
+  <?php if ($showFooterBg): ?>
   <!-- Background with theme support -->
   <div class="foot__bg foot__bg--light" aria-hidden="true"></div>
   <div class="foot__bg foot__bg--dark" aria-hidden="true"></div>
   <i class="foot__veil"></i>
+  <?php endif; ?>
 
   <div class="wrap foot__in">
 
@@ -86,22 +102,6 @@
             <a href="<?= e(base_url('products')) ?>">Oleant Lineup</a>
             <a href="<?= e(base_url('products')) ?>">Compare models</a>
             <a href="<?= e(base_url('index#test-ride')) ?>">Book test ride</a>
-          </div>
-          <div class="fcol">
-            <h4>Buy</h4>
-            <a href="<?= e(base_url('products')) ?>">Book a scooter</a>
-            <a href="<?= e(base_url('products')) ?>">EMI calculator</a>
-            <a href="<?= e(base_url('products')) ?>">Charging</a>
-            <a href="<?= e(base_url('products')) ?>">Download brochure</a>
-            <a href="<?= e(base_url('dealer-locator')) ?>">Locate dealers</a>
-          </div>
-          <div class="fcol">
-            <h4>Ownership</h4>
-            <a href="<?= e(base_url('products')) ?>">Running cost calculator</a>
-            <a href="<?= e(base_url('products')) ?>">Range confidence</a>
-            <a href="<?= e(base_url('products')) ?>">Accessories</a>
-            <a href="<?= e(base_url('warranty-free')) ?>">Battery warranty</a>
-            <a href="<?= e(base_url('battery-use')) ?>">Battery use</a>
           </div>
           <div class="fcol">
             <h4>Company</h4>
@@ -164,7 +164,7 @@
           </a>
 
           <!-- Google Maps / Location -->
-          <a href="https://www.google.com/maps/place/Hazra+Electrical+Bike/@23.2198619,87.8848343,17z"
+          <a href="<?= e($mapUrl) ?>"
              class="foot__social-link foot__social--map"
              target="_blank" rel="noopener noreferrer"
              aria-label="Google Maps" title="Location">

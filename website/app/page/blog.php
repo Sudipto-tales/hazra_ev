@@ -245,7 +245,7 @@ App::render('header', ['isStickyOnly' => true]);
             <a href="https://facebook.com/hazraev" target="_blank" rel="noopener"><i data-lucide="facebook"></i> Facebook</a>
             <a href="https://instagram.com/hazraev" target="_blank" rel="noopener"><i data-lucide="instagram"></i> Instagram</a>
             <a href="https://wa.me/919830012345" target="_blank" rel="noopener"><i data-lucide="message-circle"></i> WhatsApp</a>
-            <a href="https://maps.app.goo.gl/hazraev" target="_blank" rel="noopener"><i data-lucide="map-pin"></i> Locate Us</a>
+            <a href="https://maps.app.goo.gl/c5sXVm5k3UXsruF26" target="_blank" rel="noopener"><i data-lucide="map-pin"></i> Locate Us</a>
           </div>
         </div>
 
