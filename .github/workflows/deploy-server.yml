@@ -25,6 +25,22 @@ jobs:
             set -e
             TARGET_DIR="${{ secrets.SSH_TARGET_DIR || 'public_html' }}"
             echo "==> Deploying into: $TARGET_DIR"
+
+            echo "==> DIAGNOSTIC: Current user and HOME:"
+            whoami
+            echo "HOME=$HOME"
+            echo "==> DIAGNOSTIC: Target dir raw bytes:"
+            printf '%s\n' "$TARGET_DIR" | od -An -tx1 || true
+            echo "==> DIAGNOSTIC: List ~ (home directory):"
+            ls -la ~
+            echo "==> DIAGNOSTIC: Searching for public_html directories:"
+            find ~ -maxdepth 4 -name "public_html" 2>/dev/null || true
+            if [ -d ~/domains ]; then
+              echo "==> DIAGNOSTIC: Listing ~/domains:"
+              ls -la ~/domains
+              find ~/domains -maxdepth 3 2>/dev/null || true
+            fi
+
             mkdir -p ~/"$TARGET_DIR"
             cd ~/"$TARGET_DIR"
 
