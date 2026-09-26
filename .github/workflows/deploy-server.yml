@@ -1,28 +1,14 @@
-# ──────────────────────────────────────────────────────────────────────────────
-# Hostinger Website Deploy Workflow
-#
-# Triggered automatically when the `deploy` branch is pushed, or manually via
-# GitHub Actions "Run workflow" button.
-#
-# Connects to Hostinger via SSH, pulls the latest code from the `deploy` branch,
-# injects the production `.env` from GitHub Secrets, installs PHP dependencies,
-# and automatically runs database migrations/seeders via `php vayu db:sync`.
-# ──────────────────────────────────────────────────────────────────────────────
-
 name: Deploy Website to Hostinger
 
 on:
   push:
-    branches:
-      - deploy
+    branches: [deploy]
   workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy to Hostinger via SSH
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -39,71 +25,34 @@ jobs:
             set -e
             TARGET_DIR="${{ secrets.SSH_TARGET_DIR || 'public_html' }}"
             echo "==> Deploying into: $TARGET_DIR"
-            mkdir -p ~/"$TARGET_DIR"
-            cd ~/"$TARGET_DIR"
-            
-            # Force fresh clone with sparse-checkout to get only website/ folder
-            if [ ! -d ".git" ] || ! git config core.sparseCheckout 2>/dev/null | grep -q true; then
-              echo "==> Setting up fresh git repo with sparse-checkout..."
-              cd ~
-              rm -rf "$TARGET_DIR"
-              mkdir -p "$TARGET_DIR"
-              cd "$TARGET_DIR"
+            cd ~/"$TARGET_DIR" || { echo "ERROR: $TARGET_DIR not found"; exit 1; }
+
+            if [ ! -d .git ]; then
+              echo "==> Not a git repo. Initializing..."
               git init
               git remote add origin https://github.com/Sudipto-tales/hazra_ev.git
-              git config core.sparseCheckout true
-              echo "website/*" > .git/info/sparse-checkout
             fi
-            
-            echo "==> Pulling latest code from deploy branch (website/ folder only)..."
-            git fetch origin deploy
-            git reset --hard origin/deploy
-            
-            # Ensure sparse-checkout is applied
-            git read-tree -mu HEAD
-            
-            echo "==> Moving website/ contents to root..."
-            shopt -s dotglob
-            mv website/* .
-            rmdir website
-            
+
+            echo "==> Fetching website branch..."
+            git fetch origin website
+            git reset --hard origin/website
+
             if [ -n "$PROD_ENV_FILE" ]; then
-              echo "==> Updating .env from GitHub Secrets..."
               echo "$PROD_ENV_FILE" > .env
               chmod 600 .env
-            else
-              echo "==> Notice: PROD_ENV_FILE secret not set, keeping existing .env on server."
             fi
-            if [ -f "composer.json" ]; then
-              echo "==> Installing Composer dependencies..."
+
+            if [ -f composer.json ]; then
               composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --quiet
             fi
-            if [ -f "vayu" ]; then
-              echo "==> Synchronizing database (migrations & seeds)..."
-              php vayu db:sync
+
+            if [ -f vayu ]; then
+              php vayu db:sync || true
             fi
-            echo "==> Ensuring storage permissions..."
+
             mkdir -p storage/apk storage/uploads storage/logs database
-            chmod -R 775 storage
-            echo "==> Deployment completed successfully!"
-            echo "==> Final directory contents:"
+            chmod -R 775 storage 2>/dev/null || true
+
+            echo "==> Done. Current commit:"
+            git log -1 --oneline
             ls -la
-            if [ -n "$PROD_ENV_FILE" ]; then
-              echo "==> Updating .env from GitHub Secrets..."
-              echo "$PROD_ENV_FILE" > .env
-              chmod 600 .env
-            else
-              echo "==> Notice: PROD_ENV_FILE secret not set, keeping existing .env on server."
-            fi
-            if [ -f "composer.json" ]; then
-              echo "==> Installing Composer dependencies..."
-              composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --quiet
-            fi
-            if [ -f "vayu" ]; then
-              echo "==> Synchronizing database (migrations & seeds)..."
-              php vayu db:sync
-            fi
-            echo "==> Ensuring storage permissions..."
-            mkdir -p storage/apk storage/uploads storage/logs database
-            chmod -R 775 storage
-            echo "==> Deployment completed successfully!"
