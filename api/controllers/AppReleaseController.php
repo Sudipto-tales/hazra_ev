@@ -34,7 +34,7 @@ final class AppReleaseController extends V1Controller
 
     public function index(): never
     {
-        $limit = Cursor::limit((string) $this->query('limit', '20'));
+        $limit = Cursor::limit((string) ($this->query('limit') ?? $this->query('pageSize', '20')));
         $cursorStr = $this->query('cursor', '');
 
         $sql = "SELECT * FROM app_releases WHERE status IN ('published', 'archived')";
@@ -152,11 +152,19 @@ final class AppReleaseController extends V1Controller
     {
         $this->requireAdmin();
 
-        $limit = Cursor::limit((string) $this->query('limit', '20'));
+        $limit = Cursor::limit((string) ($this->query('limit') ?? $this->query('pageSize', '20')));
         $cursorStr = $this->query('cursor', '');
 
         $conditions = ["1=1"];
         $params = [];
+
+        $q = trim((string) $this->query('q', ''));
+        if ($q !== '') {
+            $conditions[] = "(version_name LIKE ? OR git_tag LIKE ? OR release_notes LIKE ?)";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+        }
 
         $status = $this->query('status', '');
         if ($status !== '' && in_array($status, self::VALID_STATUSES, true)) {
