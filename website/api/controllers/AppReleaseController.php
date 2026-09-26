@@ -129,23 +129,27 @@ final class AppReleaseController extends V1Controller
             Envelope::fail('EMPLOYEE_NOT_FOUND', 'No matching employee for that code or phone', 403);
         }
 
-        $logId = Uuid::v4();
-        db_execute(
-            "INSERT INTO app_download_logs
-             (id, release_id, employee_id, employee_code, mobile, version_name, ip, user_agent, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                $logId,
-                $row['id'],
-                $emp['id'],
-                $emp['employee_code'] ?? $code,
-                $mobile !== '' ? $mobile : preg_replace('/\D+/', '', (string) ($emp['phone'] ?? '')),
-                $row['version_name'],
-                $_SERVER['REMOTE_ADDR'] ?? '',
-                substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500),
-                Wire::now(),
-            ]
-        );
+        try {
+            $logId = Uuid::v4();
+            db_execute(
+                "INSERT INTO app_download_logs
+                 (id, release_id, employee_id, employee_code, mobile, version_name, ip, user_agent, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    $logId,
+                    $row['id'],
+                    $emp['id'],
+                    $emp['employee_code'] ?? $code,
+                    $mobile !== '' ? $mobile : preg_replace('/\D+/', '', (string) ($emp['phone'] ?? '')),
+                    $row['version_name'],
+                    $_SERVER['REMOTE_ADDR'] ?? '',
+                    substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500),
+                    Wire::now(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            error_log('Failed to log app download: ' . $e->getMessage());
+        }
 
         $base = rtrim(env('APP_URL', ''), '/');
         Envelope::ok([
