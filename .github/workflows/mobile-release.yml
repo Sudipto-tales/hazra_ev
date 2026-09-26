@@ -104,30 +104,7 @@ jobs:
           echo "file_size=$SIZE" >> $GITHUB_OUTPUT
           echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
 
-      # ── Upload to Hostinger ─────────────────────────────────
-      - name: Upload to Hostinger deploy API
-        run: |
-          HTTP_STATUS=$(curl -s -o /tmp/deploy-response.json -w '%{http_code}' \
-            -X POST "${{ secrets.DEPLOY_API_URL }}" \
-            -H "X-Deploy-Key: ${{ secrets.DEPLOY_API_KEY }}" \
-            -F "file=@${{ steps.checksum.outputs.apk_path }}" \
-            -F "platform=android" \
-            -F "version_name=${{ steps.version.outputs.version_name }}" \
-            -F "version_code=${{ steps.pubspec.outputs.version_code }}" \
-            -F "git_tag=${{ steps.version.outputs.tag }}" \
-            -F "git_sha=${{ github.sha }}" \
-            -F "checksum_sha256=${{ steps.checksum.outputs.sha256 }}" \
-            -F "release_notes=Automated build from tag ${{ steps.version.outputs.tag }}")
-
-          echo "Deploy API response (HTTP $HTTP_STATUS):"
-          cat /tmp/deploy-response.json
-
-          if [ "$HTTP_STATUS" -ge 400 ]; then
-            echo "::error::Deploy API returned HTTP $HTTP_STATUS"
-            exit 1
-          fi
-
-      # ── Backup artifacts ────────────────────────────────────
+      # ── Backup artifacts & GitHub Release ──────────────────
       - name: Upload APK as Actions artifact
         uses: actions/upload-artifact@v4
         with:
@@ -151,6 +128,29 @@ jobs:
           files: ${{ steps.checksum.outputs.apk_path }}
           draft: false
           prerelease: false
+
+      # ── Upload to Hostinger ─────────────────────────────────
+      - name: Upload to Hostinger deploy API
+        continue-on-error: true
+        run: |
+          HTTP_STATUS=$(curl --http1.1 --connect-timeout 30 --max-time 180 -s -o /tmp/deploy-response.json -w '%{http_code}' \
+            -X POST "${{ secrets.DEPLOY_API_URL }}" \
+            -H "X-Deploy-Key: ${{ secrets.DEPLOY_API_KEY }}" \
+            -F "file=@${{ steps.checksum.outputs.apk_path }}" \
+            -F "platform=android" \
+            -F "version_name=${{ steps.version.outputs.version_name }}" \
+            -F "version_code=${{ steps.pubspec.outputs.version_code }}" \
+            -F "git_tag=${{ steps.version.outputs.tag }}" \
+            -F "git_sha=${{ github.sha }}" \
+            -F "checksum_sha256=${{ steps.checksum.outputs.sha256 }}" \
+            -F "release_notes=Automated build from tag ${{ steps.version.outputs.tag }}" || echo "000")
+
+          echo "Deploy API response (HTTP $HTTP_STATUS):"
+          cat /tmp/deploy-response.json 2>/dev/null || true
+
+          if [ "$HTTP_STATUS" -ge 400 ] || [ "$HTTP_STATUS" = "000" ]; then
+            echo "::warning::Deploy API returned HTTP $HTTP_STATUS"
+          fi
 
       # ── Cleanup ─────────────────────────────────────────────
       - name: Cleanup keystore
