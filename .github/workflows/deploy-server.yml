@@ -39,8 +39,14 @@ jobs:
             set -e
             TARGET_DIR="${{ secrets.SSH_TARGET_DIR || 'public_html' }}"
             echo "==> Deploying into: $TARGET_DIR"
+            echo "==> SSH_HOST: ${{ secrets.SSH_HOST }}"
+            echo "==> SSH_USER: ${{ secrets.SSH_USER }}"
+            echo "==> SSH_PORT: ${{ secrets.SSH_PORT || '65002' }}"
+            echo "==> SSH_TARGET_DIR: ${{ secrets.SSH_TARGET_DIR || 'public_html (default)' }}"
             mkdir -p ~/"$TARGET_DIR"
             cd ~/"$TARGET_DIR"
+            pwd
+            ls -la
             if [ ! -d ".git" ]; then
               echo "==> Initializing git repository..."
               git init
@@ -56,6 +62,8 @@ jobs:
             rm -rf .agent api app assets config core database docs index.php server.php vayu composer.json composer.lock .htaccess .env.example README.md 2>/dev/null || true
             mv website/* .
             rmdir website
+            echo "==> Final directory contents:"
+            ls -la
             if [ -n "$PROD_ENV_FILE" ]; then
               echo "==> Updating .env from GitHub Secrets..."
               echo "$PROD_ENV_FILE" > .env
