@@ -423,10 +423,21 @@
                     });
                 });
 
-                btn.parentElement.appendChild(menu);
-                /* Flip upward when the menu would fall off the viewport. */
-                const rect = menu.getBoundingClientRect();
-                if (rect.bottom > innerHeight - 8) menu.style.top = `-${rect.height + 4}px`;
+                document.body.appendChild(menu);
+
+                const btnRect = btn.getBoundingClientRect();
+                const menuH = menu.offsetHeight || 200;
+                const menuW = menu.offsetWidth || 200;
+
+                let top = btnRect.bottom + 4;
+                if (top + menuH > window.innerHeight - 8) {
+                    top = btnRect.top - menuH - 4;
+                }
+                let left = btnRect.right - menuW;
+                if (left < 8) left = 8;
+
+                menu.style.top = top + 'px';
+                menu.style.left = left + 'px';
             }));
 
             if (cfg.onRowClick) {
@@ -441,7 +452,7 @@
         }
 
         function closeMenus() {
-            document.querySelectorAll('.menu-wrap .menu').forEach((m) => m.remove());
+            document.querySelectorAll('.menu').forEach((m) => m.remove());
         }
         document.addEventListener('click', closeMenus);
 
