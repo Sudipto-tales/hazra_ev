@@ -753,16 +753,14 @@ tr.drop-target td {
 }
 
 .menu {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 4px);
-    min-width: 190px;
+    position: fixed;
+    min-width: 200px;
     background: var(--surface);
     border: 1px solid var(--hairline);
     border-radius: var(--radius-sm);
     box-shadow: var(--overlay-shadow);
     padding: var(--s1);
-    z-index: 25;
+    z-index: 200;
 }
 
 .menu button,
@@ -776,6 +774,9 @@ tr.drop-target td {
     font-size: var(--fs-sm);
     color: var(--text-dark);
     text-align: left;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
 }
 
 .menu button:hover,
@@ -792,6 +793,8 @@ tr.drop-target td {
 
 .menu hr {
     margin: var(--s1) 0;
+    border: 0;
+    border-top: 1px solid var(--hairline);
 }
 
 .menu .danger {
@@ -2748,6 +2751,25 @@ tr.drop-target td {
     border: 1px solid var(--hairline);
     color: var(--text-muted);
     font-weight: 500;
+}
+
+/* Status pills — semantic tones */
+.pill--good {
+    background: var(--good-bg);
+    color: var(--good);
+    border: 1px solid var(--good);
+}
+
+.pill--warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+    border: 1px solid var(--warn);
+}
+
+.pill--mid {
+    background: var(--text-muted);
+    color: var(--surface);
+    border: 1px solid var(--text-muted);
 }
 
 /* Drag feedback for the non-table lists (util.sortable). The table has its

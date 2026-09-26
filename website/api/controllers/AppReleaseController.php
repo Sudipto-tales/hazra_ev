@@ -85,66 +85,73 @@ final class AppReleaseController extends V1Controller
     public function requestDownload(): never
     {
         $id = $this->param('id');
-        $release = $this->findRelease($id);
+        $row = $this->findRelease($id);
 
-        if ($release['status'] !== 'published') {
-            Envelope::notFound('RELEASE_NOT_PUBLISHED', 'Release is not published or unavailable');
+        if ($row['status'] !== 'published') {
+            Envelope::notFound('RELEASE_NOT_FOUND', 'Release not available');
         }
 
         $body = ApiRequest::body();
-        $employeeCode = trim((string) ($body['employee_code'] ?? ''));
-        $mobile = trim((string) ($body['mobile'] ?? ''));
+        $code = strtoupper(trim((string) ($body['employee_code'] ?? '')));
+        $mobile = preg_replace('/\D+/', '', (string) ($body['mobile'] ?? ''));
 
-        if ($employeeCode === '' || $mobile === '') {
-            Envelope::invalid('Employee ID and mobile number are required');
+        if ($code === '' && strlen($mobile) < 10) {
+            Envelope::invalid('Enter employee code or mobile number');
         }
 
-        $inputDigits = preg_replace('/\D/', '', $mobile);
-        if (strlen($inputDigits) < 10) {
-            Envelope::invalid('Please enter a valid 10-digit mobile number');
+        $emp = null;
+
+        if ($code !== '') {
+            $emp = db_fetch_one(
+                "SELECT u.id, u.name, u.phone, ep.employee_code
+                 FROM users u
+                 JOIN employee_profiles ep ON ep.user_id = u.id
+                 WHERE ep.employee_code = ? AND u.role = 'employee' AND u.active = 1
+                 LIMIT 1",
+                [$code]
+            );
         }
 
-        // Look up employee in users + employee_profiles
-        $employee = db_fetch_one(
-            "SELECT u.id, u.name, u.phone, u.active, ep.employee_code
-             FROM users u
-             JOIN employee_profiles ep ON ep.user_id = u.id
-             WHERE UPPER(ep.employee_code) = UPPER(?) AND u.active = 1",
-            [$employeeCode]
+        if (!$emp && strlen($mobile) >= 10) {
+            $last10 = substr($mobile, -10);
+            $emp = db_fetch_one(
+                "SELECT u.id, u.name, u.phone, ep.employee_code
+                 FROM users u
+                 JOIN employee_profiles ep ON ep.user_id = u.id
+                 WHERE u.role = 'employee' AND u.active = 1
+                   AND REPLACE(REPLACE(REPLACE(u.phone, ' ', ''), '-', ''), '+', '') LIKE ?
+                 LIMIT 1",
+                ['%' . $last10]
+            );
+        }
+
+        if (!$emp) {
+            Envelope::fail('EMPLOYEE_NOT_FOUND', 'No matching employee for that code or phone', 403);
+        }
+
+        $logId = Uuid::v4();
+        db_execute(
+            "INSERT INTO app_download_logs
+             (id, release_id, employee_id, employee_code, mobile, version_name, ip, user_agent, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                $logId,
+                $row['id'],
+                $emp['id'],
+                $emp['employee_code'] ?? $code,
+                $mobile !== '' ? $mobile : preg_replace('/\D+/', '', (string) ($emp['phone'] ?? '')),
+                $row['version_name'],
+                $_SERVER['REMOTE_ADDR'] ?? '',
+                substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500),
+                Wire::now(),
+            ]
         );
 
-        if (!$employee) {
-            Envelope::fail('EMPLOYEE_NOT_FOUND', 'Employee ID not found or account is inactive', 403);
-        }
-
-        $empDigits = preg_replace('/\D/', '', (string) $employee['phone']);
-        if (substr($inputDigits, -10) !== substr($empDigits, -10)) {
-            Envelope::fail('MOBILE_MISMATCH', 'Mobile number does not match registered employee records', 403);
-        }
-
-        // Audit log the verified download
-        $logId = Uuid::v4();
-        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 512);
-        $now = Wire::now();
-
-        try {
-            db_execute(
-                "INSERT INTO app_download_logs (id, release_id, employee_code, mobile, ip, user_agent, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [$logId, $id, $employee['employee_code'], $mobile, $ip, $ua, $now]
-            );
-        } catch (\Throwable $e) {
-            error_log('Failed to log app download: ' . $e->getMessage());
-        }
-
         $base = rtrim(env('APP_URL', ''), '/');
-        $downloadUrl = $base . '/api/v1/app-releases/' . $id . '/download';
-
         Envelope::ok([
-            'verified'      => true,
-            'employee_name' => $employee['name'],
-            'download_url'  => $downloadUrl,
+            'downloadUrl'  => $base . '/api/v1/app-releases/' . $row['id'] . '/download',
+            'versionName'  => $row['version_name'],
+            'employeeName' => $emp['name'],
         ]);
     }
 
