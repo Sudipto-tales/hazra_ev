@@ -33,8 +33,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Baloo+2:wght@600;700;800&family=Noto+Sans+Bengali:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<?php foreach (['tokens', 'base', 'layout', 'components'] as $sheet): ?>
-    <link rel="stylesheet" href="<?= e(base_url("assets/admin/css/{$sheet}.css")) ?>">
+    <link rel="icon" href="<?= e(base_url('favicon.ico')) ?>" type="image/x-icon">
+<?php foreach (['tokens', 'base', 'layout', 'components'] as $sheet): 
+    $cPath = __BASEDIR__ . "/assets/admin/css/{$sheet}.css";
+    $cv = file_exists($cPath) ? filemtime($cPath) : '1';
+?>
+    <link rel="stylesheet" href="<?= e(base_url("assets/admin/css/{$sheet}.css?v={$cv}")) ?>">
 <?php endforeach; ?>
 </head>
 

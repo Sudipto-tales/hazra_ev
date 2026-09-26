@@ -20,12 +20,18 @@ $core = array_merge(
 );
 ?>
 
-<?php foreach ($core as $module): ?>
-    <script src="<?= e(base_url("assets/admin/js/core/{$module}.js")) ?>"></script>
+<?php foreach ($core as $module): 
+    $fPath = __BASEDIR__ . "/assets/admin/js/core/{$module}.js";
+    $v = file_exists($fPath) ? filemtime($fPath) : '1';
+?>
+    <script src="<?= e(base_url("assets/admin/js/core/{$module}.js?v={$v}")) ?>"></script>
 <?php endforeach; ?>
 
-<?php if (!empty($script)): ?>
-    <script src="<?= e(base_url("assets/admin/js/pages/{$script}.js")) ?>"></script>
+<?php if (!empty($script)): 
+    $pPath = __BASEDIR__ . "/assets/admin/js/pages/{$script}.js";
+    $pv = file_exists($pPath) ? filemtime($pPath) : '1';
+?>
+    <script src="<?= e(base_url("assets/admin/js/pages/{$script}.js?v={$pv}")) ?>"></script>
 <?php endif; ?>
 </body>
 

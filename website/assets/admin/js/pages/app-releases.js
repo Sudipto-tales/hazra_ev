@@ -1,13 +1,21 @@
 (function () {
     'use strict';
 
-    const { util: U, store, table, layout, toast, modal } = window.HAZRA;
-    const BASE = (document.querySelector('meta[name="app-base"]')?.getAttribute('content') || '/').replace(/\/+$/, '') + '/';
-    const CSRF = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    let U, store, table, layout, toast, modal, BASE, CSRF;
 
     window.HAZRA.boot(init);
 
     function init() {
+        const H = window.HAZRA;
+        U = H.util;
+        store = H.store;
+        table = H.table;
+        layout = H.layout;
+        toast = H.toast;
+        modal = H.modal;
+        BASE = (document.querySelector('meta[name="app-base"]')?.getAttribute('content') || '/').replace(/\/+$/, '') + '/';
+        CSRF = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
         // Page Header
         document.getElementById('pageHead').innerHTML = layout.pageHead({
         crumb: [{ label: 'System' }, { label: 'App Releases' }],
