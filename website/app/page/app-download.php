@@ -184,8 +184,180 @@ include __BASEDIR__ . '/app/components/header.php';
         color: #666;
         font-size: 0.9rem;
     }
-    .changelog-notes {
-        white-space: pre-wrap;
+    /* Download Modal */
+    .download-modal-backdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+    .download-modal-backdrop.is-active {
+        display: flex;
+    }
+    .download-modal {
+        background: #ffffff;
+        width: 100%;
+        max-width: 440px;
+        border-radius: 1.25rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        position: relative;
+        animation: modalSlideUp 0.25s ease-out;
+    }
+    @keyframes modalSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    .download-modal__header {
+        background: linear-gradient(135deg, var(--hazra-purple, #4b0082) 0%, var(--hazra-purple-dark, #2b1055) 100%);
+        color: #ffffff;
+        padding: 1.5rem 1.5rem 1.25rem;
+        position: relative;
+    }
+    .download-modal__title {
+        margin: 0 0 0.25rem;
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #ffffff;
+        font-family: var(--font-head, sans-serif);
+    }
+    .download-modal__subtitle {
+        margin: 0;
+        font-size: 0.875rem;
+        opacity: 0.85;
+        color: #ffffff;
+    }
+    .download-modal__close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(255, 255, 255, 0.15);
+        border: none;
+        color: #ffffff;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        font-size: 1.25rem;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+    .download-modal__close:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    .download-modal__body {
+        padding: 1.5rem;
+    }
+    .download-modal__field {
+        margin-bottom: 1.25rem;
+    }
+    .download-modal__label {
+        display: block;
+        margin-bottom: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #333333;
+    }
+    .download-modal__input {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+        border: 1.5px solid #dcdcdc;
+        border-radius: 0.5rem;
+        box-sizing: border-box;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .download-modal__input:focus {
+        outline: none;
+        border-color: var(--hazra-purple, #4b0082);
+        box-shadow: 0 0 0 3px rgba(75, 0, 130, 0.15);
+    }
+    .download-modal__input--code {
+        text-transform: uppercase;
+        font-family: monospace;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .download-modal__alert {
+        display: none;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .download-modal__alert--error {
+        background: #fff1f0;
+        color: #cf1322;
+        border: 1px solid #ffa39e;
+    }
+    .download-modal__alert--success {
+        background: #f6ffed;
+        color: #389e0d;
+        border: 1px solid #b7eb8f;
+    }
+    .download-modal__actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+    .download-modal__btn {
+        flex: 1;
+        padding: 0.875rem 1rem;
+        font-size: 1rem;
+        font-weight: 600;
+        border-radius: 50px;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.2s, transform 0.1s;
+        text-align: center;
+    }
+    .download-modal__btn--primary {
+        background: linear-gradient(135deg, var(--hazra-purple, #4b0082) 0%, #6a11cb 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(106, 17, 203, 0.35);
+    }
+    .download-modal__btn--primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .download-modal__btn--secondary {
+        background: #f0f0f0;
+        color: #555555;
+    }
+    .download-modal__btn--secondary:hover {
+        background: #e4e4e4;
+    }
+    @media (max-width: 480px) {
+        .download-modal-backdrop {
+            align-items: flex-end;
+            padding: 0;
+        }
+        .download-modal {
+            max-width: 100%;
+            border-radius: 1.5rem 1.5rem 0 0;
+        }
     }
 </style>
 
@@ -198,17 +370,17 @@ include __BASEDIR__ . '/app/components/header.php';
         <h1>Hazra EV App</h1>
         <div class="subtitle">Version <?= e($release['version_name']) ?> &bull; <?= date('M j, Y', strtotime($release['published_at'] ?? $release['created_at'])) ?></div>
         
-        <a href="<?= base_url('/api/v1/app-releases/' . $release['id'] . '/download') ?>" class="btn-download">
+        <button type="button" class="btn-download" id="openDownloadModalBtn">
             <i class="fa fa-download"></i> Download APK
-        </a>
+        </button>
         
         <div class="download-meta">
-            <?php if (!empty($release['file_size_bytes'])): ?>
-                <span class="badge"><?= round($release['file_size_bytes'] / 1048576, 1) ?> MB</span>
+            <?php if (!empty($release['file_size'])): ?>
+                <span class="badge"><?= round($release['file_size'] / 1048576, 1) ?> MB</span>
             <?php endif; ?>
             
-            <?php if (!empty($release['file_hash'])): ?>
-                <span>SHA-256: <?= e(substr($release['file_hash'], 0, 16)) ?>...</span>
+            <?php if (!empty($release['checksum_sha256'])): ?>
+                <span>SHA-256: <?= e(substr($release['checksum_sha256'], 0, 16)) ?>...</span>
             <?php endif; ?>
         </div>
     <?php else: ?>
@@ -220,6 +392,39 @@ include __BASEDIR__ . '/app/components/header.php';
         </a>
     <?php endif; ?>
 </div>
+
+<?php if ($release): ?>
+<!-- Verification Download Modal -->
+<div class="download-modal-backdrop" id="downloadModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="download-modal">
+        <div class="download-modal__header">
+            <h3 class="download-modal__title" id="modalTitle">Employee Verification</h3>
+            <p class="download-modal__subtitle">Hazra EV Mobile App &bull; v<?= e($release['version_name']) ?></p>
+            <button type="button" class="download-modal__close" id="closeDownloadModalBtn" aria-label="Close">&times;</button>
+        </div>
+        <div class="download-modal__body">
+            <div id="modalAlert" class="download-modal__alert"></div>
+
+            <form id="downloadGateForm" autocomplete="on">
+                <div class="download-modal__field">
+                    <label class="download-modal__label" for="empCodeInput">Employee ID</label>
+                    <input type="text" id="empCodeInput" name="employee_code" class="download-modal__input download-modal__input--code" placeholder="e.g. EMP-1042" required autofocus>
+                </div>
+                <div class="download-modal__field">
+                    <label class="download-modal__label" for="mobileInput">Registered Mobile Number</label>
+                    <input type="tel" id="mobileInput" name="mobile" class="download-modal__input" placeholder="e.g. 98XXXXXXXX" inputmode="tel" maxlength="15" required>
+                </div>
+                <div class="download-modal__actions">
+                    <button type="button" class="download-modal__btn download-modal__btn--secondary" id="cancelModalBtn">Cancel</button>
+                    <button type="submit" class="download-modal__btn download-modal__btn--primary" id="submitDownloadBtn">
+                        <span id="btnText"><i class="fa fa-shield-alt"></i> Verify & Download</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <h2 class="section-title">Why Use the App?</h2>
 <div class="features-grid">
@@ -296,6 +501,136 @@ include __BASEDIR__ . '/app/components/header.php';
         </div>
     <?php endforeach; ?>
 </div>
+<?php endif; ?>
+
+<?php if ($release): ?>
+<script>
+(function() {
+    'use strict';
+
+    const modal = document.getElementById('downloadModal');
+    const openBtn = document.getElementById('openDownloadModalBtn');
+    const closeBtn = document.getElementById('closeDownloadModalBtn');
+    const cancelBtn = document.getElementById('cancelModalBtn');
+    const form = document.getElementById('downloadGateForm');
+    const empInput = document.getElementById('empCodeInput');
+    const mobileInput = document.getElementById('mobileInput');
+    const alertBox = document.getElementById('modalAlert');
+    const submitBtn = document.getElementById('submitDownloadBtn');
+    const btnText = document.getElementById('btnText');
+    const requestUrl = <?= json_encode(base_url('/api/v1/app-releases/' . $release['id'] . '/request-download')) ?>;
+
+    function showAlert(msg, isError) {
+        if (!alertBox) return;
+        alertBox.textContent = msg;
+        alertBox.className = 'download-modal__alert ' + (isError ? 'download-modal__alert--error' : 'download-modal__alert--success');
+        alertBox.style.display = 'flex';
+    }
+
+    function hideAlert() {
+        if (!alertBox) return;
+        alertBox.style.display = 'none';
+        alertBox.textContent = '';
+    }
+
+    function openModal() {
+        if (!modal) return;
+        hideAlert();
+        modal.classList.add('is-active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => empInput && empInput.focus(), 100);
+    }
+
+    function closeModal() {
+        if (!modal) return;
+        modal.classList.remove('is-active');
+        document.body.style.overflow = '';
+        if (form) form.reset();
+        hideAlert();
+    }
+
+    if (openBtn) openBtn.addEventListener('click', openModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && modal.classList.contains('is-active')) {
+            closeModal();
+        }
+    });
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert();
+
+            const code = empInput.value.trim().toUpperCase();
+            const mob = mobileInput.value.trim();
+
+            if (!code) {
+                showAlert('Please enter your Employee ID (e.g. EMP-1042)', true);
+                empInput.focus();
+                return;
+            }
+            if (!mob) {
+                showAlert('Please enter your registered mobile number', true);
+                mobileInput.focus();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Verifying...';
+
+            try {
+                const res = await fetch(requestUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        employee_code: code,
+                        mobile: mob,
+                    }),
+                });
+
+                const json = await res.json().catch(() => null);
+
+                if (!res.ok) {
+                    const msg = json?.error?.message || 'Verification failed. Please check your credentials.';
+                    showAlert(msg, true);
+                    submitBtn.disabled = false;
+                    btnText.innerHTML = '<i class="fa fa-shield-alt"></i> Verify & Download';
+                    return;
+                }
+
+                const empName = json?.data?.employee_name || 'Employee';
+                const dlUrl = json?.data?.download_url;
+
+                showAlert('Verified! Welcome, ' + empName + '. Starting download...', false);
+                btnText.innerHTML = '<i class="fa fa-check"></i> Downloading...';
+
+                setTimeout(() => {
+                    if (dlUrl) {
+                        window.location.href = dlUrl;
+                    }
+                    setTimeout(closeModal, 2500);
+                }, 800);
+            } catch (err) {
+                showAlert('Network error. Please try again.', true);
+                submitBtn.disabled = false;
+                btnText.innerHTML = '<i class="fa fa-shield-alt"></i> Verify & Download';
+            }
+        });
+    }
+})();
+</script>
 <?php endif; ?>
 
 <?php include __BASEDIR__ . '/app/components/footer.php'; ?>

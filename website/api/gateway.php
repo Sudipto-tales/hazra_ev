@@ -167,6 +167,7 @@ class ApiGatewayProvider extends RouteProvider
             'GET:api/v1/app-releases/latest'              => ['AppReleaseController', 'latest'],
             'GET:api/v1/app-releases'                     => ['AppReleaseController', 'index'],
             'GET:api/v1/app-releases/{id}/download'       => ['AppReleaseController', 'download'],
+            'POST:api/v1/app-releases/{id}/request-download' => ['AppReleaseController', 'requestDownload'],
 
             'GET:api/v1/admin/app-releases'               => ['AppReleaseController', 'adminIndex',    'auth'],
             'POST:api/v1/admin/app-releases'              => ['AppReleaseController', 'adminStore',    'auth'],
