@@ -1,8 +1,0 @@
-{
-    "bin": ["vayu"],
-    "require": {
-        "phpmailer/phpmailer": "^6.10",
-        "vlucas/phpdotenv": "^5.6",
-        "firebase/php-jwt": "^7.0"
-    }
-}

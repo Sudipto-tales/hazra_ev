@@ -1,8 +1,15 @@
-window.HAZRA.boot(init);
+(function () {
+    'use strict';
 
-function init() {
-    // Page Header
-    document.getElementById('pageHead').innerHTML = layout.pageHead({
+    const { util: U, store, table, layout, toast, modal } = window.HAZRA;
+    const BASE = (document.querySelector('meta[name="app-base"]')?.getAttribute('content') || '/').replace(/\/+$/, '') + '/';
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    window.HAZRA.boot(init);
+
+    function init() {
+        // Page Header
+        document.getElementById('pageHead').innerHTML = layout.pageHead({
         crumb: [{ label: 'System' }, { label: 'App Releases' }],
         title: 'App Releases',
         accent: 'Mobile',
@@ -340,4 +347,4 @@ function init() {
             default:          return `<span class="tag">${U.esc(status)}</span>`;
         }
     }
-}
+})();

@@ -159,6 +159,7 @@ const PATHS = {
     applications: 'api/v1/job-applications', // jobs.js uses 'applications'
     warranty: 'api/v1/admin/warranty/registrations',
     settings: 'api/v1/settings',
+    'app-releases': 'api/v1/admin/app-releases',
 };
 
 const LEAD_TYPE = {
