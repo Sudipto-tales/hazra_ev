@@ -25,11 +25,12 @@ jobs:
             set -e
             TARGET_DIR="${{ secrets.SSH_TARGET_DIR || 'public_html' }}"
             echo "==> Deploying into: $TARGET_DIR"
-            cd ~/"$TARGET_DIR" || { echo "ERROR: $TARGET_DIR not found"; exit 1; }
+            mkdir -p ~/"$TARGET_DIR"
+            cd ~/"$TARGET_DIR"
 
-            # Force fresh clone if sparse-checkout was ever enabled or repo is corrupted
-            if [ ! -d .git ] || git config core.sparseCheckout 2>/dev/null | grep -q true; then
-              echo "==> Resetting git repo (sparse-checkout detected or missing)..."
+            # Force fresh clone if website files missing or sparse-checkout enabled
+            if [ ! -f index.php ] || git config core.sparseCheckout 2>/dev/null | grep -q true; then
+              echo "==> Resetting git repo (website files missing or sparse-checkout detected)..."
               cd ~
               rm -rf "$TARGET_DIR"
               mkdir -p "$TARGET_DIR"
