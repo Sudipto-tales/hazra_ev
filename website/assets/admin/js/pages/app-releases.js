@@ -1,18 +1,12 @@
 (function () {
     'use strict';
 
-    let U, store, table, layout, toast, modal, BASE, CSRF;
+    let BASE, CSRF;
 
     window.HAZRA.boot(init);
 
     function init() {
-        const H = window.HAZRA;
-        U = H.util;
-        store = H.store;
-        table = H.table;
-        layout = H.layout;
-        toast = H.toast;
-        modal = H.modal;
+        const { util: U, store, table, layout, toast, modal } = window.HAZRA;
         BASE = (document.querySelector('meta[name="app-base"]')?.getAttribute('content') || '/').replace(/\/+$/, '') + '/';
         CSRF = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
@@ -83,7 +77,7 @@
             },
             {
                 label: 'Created', sort: 'created_at',
-                render: (r) => `<span class="muted">${U.timeAgo(r.created_at || r.createdAt)}</span>`,
+                render: (r) => `<span class="muted">${U.ago(r.created_at || r.createdAt)}</span>`,
             },
         ],
         rowActions: (row) => {
