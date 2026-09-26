@@ -53,6 +53,7 @@ jobs:
             git reset --hard origin/deploy
             echo "==> Moving website/ contents to root..."
             shopt -s dotglob
+            rm -rf .agent api app assets config core database docs index.php server.php vayu composer.json composer.lock .htaccess .env.example README.md 2>/dev/null || true
             mv website/* .
             rmdir website
             if [ -n "$PROD_ENV_FILE" ]; then
