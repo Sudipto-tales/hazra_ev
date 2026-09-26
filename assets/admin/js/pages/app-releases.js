@@ -28,6 +28,13 @@
         <div id="listCard"></div>
     `;
 
+    // Status badge helper
+    function statusBadge(status) {
+        const map = { published: 'good', draft: 'warn', archived: 'mid' };
+        const tone = map[status] || 'mid';
+        return `<span class="pill pill--${tone}">${U.esc(status || '—')}</span>`;
+    }
+
     // Data Table
     const list = table.create({
         mount: '#listCard',
@@ -201,27 +208,35 @@
     async function publishRelease(id, vn) {
         const ok = await HAZRA.confirm({
             title: `Publish v${vn}?`,
-            body: 'This will make it the current public download. Any previously published version will be archived.',
+            body: 'This becomes the live public download. Any previously published version will be archived automatically.',
             confirmLabel: 'Publish',
         });
         if (!ok) return;
-        await store.update('app-releases', id, { status: 'published' });
-        toast.success(`v${vn} published`);
-        list.load();
-        paintStats();
+        try {
+            await store.update('app-releases', id, { status: 'published' });
+            toast.success(`v${vn} is now live. Previous version archived.`);
+            list.load();
+            paintStats();
+        } catch (err) {
+            toast.error('Publish failed', { body: err.message || 'Check that the APK file exists on the server.' });
+        }
     }
 
     async function archiveRelease(id, vn) {
         const ok = await HAZRA.confirm({
             title: `Archive v${vn}?`,
-            body: 'This will remove it from the public download page.',
+            body: 'This removes it from the public download page.',
             confirmLabel: 'Archive',
         });
         if (!ok) return;
-        await store.update('app-releases', id, { status: 'archived' });
-        toast.success(`v${vn} archived`);
-        list.load();
-        paintStats();
+        try {
+            await store.update('app-releases', id, { status: 'archived' });
+            toast.success(`v${vn} archived`);
+            list.load();
+            paintStats();
+        } catch (err) {
+            toast.error('Archive failed', { body: err.message || 'Unknown error' });
+        }
     }
 
     async function editNotes(id, currentNotes) {
