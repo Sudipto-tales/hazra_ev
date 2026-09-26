@@ -33,6 +33,10 @@ jobs:
               git remote add origin https://github.com/Sudipto-tales/hazra_ev.git
             fi
 
+            # Disable sparse-checkout if previously enabled
+            git config core.sparseCheckout false 2>/dev/null || true
+            rm -f .git/info/sparse-checkout
+
             echo "==> Fetching website branch..."
             git fetch origin website
             git reset --hard origin/website
