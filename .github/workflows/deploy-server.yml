@@ -41,6 +41,11 @@ jobs:
             echo "==> Deploying into: $TARGET_DIR"
             mkdir -p ~/"$TARGET_DIR"
             cd ~/"$TARGET_DIR"
+            if [ ! -d ".git" ]; then
+              echo "==> Initializing git repository..."
+              git init
+              git remote add origin https://github.com/Sudipto-tales/hazra_ev.git
+            fi
             echo "==> Pulling latest code from deploy branch..."
             git fetch origin deploy
             git reset --hard origin/deploy
