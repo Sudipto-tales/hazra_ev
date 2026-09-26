@@ -27,15 +27,16 @@ jobs:
             echo "==> Deploying into: $TARGET_DIR"
             cd ~/"$TARGET_DIR" || { echo "ERROR: $TARGET_DIR not found"; exit 1; }
 
-            if [ ! -d .git ]; then
-              echo "==> Not a git repo. Initializing..."
+            # Force fresh clone if sparse-checkout was ever enabled or repo is corrupted
+            if [ ! -d .git ] || git config core.sparseCheckout 2>/dev/null | grep -q true; then
+              echo "==> Resetting git repo (sparse-checkout detected or missing)..."
+              cd ~
+              rm -rf "$TARGET_DIR"
+              mkdir -p "$TARGET_DIR"
+              cd "$TARGET_DIR"
               git init
               git remote add origin https://github.com/Sudipto-tales/hazra_ev.git
             fi
-
-            # Disable sparse-checkout if previously enabled
-            git config core.sparseCheckout false 2>/dev/null || true
-            rm -f .git/info/sparse-checkout
 
             echo "==> Fetching website branch..."
             git fetch origin website
