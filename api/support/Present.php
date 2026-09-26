@@ -332,10 +332,12 @@ final class Present
     public static function productColor(array $r, array $imageUrls = []): array
     {
         return [
+            'id'        => $r['id'] ?? null,
             'name'      => $r['name'],
             'argb'      => Wire::int($r['argb']),
             'imageUrls' => array_values($imageUrls),
             'inStock'   => (bool) ($r['in_stock'] ?? 1),
+            'position'  => Wire::int($r['position'] ?? 0),
         ];
     }
 

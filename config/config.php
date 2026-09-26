@@ -6,19 +6,36 @@ define('__BASEDIR__', $baseDir);
 define('APP_ENV', env('APP_ENV', 'production'));
 define('APP_DEBUG', filter_var(env('APP_DEBUG', false), FILTER_VALIDATE_BOOLEAN));
 
-$live_base_url = env('APP_URL', 'https://localhost/Coder-framework');
+date_default_timezone_set(env('APP_TIMEZONE', 'Asia/Kolkata'));
 
-// Auto-detect environment
-if ($_SERVER['HTTP_HOST'] === 'localhost') {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-    $folder_name = basename(__DIR__);
-    $base_url = env('APP_URL', $protocol . $_SERVER['HTTP_HOST'] . "/" . $folder_name);
+$httpHost = $_SERVER['HTTP_HOST'] ?? '';
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+
+$hostOnly = explode(':', $httpHost)[0];
+$isLocal = in_array($hostOnly, ['localhost', '127.0.0.1', '::1'])
+    || str_starts_with($hostOnly, '192.168.')
+    || str_starts_with($hostOnly, '10.')
+    || str_ends_with($hostOnly, '.test')
+    || str_ends_with($hostOnly, '.local');
+
+if ($httpHost !== '') {
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    $dirName = str_replace('\\', '/', dirname($scriptName));
+    $basePath = ($dirName === '/' || $dirName === '.') ? '' : $dirName;
+    if ($isLocal) {
+        $base_url = ($isHttps ? 'https://' : 'http://') . $httpHost . $basePath;
+    } else {
+        $base_url = env('APP_URL', ($isHttps ? 'https://' : 'http://') . $httpHost . $basePath);
+    }
 } else {
-    $base_url = $live_base_url;
+    $base_url = env('APP_URL', 'http://localhost');
 }
+
+$GLOBALS['base_url'] = $base_url;
 
 $frontendRoutes = require __DIR__ . '/../app/view.php';
 $apiRoutes = require __DIR__ . '/../api/gateway.php';
-$routes = array_merge($frontendRoutes, $apiRoutes);
+$routes = $frontendRoutes + $apiRoutes;
 
 ?>

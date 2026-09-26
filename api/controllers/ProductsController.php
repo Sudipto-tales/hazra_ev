@@ -30,6 +30,13 @@ final class ProductsController extends V1Controller
         'batteryCapacity'  => 'battery_capacity',
         'motorPower'       => 'motor_power',
         'loadCapacityKg'   => 'load_capacity_kg',
+        'isFeatured'       => 'is_featured',
+        'is_featured'      => 'is_featured',
+        'featuredOrder'    => 'featured_order',
+        'featured_order'   => 'featured_order',
+        'slug'             => 'slug',
+        'heroImage'        => 'hero_image',
+        'hero_image'       => 'hero_image',
     ];
 
     public function index(): never
@@ -291,21 +298,25 @@ final class ProductsController extends V1Controller
                 continue;
             }
 
-            $colorId = Uuid::v4();
+            $colorId = !empty($color['id']) && is_string($color['id']) ? $color['id'] : Uuid::v4();
+            $pos = isset($color['position']) ? Wire::int($color['position']) : $position;
 
             db_execute(
                 "INSERT INTO product_colors (id, product_id, name, argb, in_stock, position)
                  VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     $colorId, $productId, (string) $color['name'], Wire::int($color['argb'] ?? 0),
-                    Wire::bool($color['inStock'] ?? true) ? 1 : 0, $position,
+                    Wire::bool($color['inStock'] ?? $color['in_stock'] ?? true) ? 1 : 0, $pos,
                 ],
             );
 
-            foreach (array_values((array) ($color['imageUrls'] ?? [])) as $i => $url) {
+            $rawImages = $color['imageUrls'] ?? $color['images'] ?? [];
+            foreach (array_values((array) $rawImages) as $i => $item) {
+                $url = is_array($item) ? ($item['url'] ?? '') : (string) $item;
+                if ($url === '') continue;
                 db_execute(
                     "INSERT INTO product_color_images (id, color_id, url, position) VALUES (?, ?, ?, ?)",
-                    [Uuid::v4(), $colorId, (string) $url, $i],
+                    [Uuid::v4(), $colorId, $url, $i],
                 );
             }
         }
@@ -338,7 +349,8 @@ final class ProductsController extends V1Controller
         return match ($wire) {
             'category'       => Wire::enumIn((string) $value, ['scooty', 'bike', 'bicycle', 'others']) ?? 'others',
             'rating'         => Wire::float($value),
-            'warrantyYears', 'rangeKm', 'topSpeedKmph', 'loadCapacityKg' => Wire::int($value),
+            'warrantyYears', 'rangeKm', 'topSpeedKmph', 'loadCapacityKg', 'featuredOrder', 'featured_order' => Wire::int($value),
+            'isFeatured', 'is_featured' => Wire::bool($value) ? 1 : 0,
             default          => (string) ($value ?? ''),
         };
     }

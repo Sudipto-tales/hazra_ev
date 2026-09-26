@@ -23,20 +23,38 @@ foreach (glob(__BASEDIR__ . '/core/*.php') as $filename) {
 
 // Function to load view files dynamically
 function load_view($path, $data = []) {
-    $base_dir = dirname(__DIR__); 
-    $file_path = $base_dir . '/' . $path;
+    $file_path = __BASEDIR__ . '/' . ltrim($path, '/');
     if (file_exists($file_path)) {
         extract($data);
         require $file_path;
     } else {
-        echo "Error: View '{$path}' not found!";
+        error_log("[Vayu] View '{$path}' not found!");
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            echo "Error: View '{$path}' not found!";
+        }
     }
 }
 
 function base_url($path = '') {
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https://" : "http://";
-    $base_url = $protocol . $_SERVER['HTTP_HOST'] . str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
-    
-    return rtrim($base_url, '/') . '/' . ltrim($path, '/');
+    global $base_url;
+    $root = rtrim($base_url ?: 'http://localhost', '/');
+    return $path === '' ? $root : $root . '/' . ltrim($path, '/');
+}
+
+/**
+ * Resolve an image URL: if it's already absolute (http/https) or root-relative (/...), use as-is.
+ * Otherwise prepend the base URL.
+ */
+function img_url($path = ''): string {
+    if (!$path) return base_url('assets/hazraev.png');
+    $s = trim((string) $path);
+    if (str_starts_with($s, 'http://') || str_starts_with($s, 'https://') || str_starts_with($s, '//')) {
+        return $s;
+    }
+    return base_url(ltrim($s, '/'));
+}
+
+function e($value): string {
+    return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES, 'UTF-8');
 }
 ?>

@@ -107,7 +107,7 @@ class SetupCommand
         }
 
         // Composer
-        $composerInstalled = !empty(shell_exec('composer --version 2>/dev/null'));
+        $composerInstalled = !empty(shell_exec('composer --version 2>NUL'));
         if ($composerInstalled) {
             $this->check('Composer');
         } else {
