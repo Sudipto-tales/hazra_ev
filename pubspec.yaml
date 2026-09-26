@@ -19,7 +19,7 @@ dependencies:
 
   # Survives the access/refresh token pair across app restarts so the field
   # team is not asked to sign in every launch.
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.3.0
 
   # OpenStreetMap basemap for the admin route screen. Pure Dart/Flutter — it
   # renders raster tiles itself rather than embedding a platform map view, so
