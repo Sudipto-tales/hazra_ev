@@ -1,5 +1,7 @@
 RewriteEngine On
 
+LimitRequestBody 104857600
+
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 RewriteRule ^index\.php$ - [L]

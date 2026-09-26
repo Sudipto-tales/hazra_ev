@@ -225,7 +225,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         child: ProductArtwork(
                           category: _category,
                           argb: _colors.isEmpty
-                              ? AppColors.primary.toARGB32()
+                              ? AppColors.primary.value
                               : _colors.first.argb,
                           height: 68,
                           padding: Insets.xs,
