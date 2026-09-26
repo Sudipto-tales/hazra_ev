@@ -88,9 +88,13 @@ class ApiGatewayProvider extends RouteProvider
             'PUT:api/v1/config'            => ['ConfigController', 'update', 'auth'],
 
             // --- Notifications --------------------------------------------------- §3.13
-            'GET:api/v1/notifications'           => ['NotificationsController', 'index',   'auth'],
-            'PATCH:api/v1/notifications/{id}'    => ['NotificationsController', 'update',  'auth'],
-            'POST:api/v1/notifications/read-all' => ['NotificationsController', 'readAll', 'auth'],
+            'GET:api/v1/notifications'                  => ['NotificationsController', 'index',    'auth'],
+            'PATCH:api/v1/notifications/{id}'           => ['NotificationsController', 'update',   'auth'],
+            'POST:api/v1/notifications/read-all'        => ['NotificationsController', 'readAll',  'auth'],
+            'GET:api/v1/admin/notifications'            => ['NotificationsController', 'index',    'auth'],
+            'POST:api/v1/admin/notifications/read-all'  => ['NotificationsController', 'readAll',  'auth'],
+            'POST:api/v1/admin/notifications/{id}/read' => ['NotificationsController', 'markRead', 'auth'],
+            'PATCH:api/v1/admin/notifications/{id}'     => ['NotificationsController', 'update',   'auth'],
 
             // --- Realtime ---------------------------------------------------------- §1.6
             'GET:api/v1/stream'            => ['StreamController', 'index', 'auth'],

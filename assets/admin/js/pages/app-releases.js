@@ -347,4 +347,6 @@
             default:          return `<span class="tag">${U.esc(status)}</span>`;
         }
     }
+}
 })();
+
