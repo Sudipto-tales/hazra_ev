@@ -108,4 +108,16 @@ final class NotificationsController extends V1Controller
 
         Envelope::ok(['marked' => $affected, 'unreadNotifications' => 0]);
     }
+
+    public function markRead(): never
+    {
+        $id = (string) $this->param('id');
+        $affected = db_execute(
+            "UPDATE notification_recipients SET read_at = ? WHERE notification_id = ? AND user_id = ?",
+            [Wire::now(), $id, Ctx::id()],
+        );
+
+        Envelope::ok(['marked' => $affected]);
+    }
 }
+
