@@ -1,229 +1,427 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8" />
 <script>
-/* Applied before first paint so a dark-mode visitor never sees a light
-   flash. Kept inline and tiny on purpose: an external file would race
-   the paint it exists to prevent. */
 (function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
 if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
 document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
 </script>
-  <title>Blog — Electric Mobility Insights | Hazra</title>
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Hazra Electrical Bike">
-<meta property="og:title" content="Blog — Electric Mobility Insights | Hazra">
-<meta property="og:description" content="Insights on electric mobility, rider stories, and the future of urban transportation from Hazra Electrical Bike.">
-<meta property="og:url" content="https://hazraelectricalbike.com/blog.html">
-<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
-<meta name="twitter:card" content="summary_large_image">
+<title>Blog â€” Hazra Electrical Bike</title>
+<meta name="description" content="Stories on electric mobility, battery care, city riding and the road ahead from Hazra Electrical Bike.">
 <link rel="canonical" href="https://hazraelectricalbike.com/blog.html">
-<meta name="description" content="Insights on electric mobility, rider stories, and the future of urban transportation from Hazra Electrical Bike.">
-  <link rel="icon" href="assets/hazraev.png" type="image/png">
-<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="assets/hazraev.png" type="image/png">
 <link rel="stylesheet" href="styles/tokens.css">
 <link rel="stylesheet" href="styles/typography.css">
 <link rel="stylesheet" href="styles/global.css">
 <link rel="stylesheet" href="styles/utilities.css">
-<link rel="stylesheet" href="styles/components/page-chrome.css">
-  <style>
-
-    .blog {
-      padding: clamp(60px, 9vw, 140px) 26px;
-      background: rgb(var(--chip-rgb) / .35);
-      border-top: 1px solid var(--hair-0);
-    }
-
-    .blog__in { width: min(1200px, 93vw); margin: 0 auto; }
-
-    .blog__grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: clamp(24px, 2.5vw, 40px);
-    }
-
-    .post__card {
-      background: var(--surface-0); border: 1px solid var(--hair-0);
-      border-radius: 20px; overflow: hidden;
-      transition: all .35s var(--ease);
-      opacity: 0; transform: translateY(30px);
-      animation: reveal-up .8s var(--ease) calc(.2s + var(--i, 0) * 100ms) forwards;
-    }
-
-    .post__card:hover {
-      border-color: var(--brand-violet);
-      box-shadow: 0 30px 60px -20px rgba(123, 47, 247, .25);
-      transform: translateY(-6px);
-    }
-
-    .post__img {
-      width: 100%; height: 200px; object-fit: cover;
-      transition: transform .35s var(--ease);
-    }
-
-    .post__card:hover .post__img {
-      transform: scale(1.05);
-    }
-
-    .post__body {
-      padding: clamp(20px, 2.5vw, 28px);
-    }
-
-    .post__cat {
-      display: inline-block;
-      padding: 6px 12px;
-      background: rgb(var(--chip-rgb) / .5);
-      border-radius: 6px;
-      font-size: 10px; font-weight: 700;
-      letter-spacing: .06em;
-      color: var(--ink-soft-0);
-      margin-bottom: 12px;
-    }
-
-    .post__title {
-      font-family: 'Montserrat'; font-size: 18px;
-      font-weight: 800; margin-bottom: 12px;
-      line-height: 1.3;
-    }
-
-    .post__desc {
-      font-size: 13px; line-height: 1.6;
-      color: var(--ink-soft-0); margin-bottom: 16px;
-    }
-
-    .post__read {
-      display: inline-flex; align-items: center; gap: 6px;
-      color: var(--brand-violet); font-weight: 700;
-      font-size: 12px; text-decoration: none;
-    }
-
-    @keyframes pop {
-      from { opacity: 0; transform: scale(.95); }
-      to { opacity: 1; transform: none; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition-duration: .01ms !important; }
-    }</style>
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Blog",
- "name":"Hazra Electrical Bike Blog",
- "url":"https://hazraelectricalbike.com/blog.html",
- "publisher":{"@type":"Organization","name":"Hazra Electrical Bike"}}
-</script>
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="styles/pages/blog.css">
 </head>
 <body>
 
-<header class="header">
-  <div class="header__top">
-    <a class="brand" href="index.html">
-      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
-      <span class="brand__txt">Hazra Electrical Bike</span>
+<header class="sticky-bar is-page is-visible" id="stickyBar" aria-hidden="false">
+  <div class="sticky-bar__inner">
+    <a class="brand sticky-bar__brand" href="index.html" aria-label="Hazra Electrical Bike â€” home">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra<b>Electrical Bike</b></span>
     </a>
-    <button class="theme" id="theme" aria-label="Toggle theme">
-      <i data-lucide="sun-medium" class="theme__sun"></i>
-      <i data-lucide="moon" class="theme__moon"></i>
+    <button class="burger" id="stickyBurger" aria-label="Open menu" aria-expanded="false" aria-controls="stickyNav">
+      <span></span><span></span><span></span>
     </button>
+    <nav class="nav sticky-bar__nav" id="stickyNav">
+      <a href="index.html" class="nav__i">Home</a>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">About <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="our-story.html" class="nav__s">Our Story</a>
+          <a href="career.html" class="nav__s">Career</a>
+          <a href="index.html#faq" class="nav__s">FAQ</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Products <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu nav__menu--wide">
+          <a href="ev-details.html" class="nav__s">EV Details <em>Explore the scooter</em></a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t is-on" aria-expanded="false">Social <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="contest.html" class="nav__s">Contest</a>
+          <a href="blog.html" class="nav__s">Blog</a>
+          <a href="battery-use.html" class="nav__s">Battery Use</a>
+          <a href="ev-future.html" class="nav__s">EV Future</a>
+        </div>
+      </div>
+      <div class="nav__grp">
+        <button class="nav__i nav__i--t" aria-expanded="false">Dealers <i data-lucide="chevron-down" class="nav__cv"></i></button>
+        <div class="nav__menu">
+          <a href="dealer-locator.html" class="nav__s">Locate Dealers</a>
+          <a href="become-a-dealer.html" class="nav__s">Become a Dealer</a>
+        </div>
+      </div>
+      <a href="#contact" class="nav__i">Contact</a>
+    </nav>
+    <div class="sticky-bar__end">
+      <button class="theme" id="stickyTheme" aria-label="Toggle theme">
+        <i class="theme__sun" data-lucide="sun"></i>
+        <i class="theme__moon" data-lucide="moon"></i>
+      </button>
+      <a href="#contact" class="sticky-bar__cta"><i data-lucide="shopping-bag"></i><span>CONTACT US</span></a>
+    </div>
   </div>
 </header>
 
-<section class="hero">
-  <h1 class="hero__title">Blog</h1>
-  <p class="hero__lead">
-    Insights on electric mobility, rider stories, and the future of urban transportation.
-  </p>
+<!-- HERO BANNER -->
+<section class="bl-banner">
+  <div class="bl-banner__bg" aria-hidden="true"></div>
+  <div class="bl-banner__veil" aria-hidden="true"></div>
+  <div class="bl-banner__in">
+    <p class="eyebrow"><i class="sq"></i>JOURNAL</p>
+    <h1 class="bl-banner__title">Quietly thinking<br>about the ride.</h1>
+    <p class="bl-banner__lead">Battery care, city routes, dealer stories and the long road of electric mobility â€” written for riders.</p>
+  </div>
 </section>
 
-<section class="blog">
-  <div class="blog__in">
-    <div class="blog__grid">
-      <article class="post__card" style="--i: 0">
-        <img src="assets/dark_scutie.webp" alt="Urban Mobility" class="post__img">
-        <div class="post__body">
-          <span class="post__cat">EV Trends</span>
-          <h3 class="post__title">The Future of Urban Mobility is Electric</h3>
-          <p class="post__desc">Indian cities are shifting to lighter, smarter two-wheelers. Learn how the change is happening street by street.</p>
-          <a href="#" class="post__read">Read more <i data-lucide="arrow-right"></i></a>
-        </div>
-      </article>
+<!-- MAGAZINE -->
+<section class="bl-mag">
+  <div class="wrap">
+    <div class="bl-mag__intro">
+      <div>
+        <h2>Quietly Thinking</h2>
+      </div>
+      <p>A calm space for slow thoughts on EV life â€” range, roads and what comes next.</p>
+      <div class="bl-mag__actions">
+        <a class="btn btn--ink" href="#newsletter"><span>Subscribe</span><i data-lucide="play"></i></a>
+        <a class="btn btn--ghost" href="#contact">Contact</a>
+      </div>
+    </div>
 
-      <article class="post__card" style="--i: 1">
-        <img src="assets/scutie_light.webp" alt="Battery Care" class="post__img">
-        <div class="post__body">
-          <span class="post__cat">Ownership</span>
-          <h3 class="post__title">Battery Care Guide for EV Riders</h3>
-          <p class="post__desc">Six routines that add years to your battery pack. Charge windows, storage, and habits that matter.</p>
-          <a href="#" class="post__read">Read more <i data-lucide="arrow-right"></i></a>
+    <div class="bl-layout">
+      <!-- MAIN COLUMN -->
+      <div>
+        <!-- Featured -->
+        <div class="bl-feat">
+          <article class="bl-feat__main">
+            <div class="bl-feat__copy">
+              <span class="bl-cat">Lifestyle</span>
+              <h3><a href="#">Returning to the unnamed wild beyond the maps</a></h3>
+              <p>There are places that refuse to be mapped â€” not because theyâ€™re far, but because they still belong to the rider and the road.</p>
+              <div class="bl-meta">
+                <img src="https://i.pravatar.cc/56?u=lora" alt="">
+                <span>Lora</span>
+                <span>Â· Jun 13, 2026</span>
+              </div>
+              <div class="bl-tags">
+                <span>silence</span><span>noise</span><span>solitude</span><span>landscape</span>
+              </div>
+            </div>
+            <div class="bl-feat__media">
+              <img src="https://images.unsplash.com/photo-1474519811234-466cb63bf5d2?auto=format&fit=crop&w=800&q=80" alt="Featured" loading="lazy">
+            </div>
+          </article>
+          <div class="bl-feat__side">
+            <article class="bl-side-card">
+              <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80" alt="" loading="lazy">
+              <div class="bl-side-card__body">
+                <h4><a href="#">When machines begin to dream of trees</a></h4>
+                <p>A calm space for slow thoughts. No noise â€” just reflection.</p>
+                <div class="bl-meta"><span>Jun 13, 2026</span></div>
+              </div>
+            </article>
+          </div>
         </div>
-      </article>
 
-      <article class="post__card" style="--i: 2">
-        <img src="assets/dark_scutie.webp" alt="Dealer Network" class="post__img">
-        <div class="post__body">
-          <span class="post__cat">Dealership</span>
-          <h3 class="post__title">Why EV Dealerships Are High-Growth Business</h3>
-          <p class="post__desc">Demand signals, service revenue, and local trust. What actually makes an EV counter work.</p>
-          <a href="#" class="post__read">Read more <i data-lucide="arrow-right"></i></a>
-        </div>
-      </article>
+        <!-- Breaking news -->
+        <div class="bl-break">
+          <div class="bl-break__head"><i data-lucide="hash"></i> Breaking News</div>
 
-      <article class="post__card" style="--i: 3">
-        <img src="assets/scutie_light.webp" alt="Commute Tips" class="post__img">
-        <div class="post__body">
-          <span class="post__cat">Riding</span>
-          <h3 class="post__title">5 Tips for Safer City Riding</h3>
-          <p class="post__desc">Make your daily commute safer and smarter. Expert advice from our riding community.</p>
-          <a href="#" class="post__read">Read more <i data-lucide="arrow-right"></i></a>
-        </div>
-      </article>
+          <article class="bl-post">
+            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
+            <div class="bl-post__body">
+              <span class="bl-cat">World</span>
+              <h3><a href="#">When nature stops waiting for us to return</a></h3>
+              <p>There comes a time when the wild no longer looks for us. Forests learn to grow without footstepsâ€¦</p>
+              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=tair" alt=""><span>Tair</span><span>Â· Jun 13, 2026</span></div>
+            </div>
+          </article>
 
-      <article class="post__card" style="--i: 4">
-        <img src="assets/dark_scutie.webp" alt="Cost Calculator" class="post__img">
-        <div class="post__body">
-          <span class="post__cat">Economics</span>
-          <h3 class="post__title">How Much You Actually Save With EV</h3>
-          <p class="post__desc">A detailed breakdown of running costs vs petrol scooters. Numbers that speak for themselves.</p>
-          <a href="#" class="post__read">Read more <i data-lucide="arrow-right"></i></a>
-        </div>
-      </article>
+          <article class="bl-post">
+            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
+            <div class="bl-post__body">
+              <span class="bl-cat">Entertainment</span>
+              <h3><a href="#">Beneath the soil, seeds whisper about another day</a></h3>
+              <p>Even in stillness, life speaks softly. Hidden under the quiet earth, small voices promise a future.</p>
+              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=sera" alt=""><span>Sera</span><span>Â· Jun 13, 2026</span></div>
+            </div>
+          </article>
 
-      <article class="post__card" style="--i: 5">
-        <img src="assets/scutie_light.webp" alt="Rider Story" class="post__img">
-        <div class="post__body">
-          <span class="post__cat">Stories</span>
-          <h3 class="post__title">Rider Story: From Petrol to Electric</h3>
-          <p class="post__desc">Meet Priya who switched to Hazra and never looked back. Her journey to clean mobility.</p>
-          <a href="#" class="post__read">Read more <i data-lucide="arrow-right"></i></a>
+          <article class="bl-post">
+            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
+            <div class="bl-post__body">
+              <span class="bl-cat">Fashion</span>
+              <h3><a href="#">Stories the stones keep to themselves</a></h3>
+              <p>The earth remembers everything â€” our footsteps, our fires, our silence.</p>
+              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=nira" alt=""><span>Nira</span><span>Â· Jun 13, 2026</span></div>
+            </div>
+          </article>
+
+          <article class="bl-post">
+            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1483728642387-6c3bdddeba27?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
+            <div class="bl-post__body">
+              <span class="bl-cat">Solitude</span>
+              <h3><a href="#">When the mountains breathe at first dawn</a></h3>
+              <p>Morning finds its way through mist and memory. The mountains inhale light.</p>
+              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=liar" alt=""><span>Liar</span><span>Â· Jun 13, 2026</span></div>
+            </div>
+          </article>
+
+          <article class="bl-post">
+            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
+            <div class="bl-post__body">
+              <span class="bl-cat">Reflection</span>
+              <h3><a href="#">Listening to the earth between storms</a></h3>
+              <p>Thereâ€™s a calm voice in the pause before thunder. Sometimes, silence is the loudest form of understanding.</p>
+              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=arin" alt=""><span>Arin</span><span>Â· Jun 13, 2026</span></div>
+            </div>
+          </article>
+
+          <article class="bl-post">
+            <div class="bl-post__img"><img src="https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=400&q=80" alt="" loading="lazy"></div>
+            <div class="bl-post__body">
+              <span class="bl-cat">Renewal</span>
+              <h3><a href="#">Beneath the soil, seeds whisper about another day</a></h3>
+              <p>In the quiet dark, life hums beneath our forgetting. Tiny seeds dream of sunlight.</p>
+              <div class="bl-meta"><img src="https://i.pravatar.cc/48?u=keen" alt=""><span>Keen</span><span>Â· Jun 13, 2026</span></div>
+            </div>
+          </article>
         </div>
-      </article>
+
+        <div class="bl-more"><a href="#">Show more posts <i data-lucide="arrow-down"></i></a></div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside class="bl-side">
+        <div class="bl-widget">
+          <h3 class="bl-widget__title">Flash news</h3>
+          <div class="bl-flash">
+            <a class="bl-flash__row" href="#">
+              <div>
+                <h4>Time slowly fades where moss grows</h4>
+                <time>Jun 13, 2026</time>
+              </div>
+              <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=120&q=80" alt="">
+            </a>
+            <a class="bl-flash__row" href="#">
+              <div>
+                <h4>The weight of light in endless fields</h4>
+                <time>Jun 13, 2026</time>
+              </div>
+              <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=120&q=80" alt="">
+            </a>
+            <a class="bl-flash__row" href="#">
+              <div>
+                <h4>What the fire gently leaves behind</h4>
+                <time>Jun 13, 2026</time>
+              </div>
+              <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=120&q=80" alt="">
+            </a>
+            <a class="bl-flash__row" href="#">
+              <div>
+                <h4>A meadow quietly built from memory</h4>
+                <time>Jun 13, 2026</time>
+              </div>
+              <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=120&q=80" alt="">
+            </a>
+          </div>
+        </div>
+
+        <div class="bl-widget">
+          <h3 class="bl-widget__title">Top authors</h3>
+          <div class="bl-authors">
+            <div class="bl-author">
+              <span class="bl-author__n">1</span>
+              <div style="display:flex;gap:10px;align-items:center">
+                <img src="https://i.pravatar.cc/72?u=a1" alt="">
+                <div><b>Laura Bennett</b><span>Elite author</span></div>
+              </div>
+              <button type="button">Follow</button>
+            </div>
+            <div class="bl-author">
+              <span class="bl-author__n">2</span>
+              <div style="display:flex;gap:10px;align-items:center">
+                <img src="https://i.pravatar.cc/72?u=a2" alt="">
+                <div><b>Robert Edition</b><span>Exclusive author</span></div>
+              </div>
+              <button type="button">Follow</button>
+            </div>
+            <div class="bl-author">
+              <span class="bl-author__n">3</span>
+              <div style="display:flex;gap:10px;align-items:center">
+                <img src="https://i.pravatar.cc/72?u=a3" alt="">
+                <div><b>Daniel Cross</b><span>Author favorite</span></div>
+              </div>
+              <button type="button">Follow</button>
+            </div>
+            <div class="bl-author">
+              <span class="bl-author__n">4</span>
+              <div style="display:flex;gap:10px;align-items:center">
+                <img src="https://i.pravatar.cc/72?u=a4" alt="">
+                <div><b>Sophia Turner</b><span>Author favorite</span></div>
+              </div>
+              <button type="button">Follow</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bl-widget">
+          <h3 class="bl-widget__title">Follow us</h3>
+          <div class="bl-socials">
+            <a href="#"><i data-lucide="facebook"></i> Facebook <em>12k</em></a>
+            <a href="#"><i data-lucide="twitter"></i> Twitter <em>12k</em></a>
+            <a href="#"><i data-lucide="instagram"></i> Instagram <em>12k</em></a>
+            <a href="#"><i data-lucide="youtube"></i> Youtube <em>12k</em></a>
+          </div>
+        </div>
+
+        <div class="bl-widget">
+          <h3 class="bl-widget__title">Trending topics</h3>
+          <div class="bl-topics">
+            <a class="bl-topic" href="#">
+              <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=120&q=80" alt="">
+              <div><b>Range &amp; battery</b><span>24 articles</span></div>
+            </a>
+            <a class="bl-topic" href="#">
+              <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=120&q=80" alt="">
+              <div><b>City riding</b><span>18 articles</span></div>
+            </a>
+            <a class="bl-topic" href="#">
+              <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=120&q=80" alt="">
+              <div><b>Dealer stories</b><span>11 articles</span></div>
+            </a>
+          </div>
+        </div>
+
+        <div class="bl-ad">
+          <span>Your banner here<br>310 Ã— 220</span>
+          <p>Partner with Hazra on the journal.</p>
+          <a class="btn btn--ink" href="#contact"><span>Contact</span><i data-lucide="arrow-right"></i></a>
+        </div>
+      </aside>
     </div>
   </div>
 </section>
 
-<section class="footer">
-  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
-    Subscribe to our newsletter for weekly updates
-  </p>
-  <a class="footer__link" href="index.html">
-    <span>Back to home</span>
-    <i data-lucide="arrow-right"></i>
-  </a>
-</section>
+<!-- NEWSLETTER -->
+<!-- <section class="bl-news" id="newsletter">
+  <div class="wrap">
+    <h2>Subscribe to our newsletter</h2>
+    <p>Get the best journal stories in your inbox.</p>
+    <form class="bl-news__form" onsubmit="event.preventDefault();alert('Subscribed â€” thank you!');">
+      <input type="email" required placeholder="Your email address">
+      <button class="btn btn--ink" type="submit"><span>Subscribe</span><i data-lucide="arrow-right"></i></button>
+    </form>
+  </div>
+</section> -->
 
-<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<footer class="foot" id="contact">
+  <div class="foot__wave"></div>
+  <div class="foot__bg foot__bg--light" aria-hidden="true"></div>
+  <div class="foot__bg foot__bg--dark" aria-hidden="true"></div>
+  <i class="foot__veil"></i>
+  <div class="wrap foot__in">
+    <div class="foot__main">
+      <div class="foot__content">
+        <div class="foot__brand">
+          <img class="foot__logo" src="assets/hazraev.png" alt="Hazra Electrical Bike">
+          <p class="foot__tag">Premium electric scooters designed for smarter, cleaner and more affordable mobility.</p>
+          <ul class="foot__contact">
+            <li><i data-lucide="phone"></i><a href="tel:+919829016542">+91 98290 16542</a></li>
+            <li><i data-lucide="mail"></i><a href="mailto:info@hazraev.com">info@hazraev.com</a></li>
+            <li><i data-lucide="map-pin"></i><span>Sahibabad Industrial Area, Ghaziabad, Uttar Pradesh 201010</span></li>
+          </ul>
+        </div>
+        <nav class="foot__cols" aria-label="Footer">
+          <div class="fcol">
+            <h4>Electric Scooters</h4>
+            <a href="ev-details.html">EV Details</a>
+            <a href="index.html#collection">Compare models</a>
+          </div>
+          <div class="fcol">
+            <h4>Company</h4>
+            <a href="our-story.html">Our story</a>
+            <a href="career.html">Careers</a>
+            <a href="blog.html">Blog</a>
+          </div>
+          <div class="fcol">
+            <h4>Support</h4>
+            <a href="index.html#faq">FAQs</a>
+            <a href="#contact">Contact us</a>
+          </div>
+          <div class="fcol">
+            <h4>Buy</h4>
+            <a href="dealer-locator.html">Locate dealers</a>
+            <a href="become-a-dealer.html">Become a dealer</a>
+          </div>
+          <div class="fcol">
+            <h4>Legal</h4>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+          </div>
+        </nav>
+      </div>
+      <aside class="foot__social-section">
+        <h3 class="foot__social-title">Follow us</h3>
+        <div class="foot__socials">
+          <a href="#" class="foot__social-link foot__social--instagram" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+          <a href="#" class="foot__social-link foot__social--facebook" aria-label="Facebook"><i data-lucide="facebook"></i></a>
+          <a href="#" class="foot__social-link foot__social--youtube" aria-label="YouTube"><i data-lucide="youtube"></i></a>
+          <a href="#" class="foot__social-link foot__social--whatsapp" aria-label="WhatsApp"><i data-lucide="message-circle"></i></a>
+        </div>
+      </aside>
+    </div>
+    <div class="foot__base">
+      <p>&copy; 2026 Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
+      <div class="foot__legal"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></div>
+    </div>
+  </div>
+</footer>
+
+<aside class="dock" aria-label="Quick actions">
+  <a class="dock__i" href="index.html#test-ride" aria-label="Test drive"><i data-lucide="bike"></i><span class="dock__lb">Test Drive</span></a>
+  <a class="dock__i" href="dealership-enquiry.html" aria-label="Dealership"><i data-lucide="store"></i><span class="dock__lb">Dealership</span></a>
+  <a class="dock__i" href="tel:+919829016542" aria-label="Call"><i data-lucide="phone"></i><span class="dock__lb">Call Us</span></a>
+  <a class="dock__i" href="https://wa.me/919829016542" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i data-lucide="message-circle"></i><span class="dock__lb">WhatsApp</span></a>
+</aside>
+
+<script src="script.js"></script>
 <script>
-  lucide.createIcons();
-  const themeBtn = document.getElementById('theme');
-  themeBtn.addEventListener('click', () => {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+lucide.createIcons();
+const stickyNav=document.getElementById('stickyNav');
+const stickyBurger=document.getElementById('stickyBurger');
+stickyBurger?.addEventListener('click',()=>{
+  const on=!stickyNav?.classList.contains('is-open');
+  stickyNav?.classList.toggle('is-open',on);
+  stickyBurger.classList.toggle('is-on',on);
+});
+document.querySelectorAll('.nav__grp').forEach(grp=>{
+  grp.querySelector('.nav__i--t')?.addEventListener('click',e=>{
+    e.stopPropagation();
+    const open=grp.classList.contains('is-open');
+    document.querySelectorAll('.nav__grp.is-open').forEach(g=>g.classList.remove('is-open'));
+    if(!open) grp.classList.add('is-open');
   });
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.sticky-bar')){
+    document.querySelectorAll('.nav__grp.is-open').forEach(g=>g.classList.remove('is-open'));
+    stickyNav?.classList.remove('is-open');
+  }
+});
 </script>
-
 </body>
 </html>

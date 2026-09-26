@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 460" role="img" aria-labelledby="title desc">
+  <title id="title">Hazra Electrical Bike network across India</title>
+  <desc id="desc">A glowing indigo and violet map silhouette of India with network points.</desc>
+  <defs>
+    <linearGradient id="map" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b52cff"/>
+      <stop offset=".52" stop-color="#644bff"/>
+      <stop offset="1" stop-color="#13a9df"/>
+    </linearGradient>
+    <radialGradient id="wash">
+      <stop offset="0" stop-color="#a52cff" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#a52cff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle cx="210" cy="230" r="190" fill="url(#wash)"/>
+  <path d="M198 28c12 6 28 18 36 34 8 14 6 28-2 40 10 8 22 22 24 38 2 14-6 28-16 36 8 16 10 34 4 50-4 12-14 22-26 28 4 18 2 38-8 52-8 12-22 20-36 22 2 14 8 28 6 42-2 12-12 22-24 26-10 4-22 2-30-4-6 10-18 16-30 14-14-2-24-14-28-26-12 4-26 2-36-6-10-8-14-22-12-34-12-4-22-14-24-26-2-14 6-28 18-34-8-12-8-28 0-40 6-10 18-16 30-16-4-14 2-30 14-38 10-8 24-8 34-2 6-12 18-20 32-20 8 0 16 2 22 8 6-10 18-16 30-14z" fill="url(#map)" opacity=".92" filter="url(#glow)"/>
+  <g fill="#fff" stroke="#7b2ff7" stroke-width="4">
+    <circle cx="210" cy="110" r="7"/><circle cx="175" cy="155" r="6"/><circle cx="240" cy="165" r="6"/>
+    <circle cx="155" cy="210" r="7"/><circle cx="200" cy="230" r="6"/><circle cx="255" cy="250" r="5"/>
+    <circle cx="180" cy="290" r="6"/><circle cx="220" cy="320" r="5"/><circle cx="195" cy="360" r="6"/><circle cx="165" cy="250" r="5"/>
+  </g>
+</svg>
