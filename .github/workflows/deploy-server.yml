@@ -62,3 +62,12 @@ jobs:
             echo "==> Done. Current commit:"
             git log -1 --oneline
             ls -la
+            
+            echo "==> PHP version check:"
+            php -v
+            
+            echo "==> Testing PHP execution:"
+            php -r "echo 'PHP works\n';"
+            
+            echo "==> Checking required extensions:"
+            php -m | grep -E "pdo_mysql|mbstring|json|curl|xml"
