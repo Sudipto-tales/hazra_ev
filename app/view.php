@@ -88,8 +88,10 @@ class ViewRouteProvider extends RouteProvider
             'warranty-paid' => ['Page', 'warrantyPaid'],
             'warranty-paid.php' => ['Page', 'warrantyPaid'],
 
-            'app'      => ['Page', 'appDownload'],
-            'download' => ['Page', 'appDownload'],
+            'app'          => ['Page', 'appDownload'],
+            'download'     => ['Page', 'appDownload'],
+            'app-download' => ['Page', 'appDownload'],
+            'app-download.php' => ['Page', 'appDownload'],
 
             'admin' => ['Page', 'admin'],
             'admin.php' => ['Page', 'admin'],
