@@ -45,10 +45,16 @@ jobs:
               echo "==> Initializing git repository..."
               git init
               git remote add origin https://github.com/Sudipto-tales/hazra_ev.git
+              git config core.sparseCheckout true
+              echo "website/*" > .git/info/sparse-checkout
             fi
-            echo "==> Pulling latest code from deploy branch..."
+            echo "==> Pulling latest code from deploy branch (website/ folder only)..."
             git fetch origin deploy
             git reset --hard origin/deploy
+            echo "==> Moving website/ contents to root..."
+            shopt -s dotglob
+            mv website/* .
+            rmdir website
             if [ -n "$PROD_ENV_FILE" ]; then
               echo "==> Updating .env from GitHub Secrets..."
               echo "$PROD_ENV_FILE" > .env
