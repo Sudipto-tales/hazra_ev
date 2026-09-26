@@ -193,11 +193,16 @@ App::render('head', [
       </button>
 
       <nav class="nav" id="nav">
-        <a href="<?= e(base_url()) ?>" class="nav__i is-on">Home</a>
+        <a href="<?= e(base_url()) ?>" class="nav__i is-on">
+          <i data-lucide="home" class="nav__ico"></i>
+          <span>Home</span>
+        </a>
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            About <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="info" class="nav__ico"></i>
+            <span>About</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
             <a href="<?= e(base_url('our-story')) ?>" class="nav__s">Our Story</a>
@@ -208,7 +213,9 @@ App::render('head', [
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            Products <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="bike" class="nav__ico"></i>
+            <span>Products</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--products">
             <div class="nav__products-header">
@@ -244,7 +251,9 @@ App::render('head', [
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            Social <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="share-2" class="nav__ico"></i>
+            <span>Social</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
             <a href="<?= e(base_url('contest')) ?>"     class="nav__s">Contest <em>Reels Contest</em></a>
@@ -257,7 +266,9 @@ App::render('head', [
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="store" class="nav__ico"></i>
+            <span>Dealers</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
             <a href="<?= e(base_url('dealer-locator')) ?>"  class="nav__s">Dealer Locator</a>
@@ -267,13 +278,20 @@ App::render('head', [
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            Service <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="wrench" class="nav__ico"></i>
+            <span>Service</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--wide">
             <a href="<?= e(base_url('warranty-free')) ?>" class="nav__s">Free Warranty Registration</a>
             <a href="<?= e(base_url('warranty-paid')) ?>" class="nav__s">Paid Warranty Registration</a>
           </div>
         </div>
+
+        <a href="<?= e(base_url('contact')) ?>" class="nav__i">
+          <i data-lucide="mail" class="nav__ico"></i>
+          <span>Contact</span>
+        </a>
       </nav>
 
       <button class="theme" id="theme" aria-label="Toggle theme">
@@ -354,11 +372,16 @@ App::render('head', [
     </button>
 
     <nav class="nav sticky-bar__nav" id="stickyNav">
-      <a href="<?= e(base_url()) ?>" class="nav__i is-on">Home</a>
+      <a href="<?= e(base_url()) ?>" class="nav__i is-on">
+        <i data-lucide="home" class="nav__ico"></i>
+        <span>Home</span>
+      </a>
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          About <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="info" class="nav__ico"></i>
+          <span>About</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('our-story')) ?>" class="nav__s">Our Story</a>
@@ -369,7 +392,9 @@ App::render('head', [
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          Products <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="bike" class="nav__ico"></i>
+          <span>Products</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu nav__menu--products">
           <div class="nav__products-header">
@@ -405,7 +430,9 @@ App::render('head', [
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          Social <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="share-2" class="nav__ico"></i>
+          <span>Social</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('contest')) ?>"     class="nav__s">Contest <em>Reels Contest</em></a>
@@ -418,7 +445,9 @@ App::render('head', [
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="store" class="nav__ico"></i>
+          <span>Dealers</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('dealer-locator')) ?>"    class="nav__s">Locate Dealers</a>
@@ -428,7 +457,9 @@ App::render('head', [
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          Service <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="wrench" class="nav__ico"></i>
+          <span>Service</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('warranty-free')) ?>"     class="nav__s">Warranty (Free)</a>
@@ -437,8 +468,14 @@ App::render('head', [
         </div>
       </div>
 
-      <a href="<?= e(base_url('admin')) ?>" class="nav__i">Admin</a>
-      <a href="<?= e(base_url('contact')) ?>" class="nav__i">Contact</a>
+      <a href="<?= e(base_url('admin')) ?>" class="nav__i">
+        <i data-lucide="shield" class="nav__ico"></i>
+        <span>Admin</span>
+      </a>
+      <a href="<?= e(base_url('contact')) ?>" class="nav__i">
+        <i data-lucide="mail" class="nav__ico"></i>
+        <span>Contact</span>
+      </a>
     </nav>
 
     <div class="sticky-bar__end">
@@ -749,6 +786,14 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
             </article>
           <?php endforeach; ?>
         </div>
+
+        <!-- mobile navigation arrow buttons -->
+        <button class="feat__arrow feat__arrow--prev" id="featPrev" aria-label="Previous model" type="button">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <button class="feat__arrow feat__arrow--next" id="featNext" aria-label="Next model" type="button">
+          <i data-lucide="chevron-right"></i>
+        </button>
 
         <!-- right edge pagination -->
         <ol class="feat__dots" id="featDots">

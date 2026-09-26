@@ -44,11 +44,13 @@ window.HAZRA_NAV = [
             { key: 'dealership', label: 'Dealership', icon: 'fa-store', href: '/admin/dealership' },
             { key: 'contact', label: 'Contact', icon: 'fa-envelope', href: '/admin/contact' },
             { key: 'career-apps', label: 'Career Apps', icon: 'fa-file-signature', href: '/admin/career-apps' },
+            { key: 'warranty', label: 'Warranty', icon: 'fa-shield-halved', href: '/admin/warranty', badge: () => window.HAZRA_NAV_COUNT('warranty', (r) => r.status === 'pending') },
         ],
     },
     {
         label: 'System',
         items: [
+            { key: 'app-releases', label: 'App Releases', icon: 'fa-mobile-screen', href: '/admin/app-releases' },
             { key: 'settings', label: 'Settings', icon: 'fa-sliders', href: '/admin/settings' },
         ],
     },

@@ -68,11 +68,16 @@
       </button>
 
       <nav class="nav" id="nav">
-        <a href="<?= $baseUrl ?>/" class="nav__i is-on">Home</a>
+        <a href="<?= $baseUrl ?>/" class="nav__i is-on">
+          <i data-lucide="home" class="nav__ico"></i>
+          <span>Home</span>
+        </a>
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            About <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="info" class="nav__ico"></i>
+            <span>About</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
             <a href="<?= $baseUrl ?>/our-story.html" class="nav__s">Our Story</a>
@@ -83,7 +88,9 @@
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            Products <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="bike" class="nav__ico"></i>
+            <span>Products</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--wide">
             <a href="<?= $baseUrl ?>/chalo-1000-v2.html" class="nav__s">Hello 1000 V2 <em>High Speed</em></a>
@@ -97,7 +104,9 @@
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            Social <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="share-2" class="nav__ico"></i>
+            <span>Social</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
             <a href="<?= $baseUrl ?>/contest.html"     class="nav__s">Contest <em>Reels Contest</em></a>
@@ -110,7 +119,9 @@
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="store" class="nav__ico"></i>
+            <span>Dealers</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu">
             <a href="<?= $baseUrl ?>/dealer-locator.html"  class="nav__s">Dealer Locator</a>
@@ -120,7 +131,9 @@
 
         <div class="nav__grp">
           <button class="nav__i nav__i--t" aria-expanded="false">
-            Service <i data-lucide="chevron-down" class="nav__cv"></i>
+            <i data-lucide="wrench" class="nav__ico"></i>
+            <span>Service</span>
+            <i data-lucide="chevron-down" class="nav__cv"></i>
           </button>
           <div class="nav__menu nav__menu--wide">
             <a href="warranty-free.html" class="nav__s">Free Warranty Registration</a>
@@ -128,7 +141,10 @@
           </div>
         </div>
 
-        <a href="#contact" class="nav__i">Contact</a>
+        <a href="#contact" class="nav__i">
+          <i data-lucide="mail" class="nav__ico"></i>
+          <span>Contact</span>
+        </a>
       </nav>
 
       <button class="theme" id="theme" aria-label="Toggle theme">
@@ -209,11 +225,16 @@
     </button>
 
     <nav class="nav sticky-bar__nav" id="stickyNav">
-      <a href="#" class="nav__i is-on">Home</a>
+      <a href="#" class="nav__i is-on">
+        <i data-lucide="home" class="nav__ico"></i>
+        <span>Home</span>
+      </a>
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          About <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="info" class="nav__ico"></i>
+          <span>About</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="our-story.html" class="nav__s">Our Story</a>
@@ -224,7 +245,9 @@
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          Products <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="bike" class="nav__ico"></i>
+          <span>Products</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu nav__menu--wide">
           <a href="chalo-1000-v2.html" class="nav__s">CHALO 1000 V2 <em>High Speed</em></a>
@@ -238,7 +261,9 @@
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          Social <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="share-2" class="nav__ico"></i>
+          <span>Social</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="contest.html"     class="nav__s">Contest <em>Reels Contest</em></a>
@@ -251,7 +276,9 @@
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="store" class="nav__ico"></i>
+          <span>Dealers</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="dealer-locator.html"    class="nav__s">Locate Dealers</a>
@@ -261,7 +288,9 @@
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t" aria-expanded="false">
-          Service <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="wrench" class="nav__ico"></i>
+          <span>Service</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="warranty-free.html"     class="nav__s">Warranty (Free)</a>
@@ -270,7 +299,10 @@
         </div>
       </div>
 
-      <a href="#contact" class="nav__i">Contact</a>
+      <a href="#contact" class="nav__i">
+        <i data-lucide="mail" class="nav__ico"></i>
+        <span>Contact</span>
+      </a>
     </nav>
 
     <div class="sticky-bar__end">
@@ -777,6 +809,14 @@
 
         </div>
 
+        <!-- mobile navigation arrow buttons -->
+        <button class="feat__arrow feat__arrow--prev" id="featPrev" aria-label="Previous model" type="button">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <button class="feat__arrow feat__arrow--next" id="featNext" aria-label="Next model" type="button">
+          <i data-lucide="chevron-right"></i>
+        </button>
+
         <!-- right edge pagination -->
         <ol class="feat__dots" id="featDots">
           <li><button class="fdot" style="--n:0" data-go="0" aria-label="Matic S1"></button></li>
@@ -1282,21 +1322,21 @@ try {
 <!-- ══════════ FLOATING ACTION DOCK ══════════ -->
 <aside class="dock" id="floatingDock" aria-label="Quick actions">
   <a class="dock__i" href="#test-ride" data-dock="test-drive" aria-label="Book a test drive">
-    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
     </svg>
     <span class="dock__lb">Test Drive</span>
   </a>
 
   <a class="dock__i" href="<?= e(base_url('become-a-dealer')) ?>" data-dock="dealership" aria-label="Dealership enquiry">
-    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/><path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/>
     </svg>
     <span class="dock__lb">Dealership</span>
   </a>
 
   <a class="dock__i" href="tel:+919002921509" aria-label="Call Hazra Electrical Bike">
-    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
     </svg>
     <span class="dock__lb">Call Us</span>
@@ -1304,7 +1344,7 @@ try {
 
   <a class="dock__i" href="https://wa.me/919002921509" target="_blank" rel="noopener noreferrer"
      aria-label="Chat on WhatsApp (opens in a new tab)">
-    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
     </svg>
     <span class="dock__lb">WhatsApp</span>

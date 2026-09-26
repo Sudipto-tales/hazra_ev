@@ -5,6 +5,7 @@
 *.key
 *.jks
 *.keystore
+*id_hostinger_deploy*
 
 # ── Archived nested repo (vayu-framework history) ────────
 website/.git.vayu-backup/
@@ -20,6 +21,9 @@ website/database/*.sqlite-shm
 website/database/*.sqlite-wal
 website/storage/uploads/
 website/storage/logs/
+website/storage/apk/
+!website/storage/apk/.gitkeep
+!website/storage/apk/.htaccess
 website/logs/
 
 # ── Flutter / Dart ───────────────────────────────────────

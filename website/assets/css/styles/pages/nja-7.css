@@ -55,16 +55,22 @@
     .brand__txt { font-family: 'Montserrat', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--ink-soft-0); }
 
     .theme {
-      display: grid; place-items: center;
-      width: 40px; height: 40px; border-radius: 50%;
-      background: none; border: 1px solid var(--hair-0);
-      cursor: pointer; color: var(--ink-0);
+      position: relative !important;
+      display: grid !important; place-items: center !important;
+      width: 40px !important; height: 40px !important; border-radius: 50% !important;
+      background: none !important; border: 1px solid var(--hair-0) !important;
+      cursor: pointer !important; color: var(--ink-0) !important;
     }
 
-    .theme svg { width: 17px; height: 17px; position: absolute; }
-    .theme__moon { display: none; }
-    html[data-theme="dark"] .theme__sun { display: none; }
-    html[data-theme="dark"] .theme__moon { display: block; }
+    .theme svg, .theme i {
+      position: absolute !important; left: 50% !important; top: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      width: 17px !important; height: 17px !important;
+      pointer-events: none !important;
+    }
+    .theme__moon { display: none !important; }
+    html[data-theme="dark"] .theme__sun { display: none !important; }
+    html[data-theme="dark"] .theme__moon { display: block !important; }
 
     .hero {
       display: grid; grid-template-columns: 1fr 1fr;

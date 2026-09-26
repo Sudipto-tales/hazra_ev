@@ -157,6 +157,7 @@ const PATHS = {
     enquiries: 'api/v1/website/leads',  // all-leads inbox
     'career-apps': 'api/v1/job-applications',
     applications: 'api/v1/job-applications', // jobs.js uses 'applications'
+    warranty: 'api/v1/admin/warranty/registrations',
     settings: 'api/v1/settings',
 };
 

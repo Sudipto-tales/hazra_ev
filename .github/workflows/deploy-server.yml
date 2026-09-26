@@ -1,0 +1,84 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Hostinger Website Deploy Workflow
+#
+# Triggered automatically when the `deploy` branch is pushed, or manually via
+# GitHub Actions "Run workflow" button.
+#
+# Connects to Hostinger via SSH, pulls the latest code from the `deploy` branch,
+# injects the production `.env` from GitHub Secrets, installs PHP dependencies,
+# and automatically runs database migrations/seeders via `php vayu db:sync`.
+# ──────────────────────────────────────────────────────────────────────────────
+
+name: Deploy Website to Hostinger
+
+on:
+  push:
+    branches:
+      - deploy
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Hostinger via SSH
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 65002 }}
+          script_stop: true
+          envs: PROD_ENV_FILE
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 65002 }}
+          envs: PROD_ENV_FILE
+          script: |
+            set -e
+
+            # 1. Navigate to website document root
+            # By default public_html, or custom directory configured in secrets
+            TARGET_DIR="${{ secrets.SSH_TARGET_DIR || 'public_html' }}"
+            echo "==> Deploying into: $TARGET_DIR"
+            cd ~/"$TARGET_DIR"
+
+            # 2. Fetch and reset to latest deploy branch
+            echo "==> Pulling latest code from deploy branch..."
+            git fetch origin deploy
+            git reset --hard origin/deploy
+
+            # 3. Inject production .env from GitHub Secrets
+            if [ -n "$PROD_ENV_FILE" ]; then
+              echo "==> Updating .env from GitHub Secrets..."
+              echo "$PROD_ENV_FILE" > .env
+              chmod 600 .env
+            else
+              echo "==> Notice: PROD_ENV_FILE secret not set, keeping existing .env on server."
+            fi
+
+            # 4. Install / Update PHP dependencies via Composer
+            if [ -f "composer.json" ]; then
+              echo "==> Installing Composer dependencies..."
+              composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --quiet
+            fi
+
+            # 5. Run database migrations & seeders (additive & safe)
+            if [ -f "vayu" ]; then
+              echo "==> Synchronizing database (migrations & seeds)..."
+              php vayu db:sync
+            fi
+
+            # 6. Ensure runtime storage folders exist with correct permissions
+            echo "==> Ensuring storage permissions..."
+            mkdir -p storage/apk storage/uploads storage/logs database
+            chmod -R 775 storage
+
+            echo "==> Deployment completed successfully!"

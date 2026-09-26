@@ -126,6 +126,11 @@ class Page extends BaseController
         return $this->respond('/app/page/warranty-paid.php');
     }
 
+    public function appDownload()
+    {
+        return $this->respond('/app/page/app-download.php');
+    }
+
     private function guardAdmin()
     {
         Csrf::ensureSession();
@@ -234,6 +239,18 @@ class Page extends BaseController
     {
         $this->guardAdmin();
         return $this->respond('/app/page/admin/contact.php');
+    }
+
+    public function adminWarranty()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/warranty.php');
+    }
+
+    public function adminAppReleases()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/app-releases.php');
     }
 
     public function adminSettings()

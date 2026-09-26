@@ -88,6 +88,9 @@ class ViewRouteProvider extends RouteProvider
             'warranty-paid' => ['Page', 'warrantyPaid'],
             'warranty-paid.php' => ['Page', 'warrantyPaid'],
 
+            'app'      => ['Page', 'appDownload'],
+            'download' => ['Page', 'appDownload'],
+
             'admin' => ['Page', 'admin'],
             'admin.php' => ['Page', 'admin'],
             'admin/login' => ['Page', 'adminLogin'],
@@ -106,6 +109,8 @@ class ViewRouteProvider extends RouteProvider
             'admin/test-drive' => ['Page', 'adminTestDrive'],
             'admin/dealership' => ['Page', 'adminDealership'],
             'admin/contact' => ['Page', 'adminContact'],
+            'admin/warranty' => ['Page', 'adminWarranty'],
+            'admin/app-releases' => ['Page', 'adminAppReleases'],
             'admin/settings' => ['Page', 'adminSettings'],
             'admin/profile' => ['Page', 'adminProfile'],
             'admin/profile.php' => ['Page', 'adminProfile'],

@@ -152,6 +152,30 @@ class ApiGatewayProvider extends RouteProvider
             'GET:api/v1/system/migrate'             => ['SystemController', 'migrate'],
             'POST:api/v1/system/migrate'            => ['SystemController', 'migrate'],
             'GET:api/v1/system/status'              => ['SystemController', 'status'],
+
+            // --- Warranty Public & Admin Management ------------------------------
+            'POST:api/v1/warranty/otp/send'                 => ['WarrantyController', 'sendOtp'],
+            'POST:api/v1/warranty/otp/verify'               => ['WarrantyController', 'verifyOtp'],
+            'GET:api/v1/warranty/registrations/lookup'      => ['WarrantyController', 'lookup'],
+            'POST:api/v1/warranty/registrations'            => ['WarrantyController', 'store'],
+            'GET:api/v1/admin/warranty/registrations'       => ['WarrantyController', 'adminList'],
+            'GET:api/v1/admin/warranty/registrations/{id}'  => ['WarrantyController', 'adminShow'],
+            'PATCH:api/v1/admin/warranty/registrations/{id}'=> ['WarrantyController', 'adminUpdate'],
+            'GET:api/v1/admin/warranty/registrations/{id}/invoice' => ['WarrantyController', 'adminInvoice'],
+
+            // --- App Releases: Public, Admin & CI Deploy ------------------
+            'GET:api/v1/app-releases/latest'              => ['AppReleaseController', 'latest'],
+            'GET:api/v1/app-releases'                     => ['AppReleaseController', 'index'],
+            'GET:api/v1/app-releases/{id}/download'       => ['AppReleaseController', 'download'],
+
+            'GET:api/v1/admin/app-releases'               => ['AppReleaseController', 'adminIndex',    'auth'],
+            'POST:api/v1/admin/app-releases'              => ['AppReleaseController', 'adminStore',    'auth'],
+            'GET:api/v1/admin/app-releases/{id}'          => ['AppReleaseController', 'adminShow',     'auth'],
+            'PATCH:api/v1/admin/app-releases/{id}'        => ['AppReleaseController', 'adminUpdate',   'auth'],
+            'DELETE:api/v1/admin/app-releases/{id}'       => ['AppReleaseController', 'adminDelete',   'auth'],
+            'GET:api/v1/admin/app-releases/{id}/download' => ['AppReleaseController', 'adminDownload', 'auth'],
+
+            'POST:api/v1/deploy/app-releases'             => ['AppReleaseController', 'deploy'],
         ];
     }
 }

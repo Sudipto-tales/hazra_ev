@@ -50,16 +50,31 @@
              background   var(--dur-1) var(--ease);
 }
 .theme:hover{border-color:var(--ink-soft-0);background:rgb(var(--chip-rgb) / .7)}
-.theme svg{position:absolute;width:17px;height:17px}
-.theme__moon{display:none}
-html[data-theme="dark"] .theme__sun {display:none}
-html[data-theme="dark"] .theme__moon{display:block}
+.theme svg,
+.theme i{
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  transform:translate(-50%,-50%) !important;
+  width:18px !important;
+  height:18px !important;
+  pointer-events:none !important;
+  stroke:currentColor !important;
+}
+.theme__moon{display:none !important}
+html[data-theme="dark"] .theme__sun{display:none !important}
+html[data-theme="dark"] .theme__moon{display:block !important}
 
 /* ── page hero band ────────────────────────────── */
 .hero{
   text-align:center;
-  padding:clamp(72px,12vw,160px) var(--gutter);
+  padding:clamp(48px,5.5vw,96px) var(--gutter);
   background:var(--surface-0);
+}
+@media (max-width:720px){
+  .hero{
+    padding:clamp(32px,8vw,48px) var(--gutter);
+  }
 }
 .hero__title{
   font-family:var(--font-display);

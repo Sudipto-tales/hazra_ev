@@ -1,8 +1,8 @@
 (() => {
   'use strict';
 
-  const $  = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const $  = (s, r = document) => (r && typeof r.querySelector === 'function') ? r.querySelector(s) : null;
+  const $$ = (s, r = document) => (r && typeof r.querySelectorAll === 'function') ? [...r.querySelectorAll(s)] : [];
 
   const root = document.documentElement;
 
@@ -46,29 +46,38 @@
 
   /* ── finish switch (light shot ⇄ dark shot) ─ */
   const pager = $('.pager b');
+  const getTheme = () => (root.getAttribute('data-theme') || root.dataset.theme || 'light') === 'dark' ? 'dark' : 'light';
   const setTheme = t => {
-    root.dataset.theme = t;
-    localStorage.setItem('theme', t);
-    if (pager) pager.textContent = t === 'dark' ? '02' : '01';
+    const next = t === 'dark' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+      localStorage.removeItem('vm-theme');
+    } catch (e) {}
+    if (pager) pager.textContent = next === 'dark' ? '02' : '01';
+    $$('.theme, #theme, #stickyTheme').forEach(b => {
+      b.setAttribute('aria-label', next === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      b.setAttribute('title', next === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    });
   };
-  setTheme(root.dataset.theme);
-
-  $('#theme')?.addEventListener('click', () =>
-    setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
+  setTheme(getTheme());
 
   $$('.arrow').forEach(b =>
     b.addEventListener('click', () =>
-      setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark')));
+      setTheme(getTheme() === 'dark' ? 'light' : 'dark')));
 
   /* ── navbar ────────────────────────────────────
      Desktop opens a dropdown on hover AND on click (a click still works for
      touch laptops and keyboards); ≤1024 the same .is-open class drives the
      accordion, so there is one state to reason about, not two. */
-  const nav    = $('#nav');
-  const burger = $('#burger');
-  const groups = $$('.nav__grp');
-  const touch  = window.matchMedia('(hover:none)');
-  const wide   = window.matchMedia('(min-width:1025px)');
+  const nav          = $('#nav');
+  const burger       = $('#burger');
+  const stickyNav    = $('#stickyNav');
+  const stickyBurger = $('#stickyBurger');
+  const groups       = $$('.nav__grp');
+  const touch        = window.matchMedia('(hover:none)');
+  const wide         = window.matchMedia('(min-width:1025px)');
 
   const openGrp = (g, on) => {
     g.classList.toggle('is-open', on);
@@ -107,26 +116,70 @@
   };
 
   const setMenu = on => {
-    nav?.classList.toggle('is-open', on);
-    burger?.classList.toggle('is-on', on);
-    burger?.setAttribute('aria-expanded', String(on));
-    burger?.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
+    if (nav) nav.classList.toggle('is-open', on);
+    if (burger) {
+      burger.classList.toggle('is-on', on);
+      burger.setAttribute('aria-expanded', String(on));
+      burger.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
+    }
+    if (on) drawIcons();
     if (!on) closeAll();
     updateNavLock();
   };
 
-  burger?.addEventListener('click', () => setMenu(!nav.classList.contains('is-open')));
+  burger?.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = nav ? nav.classList.contains('is-open') : false;
+    setMenu(!isOpen);
+  });
 
   /* picking a destination closes everything behind you */
-  $$('a[href]', nav).forEach(a =>
-    a.addEventListener('click', () => { closeAll(); setMenu(false); }));
+  if (nav) {
+    $$('a[href]', nav).forEach(a =>
+      a.addEventListener('click', () => { closeAll(); setMenu(false); }));
+  }
 
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.topbar') && !e.target.closest('.sticky-bar')) {
-      closeAll();
-      setMenu(false);
-      setStickyMenu(false);
+  const setStickyMenu = on => {
+    if (stickyNav) stickyNav.classList.toggle('is-open', on);
+    if (stickyBurger) {
+      stickyBurger.classList.toggle('is-on', on);
+      stickyBurger.setAttribute('aria-expanded', String(on));
+      stickyBurger.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
     }
+    if (on) drawIcons();
+    if (!on) closeAll();
+    updateNavLock();
+  };
+
+  stickyBurger?.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = stickyNav ? stickyNav.classList.contains('is-open') : false;
+    setStickyMenu(!isOpen);
+  });
+
+  /* picking a destination closes everything */
+  if (stickyNav) {
+    $$('a[href]', stickyNav).forEach(a =>
+      a.addEventListener('click', () => { closeAll(); setMenu(false); setStickyMenu(false); }));
+  }
+
+  /* Global click: handles theme toggles everywhere + outside-nav close */
+  document.addEventListener('click', e => {
+    const themeBtn = e.target.closest('.theme, #theme, #stickyTheme');
+    if (themeBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+      return;
+    }
+
+    if (e.target.closest('.burger') || e.target.closest('.topbar') || e.target.closest('.sticky-bar')) {
+      return;
+    }
+
+    closeAll();
+    setMenu(false);
+    setStickyMenu(false);
   });
 
   document.addEventListener('keydown', e => {
@@ -138,28 +191,6 @@
 
   /* crossing the breakpoint leaves stale open state behind — clear it */
   wide.addEventListener('change', () => { closeAll(); setMenu(false); setStickyMenu(false); });
-
-  /* ── sticky bar menu (same logic as topbar) ─────
-     The sticky nav groups are picked up by the same groups selector,
-     so hover/click already works. Only the burger needs its own handler. */
-  const stickyNav = $('#stickyNav');
-  const stickyBurger = $('#stickyBurger');
-
-  const setStickyMenu = on => {
-    stickyNav?.classList.toggle('is-open', on);
-    stickyBurger?.classList.toggle('is-on', on);
-    stickyBurger?.setAttribute('aria-expanded', String(on));
-    stickyBurger?.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
-    if (!on) closeAll();
-    updateNavLock();
-  };
-
-  stickyBurger?.addEventListener('click', () =>
-    setStickyMenu(!stickyNav?.classList.contains('is-open')));
-
-  /* picking a destination closes everything */
-  $$('a[href]', stickyNav).forEach(a =>
-    a.addEventListener('click', () => { closeAll(); setMenu(false); setStickyMenu(false); }));
 
   /* ══════════ SCROLL ZOOM ══════════
      .scroll is taller than the viewport; .stage is sticky inside it. The
@@ -260,10 +291,6 @@
 
   addEventListener('scroll', onStickyScroll, { passive: true });
 
-  /* wire sticky bar theme toggle to the same theme logic */
-  $('#stickyTheme')?.addEventListener('click', () =>
-    setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
-
   /* ── mouse parallax on the photo ───────────────
      Writes offsets as numbers; the transform itself lives in CSS so it can
      compose with the scroll zoom instead of overwriting it. Damped to zero
@@ -293,19 +320,19 @@
     dock.setAttribute('aria-label', 'Quick actions');
     dock.innerHTML = `
       <a class="dock__i" href="#test-ride" aria-label="Book a test drive">
-        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>
+        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>
         <span class="dock__lb">Test Drive</span>
       </a>
       <a class="dock__i" href="become-a-dealer" aria-label="Become a dealer">
-        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>
+        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>
         <span class="dock__lb">Dealership</span>
       </a>
       <a class="dock__i" href="tel:+919002921509" aria-label="Call Hazra Electrical Bike">
-        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
         <span class="dock__lb">Call Us</span>
       </a>
       <a class="dock__i" href="https://wa.me/919002921509" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
-        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+        <svg class="dock__icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
         <span class="dock__lb">WhatsApp</span>
       </a>`;
     document.body.appendChild(dock);
@@ -557,8 +584,59 @@
     live = near;
   };
 
+  /* ── Mobile Touch Swipe & Animated Scrub ── */
+  let mobileFi = 0;
+  let animId = null;
+  let autoTimer = null;
+
+  const animateToFi = target => {
+    cancelAnimationFrame(animId);
+    const dest = Math.max(0, Math.min(target, last));
+    const start = mobileFi;
+    const delta = dest - start;
+    if (Math.abs(delta) < 0.001) {
+      mobileFi = dest;
+      setFi(dest);
+      return;
+    }
+    const startTime = performance.now();
+    const duration = 340; // ms
+
+    const step = now => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      // smooth cubic ease out
+      const ease = 1 - Math.pow(1 - progress, 3);
+      mobileFi = start + delta * ease;
+      setFi(mobileFi);
+      if (progress < 1) {
+        animId = requestAnimationFrame(step);
+      } else {
+        mobileFi = dest;
+        setFi(dest);
+      }
+    };
+    animId = requestAnimationFrame(step);
+  };
+
+  const restartAuto = () => {
+    clearInterval(autoTimer);
+    if (pin.matches) return;
+    autoTimer = setInterval(() => {
+      if (pin.matches || document.hidden) return;
+      const rect = sect.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) {
+        const next = (Math.round(mobileFi) + 1) % slides.length;
+        animateToFi(next);
+      }
+    }, 4500);
+  };
+
   const read = () => {
-    if (!pin.matches) { setFi(0); return; }
+    if (!pin.matches) {
+      setFi(mobileFi);
+      return;
+    }
+    clearInterval(autoTimer);
     const span = drive.offsetHeight - window.innerHeight;
     const gone = Math.min(Math.max(-drive.getBoundingClientRect().top, 0), span);
     const p    = span > 0 ? Math.min(gone / span / HOLD, 1) : 0;
@@ -574,17 +652,105 @@
   read();
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', read);
-  pin.addEventListener('change', read);
+  pin.addEventListener('change', () => {
+    if (!pin.matches) {
+      mobileFi = 0;
+      restartAuto();
+    }
+    read();
+  });
 
-  /* ── dots ─────────────────────────────────────
-     Pinned: scroll the driver to the offset that yields that index.
-     Snap carousel: just scroll the deck. Same button, two contexts. */
+  // Touch & Pointer drag handlers for mobile swipe
+  let startX = 0, startY = 0, startFi = 0;
+  let isDragging = false;
+  let isHorizontal = null;
+
+  const onPointerDown = e => {
+    if (pin.matches) return;
+    startX = e.clientX;
+    startY = e.clientY;
+    startFi = mobileFi;
+    isDragging = true;
+    isHorizontal = null;
+    cancelAnimationFrame(animId);
+    clearInterval(autoTimer);
+  };
+
+  const onPointerMove = e => {
+    if (!isDragging || pin.matches) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (isHorizontal === null) {
+      if (Math.abs(dx) > 7 || Math.abs(dy) > 7) {
+        isHorizontal = Math.abs(dx) > Math.abs(dy);
+      }
+    }
+
+    if (isHorizontal) {
+      if (e.cancelable) e.preventDefault();
+      const sensitivity = (deck.offsetWidth || window.innerWidth) * 0.78;
+      const deltaFi = -dx / sensitivity;
+      mobileFi = Math.max(-0.25, Math.min(last + 0.25, startFi + deltaFi));
+      setFi(mobileFi);
+    }
+  };
+
+  const onPointerUp = e => {
+    if (!isDragging || pin.matches) return;
+    isDragging = false;
+    if (isHorizontal) {
+      const dx = e.clientX - startX;
+      if (dx < -32) {
+        animateToFi(Math.min(last, Math.floor(startFi) + 1));
+      } else if (dx > 32) {
+        animateToFi(Math.max(0, Math.ceil(startFi) - 1));
+      } else {
+        animateToFi(Math.round(mobileFi));
+      }
+    }
+    isHorizontal = null;
+    restartAuto();
+  };
+
+  deck.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointermove', onPointerMove, { passive: false });
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerUp);
+
+  // Arrow buttons
+  const prevBtn = $('#featPrev');
+  const nextBtn = $('#featNext');
+  prevBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    animateToFi(Math.round(mobileFi) - 1);
+    restartAuto();
+  });
+  nextBtn?.addEventListener('click', e => {
+    e.stopPropagation();
+    animateToFi(Math.round(mobileFi) + 1);
+    restartAuto();
+  });
+
+  // Slide tap to select
+  slides.forEach((slide, idx) => {
+    slide.addEventListener('click', () => {
+      if (pin.matches) return;
+      if (Math.round(mobileFi) !== idx) {
+        animateToFi(idx);
+        restartAuto();
+      }
+    });
+  });
+
+  // Dots
   $$('.fdot').forEach(dot => {
-    dot.addEventListener('click', () => {
+    dot.addEventListener('click', e => {
+      e.stopPropagation();
       const i = +dot.dataset.go;
-
       if (!pin.matches) {
-        slides[i]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        animateToFi(i);
+        restartAuto();
         return;
       }
       const span = drive.offsetHeight - window.innerHeight;
@@ -593,12 +759,7 @@
     });
   });
 
-  /* carousel scroll keeps the dot row honest on narrow screens */
-  deck.addEventListener('scroll', () => {
-    if (pin.matches) return;
-    const i = Math.round(deck.scrollLeft / (deck.scrollWidth / slides.length));
-    setFi(Math.min(i, last));
-  }, { passive: true });
+  restartAuto();
 })();
 
 

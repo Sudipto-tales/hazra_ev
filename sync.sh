@@ -23,12 +23,13 @@ MAIN=main
 # folder:branch — the whole routing table. Add a line to add a deploy target.
 SPLITS=(
   "website:website"
+  "website:deploy"
   "mobile_app:mobile-app"
   "html:html"
 )
 
 # Branches that exist but hold nothing and are never rebuilt from a folder.
-EMPTY_BRANCHES=(deploy)
+EMPTY_BRANCHES=()
 
 scope_alias() {
   case $1 in

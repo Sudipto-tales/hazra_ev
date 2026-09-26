@@ -49,11 +49,16 @@ if (empty($navProducts)) {
     <nav class="nav sticky-bar__nav" id="stickyNav">
     <?php endif; ?>
       
-      <a href="<?= e(base_url('index')) ?>" class="nav__i <?= nav_active('index', $currentRoute) ?>">Home</a>
+      <a href="<?= e(base_url('index')) ?>" class="nav__i <?= nav_active('index', $currentRoute) ?>">
+        <i data-lucide="home" class="nav__ico"></i>
+        <span>Home</span>
+      </a>
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t <?= in_array($currentRoute, ['our-story', 'career', 'faq', 'gallery']) ? 'is-on' : '' ?>" aria-expanded="false">
-          About <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="info" class="nav__ico"></i>
+          <span>About</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('our-story')) ?>" class="nav__s <?= nav_active('our-story', $currentRoute) ?>">Our Story</a>
@@ -65,7 +70,9 @@ if (empty($navProducts)) {
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t <?= in_array($currentRoute, ['products', 'product-detail']) ? 'is-on' : '' ?>" aria-expanded="false">
-          Products <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="bike" class="nav__ico"></i>
+          <span>Products</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu nav__menu--products">
           <div class="nav__products-header">
@@ -96,7 +103,9 @@ if (empty($navProducts)) {
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t <?= in_array($currentRoute, ['contest', 'blog', 'ev-future']) ? 'is-on' : '' ?>" aria-expanded="false">
-          Social <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="share-2" class="nav__ico"></i>
+          <span>Social</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('contest')) ?>" class="nav__s <?= nav_active('contest', $currentRoute) ?>">Reels Contest</a>
@@ -108,7 +117,9 @@ if (empty($navProducts)) {
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t <?= in_array($currentRoute, ['dealer-locator', 'become-a-dealer']) ? 'is-on' : '' ?>" aria-expanded="false">
-          Dealers <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="store" class="nav__ico"></i>
+          <span>Dealers</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('dealer-locator')) ?>" class="nav__s <?= nav_active('dealer-locator', $currentRoute) ?>">Locate Dealers</a>
@@ -118,7 +129,9 @@ if (empty($navProducts)) {
 
       <div class="nav__grp">
         <button class="nav__i nav__i--t <?= in_array($currentRoute, ['warranty-free', 'warranty-paid']) ? 'is-on' : '' ?>" aria-expanded="false">
-          Service <i data-lucide="chevron-down" class="nav__cv"></i>
+          <i data-lucide="wrench" class="nav__ico"></i>
+          <span>Service</span>
+          <i data-lucide="chevron-down" class="nav__cv"></i>
         </button>
         <div class="nav__menu">
           <a href="<?= e(base_url('warranty-free')) ?>" class="nav__s <?= nav_active('warranty-free', $currentRoute) ?>">Warranty (Free)</a>
@@ -126,7 +139,10 @@ if (empty($navProducts)) {
         </div>
       </div>
 
-      <a href="<?= e(base_url('contact')) ?>" class="nav__i <?= nav_active('contact', $currentRoute) ?>">Contact</a>
+      <a href="<?= e(base_url('contact')) ?>" class="nav__i <?= nav_active('contact', $currentRoute) ?>">
+        <i data-lucide="mail" class="nav__ico"></i>
+        <span>Contact</span>
+      </a>
     </nav>
 
     <?php if ($isStickyOnly): ?>

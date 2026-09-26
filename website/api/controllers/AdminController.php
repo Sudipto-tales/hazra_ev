@@ -28,6 +28,7 @@ final class AdminController extends V1Controller
         $contactLeads    = (int) (db_fetch_one("SELECT COUNT(*) AS c FROM website_leads WHERE type = 'contact'")['c'] ?? 0);
 
         $careerApps    = (int) (db_fetch_one("SELECT COUNT(*) AS c FROM job_applications")['c'] ?? 0);
+        $warrantyCount = (int) (db_fetch_one("SELECT COUNT(*) AS c FROM warranty_registrations WHERE status = 'pending'")['c'] ?? 0);
 
         Envelope::ok([
             'stats' => [
@@ -40,6 +41,7 @@ final class AdminController extends V1Controller
                 'dealership_leads' => $dealershipLeads,
                 'contact_leads' => $contactLeads,
                 'career_applications' => $careerApps,
+                'warranty_pending' => $warrantyCount,
             ],
             'recent' => [],
         ]);
@@ -58,6 +60,9 @@ final class AdminController extends V1Controller
             ) ?? [],
             'jobs' => db_fetch_all(
                 "SELECT * FROM jobs ORDER BY created_at DESC"
+            ) ?? [],
+            'warranty' => db_fetch_all(
+                "SELECT id, type, status, reference_no, customer_name, mobile, chassis_no, purchase_date, created_at FROM warranty_registrations ORDER BY created_at DESC LIMIT 100"
             ) ?? [],
         ]);
     }
