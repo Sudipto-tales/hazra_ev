@@ -1,0 +1,123 @@
+<?php
+
+require_once __DIR__ . '/../core/RouteProvider.php';
+
+class ViewRouteProvider extends RouteProvider
+{
+    public static function routes(): array
+    {
+        return [
+            'default' => ['Page', 'index'],
+            'index' => ['Page', 'index'],
+            'index.php' => ['Page', 'index'],
+
+            'our-story' => ['Page', 'ourStory'],
+            'our-story.php' => ['Page', 'ourStory'],
+
+            'career' => ['Page', 'career'],
+            'career.php' => ['Page', 'career'],
+
+            'products' => ['Page', 'products'],
+            'products.php' => ['Page', 'products'],
+
+            'product-detail' => ['Page', 'productDetail'],
+            'product-detail.php' => ['Page', 'productDetail'],
+
+            'chalo-1000-v2' => ['Page', 'productDetail'],
+            'chalo-1000-v2.php' => ['Page', 'productDetail'],
+
+            'chalo-neo' => ['Page', 'productDetail'],
+            'chalo-neo.php' => ['Page', 'productDetail'],
+
+            'chalo-smart-eco' => ['Page', 'productDetail'],
+            'chalo-smart-eco.php' => ['Page', 'productDetail'],
+
+            'chalo-smart-plus' => ['Page', 'productDetail'],
+            'chalo-smart-plus.php' => ['Page', 'productDetail'],
+
+            'chalo-smart-pro' => ['Page', 'productDetail'],
+            'chalo-smart-pro.php' => ['Page', 'productDetail'],
+
+            'nja-7' => ['Page', 'productDetail'],
+            'nja-7.php' => ['Page', 'productDetail'],
+
+            'battery-use' => ['Page', 'batteryUse'],
+            'battery-use.php' => ['Page', 'batteryUse'],
+
+            'ev-future' => ['Page', 'evFuture'],
+            'ev-future.php' => ['Page', 'evFuture'],
+
+            'contact' => ['Page', 'contact'],
+            'contact.php' => ['Page', 'contact'],
+
+            'gallery' => ['Page', 'gallery'],
+            'gallery.php' => ['Page', 'gallery'],
+
+            'blog' => ['Page', 'blog'],
+            'blog.php' => ['Page', 'blog'],
+
+            'blog/{slug}' => ['Page', 'blogSingle'],
+            'blog/category/{category}' => ['Page', 'blog'],
+
+            'blog-single' => ['Page', 'blogSingle'],
+            'blog-single.php' => ['Page', 'blogSingle'],
+
+            'news' => ['Page', 'news'],
+            'news.php' => ['Page', 'news'],
+
+            'news/{slug}' => ['Page', 'newsSingle'],
+
+            'news-single' => ['Page', 'newsSingle'],
+            'news-single.php' => ['Page', 'newsSingle'],
+
+            'contest' => ['Page', 'contest'],
+            'contest.php' => ['Page', 'contest'],
+
+            'dealer-locator' => ['Page', 'dealerLocator'],
+            'dealer-locator.php' => ['Page', 'dealerLocator'],
+
+            'become-a-dealer' => ['Page', 'becomeDealer'],
+            'become-a-dealer.php' => ['Page', 'becomeDealer'],
+
+            'dealership-enquiry' => ['Page', 'dealershipEnquiry'],
+            'dealership-enquiry.php' => ['Page', 'dealershipEnquiry'],
+
+            'warranty-free' => ['Page', 'warrantyFree'],
+            'warranty-free.php' => ['Page', 'warrantyFree'],
+
+            'warranty-paid' => ['Page', 'warrantyPaid'],
+            'warranty-paid.php' => ['Page', 'warrantyPaid'],
+
+            'app'      => ['Page', 'appDownload'],
+            'download' => ['Page', 'appDownload'],
+
+            'admin' => ['Page', 'admin'],
+            'admin.php' => ['Page', 'admin'],
+            'admin/login' => ['Page', 'adminLogin'],
+            'admin/logout' => ['Page', 'adminLogout'],
+            'admin/dashboard' => ['Page', 'adminDashboard'],
+            'admin/products' => ['Page', 'adminProducts'],
+            'admin/product-form' => ['Page', 'adminProductForm'],
+            'admin/blogs' => ['Page', 'adminBlogs'],
+            'admin/blog-form' => ['Page', 'adminBlogForm'],
+            'admin/news' => ['Page', 'adminNews'],
+            'admin/news-form' => ['Page', 'adminNewsForm'],
+            'admin/gallery' => ['Page', 'adminGallery'],
+            'admin/jobs' => ['Page', 'adminJobs'],
+            'admin/job-form' => ['Page', 'adminJobForm'],
+            'admin/career-apps' => ['Page', 'adminCareerApps'],
+            'admin/test-drive' => ['Page', 'adminTestDrive'],
+            'admin/dealership' => ['Page', 'adminDealership'],
+            'admin/contact' => ['Page', 'adminContact'],
+            'admin/warranty' => ['Page', 'adminWarranty'],
+            'admin/app-releases' => ['Page', 'adminAppReleases'],
+            'admin/settings' => ['Page', 'adminSettings'],
+            'admin/profile' => ['Page', 'adminProfile'],
+            'admin/profile.php' => ['Page', 'adminProfile'],
+
+            'sitemap.xml' => ['Page', 'sitemap'],
+        ];
+    }
+}
+
+return ViewRouteProvider::routes();

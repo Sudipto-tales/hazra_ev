@@ -1,0 +1,62 @@
+**Simplified Fix Instructions for Hazra EV Admin Panel**
+
+Give this exact text to the free model:
+
+---
+
+Fix the Hazra EV admin panel. Do these changes one by one.
+
+### 1. Fix Branding & Colors
+- File: `website/assets/admin/css/tokens.css`
+- Remove all Teresa Memorial Hospital (TMH) colors.
+- Use these new colors from the logo:
+  - Purple: `#6B4C9A`
+  - Blue: `#3A7BD5`
+  - Orange: `#FF6B00`
+- Change localStorage keys from `tmh-admin-theme` to `hazra-admin-theme` in:
+  - `website/app/components/admin/head.php`
+  - `website/assets/admin/js/core/layout.js`
+- Put the new logo (`hazraevLogo.jpg`) in `website/assets/` and use it on login page, sidebar, and topbar.
+
+### 2. Add Missing Profile Page
+- Create new file: `website/app/page/admin/profile.php`
+- Content:
+```php
+<?php
+App::render('admin/layout', [
+    'page' => 'profile',
+    'title' => 'My Profile',
+    'type' => 'form',
+    'script' => 'profile'
+]);
+```
+- Make sure password change in `profile.js` works (current password → new password).
+
+### 3. Add Skeleton Loading on Dashboard
+- File: `website/assets/admin/js/pages/dashboard.js`
+- While data is loading, show grey skeleton cards instead of the text “Loading dashboard…”.
+- Use the same style as the final stat cards.
+
+### 4. Fix Notifications
+- The bell icon currently only shows a fake toast.
+- Make a real notification dropdown that shows new leads and applications.
+- Show unread count on the bell icon.
+
+### 5. Clean Up & Check CRUD
+- Make sure these modules fully work (Create, Edit, Delete):
+  - Products
+  - Blogs
+  - News
+  - Jobs
+  - Gallery
+  - Test Drive / Dealership / Contact leads
+- Delete or ignore all old hospital files (doctors, departments, leadership, lab-tests, etc.).
+
+### Order to fix
+1. Branding + logo
+2. Profile page
+3. Skeleton loading
+4. Notifications
+5. CRUD + cleanup
+
+After each fix, tell me which files you changed.

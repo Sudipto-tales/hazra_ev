@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8" />
+<script>
+/* Applied before first paint so a dark-mode visitor never sees a light
+   flash. Kept inline and tiny on purpose: an external file would race
+   the paint it exists to prevent. */
+(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+  <title>Dealership Enquiry | Hazra</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazra Electrical Bike">
+<meta property="og:title" content="Dealership Enquiry | Hazra">
+<meta property="og:description" content="Interested in partnering with Hazra Electrical Bike? Submit your dealership enquiry.">
+<meta property="og:url" content="https://hazraelectricalbike.com/dealership-enquiry.html">
+<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://hazraelectricalbike.com/dealership-enquiry.html">
+<meta name="description" content="Interested in partnering with Hazra Electrical Bike? Submit your dealership enquiry.">
+  <link rel="icon" href="assets/hazraev.png" type="image/png">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/typography.css">
+<link rel="stylesheet" href="styles/global.css">
+<link rel="stylesheet" href="styles/utilities.css">
+<link rel="stylesheet" href="styles/components/page-chrome.css">
+  <link rel="stylesheet" href="styles/pages/dealership-enquiry.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.html">
+      <img class="brand__mark" src="assets/hazraev.png" alt="Hazra">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1 class="hero__title">Dealership Enquiry</h1>
+  <p class="hero__lead">
+    Interested in partnering with Hazra? Submit your enquiry and let's talk.
+  </p>
+</section>
+
+<section class="form-section">
+  <div class="form-section__in">
+    <form class="form" id="enquiryForm" onsubmit="handleSubmit(event)">
+      <div class="fields">
+        <div class="form__group">
+          <div class="field">
+            <label>Business Name *</label>
+            <input type="text" name="business" placeholder="Your business name" required>
+          </div>
+          <div class="field">
+            <label>Contact Person *</label>
+            <input type="text" name="contact" placeholder="Full name" required>
+          </div>
+        </div>
+
+        <div class="form__group">
+          <div class="field">
+            <label>City *</label>
+            <input type="text" name="city" placeholder="City" required>
+          </div>
+          <div class="field">
+            <label>State *</label>
+            <input type="text" name="state" placeholder="State" required>
+          </div>
+        </div>
+
+        <div class="form__group">
+          <div class="field">
+            <label>Phone Number *</label>
+            <input type="tel" name="phone" placeholder="+91 XXXXX XXXXX" required>
+          </div>
+          <div class="field">
+            <label>Email *</label>
+            <input type="email" name="email" placeholder="your@email.com" required>
+          </div>
+        </div>
+
+        <div class="form__group">
+          <div class="field">
+            <label>Years of Experience *</label>
+            <input type="number" name="experience" placeholder="5" required>
+          </div>
+          <div class="field">
+            <label>Business Type *</label>
+            <select name="type" required>
+              <option value="">Select type</option>
+              <option value="retail">Retail Store</option>
+              <option value="service">Service Center</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>About Your Business Proposal</label>
+          <textarea name="proposal" placeholder="Tell us about your business plan, current operations, and why you want to partner with Hazra"></textarea>
+        </div>
+
+        <button type="submit" class="form__submit">
+          Submit Enquiry
+        </button>
+
+        <div class="success" id="successMsg">
+          <div class="success__icon">âœ“</div>
+          <div class="success__title">Thank You!</div>
+          <div class="success__desc">Your enquiry has been received. Our team will contact you within 24 hours.</div>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="footer">
+  <p style="color: var(--ink-soft-0); margin-bottom: 24px;">
+    For immediate assistance, call us at +91 98290 16542
+  </p>
+  <a class="footer__link" href="index.html">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script>
+  lucide.createIcons();
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const successMsg = document.getElementById('successMsg');
+    successMsg.classList.add('show');
+    e.target.reset();
+    setTimeout(() => {
+      successMsg.classList.remove('show');
+    }, 3000);
+  }
+</script>
+
+<script src="script.js"></script>
+</body>
+</html>

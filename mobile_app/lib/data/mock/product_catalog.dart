@@ -1,0 +1,460 @@
+import '../models/models.dart';
+
+/// Static EV catalogue. Stands in for `GET /api/catalog/products`.
+///
+/// Colour sets are per product because that is how the data really arrives —
+/// whoever uploads a product uploads one image set per colour.
+class ProductCatalog {
+  const ProductCatalog._();
+
+  // Shared swatch values so the same "Pearl White" reads identically across
+  // products. ARGB ints, not Colors — see [ProductColor].
+  static const int _white = 0xFFF8FAFC;
+  static const int _matteBlack = 0xFF1E293B;
+  static const int _orange = 0xFFF97316;
+  static const int _skyBlue = 0xFF7DD3FC;
+  static const int _grey = 0xFF94A3B8;
+  static const int _green = 0xFF22C55E;
+  static const int _red = 0xFFDC2626;
+  static const int _yellow = 0xFFFACC15;
+  static const int _teal = 0xFF14B8A6;
+  static const int _purple = 0xFF8B5CF6;
+
+  static const List<Product> all = <Product>[
+    // ------------------------------------------------------------- scooty
+    Product(
+      id: 'prd_vida_v1_pro',
+      category: ProductCategory.scooty,
+      brand: 'Hero',
+      name: 'Vida V1 Pro',
+      modelCode: 'VIDA-V1P-2026',
+      rating: 4.5,
+      warrantyYears: 3,
+      warrantyNote: '3 yrs vehicle + 5 yrs / 50,000 km battery',
+      rangeKm: 165,
+      topSpeedKmph: 80,
+      chargingTime: '5 h 55 m (0–100%), 1 h 5 m fast charge',
+      batteryCapacity: '3.94 kWh removable lithium-ion',
+      motorPower: '6 kW peak mid-drive',
+      loadCapacityKg: 165,
+      highlights: <String>[
+        'Two removable batteries — charge indoors',
+        'Cruise control and reverse assist',
+        'SOS alert with live location share',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Matte White', argb: _white),
+        ProductColor(name: 'Sports Red', argb: _red),
+        ProductColor(name: 'Matte Black', argb: _matteBlack),
+        ProductColor(name: 'Glossy Orange', argb: _orange),
+      ],
+    ),
+    Product(
+      id: 'prd_chalo_1000_v2',
+      category: ProductCategory.scooty,
+      brand: 'Chalo',
+      name: '1000 V2',
+      modelCode: 'CHL-1000-V2',
+      rating: 5,
+      warrantyYears: 4,
+      warrantyNote: '4 yrs warranty policy — vehicle + battery',
+      rangeKm: 100,
+      topSpeedKmph: 65,
+      chargingTime: '4 h 30 m (0–100%)',
+      batteryCapacity: '2.3 kWh graphene lead-acid',
+      motorPower: '1000 W BLDC hub',
+      loadCapacityKg: 150,
+      highlights: <String>[
+        '100 km range on a single charge',
+        'High-speed variant — no licence tier change',
+        'Anti-theft alarm with remote immobiliser',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Pearl White', argb: _white),
+        ProductColor(name: 'Sunset Orange', argb: _orange),
+        ProductColor(name: 'Sky Blue', argb: _skyBlue),
+        ProductColor(name: 'Space Grey', argb: _grey),
+        ProductColor(name: 'Lime Green', argb: _green),
+      ],
+    ),
+    Product(
+      id: 'prd_ather_450x',
+      category: ProductCategory.scooty,
+      brand: 'Ather',
+      name: '450X Gen 3',
+      modelCode: 'ATH-450X-G3',
+      rating: 4.7,
+      warrantyYears: 3,
+      warrantyNote: '3 yrs / 30,000 km battery, 1 yr roadside assistance',
+      rangeKm: 146,
+      topSpeedKmph: 90,
+      chargingTime: '4 h 30 m, 15 m for 15 km at a fast point',
+      batteryCapacity: '3.7 kWh IP67 lithium-ion',
+      motorPower: '6.4 kW PMSM',
+      loadCapacityKg: 160,
+      highlights: <String>[
+        'Warp mode — 0 to 40 km/h in 3.3 s',
+        '7-inch touch deck with maps',
+        'Over-the-air firmware updates',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Space Grey', argb: _grey),
+        ProductColor(name: 'Cosmic Black', argb: _matteBlack),
+        ProductColor(name: 'Mint Green', argb: _teal),
+        ProductColor(name: 'Still White', argb: _white),
+      ],
+    ),
+    Product(
+      id: 'prd_tvs_iqube',
+      category: ProductCategory.scooty,
+      brand: 'TVS',
+      name: 'iQube S',
+      modelCode: 'TVS-IQB-S',
+      rating: 4.2,
+      warrantyYears: 3,
+      warrantyNote: '3 yrs / 50,000 km battery and motor',
+      rangeKm: 100,
+      topSpeedKmph: 78,
+      chargingTime: '4 h 30 m with the bundled charger',
+      batteryCapacity: '3.04 kWh lithium-ion',
+      motorPower: '4.4 kW hub motor',
+      loadCapacityKg: 155,
+      highlights: <String>[
+        '32 L under-seat storage',
+        'Q-park assist for tight lanes',
+        'Voice assist and call handling',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Pearl White', argb: _white),
+        ProductColor(name: 'Titanium Grey', argb: _grey),
+        ProductColor(name: 'Copper Bronze', argb: _yellow, inStock: false),
+      ],
+    ),
+    Product(
+      id: 'prd_ola_s1_air',
+      category: ProductCategory.scooty,
+      brand: 'Ola',
+      name: 'S1 Air',
+      modelCode: 'OLA-S1A-3K',
+      rating: 4,
+      warrantyYears: 3,
+      warrantyNote: '3 yrs / 40,000 km battery',
+      rangeKm: 125,
+      topSpeedKmph: 85,
+      chargingTime: '5 h (0–100%)',
+      batteryCapacity: '3 kWh lithium-ion',
+      motorPower: '4.5 kW mid-drive',
+      loadCapacityKg: 150,
+      highlights: <String>[
+        'Flat floorboard — carries a gas cylinder',
+        'Hill hold and reverse mode',
+        'Cruise control',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Coral Glam', argb: _orange),
+        ProductColor(name: 'Porcelain White', argb: _white),
+        ProductColor(name: 'Neo Mint', argb: _teal),
+        ProductColor(name: 'Midnight Blue', argb: 0xFF1D4ED8),
+      ],
+    ),
+
+    // --------------------------------------------------------------- bike
+    Product(
+      id: 'prd_revolt_rv400',
+      category: ProductCategory.bike,
+      brand: 'Revolt',
+      name: 'RV400 BRZ',
+      modelCode: 'RVL-RV400-BRZ',
+      rating: 4.3,
+      warrantyYears: 5,
+      warrantyNote: '5 yrs / 75,000 km battery, 8 yrs frame',
+      rangeKm: 150,
+      topSpeedKmph: 85,
+      chargingTime: '4 h 30 m, swappable pack',
+      batteryCapacity: '3.24 kWh removable lithium-ion',
+      motorPower: '3 kW mid-drive',
+      loadCapacityKg: 160,
+      highlights: <String>[
+        'Four selectable exhaust sound profiles',
+        'Removable battery — charge in the shop',
+        'App-based geofencing',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Mist Grey', argb: _grey),
+        ProductColor(name: 'Cosmic Black', argb: _matteBlack),
+        ProductColor(name: 'Rebel Red', argb: _red),
+      ],
+    ),
+    Product(
+      id: 'prd_tork_kratos_r',
+      category: ProductCategory.bike,
+      brand: 'Tork',
+      name: 'Kratos R',
+      modelCode: 'TRK-KRT-R',
+      rating: 4.1,
+      warrantyYears: 3,
+      warrantyNote: '3 yrs / 50,000 km battery',
+      rangeKm: 180,
+      topSpeedKmph: 105,
+      chargingTime: '4 h, 1 h to 80% on fast charge',
+      batteryCapacity: '4 kWh IP67 lithium-ion',
+      motorPower: '9 kW axial flux',
+      loadCapacityKg: 170,
+      highlights: <String>[
+        '9 kW peak — highway capable',
+        'Regenerative braking with three levels',
+        'Crash and tow alerts',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Shadow Black', argb: _matteBlack),
+        ProductColor(name: 'Sports Red', argb: _red),
+        ProductColor(name: 'Electric Blue', argb: 0xFF2563EB),
+      ],
+    ),
+    Product(
+      id: 'prd_oben_rorr',
+      category: ProductCategory.bike,
+      brand: 'Oben',
+      name: 'Rorr EZ',
+      modelCode: 'OBN-RORR-EZ',
+      rating: 3.9,
+      warrantyYears: 5,
+      warrantyNote: '5 yrs / 75,000 km LFP battery',
+      rangeKm: 175,
+      topSpeedKmph: 95,
+      chargingTime: '3 h (0–80%)',
+      batteryCapacity: '4.4 kWh LFP',
+      motorPower: '10 kW peak IPMSM',
+      loadCapacityKg: 165,
+      highlights: <String>[
+        'LFP chemistry — safer in heat',
+        'Three ride modes',
+        'Fully digital cluster with navigation',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Storm Grey', argb: _grey),
+        ProductColor(name: 'Vivid Purple', argb: _purple),
+        ProductColor(name: 'Pearl White', argb: _white),
+      ],
+    ),
+    Product(
+      id: 'prd_ultraviolette_f77',
+      category: ProductCategory.bike,
+      brand: 'Ultraviolette',
+      name: 'F77 Mach 2',
+      modelCode: 'UV-F77-M2',
+      rating: 4.8,
+      warrantyYears: 8,
+      warrantyNote: '8 yrs / 8,00,000 km battery warranty',
+      rangeKm: 323,
+      topSpeedKmph: 155,
+      chargingTime: '6 h standard, 1 h 30 m boost charger',
+      batteryCapacity: '10.3 kWh lithium-ion',
+      motorPower: '30 kW peak',
+      loadCapacityKg: 180,
+      highlights: <String>[
+        '323 km certified range',
+        '0–60 km/h in 2.8 s',
+        '43 on-board sensors, ride telemetry',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Afterburner Yellow', argb: _yellow),
+        ProductColor(name: 'Stealth Black', argb: _matteBlack),
+        ProductColor(name: 'Laser Red', argb: _red),
+      ],
+    ),
+
+    // ------------------------------------------------------------ bycycle
+    Product(
+      id: 'prd_lectro_c5',
+      category: ProductCategory.bicycle,
+      brand: 'Hero Lectro',
+      name: 'C5',
+      modelCode: 'HL-C5-27T',
+      rating: 4,
+      warrantyYears: 2,
+      warrantyNote: '2 yrs frame, 1 yr battery and motor',
+      rangeKm: 40,
+      topSpeedKmph: 25,
+      chargingTime: '3 h 30 m',
+      batteryCapacity: '5.8 Ah / 36 V lithium-ion',
+      motorPower: '250 W rear hub',
+      loadCapacityKg: 120,
+      highlights: <String>[
+        'Pedal assist with five levels',
+        'Removable battery inside the frame',
+        'Front suspension, disc brakes',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Matte Black', argb: _matteBlack),
+        ProductColor(name: 'Signal Yellow', argb: _yellow),
+        ProductColor(name: 'Sky Blue', argb: _skyBlue),
+      ],
+    ),
+    Product(
+      id: 'prd_emotorad_doodle',
+      category: ProductCategory.bicycle,
+      brand: 'EMotorad',
+      name: 'Doodle V3',
+      modelCode: 'EM-DDL-V3',
+      rating: 4.4,
+      warrantyYears: 3,
+      warrantyNote: '3 yrs frame, 2 yrs battery',
+      rangeKm: 50,
+      topSpeedKmph: 25,
+      chargingTime: '4 h',
+      batteryCapacity: '10.4 Ah / 36 V',
+      motorPower: '250 W high-torque hub',
+      loadCapacityKg: 130,
+      highlights: <String>[
+        'Fat tyres — handles broken roads',
+        'Throttle plus pedal assist',
+        'Folding frame option',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Army Green', argb: _green),
+        ProductColor(name: 'Jet Black', argb: _matteBlack),
+        ProductColor(name: 'Coral Orange', argb: _orange),
+      ],
+    ),
+    Product(
+      id: 'prd_nexzu_roadlark',
+      category: ProductCategory.bicycle,
+      brand: 'Nexzu',
+      name: 'Roadlark',
+      modelCode: 'NXZ-RDL-700C',
+      rating: 3.8,
+      warrantyYears: 2,
+      warrantyNote: '2 yrs battery, lifetime frame',
+      rangeKm: 100,
+      topSpeedKmph: 25,
+      chargingTime: '4 h 30 m',
+      batteryCapacity: '11.6 Ah / 36 V',
+      motorPower: '250 W BLDC',
+      loadCapacityKg: 125,
+      highlights: <String>[
+        '100 km on pedal assist',
+        'Dual battery ready',
+        'Lightweight alloy frame',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Pearl White', argb: _white),
+        ProductColor(name: 'Deep Teal', argb: _teal),
+      ],
+    ),
+
+    // ------------------------------------------------------------- others
+    Product(
+      id: 'prd_cargo_loader',
+      category: ProductCategory.others,
+      brand: 'Mahindra',
+      name: 'Zor Grand Cargo',
+      modelCode: 'MH-ZOR-GC',
+      rating: 4.2,
+      warrantyYears: 5,
+      warrantyNote: '5 yrs / 1,50,000 km battery',
+      rangeKm: 100,
+      topSpeedKmph: 50,
+      chargingTime: '3 h 50 m',
+      batteryCapacity: '10.24 kWh lithium-ion',
+      motorPower: '12 kW peak',
+      loadCapacityKg: 550,
+      highlights: <String>[
+        '550 kg payload three-wheeler',
+        'Largest deck in its class',
+        'Telematics with load and route logs',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Fleet White', argb: _white),
+        ProductColor(name: 'Cargo Blue', argb: 0xFF1D4ED8),
+      ],
+    ),
+    Product(
+      id: 'prd_erickshaw_pro',
+      category: ProductCategory.others,
+      brand: 'Piaggio',
+      name: 'Ape E-City Pro',
+      modelCode: 'PGO-APE-EC',
+      rating: 4,
+      warrantyYears: 3,
+      warrantyNote: '3 yrs / 80,000 km battery',
+      rangeKm: 130,
+      topSpeedKmph: 45,
+      chargingTime: '3 h 30 m swappable',
+      batteryCapacity: '7.5 kWh swappable',
+      motorPower: '5.4 kW',
+      loadCapacityKg: 320,
+      highlights: <String>[
+        'Battery swap in under two minutes',
+        'Passenger three-wheeler, four seats',
+        'Low running cost per km',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'City Yellow', argb: _yellow),
+        ProductColor(name: 'Fleet White', argb: _white),
+        ProductColor(name: 'Metro Green', argb: _green),
+      ],
+    ),
+    Product(
+      id: 'prd_home_charger',
+      category: ProductCategory.others,
+      brand: 'Exide',
+      name: 'FastCharge 3.3 kW',
+      modelCode: 'EXD-FC33',
+      rating: 4.1,
+      warrantyYears: 2,
+      warrantyNote: '2 yrs replacement warranty',
+      rangeKm: 0,
+      topSpeedKmph: 0,
+      chargingTime: 'Delivers 3.3 kW on a 15 A socket',
+      batteryCapacity: 'n/a — charger',
+      motorPower: 'n/a — charger',
+      loadCapacityKg: 0,
+      highlights: <String>[
+        'Wall-mount home charger',
+        'IP65, safe outdoors',
+        'Works with all listed two-wheelers',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Signal White', argb: _white),
+        ProductColor(name: 'Graphite', argb: _matteBlack),
+      ],
+    ),
+    Product(
+      id: 'prd_spare_battery',
+      category: ProductCategory.others,
+      brand: 'Amara Raja',
+      name: 'Swap Pack 2.3 kWh',
+      modelCode: 'AR-SWP-23',
+      rating: 3.9,
+      warrantyYears: 3,
+      warrantyNote: '3 yrs pro-rata cell warranty',
+      rangeKm: 70,
+      topSpeedKmph: 0,
+      chargingTime: '3 h on the bundled charger',
+      batteryCapacity: '2.3 kWh LFP swap pack',
+      motorPower: 'n/a — battery',
+      loadCapacityKg: 0,
+      highlights: <String>[
+        'Spare pack for swap-ready scooters',
+        'LFP cells — long cycle life',
+        'Carry handle, 14 kg',
+      ],
+      colors: <ProductColor>[
+        ProductColor(name: 'Graphite', argb: _matteBlack),
+        ProductColor(name: 'Safety Orange', argb: _orange),
+      ],
+    ),
+  ];
+
+  static List<Product> byCategory(ProductCategory category) => all
+      .where((Product p) => p.category == category)
+      .toList(growable: false);
+
+  static Product? byId(String id) {
+    for (final Product p in all) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+}

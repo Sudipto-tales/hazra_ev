@@ -1,43 +1,72 @@
-# Environment
+# ── Secrets ──────────────────────────────────────────────
 .env
+.env.local
+*.pem
+*.key
+*.jks
+*.keystore
+*id_hostinger_deploy*
 
-# Composer
-/vendor/
+# ── Archived nested repo (vayu-framework history) ────────
+website/.git.vayu-backup/
+
+# ── PHP / Composer ───────────────────────────────────────
+website/vendor/
+website/env
 composer.phar
 
-# Database files
-/database/database.sqlite
+# ── Website runtime state ────────────────────────────────
+website/database/database.sqlite
+website/database/*.sqlite-shm
+website/database/*.sqlite-wal
+website/storage/uploads/
+website/storage/logs/
+website/storage/apk/
+!website/storage/apk/.gitkeep
+!website/storage/apk/.htaccess
+website/logs/
 
-# OS files
+# ── Flutter / Dart ───────────────────────────────────────
+mobile_app/build/
+mobile_app/.dart_tool/
+mobile_app/.packages
+mobile_app/.flutter-plugins
+mobile_app/.flutter-plugins-dependencies
+
+# Desktop targets: regenerable with `flutter create .`, 82M
+mobile_app/linux/
+mobile_app/macos/
+mobile_app/windows/
+mobile_app/web/
+mobile_app/ios/
+
+# Android: config IS committed, machine-local bits are not
+mobile_app/android/.gradle/
+mobile_app/android/local.properties
+mobile_app/android/app/build/
+mobile_app/android/.cxx/
+
+# ── Editors / IDE ────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.sublime-workspace
+*.sublime-project
+*.swp
+
+# ── OS ───────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# IDE/editor files
-/.vscode/
-/.idea/
-*.sublime-workspace
-*.sublime-project
-
-# Logs and runtime files
-/logs/
+# ── Logs / temp ──────────────────────────────────────────
 *.log
 *.cache
-
-# Build and temporary files
 *.tmp
 *.temp
 *.bak
-*.swp
-*.zip
 
-# Ignore generated test reports
-/phpunit.xml
-/phpunit.xml.dist
-
-# Ignore agent files
-/agent/**
-# Uploaded report images
-/storage/uploads/
-
-# Generated SQL exports (php vayu db:export)
-/database/exports/*.sql
+# ── Build artifacts too big for GitHub ───────────────────
+# A debug APK is ~160 MB — over GitHub's hard 100 MB per-file limit, so a
+# single one blocks every push on the branch. Release APKs and the .aab are
+# well under and stay tracked.
+outputs/**/app-debug.apk
