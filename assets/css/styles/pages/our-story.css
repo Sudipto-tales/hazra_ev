@@ -344,49 +344,122 @@ html[data-theme="dark"] .story-about__card{background:color-mix(in srgb,var(--su
   grid-template-columns:1.25fr 1fr 1fr;
   grid-template-rows:auto auto;
   gap:12px;
+  align-items:start; /* rows don't force equal stretched heights */
 }
 .story-mosaic__cell{
-  border-radius:var(--r-lg);overflow:hidden;
-  border:1px solid var(--hair-0);background:var(--surface-0);
-  opacity:0;transform:translateY(24px) scale(.96);
+  border-radius:var(--r-lg);
+  overflow:hidden;
+  border:1px solid var(--hair-0);
+  background:var(--surface-0);
+  opacity:0;
+  transform:translateY(24px) scale(.96);
 }
 .story-mosaic__cell.is-in{
   animation:reveal-pop .7s var(--ease) forwards;
   animation-delay:calc(var(--i,0)*90ms);
 }
-.story-mosaic__cell--tall{grid-row:1 / span 2;min-height:220px}
+.story-mosaic__cell--tall{
+  grid-row:1 / span 2;
+  min-height:220px;
+  align-self:stretch; /* photo still fills both rows */
+}
+.story-mosaic__cell:not(.story-mosaic__cell--tall){
+  align-self:start; /* #1 and 130 km hug content */
+  height:auto;
+}
 .story-mosaic__cell img{
-  width:100%;height:100%;object-fit:cover;display:block;min-height:130px;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  min-height:130px;
   transition:transform .65s var(--ease);
 }
 .story-mosaic__cell:hover img{transform:scale(1.05)}
+
+/* Stat cards: size = content only */
 .story-mosaic__stat{
-  padding:18px 16px;min-height:120px;
-  display:flex;flex-direction:column;justify-content:center;
+  padding:14px 14px 16px;
+  min-height:0;           /* was 120px — caused empty gaps */
+  height:auto;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start; /* was center — less empty middle */
+  gap:2px;
   background:rgb(var(--chip-rgb) / .65);
 }
-.story-mosaic__stat--grad{background:var(--brand-grad);color:#fff;border:none}
-.story-mosaic__stat--reviews{background:color-mix(in srgb,var(--brand-violet) 7%,var(--surface-0))}
+.story-mosaic__stat--grad{
+  background:var(--brand-grad);
+  color:#fff;
+  border:none;
+}
+.story-mosaic__stat--reviews{
+  background:color-mix(in srgb,var(--brand-violet) 7%,var(--surface-0));
+}
 .story-mosaic__n{
   font-family:'Montserrat',system-ui,sans-serif;
-  font-size:clamp(26px,2.6vw,36px);font-weight:900;letter-spacing:-.03em;line-height:1;
-  margin-bottom:6px;
+  font-size:clamp(26px,2.6vw,36px);
+  font-weight:900;
+  letter-spacing:-.03em;
+  line-height:1;
+  margin-bottom:4px;
 }
 .story-mosaic__unit{font-size:.52em;font-weight:700;letter-spacing:0}
-.story-mosaic__stars{font-size:12px;letter-spacing:2px;color:var(--brand-orange);line-height:1;margin-bottom:5px}
-.story-mosaic__stat:not(.story-mosaic__stat--grad) .story-mosaic__n{
-  background:var(--brand-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+.story-mosaic__stars{
+  font-size:12px;
+  letter-spacing:2px;
+  color:var(--brand-orange);
+  line-height:1;
+  margin-bottom:4px;
 }
-.story-mosaic__l{font-size:11.5px;font-weight:700;color:var(--ink-soft-0)}
+.story-mosaic__stat:not(.story-mosaic__stat--grad) .story-mosaic__n{
+  background:var(--brand-grad);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.story-mosaic__l{
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--ink-soft-0);
+}
 .story-mosaic__stat--grad .story-mosaic__l{color:rgba(255,255,255,.88)}
-.story-mosaic__d{font-size:11.5px;line-height:1.45;color:var(--ink-soft-0);margin-top:5px}
+.story-mosaic__d{
+  font-size:11.5px;
+  line-height:1.45;
+  color:var(--ink-soft-0);
+  margin-top:4px;
+  margin-bottom:0;
+}
 .story-mosaic__stat--grad .story-mosaic__d{color:rgba(255,255,255,.8)}
-.story-faces{display:flex;margin-bottom:8px}
+
+/* Proper round avatars */
+.story-faces{
+  display:flex;
+  align-items:center;
+  margin-bottom:8px;
+  line-height:0; /* kills baseline gap under imgs */
+}
 .story-faces img{
-  width:30px;height:30px;border-radius:50%;object-fit:cover;
-  border:2px solid var(--surface-0);margin-left:-7px;
+  width:32px;
+  height:32px;
+  min-width:32px;
+  min-height:32px;
+  aspect-ratio:1 / 1;
+  border-radius:50%;
+  object-fit:cover;
+  object-position:center;
+  flex-shrink:0;
+  display:block;
+  border:2px solid var(--surface-0);
+  margin-left:-8px;
+  box-sizing:border-box;
+  background:var(--surface-0);
 }
 .story-faces img:first-child{margin-left:0}
+.story-mosaic__stat--grad .story-faces img{
+  border-color:rgba(255,255,255,.4);
+}
 
 /* Wall of Love - dark cards with brand accents */
 .story-gal{
