@@ -71,6 +71,13 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
         margin: 0 auto 1.5rem auto;
         box-shadow: 0 10px 20px rgba(0,0,0,0.2);
     }
+    .download-hero .app-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: inherit;
+        display: block;
+    }
     .btn-download {
         display: inline-block;
         background: var(--hazra-cyan, #00d2ff);
@@ -210,7 +217,7 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
 <div class="dl-page">
     <div class="download-hero">
         <div class="app-icon">
-            <i class="fa fa-mobile-alt"></i>
+            <img src="<?= e($iconUrl) ?>" alt="Hazra EV app icon">
         </div>
 
         <?php if ($release): ?>
