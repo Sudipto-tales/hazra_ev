@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:image_picker/image_picker.dart';
+
 import '../../core/config/tracking_config.dart';
 import '../../core/utils/formatters.dart';
 import '../../state/notification_center.dart';
@@ -764,6 +766,13 @@ class MockAdminRepository implements AdminRepository {
   Future<TrackingConfig> saveConfig(TrackingConfig config) async {
     _config = config;
     return _delayed(_config);
+  }
+
+  @override
+  Future<String> uploadProductImage(XFile file) async {
+    await Future<void>.delayed(latency);
+    // Return a fake URL for mock purposes
+    return 'https://hazraelectricalbike.com/storage/products/mock_${file.name}';
   }
 }
 

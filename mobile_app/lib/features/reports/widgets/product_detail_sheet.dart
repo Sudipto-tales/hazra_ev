@@ -108,6 +108,7 @@ class _ProductDetailSheetState extends State<_ProductDetailSheet> {
                         child: ProductArtwork(
                           category: p.category,
                           argb: _color.argb,
+                          imageUrls: _color.imageUrls,
                           variant: i,
                           height: 220,
                           radius: Radii.lg,

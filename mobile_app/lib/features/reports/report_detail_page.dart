@@ -294,6 +294,7 @@ class _SaleRow extends StatelessWidget {
             child: ProductArtwork(
               category: line.category,
               argb: line.colorArgb,
+              imageUrls: const <String>[],
               height: 52,
               padding: Insets.xs,
               radius: Radii.sm,

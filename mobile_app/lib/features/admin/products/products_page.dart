@@ -285,6 +285,7 @@ class _ProductRow extends StatelessWidget {
                   child: ProductArtwork(
                     category: product.category,
                     argb: first.argb,
+                    imageUrls: first.imageUrls,
                     height: 62,
                     padding: Insets.xs,
                     radius: Radii.sm,

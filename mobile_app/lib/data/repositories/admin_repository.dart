@@ -161,4 +161,7 @@ abstract class AdminRepository {
   Future<TrackingConfig> config();
 
   Future<TrackingConfig> saveConfig(TrackingConfig config);
+
+  /// Uploads a product image and returns the public URL.
+  Future<String> uploadProductImage(XFile file);
 }

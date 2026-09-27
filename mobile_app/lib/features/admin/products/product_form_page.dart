@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
@@ -227,6 +229,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           argb: _colors.isEmpty
                               ? AppColors.primary.value
                               : _colors.first.argb,
+                          imageUrls: _colors.isEmpty
+                              ? const <String>[]
+                              : _colors.first.imageUrls,
                           height: 68,
                           padding: Insets.xs,
                           radius: Radii.sm,
@@ -594,13 +599,41 @@ class _ColorEditorSheetState extends State<_ColorEditorSheet> {
   late int _argb = widget.color?.argb ?? _swatches.first.argb;
   late bool _inStock = widget.color?.inStock ?? true;
 
+  // Remote URLs already saved
+  late List<String> _urls =
+      List<String>.from(widget.color?.imageUrls ?? const <String>[]);
+
+  // Local files not uploaded yet
+  final List<XFile> _pending = <XFile>[];
+
   @override
   void dispose() {
     _name.dispose();
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _pickGallery() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile> files = await picker.pickMultiImage(
+      imageQuality: 85,
+      maxWidth: 1600,
+    );
+    if (files.isEmpty) return;
+    setState(() => _pending.addAll(files));
+  }
+
+  Future<void> _pickCamera() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? file = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+      maxWidth: 1600,
+    );
+    if (file == null) return;
+    setState(() => _pending.add(file));
+  }
+
+  Future<void> _submit() async {
     final String name = _name.text.trim();
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -608,12 +641,30 @@ class _ColorEditorSheetState extends State<_ColorEditorSheet> {
       );
       return;
     }
+
+    // Upload pending files
+    final List<String> uploaded = <String>[];
+    for (final XFile f in _pending) {
+      try {
+        final String url =
+            await AppScope.of(context).adminRepository.uploadProductImage(f);
+        uploaded.add(url);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e')),
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
     Navigator.of(context).pop(
       ProductColor(
         name: name,
         argb: _argb,
         inStock: _inStock,
-        imageUrls: widget.color?.imageUrls ?? const <String>[],
+        imageUrls: <String>[..._urls, ...uploaded],
       ),
     );
   }
@@ -699,6 +750,93 @@ class _ColorEditorSheetState extends State<_ColorEditorSheet> {
             subtitle: const Text(
               'Out-of-stock colours stay on the product but cannot be sold',
             ),
+          ),
+          const SizedBox(height: Insets.lg),
+          Text('Photos', style: theme.textTheme.labelSmall),
+          const SizedBox(height: Insets.sm),
+          SizedBox(
+            height: 88,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: <Widget>[
+                // existing remote urls
+                ..._urls.asMap().entries.map((e) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Stack(
+                      children: <Widget>[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            ProductArtwork.resolveUrl(e.value) ?? e.value,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox(width: 80, height: 80),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: IconButton(
+                            iconSize: 18,
+                            padding: EdgeInsets.zero,
+                            onPressed: () => setState(() => _urls.removeAt(e.key)),
+                            icon: const Icon(Icons.close, color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                // local pending
+                ..._pending.asMap().entries.map((e) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Stack(
+                      children: <Widget>[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(e.value.path),
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: IconButton(
+                            iconSize: 18,
+                            padding: EdgeInsets.zero,
+                            onPressed: () => setState(() => _pending.removeAt(e.key)),
+                            icon: const Icon(Icons.close, color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          const SizedBox(height: Insets.sm),
+          Row(
+            children: <Widget>[
+              OutlinedButton.icon(
+                onPressed: _pickGallery,
+                icon: const Icon(Icons.photo_library_outlined, size: 18),
+                label: const Text('Gallery'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: _pickCamera,
+                icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                label: const Text('Camera'),
+              ),
+            ],
           ),
           const SizedBox(height: Insets.sm),
           SizedBox(

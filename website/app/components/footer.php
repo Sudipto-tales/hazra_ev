@@ -44,6 +44,21 @@ try {
     }
 } catch (\Throwable $e) {}
 ?>
+<style>
+.foot__app-qr {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 4px;
+  background: #fff;
+  border-radius: 8px;
+  line-height: 0;
+}
+.foot__app-qr img {
+  display: block;
+  width: 72px;
+  height: 72px;
+}
+</style>
 <!-- ══════════ FOOTER ══════════ -->
 <footer class="foot <?= $showFooterBg ? '' : 'foot--no-bg' ?>" id="contact">
 
@@ -119,6 +134,21 @@ try {
             <a href="<?= e(base_url('dealership-enquiry')) ?>">Register complaint</a>
             <a href="<?= e(base_url('warranty-free')) ?>">Warranty registration</a>
             <a href="<?= e(base_url('warranty-paid')) ?>">Paid warranty</a>
+
+            <!-- Download app + QR (both go to app-download) -->
+            <a href="<?= e(base_url('app-download')) ?>">Download app</a>
+            <a href="<?= e(base_url('app-download')) ?>"
+               class="foot__app-qr"
+               title="Scan to open download page"
+               aria-label="QR code to app download page">
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=<?= rawurlencode(rtrim(base_url('app-download'), '/')) ?>"
+                width="72"
+                height="72"
+                alt="QR code — open app download page"
+                loading="lazy"
+              >
+            </a>
           </div>
         </nav>
       </div>

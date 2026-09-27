@@ -79,6 +79,7 @@ class ProductSaleCard extends StatelessWidget {
                 ProductArtwork(
                   category: product.category,
                   argb: color.argb,
+                  imageUrls: color.imageUrls,
                   height: 148,
                 ),
                 Positioned(

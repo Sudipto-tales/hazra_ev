@@ -20,6 +20,7 @@ class ProductArtwork extends StatelessWidget {
     super.key,
     required this.category,
     required this.argb,
+    this.imageUrls = const <String>[],
     this.variant = 0,
     this.height = 150,
     this.radius = Radii.md,
@@ -31,6 +32,9 @@ class ProductArtwork extends StatelessWidget {
   /// Body colour, straight from `ProductColor.argb`.
   final int argb;
 
+  /// Remote gallery URLs for this colour.
+  final List<String> imageUrls;
+
   /// Which frame of that colour's set: 0 side, 1 three-quarter, 2 front.
   final int variant;
 
@@ -38,23 +42,64 @@ class ProductArtwork extends StatelessWidget {
   final double radius;
   final double padding;
 
+  static String? resolveUrl(String? raw) {
+    if (raw == null) return null;
+    final String u = raw.trim();
+    if (u.isEmpty) return null;
+    if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    // CHANGE domain if needed
+    const String base = 'https://hazraelectricalbike.com';
+    if (u.startsWith('/')) return '$base$u';
+    return '$base/$u';
+  }
+
+  String? get _url {
+    if (imageUrls.isEmpty) return null;
+    final int i = variant.clamp(0, imageUrls.length - 1);
+    return resolveUrl(imageUrls[i]);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final String? url = _url;
+
     return Container(
       height: height,
       width: double.infinity,
-      padding: EdgeInsets.all(padding),
+      padding: url == null ? EdgeInsets.all(padding) : EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: context.isDark
-              ? const <Color>[AppColors.surfaceAltDark, AppColors.backgroundDark]
-              : const <Color>[AppColors.surface, AppColors.surfaceAlt],
-        ),
+        color: context.isDark
+            ? AppColors.surfaceAltDark
+            : AppColors.surfaceAlt,
         border: Border.all(color: context.lineColor),
       ),
+      child: url != null
+          ? Image.network(
+              url,
+              fit: BoxFit.contain,
+              width: double.infinity,
+              height: height,
+              errorBuilder: (_, __, ___) => _paint(context),
+              loadingBuilder: (context, child, prog) {
+                if (prog == null) return child;
+                return const Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              },
+            )
+          : _paint(context),
+    );
+  }
+
+  Widget _paint(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(padding),
       child: CustomPaint(
         painter: _ProductPainter(
           category: category,

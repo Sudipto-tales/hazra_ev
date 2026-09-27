@@ -3,6 +3,7 @@ import '../api/api_client.dart';
 import '../api/wire.dart';
 import '../models/models.dart';
 import 'admin_repository.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// `AdminRepository` over `website/api`.
 ///
@@ -376,6 +377,11 @@ class HttpAdminRepository implements AdminRepository {
         await _api.put('/config', body: Wire.configToJson(config));
 
     return Wire.config(result.map);
+  }
+
+  @override
+  Future<String> uploadProductImage(XFile file) async {
+    return _api.uploadProductImage(file);
   }
 
   /// `GET /days/{id}` carries the employee for an admin subject, so this is
