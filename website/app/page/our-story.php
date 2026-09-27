@@ -30,22 +30,22 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="story-about__card" id="aboutCarousel">
           <div class="story-about__slides">
             <div class="story-about__pair is-active">
-              <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=900&q=80" alt="Electric scooter on the road" loading="eager">
+              <img src="<?= e(base_url('assets/about_0.webp')) ?>" alt="Electric scooter on the road" loading="eager">
             </div>
             <div class="story-about__pair">
-              <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=900&q=80" alt="Workshop and vehicle detail" loading="lazy">
+              <img src="<?= e(base_url('assets/about_1.webp')) ?>" alt="Workshop and vehicle detail" loading="lazy">
             </div>
             <div class="story-about__pair">
-              <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=900&q=80" alt="Rider travelling through the city" loading="lazy">
+              <img src="<?= e(base_url('assets/about_2.webp')) ?>" alt="Rider travelling through the city" loading="lazy">
             </div>
             <div class="story-about__pair">
-              <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=900&q=80" alt="City ride at golden hour" loading="lazy">
+              <img src="<?= e(base_url('assets/about_3.webp')) ?>" alt="City ride at golden hour" loading="lazy">
             </div>
             <div class="story-about__pair">
-              <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=900&q=80" alt="Hazra workshop detail" loading="lazy">
+              <img src="<?= e(base_url('assets/about_4.webp')) ?>" alt="Hazra workshop detail" loading="lazy">
             </div>
             <div class="story-about__pair">
-              <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=900&q=80" alt="Scooter ready for the road" loading="lazy">
+              <img src="<?= e(base_url('assets/about_5.webp')) ?>" alt="Scooter ready for the road" loading="lazy">
             </div>
           </div>
         </div>
@@ -69,7 +69,7 @@ App::render('header', ['isStickyOnly' => true]);
           stop-start traffic, and a body pressed so there is nothing to rattle loose.
           We build them carefully, service what we sell, and publish the range figures we actually measured.
         </p>
-        <a class="btn btn--brand" href="#journey">Read More <i data-lucide="arrow-right"></i></a>
+        <!-- <a class="btn btn--brand" href="#journey">Read More <i data-lucide="arrow-right"></i></a> -->
       </div>
     </div>
   </div>
@@ -132,7 +132,7 @@ App::render('header', ['isStickyOnly' => true]);
       <div class="story-tl__stage">
         <article class="story-tl__slide is-active" data-s="0">
           <div class="story-tl__img">
-            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=1200&q=80" alt="First workshop" loading="lazy">
+            <img src="<?= e(base_url('assets/about_0.webp')) ?>" alt="First workshop" loading="lazy">
           </div>
           <div class="story-tl__copy">
             <p class="story-tl__tag"><i></i>Chapter 01</p>
@@ -147,7 +147,7 @@ App::render('header', ['isStickyOnly' => true]);
 
         <article class="story-tl__slide" data-s="1">
           <div class="story-tl__img">
-            <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1200&q=80" alt="City launch" loading="lazy">
+            <img src="<?= e(base_url('assets/about_5.webp')) ?>" alt="City launch" loading="lazy">
           </div>
           <div class="story-tl__copy">
             <p class="story-tl__tag"><i></i>Chapter 02</p>
@@ -162,7 +162,7 @@ App::render('header', ['isStickyOnly' => true]);
 
         <article class="story-tl__slide" data-s="2">
           <div class="story-tl__img">
-            <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=1200&q=80" alt="Network grows" loading="lazy">
+            <img src="<?= e(base_url('assets/about_2.webp')) ?>" alt="Network grows" loading="lazy">
           </div>
           <div class="story-tl__copy">
             <p class="story-tl__tag"><i></i>Chapter 03</p>
@@ -176,11 +176,11 @@ App::render('header', ['isStickyOnly' => true]);
 
         <article class="story-tl__slide" data-s="3">
           <div class="story-tl__img">
-            <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1200&q=80" alt="CHALO family" loading="lazy">
+            <img src="<?= e(base_url('assets/about_3.webp')) ?>" alt="The Hazra line" loading="lazy">
           </div>
           <div class="story-tl__copy">
             <p class="story-tl__tag"><i></i>Chapter 04</p>
-            <h3 class="story-tl__title">The CHALO line</h3>
+            <h3 class="story-tl__title">The Hazra line</h3>
             <p class="story-tl__text">
               A full model family — from eco city runs to high-speed daily riders —
               built on the same spine: honest range, service that stays, and a ride
@@ -299,13 +299,13 @@ App::render('header', ['isStickyOnly' => true]);
 
     <div class="story-gal__grid">
       <article class="story-gal__card story-gal__card--photo" style="--i:0">
-        <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=600&q=80" alt="Rider on Hazra scooter" loading="lazy">
+        <img src="<?= e(base_url('assets/about_4.webp')) ?>" alt="Rider on Hazra scooter" loading="lazy">
         <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
         <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
       </article>
 
       <article class="story-gal__card story-gal__card--photo" style="--i:1">
-        <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=600&q=80" alt="City commute" loading="lazy">
+        <img src="<?= e(base_url('assets/about_1.webp')) ?>" alt="City commute" loading="lazy">
         <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
         <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
       </article>
@@ -314,7 +314,7 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="story-gal__mark"><i data-lucide="quote"></i></div>
         <p class="story-gal__q">“Range is honest. After six months of office runs, the numbers still match what they promised at delivery.”</p>
         <div class="story-gal__who">
-          <img src="https://i.pravatar.cc/80?u=s1" alt="">
+          <img src="<?= e(base_url('assets/wol1.webp')) ?>" alt="Ankit Mehta" loading="lazy">
           <div>
             <b>Ankit Mehta</b>
             <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
@@ -324,7 +324,7 @@ App::render('header', ['isStickyOnly' => true]);
       </article>
 
       <article class="story-gal__card story-gal__card--photo" style="--i:3">
-        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80" alt="Owner portrait" loading="lazy">
+        <img src="<?= e(base_url('assets/wol2.webp')) ?>" alt="Owner portrait" loading="lazy">
         <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
       </article>
 
@@ -332,7 +332,7 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="story-gal__mark"><i data-lucide="quote"></i></div>
         <p class="story-gal__q">“Service stayed after the sale. Quiet in traffic, easy to live with every single day.”</p>
         <div class="story-gal__who">
-          <img src="https://i.pravatar.cc/80?u=s2" alt="">
+          <img src="<?= e(base_url('assets/wol2.webp')) ?>" alt="Neha Kapoor" loading="lazy">
           <div>
             <b>Neha Kapoor</b>
             <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
@@ -342,13 +342,13 @@ App::render('header', ['isStickyOnly' => true]);
       </article>
 
       <article class="story-gal__card story-gal__card--photo" style="--i:5">
-        <img src="https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=600&q=80" alt="Evening ride" loading="lazy">
+        <img src="<?= e(base_url('assets/wol4.webp')) ?>" alt="Evening ride" loading="lazy">
         <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
         <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
       </article>
 
       <article class="story-gal__card story-gal__card--photo" style="--i:6">
-        <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=600&q=80" alt="Scooter detail" loading="lazy">
+        <img src="<?= e(base_url('assets/wol3.webp')) ?>" alt="Scooter detail" loading="lazy">
         <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
       </article>
 
@@ -356,7 +356,7 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="story-gal__mark"><i data-lucide="quote"></i></div>
         <p class="story-gal__q">“Swappable pack changed my week. No waiting at a charger between shifts.”</p>
         <div class="story-gal__who">
-          <img src="https://i.pravatar.cc/80?u=s3" alt="">
+          <img src="<?= e(base_url('assets/wol4.webp')) ?>" alt="Vikram Singh" loading="lazy">
           <div>
             <b>Vikram Singh</b>
             <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
@@ -366,7 +366,7 @@ App::render('header', ['isStickyOnly' => true]);
       </article>
 
       <article class="story-gal__card story-gal__card--photo" style="--i:8">
-        <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=600&q=80" alt="Family ride" loading="lazy">
+        <img src="<?= e(base_url('assets/about_3.webp')) ?>" alt="Family ride" loading="lazy">
         <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
         <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
       </article>
@@ -375,7 +375,7 @@ App::render('header', ['isStickyOnly' => true]);
         <div class="story-gal__mark"><i data-lucide="quote"></i></div>
         <p class="story-gal__q">“Build quality feels solid. Dealer support in my city made the switch from petrol painless.”</p>
         <div class="story-gal__who">
-          <img src="https://i.pravatar.cc/80?u=s4" alt="">
+          <img src="<?= e(base_url('assets/wol2.webp')) ?>" alt="Sudipto Ghosh" loading="lazy">
           <div>
             <b>Sudipto Ghosh</b>
             <span class="story-gal__verified"><i data-lucide="badge-check"></i> Verified Owner</span>
@@ -385,12 +385,12 @@ App::render('header', ['isStickyOnly' => true]);
       </article>
 
       <article class="story-gal__card story-gal__card--photo" style="--i:10">
-        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80" alt="Owner" loading="lazy">
+        <img src="<?= e(base_url('assets/about_5.webp')) ?>" alt="Owner" loading="lazy">
         <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
       </article>
 
       <article class="story-gal__card story-gal__card--photo" style="--i:11">
-        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80" alt="Rider" loading="lazy">
+        <img src="<?= e(base_url('assets/about_2.webp')) ?>" alt="Rider" loading="lazy">
         <span class="story-gal__badge"><i data-lucide="badge-check"></i> Verified Owner</span>
         <a class="story-gal__zoom" href="#" aria-label="Zoom"><i data-lucide="maximize-2"></i></a>
       </article>
