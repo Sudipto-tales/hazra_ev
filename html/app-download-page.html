@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellness — Take Charge of Your Health</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+          },
+          colors: {
+            forest: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+              950: '#07241c',
+              banner: '#0e382b',
+              heroDark: '#08251e',
+            },
+            mint: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            },
+            sand: '#F7F9F6',
+          },
+          boxShadow: {
+            'phone': '0 25px 60px -15px rgba(10, 40, 30, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.08)',
+            'phone-hover': '0 35px 70px -15px rgba(10, 40, 30, 0.38), 0 0 0 1px rgba(16, 185, 129, 0.3)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+            'soft': '0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 5px 15px -5px rgba(0, 0, 0, 0.02)',
+          },
+          keyframes: {
+            floatSlow: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            floatMed: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-16px)' },
+            },
+            pulseSubtle: {
+              '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+              '50%': { opacity: '0.9', transform: 'scale(1.04)' },
+            }
+          },
+          animation: {
+            'float-slow': 'floatSlow 6s ease-in-out infinite',
+            'float-med': 'floatMed 4.5s ease-in-out infinite',
+            'pulse-subtle': 'pulseSubtle 3s ease-in-out infinite',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Phone Frame & UI components */
+    .iphone-frame {
+      border: 8px solid #1e2522;
+      border-radius: 46px;
+      position: relative;
+      background: #fbfdfc;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(6, 38, 28, 0.35), 0 0 0 1.5px rgba(255,255,255,0.4) inset;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    .iphone-notch {
+      width: 86px;
+      height: 20px;
+      background: #1e2522;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .iphone-camera {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #081110;
+    }
+
+    .iphone-sensor {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #112822;
+    }
+
+    .iphone-home-bar {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 4px;
+      background: #cbd5e1;
+      border-radius: 9999px;
+      z-index: 40;
+    }
+
+    /* Scrollbar aesthetics */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+
+    /* Scroll reveal animations */
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(35px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Hide scrollbars in mockups */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+
+<body class="bg-[#F8FAF8] text-slate-800 font-sans antialiased overflow-x-hidden selection:bg-emerald-600 selection:text-white">
+
+  <!-- Navigation Header -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-[#F8FAF8]/90 backdrop-blur-md border-b border-emerald-900/5 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        
+        <!-- Logo -->
+        <a href="#hero" class="flex items-center gap-2.5 group">
+          <div class="w-9 h-9 rounded-xl bg-forest-900 text-emerald-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-3H8v-2h3V8h2v3h3v2h-3v3z"/>
+            </svg>
+          </div>
+          <span class="text-xl font-bold tracking-tight text-forest-950 flex items-center gap-1">
+            Wellness<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          </span>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-8 text-[14.5px] font-medium text-slate-600">
+          <a href="#hero" class="hover:text-forest-900 transition-colors">Home</a>
+          <a href="#features" class="hover:text-forest-900 transition-colors">Features</a>
+          <a href="#services" class="hover:text-forest-900 transition-colors">Services</a>
+          <a href="#doctors" class="hover:text-forest-900 transition-colors">Doctors</a>
+          <a href="#community" class="hover:text-forest-900 transition-colors">Community</a>
+        </nav>
+
+        <!-- Right Action Buttons -->
+        <div class="hidden sm:flex items-center gap-5">
+          <a href="#login" class="text-sm font-semibold text-slate-700 hover:text-emerald-700 transition">Log In</a>
+          <a href="#download" class="px-5 py-2.5 rounded-full text-sm font-semibold text-white bg-forest-900 hover:bg-forest-800 active:scale-95 shadow-md shadow-forest-950/20 transition-all duration-200">
+            Sign Up
+          </a>
+        </div>
+
+        <!-- Mobile menu hamburger -->
+        <button id="mobileMenuBtn" aria-label="Toggle Menu" class="md:hidden text-slate-700 p-2 rounded-lg hover:bg-slate-100">
+          <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Menu -->
+    <div id="mobileMenu" class="hidden md:hidden bg-white/95 border-b border-slate-200 px-6 py-6 shadow-xl space-y-4">
+      <a href="#hero" class="block text-base font-medium text-slate-700 hover:text-forest-900">Home</a>
+      <a href="#features" class="block text-base font-medium text-slate-700 hover:text-forest-900">Features</a>
+      <a href="#services" class="block text-base font-medium text-slate-700 hover:text-forest-900">Services</a>
+      <a href="#doctors" class="block text-base font-medium text-slate-700 hover:text-forest-900">Doctors</a>
+      <a href="#community" class="block text-base font-medium text-slate-700 hover:text-forest-900">Community</a>
+      <div class="pt-4 flex flex-col gap-3">
+        <a href="#login" class="w-full text-center py-2.5 text-sm font-semibold text-slate-700 border border-slate-300 rounded-full">Log In</a>
+        <a href="#download" class="w-full text-center py-2.5 text-sm font-semibold text-white bg-forest-900 rounded-full shadow">Sign Up</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-24 sm:pt-28">
+
+    <!-- HERO SECTION -->
+    <section id="hero" class="relative pt-8 pb-20 sm:pb-32 overflow-hidden">
+      <!-- Decorative ambient gradient blobs -->
+      <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-emerald-100/60 to-emerald-200/30 blur-3xl pointer-events-none -z-10 rounded-full"></div>
+      
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal-on-scroll">
+        <!-- Eyebrow Tag -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/80 text-emerald-800 text-xs font-semibold uppercase tracking-wider mb-6">
+          <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+          DOWNLOAD WELLNESS NOW
+        </div>
+
+        <!-- Main Title -->
+        <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-forest-950 max-w-3xl mx-auto leading-[1.15]">
+          Take charge of your health <br class="hidden sm:inline" />
+          <span class="text-emerald-700">Download wellness now</span>
+        </h1>
+
+        <!-- App Store Badges -->
+        <div class="flex flex-wrap items-center justify-center gap-4 mt-8 mb-16">
+          <a href="#download" class="flex items-center gap-3 px-5 py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl shadow-lg transition-transform hover:-translate-y-1">
+            <i data-lucide="apple" class="w-6 h-6"></i>
+            <div class="text-left leading-tight">
+              <span class="text-[10px] uppercase font-medium text-slate-300 block">Download on the</span>
+              <span class="text-sm font-bold tracking-tight">App Store</span>
+            </div>
+          </a>
+
+          <a href="#download" class="flex items-center gap-3 px-5 py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl shadow-lg transition-transform hover:-translate-y-1">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M3.609 1.814L13.793 12 3.61 22.186A2.29 2.29 0 0 1 3 20.575V3.425c0-.623.228-1.2.609-1.611zm1.258-.871A2.183 2.183 0 0 1 6.074.5c.571 0 1.114.218 1.545.618l9.043 5.221-3.649 3.65-8.145-8.146zm0 22.114l8.146-8.146 3.649 3.65-9.044 5.221a2.213 2.213 0 0 1-1.544.618c-.464 0-.895-.147-1.207-.443zm12.355-7.135l2.766-1.597c.974-.562.974-1.478 0-2.04l-2.766-1.597-2.923 2.923 2.923 2.711z"/>
+            </svg>
+            <div class="text-left leading-tight">
+              <span class="text-[10px] uppercase font-medium text-slate-300 block">GET IT ON</span>
+              <span class="text-sm font-bold tracking-tight">Google Play</span>
+            </div>
+          </a>
+        </div>
+
+        <!-- Triple Phone Showcase Section -->
+        <div class="relative max-w-5xl mx-auto flex items-end justify-center pt-4 pb-8">
+          
+          <!-- LEFT PHONE: Appointments Mockup -->
+          <div class="hidden lg:block w-[265px] h-[520px] iphone-frame translate-x-12 translate-y-8 -rotate-6 opacity-90 shadow-2xl hover:rotate-0 hover:z-30 hover:opacity-100 hover:scale-105 transition-all duration-500">
+            <div class="iphone-notch"><div class="iphone-camera"></div><div class="iphone-sensor"></div></div>
+            <div class="p-4 pt-8 text-left text-xs bg-slate-50 h-full flex flex-col">
+              <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+                <span class="font-bold text-slate-800 text-sm">Appointments</span>
+                <i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i>
+              </div>
+
+              <!-- Upcoming Item 1 -->
+              <div class="mt-4 p-3 bg-white rounded-2xl shadow-sm border border-slate-100 space-y-2">
+                <div class="flex items-center gap-2">
+                  <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&auto=format&fit=crop&q=80" alt="Doctor" class="w-9 h-9 rounded-full object-cover">
+                  <div>
+                    <h4 class="font-bold text-slate-900 text-xs">Dr. Sarah Jenkins</h4>
+                    <p class="text-[10px] text-slate-500">Cardiologist • 10:30 AM</p>
+                  </div>
+                </div>
+                <div class="flex justify-between items-center text-[10px] text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg">
+                  <span>Confirmed Video Visit</span>
+                  <span class="font-semibold text-emerald-600">Join Call</span>
+                </div>
+              </div>
+
+              <!-- Upcoming Item 2 -->
+              <div class="mt-3 p-3 bg-white rounded-2xl shadow-sm border border-slate-100 space-y-2">
+                <div class="flex items-center gap-2">
+                  <img src="https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=100&auto=format&fit=crop&q=80" alt="Doctor" class="w-9 h-9 rounded-full object-cover">
+                  <div>
+                    <h4 class="font-bold text-slate-900 text-xs">Dr. David Miller</h4>
+                    <p class="text-[10px] text-slate-500">Dermatologist • Tomorrow</p>
+                  </div>
+                </div>
+                <div class="text-[10px] text-slate-600 bg-slate-100 px-2 py-1 rounded-lg flex justify-between">
+                  <span>Prescription Refill</span>
+                  <span class="text-slate-400">Scheduled</span>
+                </div>
+              </div>
+
+              <!-- Metrics bar -->
+              <div class="mt-4 bg-emerald-900 text-white rounded-2xl p-3 shadow-md">
+                <p class="text-[10px] text-emerald-200">Daily Health Goal</p>
+                <p class="text-sm font-bold">8,420 / 10,000 Steps</p>
+                <div class="w-full bg-emerald-800/80 rounded-full h-1.5 mt-2">
+                  <div class="bg-emerald-400 h-1.5 rounded-full w-4/5"></div>
+                </div>
+              </div>
+            </div>
+            <div class="iphone-home-bar"></div>
+          </div>
+
+          <!-- CENTER PHONE: Main Wellness Dashboard -->
+          <div class="w-[300px] sm:w-[320px] h-[590px] iphone-frame z-20 shadow-phone -translate-y-2 hover:scale-[1.02] transition-transform duration-300">
+            <div class="iphone-notch"><div class="iphone-camera"></div><div class="iphone-sensor"></div></div>
+            
+            <div class="pt-8 px-4 pb-6 bg-[#f7faf8] h-full flex flex-col justify-between overflow-y-auto no-scrollbar">
+              <div>
+                <!-- Top Status Header in Phone -->
+                <div class="flex items-center justify-between py-2 text-xs">
+                  <div class="flex items-center gap-1.5 font-bold text-forest-950">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    Wellness
+                  </div>
+                  <div class="flex items-center gap-2 text-slate-500">
+                    <i data-lucide="bell" class="w-4 h-4"></i>
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Avatar" class="w-6 h-6 rounded-full object-cover border border-emerald-600">
+                  </div>
+                </div>
+
+                <!-- Search Input In Phone -->
+                <div class="relative mt-2">
+                  <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+                  <input type="text" placeholder="Search doctors, medicines..." class="w-full bg-white text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none" readonly>
+                </div>
+
+                <!-- Banner Inside App -->
+                <div class="mt-3 relative rounded-2xl overflow-hidden shadow-sm h-32 group">
+                  <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=500&auto=format&fit=crop&q=80" class="w-full h-full object-cover">
+                  <div class="absolute inset-0 bg-gradient-to-t from-forest-950/80 via-forest-950/30 to-transparent p-3 flex flex-col justify-end text-left text-white">
+                    <span class="text-[9px] uppercase tracking-wider text-emerald-300 font-semibold">Specialist Care</span>
+                    <h3 class="text-xs font-bold leading-tight">Book free initial wellness checks today</h3>
+                  </div>
+                </div>
+
+                <!-- Quick Actions Grid -->
+                <div class="grid grid-cols-4 gap-2 mt-4 text-center">
+                  <div class="p-2 bg-white rounded-xl shadow-xs border border-slate-100 flex flex-col items-center">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1">
+                      <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <span class="text-[9px] font-medium text-slate-700">Consult</span>
+                  </div>
+                  <div class="p-2 bg-white rounded-xl shadow-xs border border-slate-100 flex flex-col items-center">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1">
+                      <i data-lucide="pill" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <span class="text-[9px] font-medium text-slate-700">Pharmacy</span>
+                  </div>
+                  <div class="p-2 bg-white rounded-xl shadow-xs border border-slate-100 flex flex-col items-center">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1">
+                      <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <span class="text-[9px] font-medium text-slate-700">Booking</span>
+                  </div>
+                  <div class="p-2 bg-white rounded-xl shadow-xs border border-slate-100 flex flex-col items-center">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1">
+                      <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <span class="text-[9px] font-medium text-slate-700">Vitals</span>
+                  </div>
+                </div>
+
+                <!-- Doctors Recommendation -->
+                <div class="mt-4 text-left">
+                  <div class="flex justify-between items-center text-xs mb-2">
+                    <span class="font-bold text-slate-900">Recommended Doctors</span>
+                    <span class="text-[10px] text-emerald-600 font-semibold cursor-pointer">See all</span>
+                  </div>
+                  <div class="bg-white p-2.5 rounded-xl border border-slate-100 flex items-center gap-3">
+                    <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-full object-cover">
+                    <div class="flex-1">
+                      <h4 class="text-xs font-bold text-slate-900">Dr. Melina Steinberg</h4>
+                      <p class="text-[10px] text-slate-500">General Practitioner</p>
+                      <div class="flex items-center gap-1 text-[10px] text-amber-500 mt-0.5">
+                        <i data-lucide="star" class="w-2.5 h-2.5 fill-current"></i>
+                        <span class="font-bold">4.9</span>
+                        <span class="text-slate-400">(120+ reviews)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Phone Bottom Navigation -->
+              <div class="pt-2 border-t border-slate-200/80 flex justify-around text-slate-400">
+                <i data-lucide="home" class="w-4 h-4 text-emerald-600"></i>
+                <i data-lucide="message-square" class="w-4 h-4"></i>
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+                <i data-lucide="user" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="iphone-home-bar"></div>
+          </div>
+
+          <!-- RIGHT PHONE: Active Chat Consultation -->
+          <div class="hidden lg:block w-[265px] h-[520px] iphone-frame -translate-x-12 translate-y-8 rotate-6 opacity-90 shadow-2xl hover:rotate-0 hover:z-30 hover:opacity-100 hover:scale-105 transition-all duration-500">
+            <div class="iphone-notch"><div class="iphone-camera"></div><div class="iphone-sensor"></div></div>
+            <div class="p-3 pt-8 text-left text-xs bg-slate-50 h-full flex flex-col justify-between">
+              
+              <!-- Chat header -->
+              <div class="flex items-center gap-2 pb-2.5 border-b border-slate-200">
+                <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&auto=format&fit=crop&q=80" class="w-7 h-7 rounded-full object-cover">
+                <div>
+                  <div class="text-[11px] font-bold text-slate-800">Dr. Faras Capeloto</div>
+                  <div class="text-[9px] text-emerald-600 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Online Consultation
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chat bubbles -->
+              <div class="space-y-2.5 my-auto text-[11px] overflow-hidden">
+                <div class="bg-emerald-100 text-emerald-950 p-2.5 rounded-2xl rounded-tl-sm shadow-xs max-w-[88%]">
+                  Hello Andrew! How are you feeling after taking the medicine?
+                </div>
+                <div class="bg-white border border-slate-200 text-slate-800 p-2.5 rounded-2xl rounded-tr-sm shadow-xs ml-auto max-w-[88%] text-right">
+                  Much better Doctor, fever is completely gone today!
+                </div>
+                <div class="bg-emerald-100 text-emerald-950 p-2.5 rounded-2xl rounded-tl-sm shadow-xs max-w-[88%]">
+                  Glad to hear that! Please continue hydration for 2 more days.
+                </div>
+              </div>
+
+              <!-- Mini chat action bar -->
+              <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200">
+                <span class="text-[10px] text-slate-400 px-2 flex-1">Type response...</span>
+                <div class="w-6 h-6 rounded-lg bg-emerald-700 text-white flex items-center justify-center">
+                  <i data-lucide="send" class="w-3 h-3"></i>
+                </div>
+              </div>
+            </div>
+            <div class="iphone-home-bar"></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES SECTION (Deep Forest Green Banner) -->
+    <section id="features" class="bg-forest-950 text-white py-20 sm:py-28 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-2xl mx-auto mb-14 reveal-on-scroll">
+          <span class="text-emerald-400 font-semibold tracking-wider text-xs uppercase">Features</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mt-2 text-white">
+            Explore the features of Wellness
+          </h2>
+          <p class="text-slate-300 text-sm mt-3">
+            Holistic, modern healthcare solutions built with care for individuals and families across the globe.
+          </p>
+        </div>
+
+        <!-- 3 Feature Cards Grid with Interactive Hover & Image Highlights -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 reveal-on-scroll">
+          
+          <!-- Card 1 -->
+          <div class="group relative rounded-3xl overflow-hidden shadow-2xl h-[440px] flex flex-col justify-end p-6 border border-emerald-900/50 hover:border-emerald-500/60 transition-all duration-300">
+            <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=700&auto=format&fit=crop&q=80" 
+                 alt="Love your Health" 
+                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-90">
+            <div class="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/40 to-transparent"></div>
+            
+            <div class="relative z-10 space-y-2">
+              <span class="text-xs uppercase font-semibold text-emerald-400 tracking-wider">Mind & Vitality</span>
+              <h3 class="text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                Love your Health
+              </h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Nurture emotional balance, manage stress levels, and develop sustainable lifelong habits with tailored mindfulness sessions.
+              </p>
+              <div class="pt-2">
+                <a href="#learn" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300">
+                  Read Guide <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="group relative rounded-3xl overflow-hidden shadow-2xl h-[440px] flex flex-col justify-end p-6 border border-emerald-900/50 hover:border-emerald-500/60 transition-all duration-300">
+            <img src="https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?w=700&auto=format&fit=crop&q=80" 
+                 alt="Support System" 
+                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-90">
+            <div class="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/40 to-transparent"></div>
+            
+            <div class="relative z-10 space-y-2">
+              <span class="text-xs uppercase font-semibold text-emerald-400 tracking-wider">Companionship</span>
+              <h3 class="text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                Support System
+              </h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Keep the ones who matter most healthy—from caring for elders and newborns to pet wellness tracking in a singular portal.
+              </p>
+              <div class="pt-2">
+                <a href="#learn" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300">
+                  Discover Networks <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="group relative rounded-3xl overflow-hidden shadow-2xl h-[440px] flex flex-col justify-end p-6 border border-emerald-900/50 hover:border-emerald-500/60 transition-all duration-300">
+            <img src="https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=700&auto=format&fit=crop&q=80" 
+                 alt="Invest in Health" 
+                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-90">
+            <div class="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/40 to-transparent"></div>
+            
+            <div class="relative z-10 space-y-2">
+              <span class="text-xs uppercase font-semibold text-emerald-400 tracking-wider">Longevity</span>
+              <h3 class="text-2xl font-bold text-white group-hover:text-emerald-300 transition-colors">
+                Invest in Health
+              </h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                Prioritize preventive care, regular health checkups, and early diagnostics to safeguard family happiness for decades.
+              </p>
+              <div class="pt-2">
+                <a href="#learn" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300">
+                  Explore Plans <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Carousel navigation indicators -->
+        <div class="flex items-center justify-center gap-2 mt-10">
+          <button class="w-8 h-2 rounded-full bg-emerald-400"></button>
+          <button class="w-2 h-2 rounded-full bg-slate-600 hover:bg-slate-400"></button>
+          <button class="w-2 h-2 rounded-full bg-slate-600 hover:bg-slate-400"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPECIAL SERVICES SECTION -->
+    <section id="services" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left Side: Header and 2x2 Services Grid -->
+        <div class="lg:col-span-7 space-y-8 reveal-on-scroll">
+          <div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-forest-950 tracking-tight">
+              Special Services
+            </h2>
+            <p class="text-slate-600 text-sm mt-3 max-w-xl">
+              Delivering tailored and comprehensive healthcare solutions to address specific and unique medicine needs, ensuring personalized care and instant support.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <!-- Service 1: Schedule Appointment -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-soft hover:shadow-lg hover:border-emerald-500/40 transition group">
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center mb-4 group-hover:bg-forest-900 group-hover:text-emerald-400 transition-colors">
+                <i data-lucide="calendar-check" class="w-6 h-6"></i>
+              </div>
+              <h3 class="font-bold text-forest-950 text-base">Schedule Appointment</h3>
+              <p class="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
+                Direct booking system for specialists, checkups, and emergency consults.
+              </p>
+              <a href="#schedule" class="text-xs font-semibold text-emerald-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                LEARN MORE <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+
+            <!-- Service 2: Pharmacy -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-soft hover:shadow-lg hover:border-emerald-500/40 transition group">
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center mb-4 group-hover:bg-forest-900 group-hover:text-emerald-400 transition-colors">
+                <i data-lucide="pill" class="w-6 h-6"></i>
+              </div>
+              <h3 class="font-bold text-forest-950 text-base">Pharmacy</h3>
+              <p class="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
+                Seamless digital prescription delivery straight to your doorstep.
+              </p>
+              <a href="#pharmacy" class="text-xs font-semibold text-emerald-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                LEARN MORE <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+
+            <!-- Service 3: Maxillary & Dental -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-soft hover:shadow-lg hover:border-emerald-500/40 transition group">
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center mb-4 group-hover:bg-forest-900 group-hover:text-emerald-400 transition-colors">
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+              </div>
+              <h3 class="font-bold text-forest-950 text-base">Maxillary Services</h3>
+              <p class="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
+                Oral cavity focus and precision maxillofacial assessment with specialists.
+              </p>
+              <a href="#services" class="text-xs font-semibold text-emerald-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                LEARN MORE <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+
+            <!-- Service 4: Mental Health -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-soft hover:shadow-lg hover:border-emerald-500/40 transition group">
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center mb-4 group-hover:bg-forest-900 group-hover:text-emerald-400 transition-colors">
+                <i data-lucide="heart-pulse" class="w-6 h-6"></i>
+              </div>
+              <h3 class="font-bold text-forest-950 text-base">Mental Health</h3>
+              <p class="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">
+                Confidential therapy sessions and support services for psychological well-being.
+              </p>
+              <a href="#services" class="text-xs font-semibold text-emerald-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                LEARN MORE <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right Side: Phone Mockup with Interactive Floating Badge -->
+        <div class="lg:col-span-5 flex justify-center relative reveal-on-scroll">
+          
+          <!-- Pulsing 'Doctor Chat' Floating Badge as featured in image -->
+          <div class="absolute -top-4 -left-4 sm:left-4 z-30 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2.5 animate-pulse-subtle cursor-pointer border border-emerald-400/40">
+            <div class="w-7 h-7 rounded-lg bg-emerald-600/90 flex items-center justify-center">
+              <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
+            </div>
+            <div class="text-left">
+              <span class="text-[9px] uppercase tracking-wider text-emerald-200 block">Instant Connect</span>
+              <span class="text-xs font-bold">Doctor Chat</span>
+            </div>
+          </div>
+
+          <!-- iPhone In-App Schedule / Doctor view -->
+          <div class="w-[300px] h-[600px] iphone-frame shadow-phone hover:scale-[1.01] transition-transform">
+            <div class="iphone-notch"><div class="iphone-camera"></div><div class="iphone-sensor"></div></div>
+            
+            <div class="pt-8 px-4 pb-6 bg-[#f8faf8] h-full flex flex-col justify-between overflow-y-auto no-scrollbar">
+              <div class="space-y-4">
+                <!-- Search bar in phone -->
+                <div class="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
+                  <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                  <span class="text-xs text-slate-400">Search doctor's specialty...</span>
+                </div>
+
+                <!-- Doctor Card Showcase inside Mockup -->
+                <div class="relative rounded-2xl overflow-hidden bg-forest-950 text-white p-4 shadow-md">
+                  <div class="flex justify-between items-start">
+                    <div>
+                      <span class="text-[9px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-semibold">Verified Doctor</span>
+                      <h4 class="text-sm font-bold mt-1">Dr. Faras Capeloto</h4>
+                      <p class="text-[10px] text-emerald-300">Dental Surgeon & Orthodontist</p>
+                    </div>
+                    <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&auto=format&fit=crop&q=80" class="w-12 h-12 rounded-xl object-cover border-2 border-emerald-500">
+                  </div>
+                  
+                  <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-emerald-900/80 text-center text-[10px]">
+                    <div>
+                      <span class="text-slate-400 block">Experience</span>
+                      <span class="font-bold text-white">8+ Years</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block">Patients</span>
+                      <span class="font-bold text-white">1,400+</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-400 block">Rating</span>
+                      <span class="font-bold text-emerald-400">★ 4.95</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Available Slots inside Mockup -->
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-xs">
+                  <span class="text-xs font-bold text-slate-900 block mb-2">Available Slots (Today)</span>
+                  <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
+                    <span class="p-1.5 rounded-lg border border-slate-200 text-slate-500">09:00 AM</span>
+                    <span class="p-1.5 rounded-lg bg-emerald-600 text-white font-bold shadow-xs">11:30 AM</span>
+                    <span class="p-1.5 rounded-lg border border-slate-200 text-slate-500">03:00 PM</span>
+                  </div>
+                </div>
+
+                <!-- Patient reviews sneak peek -->
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-xs">
+                  <div class="flex items-center gap-2">
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80" class="w-6 h-6 rounded-full object-cover">
+                    <div>
+                      <h5 class="text-[10px] font-bold text-slate-900">Elena Rostova</h5>
+                      <p class="text-[9px] text-slate-400">"Gentle treatment and swift appointment."</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Button in mockup -->
+              <button class="w-full py-2.5 bg-forest-900 text-white text-xs font-semibold rounded-xl hover:bg-forest-800 transition">
+                Confirm Booking
+              </button>
+            </div>
+            <div class="iphone-home-bar"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PROFESSIONAL HEALTHCARE AT YOUR FINGERTIPS -->
+    <section id="doctors" class="py-20 bg-[#F4F7F4] border-y border-emerald-900/5">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          <!-- Left: Active Interactive Chat Mockup -->
+          <div class="lg:col-span-5 flex justify-center order-2 lg:order-1 reveal-on-scroll">
+            <div class="w-[305px] h-[610px] iphone-frame shadow-phone">
+              <div class="iphone-notch"><div class="iphone-camera"></div><div class="iphone-sensor"></div></div>
+              
+              <!-- In-App Interactive Chat Screen -->
+              <div class="pt-8 px-4 pb-4 bg-slate-50 h-full flex flex-col justify-between">
+                
+                <!-- Chat Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                  <div class="flex items-center gap-2.5">
+                    <div class="relative">
+                      <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&auto=format&fit=crop&q=80" class="w-9 h-9 rounded-full object-cover">
+                      <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+                    </div>
+                    <div>
+                      <h4 class="text-xs font-bold text-slate-900">Dr. Faras Capeloto</h4>
+                      <p class="text-[9px] text-slate-400">Cardiologist Specialist</p>
+                    </div>
+                  </div>
+                  <div class="flex gap-2 text-slate-500">
+                    <button class="p-1.5 hover:bg-slate-200 rounded-full"><i data-lucide="phone" class="w-3.5 h-3.5"></i></button>
+                    <button class="p-1.5 hover:bg-slate-200 rounded-full"><i data-lucide="video" class="w-3.5 h-3.5"></i></button>
+                  </div>
+                </div>
+
+                <!-- Chat Messages Scroll Container -->
+                <div id="chatMessageList" class="space-y-3 py-3 overflow-y-auto flex-1 no-scrollbar text-xs">
+                  <div class="text-center">
+                    <span class="text-[9px] text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-full">Today, 10:45 AM</span>
+                  </div>
+
+                  <!-- Message 1 -->
+                  <div class="bg-emerald-100 text-forest-950 p-3 rounded-2xl rounded-tl-sm max-w-[85%] shadow-xs">
+                    <p class="text-[11px] leading-relaxed">
+                      Good morning Andrew! I've reviewed your latest diagnostic lab results.
+                    </p>
+                    <span class="text-[8px] text-emerald-800 float-right mt-1">10:46 AM</span>
+                  </div>
+
+                  <!-- Message 2 -->
+                  <div class="bg-white border border-slate-200 text-slate-800 p-3 rounded-2xl rounded-tr-sm max-w-[85%] ml-auto shadow-xs text-right">
+                    <p class="text-[11px] leading-relaxed">
+                      Thank you Doctor! Is everything normal with my blood test?
+                    </p>
+                    <span class="text-[8px] text-slate-400 float-right mt-1">10:47 AM</span>
+                  </div>
+
+                  <!-- Message 3 -->
+                  <div class="bg-emerald-100 text-forest-950 p-3 rounded-2xl rounded-tl-sm max-w-[85%] shadow-xs">
+                    <p class="text-[11px] leading-relaxed">
+                      Yes, your cholesterol levels have improved significantly. Keep sticking to the prescribed nutritional routine!
+                    </p>
+                    <span class="text-[8px] text-emerald-800 float-right mt-1">10:48 AM</span>
+                  </div>
+
+                  <!-- Attached Prescription Card Inside Chat -->
+                  <div class="bg-white p-2.5 rounded-xl border border-slate-200 flex items-center gap-2 max-w-[90%]">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                      <i data-lucide="file-text" class="w-4 h-4"></i>
+                    </div>
+                    <div class="flex-1 text-[10px]">
+                      <div class="font-bold text-slate-800">Dietary_Advice_Cardio.pdf</div>
+                      <div class="text-slate-400 text-[8px]">1.2 MB • Electronic Rx</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chat Input area with interactive submit -->
+                <form id="chatForm" onsubmit="handleSendMockMessage(event)" class="pt-2 border-t border-slate-200 flex items-center gap-2">
+                  <input id="chatInput" type="text" placeholder="Type a message to Dr. Faras..." class="flex-1 bg-white border border-slate-200 rounded-full px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500">
+                  <button type="submit" class="w-8 h-8 rounded-full bg-forest-900 text-white flex items-center justify-center hover:bg-forest-800 active:scale-95 transition">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                  </button>
+                </form>
+
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
+
+          <!-- Right: Section Description & Doctors Directory -->
+          <div class="lg:col-span-7 order-1 lg:order-2 space-y-6 reveal-on-scroll">
+            <div>
+              <span class="text-emerald-700 text-xs font-bold uppercase tracking-wider">Top Specialists</span>
+              <h2 class="text-3xl sm:text-4xl font-extrabold text-forest-950 tracking-tight mt-1">
+                Professional Healthcare at Your Fingertips
+              </h2>
+              <p class="text-slate-600 text-sm mt-3 leading-relaxed">
+                Access verified physicians and specialized medical practitioners ready to assist you in dominating your health concerns, all from the comfort of your home with round-the-clock availability.
+              </p>
+            </div>
+
+            <!-- Doctor List Cards -->
+            <div class="space-y-3.5">
+              
+              <!-- Doctor Card 1 -->
+              <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-emerald-500/50 hover:shadow-md transition">
+                <div class="flex items-center gap-3.5">
+                  <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=140&auto=format&fit=crop&q=80" alt="Doctor" class="w-12 h-12 rounded-xl object-cover">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h4 class="font-bold text-forest-950 text-sm">Melina Steinberg, M.Pd</h4>
+                      <span class="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">Psychologist</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">St. Jude Family Clinic • 8 yrs exp.</p>
+                    <div class="flex items-center gap-2 text-xs text-slate-600 mt-1">
+                      <span class="flex items-center text-amber-500 font-semibold text-[11px]"><i data-lucide="star" class="w-3 h-3 fill-current mr-0.5"></i> 4.9</span>
+                      <span class="text-slate-300">•</span>
+                      <span class="text-slate-500 text-[11px]">340 consultations</span>
+                    </div>
+                  </div>
+                </div>
+                <button onclick="triggerBookModal('Melina Steinberg')" class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-forest-900 hover:bg-forest-800 transition whitespace-nowrap shadow-xs">
+                  Book Consultation
+                </button>
+              </div>
+
+              <!-- Doctor Card 2 -->
+              <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-emerald-500/50 hover:shadow-md transition">
+                <div class="flex items-center gap-3.5">
+                  <img src="https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=140&auto=format&fit=crop&q=80" alt="Doctor" class="w-12 h-12 rounded-xl object-cover">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h4 class="font-bold text-forest-950 text-sm">Faras Capeloto, M.Pd</h4>
+                      <span class="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">Cardiologist</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Apex Medical Research • 11 yrs exp.</p>
+                    <div class="flex items-center gap-2 text-xs text-slate-600 mt-1">
+                      <span class="flex items-center text-amber-500 font-semibold text-[11px]"><i data-lucide="star" class="w-3 h-3 fill-current mr-0.5"></i> 5.0</span>
+                      <span class="text-slate-300">•</span>
+                      <span class="text-slate-500 text-[11px]">890 consultations</span>
+                    </div>
+                  </div>
+                </div>
+                <button onclick="triggerBookModal('Faras Capeloto')" class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-forest-900 hover:bg-forest-800 transition whitespace-nowrap shadow-xs">
+                  Book Consultation
+                </button>
+              </div>
+
+              <!-- Doctor Card 3 -->
+              <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-emerald-500/50 hover:shadow-md transition">
+                <div class="flex items-center gap-3.5">
+                  <img src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=140&auto=format&fit=crop&q=80" alt="Doctor" class="w-12 h-12 rounded-xl object-cover">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h4 class="font-bold text-forest-950 text-sm">Boris Pearson, M.Pd</h4>
+                      <span class="text-[10px] bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">Dermatology</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Pacific Health Associates • 6 yrs exp.</p>
+                    <div class="flex items-center gap-2 text-xs text-slate-600 mt-1">
+                      <span class="flex items-center text-amber-500 font-semibold text-[11px]"><i data-lucide="star" class="w-3 h-3 fill-current mr-0.5"></i> 4.8</span>
+                      <span class="text-slate-300">•</span>
+                      <span class="text-slate-500 text-[11px]">215 consultations</span>
+                    </div>
+                  </div>
+                </div>
+                <button onclick="triggerBookModal('Boris Pearson')" class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-forest-900 hover:bg-forest-800 transition whitespace-nowrap shadow-xs">
+                  Book Consultation
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- JOIN THE HEALTH COMMUNITY SECTION -->
+    <section id="community" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="max-w-2xl mx-auto text-center mb-16 reveal-on-scroll">
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-forest-950 tracking-tight">
+          Join the Health Community
+        </h2>
+        <p class="text-slate-600 text-sm mt-3">
+          Connect with our health community that supports our fellow wellness users, share experiences, and receive curated health tips every morning.
+        </p>
+      </div>
+
+      <div class="flex flex-col md:flex-row items-center justify-center gap-8 lg:gap-14 relative reveal-on-scroll">
+        
+        <!-- Left Community Feed Mockup -->
+        <div class="w-[280px] sm:w-[295px] h-[550px] iphone-frame shadow-phone">
+          <div class="iphone-notch"><div class="iphone-camera"></div><div class="iphone-sensor"></div></div>
+          
+          <div class="relative h-full flex flex-col justify-end p-4 pb-8 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&auto=format&fit=crop&q=80" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/40 to-transparent"></div>
+            
+            <div class="relative z-10 text-white space-y-2">
+              <span class="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-semibold">Community Story</span>
+              <h4 class="text-sm font-bold leading-snug">"How mindful breathwork and hydration changed my migraine recovery."</h4>
+              <p class="text-[10px] text-slate-300">By Elena G. • 2.4k Likes</p>
+              
+              <div class="flex items-center gap-3 pt-2 text-xs">
+                <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5 text-rose-400 fill-rose-400"></i> 1.8k</span>
+                <span class="flex items-center gap-1"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> 340</span>
+              </div>
+            </div>
+          </div>
+          <div class="iphone-home-bar"></div>
+        </div>
+
+        <!-- Right Community Feed Mockup -->
+        <div class="w-[280px] sm:w-[295px] h-[550px] iphone-frame shadow-phone">
+          <div class="iphone-notch"><div class="iphone-camera"></div><div class="iphone-sensor"></div></div>
+          
+          <div class="relative h-full flex flex-col justify-end p-4 pb-8 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&auto=format&fit=crop&q=80" class="absolute inset-0 w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/40 to-transparent"></div>
+            
+            <div class="relative z-10 text-white space-y-2">
+              <span class="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-semibold">Nutritional Advice</span>
+              <h4 class="text-sm font-bold leading-snug">Daily high-protein plant diets recommended by our certified dietitians.</h4>
+              <p class="text-[10px] text-slate-300">By Dr. Rachel Weiss • 5.1k Reads</p>
+              
+              <div class="flex items-center gap-3 pt-2 text-xs">
+                <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5 text-rose-400 fill-rose-400"></i> 3.2k</span>
+                <span class="flex items-center gap-1"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> 512</span>
+              </div>
+            </div>
+          </div>
+          <div class="iphone-home-bar"></div>
+        </div>
+
+        <!-- Floating Circular 'Tips Daily' Card as in design -->
+        <div class="w-72 bg-white rounded-3xl p-6 shadow-2xl border border-slate-200/80 text-left md:translate-y-4 reveal-on-scroll">
+          <div class="w-12 h-12 rounded-full bg-emerald-100 text-forest-900 flex items-center justify-center mb-4">
+            <i data-lucide="sparkles" class="w-6 h-6 text-emerald-700"></i>
+          </div>
+          <h3 class="text-xl font-bold text-forest-950 tracking-tight">Tips Daily</h3>
+          <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+            Dive into a world of curated tips designed to elevate your everyday health. From nutrition advice to mindfulness practices, discover a holistic approach to a healthier lifestyle.
+          </p>
+          <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-800">New tip every 24h</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CALL TO ACTION BANNER -->
+    <section id="download" class="relative overflow-hidden bg-forest-banner text-white py-20">
+      <!-- Background Ambient Blur -->
+      <div class="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/20 blur-3xl rounded-full"></div>
+      
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Banner Text Content -->
+          <div class="lg:col-span-7 space-y-6 text-center lg:text-left reveal-on-scroll">
+            <span class="text-emerald-400 font-semibold text-xs tracking-wider uppercase">Download Wellness</span>
+            <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+              Download now and <br />start your search
+            </h2>
+            <p class="text-slate-300 text-sm max-w-lg mx-auto lg:mx-0">
+              Join more than 500,000+ active patients enjoying stress-free online doctor consultations, instant prescription delivery, and automated health trackers.
+            </p>
+
+            <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+              <a href="#appstore" class="flex items-center gap-3 px-5 py-2.5 bg-black hover:bg-neutral-900 text-white rounded-xl shadow-lg transition-transform hover:-translate-y-1">
+                <i data-lucide="apple" class="w-6 h-6"></i>
+                <div class="text-left leading-tight">
+                  <span class="text-[10px] uppercase font-medium text-slate-300 block">Download on the</span>
+                  <span class="text-sm font-bold tracking-tight">App Store</span>
+                </div>
+              </a>
+
+              <a href="#playstore" class="flex items-center gap-3 px-5 py-2.5 bg-black hover:bg-neutral-900 text-white rounded-xl shadow-lg transition-transform hover:-translate-y-1">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                  <path d="M3.609 1.814L13.793 12 3.61 22.186A2.29 2.29 0 0 1 3 20.575V3.425c0-.623.228-1.2.609-1.611zm1.258-.871A2.183 2.183 0 0 1 6.074.5c.571 0 1.114.218 1.545.618l9.043 5.221-3.649 3.65-8.145-8.146zm0 22.114l8.146-8.146 3.649 3.65-9.044 5.221a2.213 2.213 0 0 1-1.544.618c-.464 0-.895-.147-1.207-.443zm12.355-7.135l2.766-1.597c.974-.562.974-1.478 0-2.04l-2.766-1.597-2.923 2.923 2.923 2.711z"/>
+                </svg>
+                <div class="text-left leading-tight">
+                  <span class="text-[10px] uppercase font-medium text-slate-300 block">GET IT ON</span>
+                  <span class="text-sm font-bold tracking-tight">Google Play</span>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Banner Phone Mockup (Angled & Floating) -->
+          <div class="lg:col-span-5 flex justify-center reveal-on-scroll">
+            <div class="w-[270px] h-[520px] iphone-frame rotate-3 hover:rotate-0 transition-transform duration-500 shadow-2xl">
+              <div class="iphone-notch"><div class="iphone-camera"></div><div class="iphone-sensor"></div></div>
+              
+              <div class="p-3.5 pt-8 bg-slate-50 h-full flex flex-col justify-between text-xs">
+                <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&auto=format&fit=crop&q=80" class="w-8 h-8 rounded-full object-cover">
+                  <div>
+                    <span class="font-bold text-slate-900 block text-[11px]">Wellness Telehealth</span>
+                    <span class="text-[9px] text-emerald-600 font-medium">Session Connected</span>
+                  </div>
+                </div>
+
+                <div class="space-y-2 my-auto">
+                  <div class="bg-emerald-100 text-forest-950 p-2.5 rounded-xl text-[10px]">
+                    Your prescription has been confirmed and forwarded to the local pharmacy.
+                  </div>
+                  <div class="bg-white border border-slate-200 p-2.5 rounded-xl text-[10px] text-slate-700">
+                    Estimated delivery: Today, 3:30 PM.
+                  </div>
+                </div>
+
+                <button class="w-full py-2 bg-forest-900 text-white rounded-lg text-xs font-semibold">
+                  Track Delivery
+                </button>
+              </div>
+              <div class="iphone-home-bar"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-forest-heroDark text-white pt-16 pb-12 border-t border-emerald-950">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-10 pb-12 border-b border-emerald-900/60">
+        
+        <!-- Brand column -->
+        <div class="md:col-span-2 space-y-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-forest-800 text-emerald-400 flex items-center justify-center">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-3H8v-2h3V8h2v3h3v2h-3v3z"/>
+              </svg>
+            </div>
+            <span class="text-xl font-bold tracking-tight text-white">Wellness</span>
+          </div>
+          <p class="text-xs text-slate-400 leading-relaxed max-w-sm">
+            Wellness platform for seamless connection between patients and doctors worldwide, ensuring abundant and immediate support for overall health and well-being.
+          </p>
+          <div class="flex items-center gap-3 text-slate-400 pt-2">
+            <a href="#twitter" class="w-8 h-8 rounded-full bg-forest-900 hover:bg-emerald-700 hover:text-white flex items-center justify-center transition"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+            <a href="#instagram" class="w-8 h-8 rounded-full bg-forest-900 hover:bg-emerald-700 hover:text-white flex items-center justify-center transition"><i data-lucide="instagram" class="w-4 h-4"></i></a>
+            <a href="#linkedin" class="w-8 h-8 rounded-full bg-forest-900 hover:bg-emerald-700 hover:text-white flex items-center justify-center transition"><i data-lucide="linkedin" class="w-4 h-4"></i></a>
+          </div>
+        </div>
+
+        <!-- Links: Company -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-4">Company</h4>
+          <ul class="space-y-2.5 text-xs text-slate-300">
+            <li><a href="#about" class="hover:text-emerald-400 transition">About Us</a></li>
+            <li><a href="#careers" class="hover:text-emerald-400 transition">Careers</a></li>
+            <li><a href="#press" class="hover:text-emerald-400 transition">Contact Us</a></li>
+            <li><a href="#editorial" class="hover:text-emerald-400 transition">Editorial Team</a></li>
+          </ul>
+        </div>
+
+        <!-- Links: Access -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-4">Access</h4>
+          <ul class="space-y-2.5 text-xs text-slate-300">
+            <li><a href="#upgrade" class="hover:text-emerald-400 transition">Upgrade</a></li>
+            <li><a href="#general" class="hover:text-emerald-400 transition">General</a></li>
+            <li><a href="#telehealth" class="hover:text-emerald-400 transition">Virtual Clinic</a></li>
+            <li><a href="#faq" class="hover:text-emerald-400 transition">Help Center</a></li>
+          </ul>
+        </div>
+
+        <!-- Links: Legal -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-4">Legal</h4>
+          <ul class="space-y-2.5 text-xs text-slate-300">
+            <li><a href="#privacy" class="hover:text-emerald-400 transition">Privacy Policy</a></li>
+            <li><a href="#terms" class="hover:text-emerald-400 transition">Terms of Service</a></li>
+            <li><a href="#cookies" class="hover:text-emerald-400 transition">Cookie Policy</a></li>
+            <li><a href="#hipaa" class="hover:text-emerald-400 transition">HIPAA Compliance</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Copyright -->
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+        <p>© 2026 Wellness Inc. All rights reserved. Designed for optimal care.</p>
+        <div class="flex items-center gap-6">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> System Operational</span>
+          <span>Encrypted 256-bit SSL</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Modal for Doctor Booking -->
+  <div id="bookingModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+      <button onclick="closeBookModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-forest-900 flex items-center justify-center">
+          <i data-lucide="calendar" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-forest-950">Book Online Consultation</h3>
+          <p id="modalDoctorName" class="text-xs text-emerald-700 font-medium">Doctor</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Select Consultation Type</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-900 font-semibold text-center">Video Call (30 min)</button>
+            <button type="button" class="p-2.5 rounded-xl border border-slate-200 text-slate-600 text-center hover:bg-slate-50">In-Person Visit</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Preferred Date</label>
+          <input type="date" value="2026-10-02" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 focus:outline-emerald-600">
+        </div>
+
+        <div>
+          <label class="block text-slate-700 font-semibold mb-1">Reason for Visit</label>
+          <textarea rows="2" placeholder="Briefly describe your symptoms or concern..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-700 focus:outline-emerald-600"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-6 flex gap-3">
+        <button onclick="closeBookModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50">Cancel</button>
+        <button onclick="confirmAppointment()" class="w-1/2 py-2.5 rounded-xl bg-forest-900 text-white font-semibold text-xs hover:bg-forest-800 shadow-md">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toastMessage" class="fixed bottom-6 right-6 z-50 bg-forest-950 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-emerald-500/40 flex items-center gap-3 transform translate-y-32 transition-transform duration-300 pointer-events-none">
+    <div class="w-6 h-6 rounded-full bg-emerald-500 text-forest-950 flex items-center justify-center font-bold text-xs">✓</div>
+    <span id="toastText" class="text-xs font-semibold">Appointment reserved successfully!</span>
+  </div>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    mobileMenuBtn?.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+
+    // IntersectionObserver for smooth scroll reveals
+    const observerOptions = {
+      root: null,
+      threshold: 0.12,
+      rootMargin: "0px 0px -40px 0px"
+    };
+
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+      revealObserver.observe(el);
+    });
+
+    // Interactive Chat Simulation
+    function handleSendMockMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const chatList = document.getElementById('chatMessageList');
+
+      // User Message bubble
+      const userBubble = document.createElement('div');
+      userBubble.className = "bg-white border border-slate-200 text-slate-800 p-2.5 rounded-2xl rounded-tr-sm max-w-[85%] ml-auto shadow-xs text-right animate-in fade-in";
+      userBubble.innerHTML = `<p class="text-[11px] leading-relaxed">${escapeHtml(text)}</p><span class="text-[8px] text-slate-400 float-right mt-1">Just now</span>`;
+      chatList.appendChild(userBubble);
+      input.value = '';
+
+      chatList.scrollTop = chatList.scrollHeight;
+
+      // Doctor Automated Reply after 1 second
+      setTimeout(() => {
+        const docBubble = document.createElement('div');
+        docBubble.className = "bg-emerald-100 text-forest-950 p-2.5 rounded-2xl rounded-tl-sm max-w-[85%] shadow-xs animate-in fade-in";
+        docBubble.innerHTML = `<p class="text-[11px] leading-relaxed">Understood! I have logged this update into your patient chart.</p><span class="text-[8px] text-emerald-800 float-right mt-1">Just now</span>`;
+        chatList.appendChild(docBubble);
+        chatList.scrollTop = chatList.scrollHeight;
+      }, 1000);
+    }
+
+    // Modal logic
+    function triggerBookModal(doctorName) {
+      const modal = document.getElementById('bookingModal');
+      const nameElem = document.getElementById('modalDoctorName');
+      if (nameElem) nameElem.textContent = `Consultation with ${doctorName}`;
+      modal.classList.remove('hidden');
+    }
+
+    function closeBookModal() {
+      document.getElementById('bookingModal').classList.add('hidden');
+    }
+
+    function confirmAppointment() {
+      closeBookModal();
+      showToast('Consultation appointment request confirmed!');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toastMessage');
+      const text = document.getElementById('toastText');
+      text.textContent = message;
+      toast.classList.remove('translate-y-32');
+      setTimeout(() => {
+        toast.classList.add('translate-y-32');
+      }, 3500);
+    }
+
+    // Utility string sanitizer
+    function escapeHtml(string) {
+      return String(string).replace(/[&<>"']/g, function (s) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[s];
+      });
+    }
+  </script>
+</body>
+</html>
