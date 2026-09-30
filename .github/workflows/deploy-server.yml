@@ -64,7 +64,8 @@ jobs:
             fi
 
             if [ -f vayu ]; then
-              php vayu db:sync || true
+              # Applies pending gallery seeds once; fail deployment if seeding fails.
+              php vayu db:sync
             fi
 
             mkdir -p storage/apk storage/uploads storage/logs database

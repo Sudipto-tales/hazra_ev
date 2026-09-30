@@ -125,7 +125,8 @@
             if (!n) return '—';
             const units = ['B', 'KB', 'MB', 'GB'];
             let i = 0;
-            let v = n;
+            let v = Number(n);
+            if (!Number.isFinite(v) || v < 0) return '?';
             while (v >= 1024 && i < units.length - 1) {
                 v /= 1024;
                 i += 1;
