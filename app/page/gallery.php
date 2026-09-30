@@ -93,7 +93,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const rawData = res.data || [];
 
       // Filter only published items (or default status)
-      galleryItems = rawData.filter(item => !item.status || item.status === 'published' || item.status === 'active');
+      galleryItems = (Array.isArray(rawData) ? rawData : []).filter(item =>
+        ['published', 'active'].includes(item.status)
+        && (!item.type || item.type === 'image')
+        && String(item.image_url || item.image_path || item.image || item.url || '').trim()
+      );
 
       renderFilters();
       renderGrid();
@@ -168,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     gridEl.innerHTML = currentFilteredItems.map((item, idx) => {
-      const rawSize = (item.size || '').toLowerCase();
+      const rawSize = String(item.size || '').toLowerCase();
       const validSizes = ['sm', 'wide', 'tall', 'lg'];
       const sizeClass = validSizes.includes(rawSize) ? rawSize : SIZE_PATTERN[idx % SIZE_PATTERN.length];
 

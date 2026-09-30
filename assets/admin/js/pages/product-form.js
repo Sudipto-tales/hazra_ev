@@ -332,7 +332,7 @@
                 { name: 'hero_image', label: 'Hero Image (Fallback if no colour selected)', type: 'image' },
                 { name: 'is_featured', label: 'Featured Product (Show on Homepage)', type: 'checkbox' },
                 { name: 'featured_order', label: 'Featured Display Order', type: 'number' },
-                { name: 'status', label: 'Status', type: 'select', options: ['published', 'draft', 'hidden'] },
+                { name: 'status', label: 'Status', type: 'select', options: ['published', 'hidden'] },
             ],
             onSave: async (data) => {
                 data.modelCode = data.model_code || data.modelCode;

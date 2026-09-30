@@ -25,8 +25,6 @@
 
     const TYPES = {
         image: { label: 'Photograph', icon: 'fa-image' },
-        video: { label: 'Video file', icon: 'fa-clapperboard' },
-        youtube: { label: 'YouTube', icon: 'fa-youtube' },
     };
 
     /* Which album the grid is showing. '' is everything. */
@@ -38,7 +36,7 @@
         document.getElementById('pageHead').innerHTML = layout.pageHead({
             crumb: [{ label: 'Content' }, { label: 'Our Gallery' }],
             title: 'Our Gallery',
-            sub: 'Photographs, video and YouTube talks on /gallery. Drag a card to change the order — the page prints them in this sequence, and the album chips follow it.',
+            sub: 'Published gallery images on /gallery. Drag a card to change the order — the page prints them in this sequence, and the album chips follow it.',
             actions: `
                 <a class="btn btn--ghost" href="${SITE}gallery" target="_blank" rel="noopener">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> View on site</a>
@@ -55,7 +53,8 @@
        --------------------------------------------------------- */
     async function render() {
         const all = (await store.all('gallery'))
-            .sort((a, b) => (a.order || 0) - (b.order || 0));
+            .map((row) => ({ ...row, image: row.image_url || row.image_path || '', type: 'image', status: row.status === 'active' ? 'published' : (row.status || 'hidden') }))
+            .sort((a, b) => (Number(a.order_num) || 0) - (Number(b.order_num) || 0));
 
         const albums = [...new Set(all.map((r) => (r.album || '').trim()).filter(Boolean))];
 
@@ -70,8 +69,6 @@
             ${U.statStrip([
                 ['fa-photo-film', 'navy', all.length, 'Items', `${live.length} published`],
                 ['fa-image', 'blue', all.filter((r) => r.type === 'image').length, 'Photographs', 'Open full size'],
-                ['fa-clapperboard', 'red', all.filter((r) => r.type === 'video').length, 'Video files', 'Compressed on upload'],
-                ['fa-youtube', 'magenta', all.filter((r) => r.type === 'youtube').length, 'YouTube', 'Embedded on click'],
             ])}
             <article class="card anim-item">
                 <div class="card__head">
@@ -187,7 +184,10 @@
         if (!grid) return;
 
         U.sortable(grid, '.tile', async (ids) => {
-            await store.reorder('gallery', album ? merge(all, rows, ids) : ids);
+            const orderedIds = album ? merge(all, rows, ids) : ids;
+            for (const [index, id] of orderedIds.entries()) {
+                await store.update('gallery', id, { order_num: index + 1 });
+            }
             toast.success('Order saved', { body: 'The page prints them in this sequence.', id: 'gal-order' });
             render();
         });
@@ -223,20 +223,12 @@
 
         const data = await formLib.editModal({
             title: record ? `Edit ${record.title}` : 'Add a gallery item',
-            subtitle: 'A photograph, a video file, or a YouTube talk.',
+            subtitle: 'Choose an image and publish it on the gallery page.',
             icon: 'fa-photo-film',
             record,
             defaults: { status: 'published', type: 'image', album: 'Products', category: 'Products', size: 'sm' },
             html: F.section({
                 fields: [
-                    F.select({
-                        name: 'type', label: 'Kind', required: true,
-                        options: [
-                            { value: 'image', label: 'Photograph' },
-                            { value: 'video', label: 'Video file — uploaded and compressed here' },
-                            { value: 'youtube', label: 'YouTube — embedded on click' },
-                        ],
-                    }),
                     F.text({
                         name: 'album', label: 'Category / Album', list: 'galAlbums',
                         placeholder: 'Products',
@@ -254,42 +246,31 @@
                     }),
                     F.text({
                         name: 'title', label: 'Title', required: true, wide: true,
-                        placeholder: 'Modular theatre',
+                        placeholder: 'Showroom opening',
                     }),
                     F.textarea({
                         name: 'caption', label: 'Caption', wide: true, rows: 2, max: 180,
-                        placeholder: 'Laminar airflow, and a scrub area that opens straight onto it.',
+                        placeholder: 'Describe this gallery photo.',
                         hint: 'Shown under the tile, and again in the viewer.',
                     }),
 
-                    /* display:contents, so the wrapper does not become a row of
-                       its own — the fields inside have to sit in the same grid
-                       tracks as the ones above them. */
-                    `<div data-when="youtube" style="display:contents">${F.text({
-                        name: 'youtubeId', label: 'YouTube link or ID', wide: true,
-                        placeholder: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-                        hint: 'Paste the whole link — the id is taken out of it, and the thumbnail fills itself in.',
-                    })}</div>`,
-
-                    `<div data-when="video" style="display:contents">${videoField()}</div>`,
-
                     F.media({
-                        name: 'image', label: 'Poster',
-                        hint: 'The still on the tile. A video fills this from its own first second; a YouTube item from its thumbnail.',
+                        name: 'image', label: 'Gallery image', required: true,
+                        hint: 'Upload an image, select one from the library, or paste its URL.',
                     }),
 
                     F.status({}),
                 ],
             }),
-            onReady(scope) {
-                wireKind(scope);
-                wireYouTube(scope);
-                wireVideo(scope);
-            },
         });
         if (!data) return;
 
-        blankUnused(data);
+        if (!String(data.image || '').trim()) {
+            toast.error('Choose a gallery image before saving.');
+            return;
+        }
+        data.image_url = data.image;
+        data.image_path = data.image;
         data.category = data.album || data.category || 'General';
         data.album = data.category;
 
@@ -301,238 +282,6 @@
             toast.success(`${data.title} added`, { body: 'It goes to the end of the list — drag it where it belongs.' });
         }
         render();
-    }
-
-    function videoField() {
-        return `
-        <div class="field field--wide">
-            <label>Video file</label>
-            <div class="dropzone" data-video-drop>
-                <p><i class="fa-solid fa-clapperboard"></i> mp4, mov, webm or mkv — drop one here or choose it.</p>
-                <input type="file" accept="video/*" hidden data-video-input>
-                <button type="button" class="btn btn--ghost" data-video-pick>
-                    <i class="fa-solid fa-upload"></i> Choose file</button>
-            </div>
-            <div class="progress mt-2" data-video-bar hidden><i style="width:0"></i></div>
-            <small data-video-note>Re-encoded to 720p H.264 on the server, which is what keeps the page quick. A long clip can take a minute — leave this dialog open while it runs.</small>
-
-            <!-- Written by the upload, never typed, and inside this .field so
-                 that "a video item needs a video" reports itself against the
-                 drop zone rather than against nothing. core/form.js focuses a
-                 hidden control's button for exactly this case. -->
-            <input type="hidden" name="videoPath" data-required-message="Upload the video file first">
-            <input type="hidden" name="duration">
-            <input type="hidden" name="sizeBytes">
-        </div>`;
-    }
-
-    /**
-     * Shows only the fields the chosen kind uses, and makes the two that the
-     * kind cannot do without required while they are on screen.
-     *
-     * `required` moves with the kind rather than being declared once: a
-     * YouTube id marked required in the markup would refuse to save a
-     * photograph, from a field the editor cannot even see.
-     */
-    function wireKind(scope) {
-        const kind = scope.querySelector('[name="type"]');
-        if (!kind) return;
-
-        const needs = {
-            youtube: scope.querySelector('[name="youtubeId"]'),
-            video: scope.querySelector('[name="videoPath"]'),
-        };
-
-        const apply = () => {
-            scope.querySelectorAll('[data-when]').forEach((box) => {
-                box.style.display = box.dataset.when === kind.value ? 'contents' : 'none';
-            });
-
-            Object.entries(needs).forEach(([name, control]) => {
-                if (control) control.toggleAttribute('required', name === kind.value);
-            });
-        };
-
-        kind.addEventListener('change', apply);
-        apply();
-    }
-
-    /* A pasted watch / share / embed link becomes an id, and the id fills the
-       poster in — an editor who pasted a link should not then have to go and
-       find the thumbnail by hand. */
-    function wireYouTube(scope) {
-        const field = scope.querySelector('[name="youtubeId"]');
-        const poster = scope.querySelector('[name="image"]');
-        if (!field) return;
-
-        field.addEventListener('change', () => {
-            const id = youtubeId(field.value);
-            if (!id) return;
-
-            field.value = id;
-
-            if (poster && !poster.value) {
-                poster.value = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-                repaintMedia(scope);
-            }
-        });
-    }
-
-    function youtubeId(value) {
-        const raw = String(value || '').trim();
-        if (!raw) return '';
-
-        /* Already an id: eleven characters of the URL-safe alphabet. */
-        if (/^[\w-]{11}$/.test(raw)) return raw;
-
-        const m = raw.match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/|\/live\/)([\w-]{11})/);
-
-        return m ? m[1] : '';
-    }
-
-    /**
-     * The upload.
-     *
-     * XMLHttpRequest rather than HAZRA.api, for the one thing fetch cannot do:
-     * report progress. A 100 MB clip on a hospital's connection is a minute of
-     * silence otherwise, and silence is indistinguishable from a hung dialog.
-     * The transcode that follows is not something the bar can see, so the note
-     * under it says what is happening once the bytes are up.
-     */
-    function wireVideo(scope) {
-        const input = scope.querySelector('[data-video-input]');
-        if (!input) return;
-
-        const drop = scope.querySelector('[data-video-drop]');
-        const pick = scope.querySelector('[data-video-pick]');
-        const bar = scope.querySelector('[data-video-bar]');
-        const note = scope.querySelector('[data-video-note]');
-
-        const path = scope.querySelector('[name="videoPath"]');
-        const poster = scope.querySelector('[name="image"]');
-        const duration = scope.querySelector('[name="duration"]');
-        const size = scope.querySelector('[name="sizeBytes"]');
-
-        if (path && path.value) {
-            note.textContent = `Holding ${path.value.split('/').pop()} — choosing another file replaces it.`;
-        }
-
-        if (pick) pick.addEventListener('click', () => input.click());
-        input.addEventListener('change', () => send(input.files && input.files[0]));
-
-        if (drop) {
-            ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => {
-                e.preventDefault();
-                drop.classList.add('is-over');
-            }));
-            ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => {
-                e.preventDefault();
-                drop.classList.remove('is-over');
-            }));
-            drop.addEventListener('drop', (e) => send(e.dataTransfer.files && e.dataTransfer.files[0]));
-        }
-
-        function send(file) {
-            if (!file) return;
-
-            const body = new FormData();
-            body.append('file', file, file.name);
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', `${api.base}api/gallery/video`);
-            xhr.setRequestHeader('Accept', 'application/json');
-            xhr.setRequestHeader('X-CSRF-Token', csrf());
-            xhr.withCredentials = true;
-
-            bar.hidden = false;
-            paint(0);
-            note.textContent = `Uploading ${U.bytes(file.size)}…`;
-
-            xhr.upload.addEventListener('progress', (e) => {
-                if (!e.lengthComputable) return;
-                paint(Math.round((e.loaded / e.total) * 100));
-                if (e.loaded === e.total) note.textContent = 'Uploaded — compressing on the server…';
-            });
-
-            xhr.addEventListener('load', () => {
-                bar.hidden = true;
-
-                let payload = null;
-                try {
-                    payload = JSON.parse(xhr.responseText);
-                } catch (err) {
-                    payload = null;
-                }
-
-                if (xhr.status < 200 || xhr.status >= 300) {
-                    const message = (payload && (payload.message
-                        || (payload.errors && payload.errors.file)))
-                        || `The upload was refused (${xhr.status})`;
-                    note.textContent = message;
-                    toast.error(message);
-                    return;
-                }
-
-                const d = (payload && payload.data) || {};
-
-                if (path) path.value = d.videoPath || '';
-                if (duration) duration.value = d.duration == null ? '' : d.duration;
-                if (size) size.value = d.sizeBytes == null ? '' : d.sizeBytes;
-
-                /* The extracted frame only fills an empty poster: an editor who
-                   already chose one meant it. */
-                if (poster && !poster.value && d.poster) {
-                    poster.value = d.poster;
-                    repaintMedia(scope);
-                }
-
-                note.textContent = d.compressed
-                    ? `${file.name}: ${U.bytes(d.originalSize)} in, ${U.bytes(d.sizeBytes)} out.`
-                    : `${file.name} stored as uploaded (${U.bytes(d.sizeBytes)}). ${d.note || ''}`.trim();
-
-                toast.success('Video ready', { body: 'Save the item to keep it.' });
-            });
-
-            xhr.addEventListener('error', () => {
-                bar.hidden = true;
-                note.textContent = 'The upload did not reach the server.';
-                toast.error('Upload failed');
-            });
-
-            xhr.send(body);
-        }
-
-        function paint(pct) {
-            const fill = bar.querySelector('i');
-            if (fill) fill.style.width = `${pct}%`;
-        }
-    }
-
-    function csrf() {
-        const el = document.querySelector('meta[name="csrf-token"]');
-        return el ? el.getAttribute('content') || '' : '';
-    }
-
-    /** Repaints a media picker's visible half after its hidden input is set. */
-    function repaintMedia(scope) {
-        if (window.HAZRA.media && window.HAZRA.media.paintAll) window.HAZRA.media.paintAll(scope);
-    }
-
-    /**
-     * Blank the fields the chosen kind does not own.
-     *
-     * The dialog hides them rather than removing them, so they are still
-     * collected — and a record that says `image` while carrying a video path
-     * is a record the page renders one way and the panel another.
-     */
-    function blankUnused(data) {
-        if (data.type !== 'youtube') data.youtubeId = '';
-
-        if (data.type !== 'video') {
-            data.videoPath = '';
-            data.duration = '';
-            data.sizeBytes = '';
-        }
     }
 
     async function toggle(row) {
@@ -557,14 +306,8 @@
         });
         if (!ok) return;
 
-        const removed = await store.remove('gallery', row.id);
-        toast.success(`${row.title} deleted`, {
-            undo: async () => {
-                await store.restore('gallery', removed.row, removed.index);
-                toast.success('Restored');
-                render();
-            },
-        });
+        await store.remove('gallery', row.id);
+        toast.success(`${row.title} deleted`);
         render();
     }
 }());
