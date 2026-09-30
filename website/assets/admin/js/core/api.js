@@ -268,9 +268,47 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
     /** Add type for posts & leads so the server routes to the right table. */
     function withType(entity, body) {
         const b = Object.assign({}, body || {});
+        if (entity === 'products' && b.status !== undefined) {
+            b.active = b.status === 'published';
+            delete b.status;
+        }
         if (POST_TYPE[entity]) b.type = POST_TYPE[entity];
         if (LEAD_TYPE[entity]) b.type = LEAD_TYPE[entity];
         return b;
+    }
+
+    // Product responses use the mobile API's camelCase contract; admin forms
+    // and columns use database names. Keep the translation at this boundary.
+    function productRow(row) {
+        if (!row) return row;
+        const result = Object.assign({}, row);
+        const fields = {
+            modelCode: 'model_code', rangeKm: 'range_km', topSpeedKmph: 'top_speed_kmph',
+            warrantyYears: 'warranty_years', warrantyNote: 'warranty_note',
+            batteryCapacity: 'battery_capacity', motorPower: 'motor_power',
+            chargingTime: 'charging_time', loadCapacityKg: 'load_capacity_kg',
+            isFeatured: 'is_featured', featuredOrder: 'featured_order',
+            heroImage: 'hero_image', updatedAt: 'updated_at', listedAt: 'listed_at',
+        };
+        Object.entries(fields).forEach(([wire, column]) => {
+            if (row[wire] !== undefined) result[column] = row[wire];
+        });
+        result.is_featured = [true, 1, '1'].includes(result.is_featured);
+        result.status = [false, 0, '0'].includes(row.active) ? 'hidden' : 'published';
+        result.hero_image = result.hero_image || (row.colors || []).flatMap(c => c.imageUrls || [])[0] || '';
+        return result;
+    }
+
+    async function allProducts() {
+        const rows = [];
+        let cursor;
+        do {
+            const res = await get(pathFor('products'), { includeDelisted: true, limit: 200, cursor });
+            rows.push(...(res.data || []).map(productRow));
+            cursor = res.meta?.nextCursor;
+        } while (cursor);
+        cache.products = rows;
+        return clone(rows);
     }
 
     /* ---------------------------------------------------------
@@ -292,6 +330,24 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
          */
         async list(entity, opts) {
             const o = Object.assign({ page: 1, pageSize: 20 }, opts || {});
+            if (entity === 'products') {
+                let rows = await allProducts();
+                const counts = { all: rows.length, published: 0, hidden: 0 };
+                rows.forEach(r => { counts[r.status] += 1; });
+                const needle = (o.q || '').trim().toLowerCase();
+                rows = rows.filter(r => (!needle || (o.searchFields || ['name', 'brand', 'model_code', 'category'])
+                    .some(key => String(r[key] ?? '').toLowerCase().includes(needle)))
+                    && (!o.status || o.status === 'all' || r.status === o.status));
+                if (o.sort) rows.sort((a, b) => {
+                    const x = a[o.sort] ?? '', y = b[o.sort] ?? '';
+                    const cmp = typeof x === 'number' && typeof y === 'number'
+                        ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true });
+                    return o.dir === 'desc' ? -cmp : cmp;
+                });
+                const total = rows.length;
+                const start = (o.page - 1) * o.pageSize;
+                return { rows: rows.slice(start, start + o.pageSize), total, counts, page: o.page, pageSize: o.pageSize };
+            }
 
             const query = {
                 q: (o.q || '').trim(),
@@ -337,6 +393,7 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
 
         /** Every row, unfiltered — for pickers and cross-entity lookups. */
         async all(entity) {
+            if (entity === 'products') return allProducts();
             const query = { pageSize: 0 };
             if (POST_TYPE[entity]) query.type = POST_TYPE[entity];
             if (LEAD_TYPE[entity]) query.type = LEAD_TYPE[entity];
@@ -377,7 +434,7 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
                 if (data && data.data && !data.title && data.data.title) {
                     data = data.data;
                 }
-                return data;
+                return entity === 'products' ? productRow(data) : data;
             } catch (err) {
                 if (err.status === 404) return null;
                 throw err;
@@ -461,6 +518,18 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
          * bulk toast rule in docs/04-crud-flows.md.
          */
         async bulk(entity, ids, action, payload) {
+            if (entity === 'products' && ['publish', 'hide'].includes(action)) {
+                const result = { succeeded: [], failed: [] };
+                for (const id of ids) {
+                    try {
+                        await store.update(entity, id, { active: action === 'publish' });
+                        result.succeeded.push(id);
+                    } catch (err) {
+                        result.failed.push({ id, reason: err.message });
+                    }
+                }
+                return result;
+            }
             const res = await post(`${pathFor(entity)}/bulk`, { ids, action, payload: payload || {} });
             const result = res.data || { succeeded: [], failed: [] };
 
@@ -497,8 +566,16 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
          * cache holds.
          */
         async search(q) {
-            const res = await get('api/search', { q });
-            return res.data || [];
+            const needle = q.trim().toLowerCase();
+            if (!needle) return [];
+            await allProducts();
+            return ['products', 'blogs', 'news', 'jobs', 'warranty'].map(entity => ({
+                entity,
+                items: (cache[entity] || []).filter(row =>
+                    ['name', 'title', 'brand', 'model_code', 'category', 'slug', 'customer_name', 'reference_no', 'mobile']
+                        .some(key => String(row[key] ?? '').toLowerCase().includes(needle)))
+                    .slice(0, 8).map(row => ({ id: row.id, label: row.name || row.title || row.customer_name || row.reference_no || row.id, status: row.status })),
+            })).filter(group => group.items.length);
         },
 
         /* ----- singletons ----- */
@@ -574,6 +651,7 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
          * screen agree with what was just saved without a second request.
          */
         remember(entity, row, previousId, index) {
+            if (entity === 'products') row = productRow(row);
             if (!row || !cache[entity]) return clone(row);
 
             const rows = cache[entity];

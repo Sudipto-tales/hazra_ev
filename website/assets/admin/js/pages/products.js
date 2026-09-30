@@ -32,6 +32,13 @@
             searchFields: ['name', 'model_code', 'category', 'brand'],
             searchPlaceholder: 'Search products by name or model code',
             sort: 'updated_at',
+            dir: 'desc',
+            statusOptions: [
+                { value: 'all', label: 'All' },
+                { value: 'published', label: 'Published' },
+                { value: 'hidden', label: 'Hidden' },
+            ],
+            bulkActions: ['publish', 'hide'],
             empty: {
                 icon: 'fa-charging-station',
                 title: 'No products found',
@@ -55,11 +62,19 @@
                 },
                 {
                     label: 'Category', sort: 'category',
-                    render: (r) => `<span class="pill">${U.esc(r.category || 'High Speed')}</span>`,
+                    render: (r) => `<span class="pill">${U.esc(r.category || 'others')}</span>`,
                 },
                 {
                     label: 'Range / Speed',
-                    render: (r) => `${U.esc(r.range_km || 'N/A')} km &bull; ${U.esc(r.top_speed_kmph || 'N/A')} km/h`,
+                    render: (r) => `${U.esc(r.range_km ?? 'N/A')} km &bull; ${U.esc(r.top_speed_kmph ?? 'N/A')} km/h`,
+                },
+                {
+                    label: 'Battery / Motor',
+                    render: (r) => `<span class="cell-main">${U.esc(r.battery_capacity || 'N/A')}</span><span class="cell-sub">${U.esc(r.motor_power || 'N/A')}</span>`,
+                },
+                {
+                    label: 'Colours',
+                    render: (r) => U.esc((r.colors || []).map(c => c.name).join(', ') || 'N/A'),
                 },
                 {
                     label: 'Featured', sort: 'is_featured',
@@ -85,14 +100,13 @@
                         paintStats();
                     },
                 },
-                { divider: true },
                 {
-                    label: 'Delete', icon: 'fa-trash-can', danger: true,
+                    label: row.status === 'hidden' ? 'Publish' : 'Hide', icon: 'fa-eye',
                     onClick: async () => {
-                        const done = await list.confirmDelete(row, {
-                            body: 'This product will be removed from the catalog.',
-                        });
-                        if (done) paintStats();
+                        await store.update('products', row.id, { active: row.status === 'hidden' });
+                        toast.success(`${row.name} ${row.status === 'hidden' ? 'published' : 'hidden'}`);
+                        list.load();
+                        paintStats();
                     },
                 },
             ],
