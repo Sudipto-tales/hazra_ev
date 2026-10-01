@@ -40,6 +40,12 @@
 ?>
     <link rel="stylesheet" href="<?= e(base_url("assets/admin/css/{$sheet}.css?v={$cv}")) ?>">
 <?php endforeach; ?>
+<?php if (($page ?? '') === 'dealer-locations'): ?>
+    <link rel="stylesheet" href="<?= e(base_url('assets/vendor/leaflet/leaflet.css')) ?>">
+    <link rel="stylesheet" href="<?= e(base_url('assets/admin/css/dealer-locations.css?v=' . filemtime(__BASEDIR__ . '/assets/admin/css/dealer-locations.css'))) ?>">
+    <script>window.HAZRA_DEALER_MAP = <?= json_encode(require __BASEDIR__ . '/config/dealer-map.php', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
+    <script defer src="<?= e(base_url('assets/vendor/leaflet/leaflet.js')) ?>"></script>
+<?php endif; ?>
 </head>
 
 <body data-page="<?= e($page ?? '') ?>">
