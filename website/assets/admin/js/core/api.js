@@ -289,6 +289,7 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
             chargingTime: 'charging_time', loadCapacityKg: 'load_capacity_kg',
             isFeatured: 'is_featured', featuredOrder: 'featured_order',
             heroImage: 'hero_image', updatedAt: 'updated_at', listedAt: 'listed_at',
+            pageContent: 'page_content', featureCards: 'feature_cards', defaultColorId: 'default_color_id',
         };
         Object.entries(fields).forEach(([wire, column]) => {
             if (row[wire] !== undefined) result[column] = row[wire];
@@ -368,6 +369,7 @@ const pathFor = (entity) => PATHS[entity] || `api/v1/${entity}`;
             // enquiries = all leads (no type filter)
             if (LEAD_TYPE[entity]) {
                 query.type = LEAD_TYPE[entity];
+                if (o.filters?.product_id && o.filters.product_id !== 'all') query.product_id = o.filters.product_id;
             }
 
             const res = await get(pathFor(entity), query);

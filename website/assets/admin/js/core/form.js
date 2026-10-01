@@ -212,6 +212,11 @@
 
     function reportInvalid(scope, result) {
         if (result.ok) return;
+        const productPanel = result.first.closest('.product-editor-panel');
+        if (productPanel) {
+            const tab = scope.querySelector(`[aria-controls="${productPanel.id}"]`);
+            if (tab) tab.click();
+        }
         const panel = result.first.closest('.tab-panel');
         if (panel && panel.id) {
             const trigger = document.querySelector(`[data-tab="${panel.id}"]`);

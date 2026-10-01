@@ -43,6 +43,8 @@
             searchFields: ['name', 'email', 'phone', 'details'],
             searchPlaceholder: 'Search customer name, phone or email',
             statusOptions: STATUS,
+            filters: [{key: 'product_id', label: 'Product', options: store.allSync('products').map(p => ({value: p.id, label: p.name}))}],
+            bulkActions: [],
             sort: 'created_at',
             dir: 'desc',
             rowClass: (r) => (r.status === 'new' ? 'is-unread' : ''),
@@ -66,7 +68,9 @@
                         const city = d.city || d.location || d.address || '';
                         return `
                             <span class="cell-main"><i class="fa-solid fa-bicycle" style="color:var(--brand-red);"></i> ${U.esc(vehicle)}</span>
-                            ${city ? `<span class="cell-sub"><i class="fa-solid fa-location-dot"></i> ${U.esc(city)}</span>` : ''}`;
+                            ${city ? `<span class="cell-sub"><i class="fa-solid fa-location-dot"></i> ${U.esc(city)}</span>` : ''}
+                            ${d.color_name ? `<span class="cell-sub">Color: ${U.esc(d.color_name)}</span>` : ''}
+                            ${d.source ? `<span class="cell-sub">Source: ${U.esc(d.source.replace(/_/g, ' '))}</span>` : ''}`;
                     },
                 },
                 {
