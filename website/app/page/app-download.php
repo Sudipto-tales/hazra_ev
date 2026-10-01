@@ -4,6 +4,8 @@
  * Displays the latest published Android APK for employee verification & download.
  */
 
+require_once __DIR__ . '/../../core/AppReleaseAccess.php';
+
 // Fetch latest published release
 $release = db_fetch_one(
     "SELECT * FROM app_releases
@@ -11,25 +13,27 @@ $release = db_fetch_one(
      ORDER BY version_code DESC LIMIT 1"
 );
 
-// Fetch recent releases for changelog (last 10 published + archived)
+require_once __DIR__ . '/../../api/support/Cursor.php';
 $history = db_fetch_all(
-    "SELECT id, version_name, version_code, release_notes, status,
-            file_size, published_at, created_at
-     FROM app_releases
-     WHERE platform = 'android' AND status IN ('published', 'archived')
-     ORDER BY version_code DESC
-     LIMIT 10"
+    "SELECT * FROM app_releases WHERE platform = 'android' AND status IN ('published', 'archived') AND id != ? ORDER BY version_code DESC LIMIT 7",
+    [$release['id'] ?? '']
 );
+$nextCursor = null;
+if (count($history) > 6) {
+    array_pop($history);
+    $nextCursor = Cursor::encode(['value' => end($history)['version_code']]);
+}
+$releaseAvailable = $release && AppReleaseAccess::filePath($release) !== null;
 
 App::render('head', [
     'pageTitle'       => 'Hazra EV Employee App — Official Download',
+    'extraCss' => ['assets/css/styles/pages/app-download.css'],
     'pageDescription' => 'Official Hazra EV Android App for employees. Manage EV services, track vehicles, monitor battery health, and stay connected.',
 ]);
 
 App::render('header', ['isStickyOnly' => true]);
 
 $iconUrl = base_url('assets/hazraev.png');
-$dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
 ?>
 
 <!-- Tailwind CSS & Lucide Icons for App Download Page -->
@@ -214,9 +218,9 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
       <!-- Download Button & Meta Details -->
       <div class="mt-8 mb-12 flex flex-col items-center gap-4">
         <?php if ($release): ?>
-          <button type="button" id="openDownloadModal" class="inline-flex items-center gap-3 px-8 py-4 bg-forest-900 hover:bg-forest-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 active:scale-95 text-white font-bold text-base rounded-2xl shadow-xl shadow-forest-950/20 transition-all duration-200 cursor-pointer">
+          <button type="button" id="openDownloadModal" data-release-id="<?= e($release['id']) ?>" data-version-name="<?= e($release['version_name']) ?>" <?= $releaseAvailable ? '' : 'disabled' ?> class="inline-flex items-center gap-3 px-8 py-4 bg-forest-900 hover:bg-forest-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 active:scale-95 text-white font-bold text-base rounded-2xl shadow-xl shadow-forest-950/20 transition-all duration-200 cursor-pointer">
             <i data-lucide="download" class="w-5 h-5"></i>
-            <span>Download Official APK</span>
+            <span><?= $releaseAvailable ? 'Download Latest APK' : 'APK Currently Unavailable' ?></span>
             <span class="text-xs bg-emerald-500/30 text-emerald-200 px-2.5 py-0.5 rounded-full font-medium">v<?= e($release['version_name']) ?></span>
           </button>
 
@@ -229,11 +233,8 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
                 Size: <?= round($release['file_size'] / 1048576, 1) ?> MB
               </span>
             <?php endif; ?>
-            <?php if (!empty($release['checksum_sha256'])): ?>
-              <span class="bg-slate-200/80 dark:bg-forest-900/90 text-slate-700 dark:text-slate-300 border border-slate-300/40 dark:border-emerald-900/60 px-2.5 py-1 rounded-lg font-mono">
-                SHA-256: <?= e(substr($release['checksum_sha256'], 0, 12)) ?>...
-              </span>
-            <?php endif; ?>
+            <span><?= e(AppReleaseAccess::androidRequirement(isset($release['min_android_sdk']) ? (int) $release['min_android_sdk'] : null)) ?></span>
+            <a href="#changelog" class="underline underline-offset-4">Previous versions &darr;</a>
           </div>
         <?php else: ?>
           <button type="button" disabled class="inline-flex items-center gap-3 px-8 py-4 bg-slate-300 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-base rounded-2xl cursor-not-allowed">
@@ -564,7 +565,9 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
             <h3 class="font-bold text-forest-950 dark:text-white text-base">Launch &amp; Log In</h3>
             <p class="text-xs text-slate-500 dark:text-slate-300 mt-1 leading-relaxed">
               Open the Hazra EV app, log in using your staff credentials, and begin managing operations seamlessly.
-              <span class="block text-[11px] text-slate-400 dark:text-slate-400 mt-1 font-medium">* Requires Android 6.0 (Marshmallow) or higher.</span>
+              <?php if ($release && !empty($release['min_android_sdk'])): ?>
+              <span class="block text-[11px] text-slate-400 dark:text-slate-400 mt-1 font-medium">* Requires <?= e(AppReleaseAccess::androidRequirement((int) $release['min_android_sdk'])) ?>.</span>
+              <?php endif; ?>
             </p>
           </div>
         </div>
@@ -573,51 +576,37 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
     </div>
   </section>
 
-  <!-- DYNAMIC RELEASE NOTES / CHANGELOG SECTION -->
-  <?php if (!empty($history)): ?>
-  <section id="changelog" class="py-20 bg-[#F4F7F4] dark:bg-[#05140f] border-t border-slate-200 dark:border-emerald-950">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 reveal-on-scroll">
-
-      <div class="text-center mb-12">
-        <span class="text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">Version History</span>
-        <h2 class="text-3xl font-extrabold text-forest-950 dark:text-emerald-50 tracking-tight mt-1">
-          Release Notes &amp; Updates
-        </h2>
+  <section id="changelog" class="release-history">
+    <div class="release-history__inner">
+      <div class="release-history__heading">
+        <div><span class="release-kicker">RELEASE HISTORY</span><h2>Previous versions.</h2></div>
+        <p>Choose the version you need. Employee verification is required for every download. We recommend the latest release.</p>
       </div>
-
-      <div class="space-y-4">
-        <?php foreach ($history as $log): ?>
-          <div class="bg-white dark:bg-[#0c2019] p-6 rounded-2xl border border-slate-200 dark:border-emerald-900/60 shadow-xs transition-colors">
-            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-emerald-900/40">
-              <div class="flex items-center gap-2">
-                <span class="text-base font-bold text-forest-950 dark:text-white">v<?= e($log['version_name']) ?></span>
-                <span class="text-xs bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/60">Code: <?= e($log['version_code']) ?></span>
-                <?php if ($log['status'] === 'published'): ?>
-                  <span class="text-[10px] bg-forest-900 dark:bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-md">LATEST</span>
-                <?php endif; ?>
-              </div>
-              <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                <?= date('F j, Y', strtotime($log['published_at'] ?? $log['created_at'])) ?>
-              </span>
-            </div>
-            <div class="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              <?= nl2br(e($log['release_notes'])) ?>
-            </div>
-          </div>
+      <?php if ($release && !empty($release['release_notes'])): ?>
+      <details class="release-latest-notes"><summary>What's new in v<?= e($release['version_name']) ?> <span class="release-badge">LATEST</span></summary><p><?= nl2br(e($release['release_notes'])) ?></p></details>
+      <?php endif; ?>
+      <div id="releaseList" class="release-grid">
+        <?php foreach ($history as $log): $available = AppReleaseAccess::filePath($log) !== null; ?>
+        <article class="release-card" id="release-<?= e($log['id']) ?>">
+          <div class="release-card__top"><span class="release-badge">PREVIOUS RELEASE</span><time><?= date('M j, Y', strtotime($log['published_at'] ?? $log['created_at'])) ?></time></div>
+          <h3>v<?= e($log['version_name']) ?></h3>
+          <div class="release-card__meta"><span><?= round($log['file_size'] / 1048576, 1) ?> MB</span><span><?= e(AppReleaseAccess::androidRequirement(isset($log['min_android_sdk']) ? (int) $log['min_android_sdk'] : null)) ?></span><span>Build <?= e($log['version_code']) ?></span><span><?= e(ucfirst($log['channel'])) ?></span></div>
+          <details><summary>Release notes</summary><p><?= nl2br(e($log['release_notes'] ?: 'No release notes were provided for this version.')) ?></p></details>
+          <button type="button" class="release-download" data-release-id="<?= e($log['id']) ?>" data-version-name="<?= e($log['version_name']) ?>" <?= $available ? '' : 'disabled' ?>><?= $available ? 'Download this version &darr;' : 'APK unavailable' ?></button>
+        </article>
         <?php endforeach; ?>
       </div>
-
+      <?php if (!$history): ?><p id="releaseEmpty" class="release-empty">Previous releases will appear here after the next app update.</p><?php endif; ?>
+      <div class="release-history__more"><button id="releaseMore" type="button" class="release-more" <?= $nextCursor ? '' : 'hidden' ?>>Load more versions &darr;</button><p id="releaseLoadStatus" role="status" aria-live="polite"></p></div>
+      <noscript><p>Enable JavaScript to verify your employee details and download an APK.</p></noscript>
     </div>
   </section>
-  <?php endif; ?>
-
 </div>
 
 <!-- EMPLOYEE VERIFICATION DOWNLOAD MODAL -->
-<?php if ($release): ?>
-<div id="dlModal" class="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+<div id="dlModal" role="dialog" aria-modal="true" aria-labelledby="dlTitle" tabindex="-1" class="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
   <div class="bg-white dark:bg-[#0b1f18] text-slate-800 dark:text-slate-100 border border-transparent dark:border-emerald-800/80 rounded-3xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
-    <button type="button" id="dlCancel" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+    <button type="button" id="dlCancel" aria-label="Close verification" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
       <i data-lucide="x" class="w-5 h-5"></i>
     </button>
 
@@ -626,8 +615,8 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
         <i data-lucide="shield-check" class="w-6 h-6 text-emerald-800 dark:text-emerald-400"></i>
       </div>
       <div>
-        <h3 class="text-lg font-bold text-forest-950 dark:text-white">Hazra EV Employee Download</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">App version <?= e($release['version_name']) ?> (Android)</p>
+        <h3 id="dlTitle" class="text-lg font-bold text-forest-950 dark:text-white">Hazra EV Employee Download</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium"><span id="dlVersion">Select an app version</span> (Android)</p>
       </div>
     </div>
 
@@ -637,16 +626,16 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
 
     <div class="space-y-3 text-xs">
       <div>
-        <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Employee Code</label>
-        <input type="text" id="dlCode" placeholder="e.g. EMP-1001" class="w-full bg-slate-50 dark:bg-[#061510] border border-slate-300 dark:border-emerald-800 rounded-xl p-3 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400 focus:ring-1 focus:ring-emerald-600">
+        <label for="dlCode" class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Employee Code</label>
+        <input type="text" id="dlCode" maxlength="64" autocomplete="off" placeholder="e.g. EMP-1001" class="w-full bg-slate-50 dark:bg-[#061510] border border-slate-300 dark:border-emerald-800 rounded-xl p-3 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400 focus:ring-1 focus:ring-emerald-600">
       </div>
 
       <div>
-        <label class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Or Mobile Number</label>
-        <input type="tel" id="dlMobile" placeholder="e.g. 9749167562" inputmode="tel" class="w-full bg-slate-50 dark:bg-[#061510] border border-slate-300 dark:border-emerald-800 rounded-xl p-3 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400 focus:ring-1 focus:ring-emerald-600">
+        <label for="dlMobile" class="block text-slate-700 dark:text-slate-300 font-bold mb-1">Or Mobile Number</label>
+        <input type="tel" id="dlMobile" maxlength="20" autocomplete="tel" placeholder="e.g. 9749167562" inputmode="tel" class="w-full bg-slate-50 dark:bg-[#061510] border border-slate-300 dark:border-emerald-800 rounded-xl p-3 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-600 dark:focus:border-emerald-400 focus:ring-1 focus:ring-emerald-600">
       </div>
 
-      <div id="dlError" class="text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl p-2.5 text-xs font-semibold hidden"></div>
+      <div id="dlError" role="alert" class="text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl p-2.5 text-xs font-semibold hidden"></div>
     </div>
 
     <div class="mt-6 flex gap-3">
@@ -659,87 +648,6 @@ $dlBase  = rtrim(base_url('/'), '/') . '/api/v1/app-releases/';
   </div>
 </div>
 
-<script>
-(function () {
-  var RELEASE_ID = <?= json_encode($release['id']) ?>;
-  var BASE = <?= json_encode(rtrim(base_url('/'), '/') . '/') ?>;
-  var modal = document.getElementById('dlModal');
-  var errEl = document.getElementById('dlError');
-
-  var openBtn = document.getElementById('openDownloadModal');
-  if (openBtn) {
-    openBtn.addEventListener('click', function () {
-      errEl.style.display = 'none';
-      errEl.classList.add('hidden');
-      modal.classList.remove('hidden');
-    });
-  }
-
-  function hideModal() {
-    modal.classList.add('hidden');
-  }
-
-  document.getElementById('dlCancel')?.addEventListener('click', hideModal);
-  document.getElementById('dlCloseBtn')?.addEventListener('click', hideModal);
-
-  document.getElementById('dlSubmit')?.addEventListener('click', async function () {
-    var code = document.getElementById('dlCode').value.trim();
-    var mobile = document.getElementById('dlMobile').value.trim();
-
-    if (!code && !mobile) {
-      errEl.textContent = 'Please enter your Employee Code or Mobile Number.';
-      errEl.style.display = 'block';
-      errEl.classList.remove('hidden');
-      return;
-    }
-
-    var btn = document.getElementById('dlSubmit');
-    btn.disabled = true;
-    btn.style.opacity = '0.7';
-
-    try {
-      var res = await fetch(BASE + 'api/v1/app-releases/' + RELEASE_ID + '/request-download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ employee_code: code, mobile: mobile })
-      });
-      var json = await res.json();
-      if (!res.ok) {
-        throw new Error((json.error && json.error.message) || (json.message) || 'Verification failed. Please check your employee details.');
-      }
-      var url = (json.data && json.data.downloadUrl) || (json.downloadUrl);
-      if (!url) throw new Error('No download URL returned from server.');
-      window.location.href = url;
-    } catch (e) {
-      errEl.textContent = e.message || 'Verification failed';
-      errEl.style.display = 'block';
-      errEl.classList.remove('hidden');
-      btn.disabled = false;
-      btn.style.opacity = '1';
-    }
-  });
-})();
-</script>
-<?php endif; ?>
-
-<script>
-  // Initialize Lucide Icons
-  if (window.lucide && typeof window.lucide.createIcons === 'function') {
-    window.lucide.createIcons();
-  }
-
-  // IntersectionObserver for scroll reveals
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible');
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.reveal-on-scroll').forEach(el => {
-    revealObserver.observe(el);
-  });
-</script>
-
+<script id="releaseConfig" type="application/json"><?= json_encode(['base' => rtrim(base_url('/'), '/') . '/', 'latestId' => $release['id'] ?? '', 'nextCursor' => $nextCursor], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script src="<?= e(base_url('assets/js/app-download.js')) ?>" defer></script>
 <?php App::render('footer'); ?>

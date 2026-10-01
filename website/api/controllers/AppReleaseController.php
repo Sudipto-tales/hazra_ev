@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../support/V1Controller.php';
+require_once __DIR__ . '/../../core/AppReleaseAccess.php';
 
 /**
  * Controller for managing App Releases (APK files, versions, etc.)
@@ -13,7 +14,7 @@ final class AppReleaseController extends V1Controller
         'application/java-archive' => 'apk',
     ];
 
-    private const VALID_STATUSES = ['draft', 'published', 'archived'];
+    private const VALID_STATUSES = ['draft', 'published', 'archived', 'withdrawn'];
     private const VALID_PLATFORMS = ['android'];
     private const VALID_CHANNELS = ['production', 'beta'];
     private const VALID_SOURCES = ['github_actions', 'admin_upload'];
@@ -29,7 +30,7 @@ final class AppReleaseController extends V1Controller
             Envelope::notFound('NO_PUBLISHED_RELEASE', 'No published release available');
         }
 
-        Envelope::ok($this->present($row));
+        Envelope::ok(AppReleaseAccess::publicMetadata($row));
     }
 
     public function index(): never
@@ -37,12 +38,21 @@ final class AppReleaseController extends V1Controller
         $limit = Cursor::limit((string) ($this->query('limit') ?? $this->query('pageSize', '20')));
         $cursorStr = $this->query('cursor', '');
 
-        $sql = "SELECT * FROM app_releases WHERE status IN ('published', 'archived')";
+        $sql = "SELECT * FROM app_releases WHERE platform = 'android' AND status IN ('published', 'archived')";
         $params = [];
+        $excludeId = (string) $this->query('exclude', '');
+        if ($excludeId !== '') { $sql .= ' AND id != ?'; $params[] = $excludeId; }
+        $countSql = $sql;
+        $countParams = $params;
+        if ($limit === 0) {
+            $total = db_fetch_one(str_replace('SELECT *', 'SELECT COUNT(*) AS c', $countSql), $countParams);
+            Envelope::ok([], ['total' => (int) $total['c'], 'nextCursor' => null]);
+        }
 
         $cursor = null;
         if ($cursorStr !== '') {
             $cursor = Cursor::decode($cursorStr);
+            if (!$cursor || !isset($cursor['value']) || !is_numeric($cursor['value'])) Envelope::invalid('Invalid release cursor', 'cursor');
             if ($cursor) {
                 $sql .= " AND version_code < ?";
                 $params[] = $cursor['value'];
@@ -61,10 +71,10 @@ final class AppReleaseController extends V1Controller
             $nextCursor = Cursor::encode(['value' => $last['version_code']]);
         }
 
-        $totalRow = db_fetch_one("SELECT COUNT(*) as c FROM app_releases WHERE status IN ('published', 'archived')", []);
+        $totalRow = db_fetch_one(str_replace('SELECT *', 'SELECT COUNT(*) as c', $countSql), $countParams);
         $total = $totalRow['c'] ?? 0;
 
-        Envelope::ok(array_map([$this, 'present'], $rows), [
+        Envelope::ok(array_map([AppReleaseAccess::class, 'publicMetadata'], $rows), [
             'total' => (int) $total,
             'nextCursor' => $nextCursor
         ]);
@@ -75,10 +85,20 @@ final class AppReleaseController extends V1Controller
         $id = $this->param('id');
         $row = $this->findRelease($id);
 
-        if ($row['status'] !== 'published') {
+        if (!AppReleaseAccess::isPublic($row)) {
             Envelope::notFound('RELEASE_NOT_FOUND', 'Release not found or not available');
         }
 
+        $this->requireFile($row);
+        $token = (string) $this->query('token', '');
+        if (!preg_match('/^[a-f0-9]{64}$/', $token)) Envelope::fail('DOWNLOAD_VERIFICATION_REQUIRED', 'Verify your employee details on the download page first.', 403);
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $grant = db_fetch_one('SELECT * FROM app_download_tokens WHERE token_hash = ? AND release_id = ? AND expires_at > ?', [hash('sha256', $token), $row['id'], Wire::now()]);
+        if (!$grant || !hash_equals($grant['session_hash'], hash('sha256', session_id()))) Envelope::fail('DOWNLOAD_LINK_EXPIRED', 'This download link has expired. Please verify your details again.', 403);
+        $employee = db_fetch_one("SELECT id FROM users WHERE id = ? AND role = 'employee' AND active = 1", [$grant['employee_id']]);
+        if (!$employee) Envelope::fail('EMPLOYEE_UNAVAILABLE', 'Your employee account is no longer available.', 403);
+        db_execute('UPDATE app_download_logs SET download_started_at = COALESCE(download_started_at, ?) WHERE id = ?', [Wire::now(), $grant['log_id']]);
+        session_write_close();
         $this->serveFile($row);
     }
 
@@ -87,14 +107,16 @@ final class AppReleaseController extends V1Controller
         $id = $this->param('id');
         $row = $this->findRelease($id);
 
-        if ($row['status'] !== 'published') {
+        if (!AppReleaseAccess::isPublic($row)) {
             Envelope::notFound('RELEASE_NOT_FOUND', 'Release not available');
         }
+        $this->requireFile($row);
 
         $body = ApiRequest::body();
         $code = strtoupper(trim((string) ($body['employee_code'] ?? '')));
         $mobile = preg_replace('/\D+/', '', (string) ($body['mobile'] ?? ''));
 
+        if (strlen($code) > 64 || ($mobile !== '' && !preg_match('/^[0-9]{10,15}$/', $mobile))) Envelope::invalid('Enter a valid employee code or mobile number');
         if ($code === '' && strlen($mobile) < 10) {
             Envelope::invalid('Enter employee code or mobile number');
         }
@@ -129,6 +151,11 @@ final class AppReleaseController extends V1Controller
             Envelope::fail('EMPLOYEE_NOT_FOUND', 'No matching employee for that code or phone', 403);
         }
 
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $token = bin2hex(random_bytes(32));
+        $expiresAt = gmdate(Wire::TS, time() + AppReleaseAccess::TOKEN_TTL);
+        global $pdo;
+        $pdo->beginTransaction();
         try {
             $logId = Uuid::v4();
             db_execute(
@@ -147,15 +174,20 @@ final class AppReleaseController extends V1Controller
                     Wire::now(),
                 ]
             );
+            db_execute('INSERT INTO app_download_tokens (token_hash, release_id, employee_id, log_id, session_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [hash('sha256', $token), $row['id'], $emp['id'], $logId, hash('sha256', session_id()), $expiresAt, Wire::now()]);
+            db_execute('DELETE FROM app_download_tokens WHERE expires_at <= ?', [Wire::now()]);
+            $pdo->commit();
         } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
             error_log('Failed to log app download: ' . $e->getMessage());
+            Envelope::fail('DOWNLOAD_REQUEST_FAILED', 'Could not prepare your download. Please try again.', 500);
         }
 
-        $base = rtrim(env('APP_URL', ''), '/');
         Envelope::ok([
-            'downloadUrl'  => $base . '/api/v1/app-releases/' . $row['id'] . '/download',
+            'downloadUrl'  => base_url('api/v1/app-releases/' . $row['id'] . '/download?token=' . $token),
             'versionName'  => $row['version_name'],
-            'employeeName' => $emp['name'],
+            'expiresAt' => $expiresAt,
         ]);
     }
 
@@ -195,19 +227,34 @@ final class AppReleaseController extends V1Controller
             $params[] = $buildSource;
         }
 
+        $countWhere = implode(' AND ', $conditions);
+        $countParams = $params;
+        if ($limit === 0) {
+            $total = db_fetch_one("SELECT COUNT(*) AS c FROM app_releases WHERE $countWhere", $countParams);
+            Envelope::ok([], ['total' => (int) $total['c'], 'nextCursor' => null]);
+        }
+
         $cursor = null;
         if ($cursorStr !== '') {
             $cursor = Cursor::decode($cursorStr);
             if ($cursor) {
-                $conditions[] = "created_at < ?";
+                $conditions[] = "(created_at < ? OR (created_at = ? AND id < ?))";
                 $params[] = $cursor['value'];
+                $params[] = $cursor['value'];
+                $params[] = $cursor['id'] ?? '';
             }
         }
 
         $whereClause = implode(' AND ', $conditions);
         
-        $sql = "SELECT * FROM app_releases WHERE $whereClause ORDER BY created_at DESC LIMIT ?";
+        $page = max(1, (int) $this->query('page', '1'));
+        $sort = (string) $this->query('sort', 'created_at');
+        if (!in_array($sort, ['created_at', 'version_name', 'version_code', 'status'], true)) $sort = 'created_at';
+        $direction = strtolower((string) $this->query('dir', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+        $order = $cursorStr !== '' ? 'created_at DESC, id DESC' : "$sort $direction, id $direction";
+        $sql = "SELECT * FROM app_releases WHERE $whereClause ORDER BY $order LIMIT ?";
         $params[] = $limit + 1;
+        if ($cursorStr === '') { $sql .= ' OFFSET ?'; $params[] = ($page - 1) * $limit; }
 
         $rows = db_fetch_all($sql, $params);
 
@@ -215,16 +262,16 @@ final class AppReleaseController extends V1Controller
         if (count($rows) > $limit) {
             array_pop($rows);
             $last = end($rows);
-            $nextCursor = Cursor::encode(['value' => $last['created_at']]);
+            $nextCursor = Cursor::encode(['value' => $last['created_at'], 'id' => $last['id']]);
         }
 
-        $countParams = array_slice($params, 0, -1);
-        $totalRow = db_fetch_one("SELECT COUNT(*) as c FROM app_releases WHERE $whereClause", $countParams);
+        $totalRow = db_fetch_one("SELECT COUNT(*) as c FROM app_releases WHERE $countWhere", $countParams);
         $total = $totalRow['c'] ?? 0;
 
         Envelope::ok(array_map([$this, 'present'], $rows), [
             'total' => (int) $total,
-            'nextCursor' => $nextCursor
+            'nextCursor' => $sort === 'created_at' && $direction === 'DESC' ? $nextCursor : null,
+            'page' => $page, 'pageSize' => $limit,
         ]);
     }
 
@@ -237,7 +284,8 @@ final class AppReleaseController extends V1Controller
         $releaseNotes = $_POST['release_notes'] ?? null;
         $platform = $_POST['platform'] ?? 'android';
         $channel = $_POST['channel'] ?? 'production';
-        $minAndroidSdk = isset($_POST['min_android_sdk']) ? (int) $_POST['min_android_sdk'] : null;
+        $minAndroidSdk = isset($_POST['min_android_sdk']) && $_POST['min_android_sdk'] !== '' ? (int) $_POST['min_android_sdk'] : null;
+        if ($minAndroidSdk !== null && ($minAndroidSdk < 1 || $minAndroidSdk > 999)) Envelope::invalid('Enter a valid minimum Android API level.');
 
         if ($versionName === '' || $versionCode <= 0) {
             Envelope::invalid('Invalid version details');
@@ -308,6 +356,7 @@ final class AppReleaseController extends V1Controller
         }
 
         if (array_key_exists('min_android_sdk', $body)) {
+            if ($body['min_android_sdk'] !== null && ((int) $body['min_android_sdk'] < 1 || (int) $body['min_android_sdk'] > 999)) Envelope::invalid('Enter a valid minimum Android API level.');
             $updates[] = "min_android_sdk = ?";
             $params[] = $body['min_android_sdk'] === null ? null : (int) $body['min_android_sdk'];
         }
@@ -319,23 +368,21 @@ final class AppReleaseController extends V1Controller
             }
             
             if ($status !== $row['status']) {
-                $absPath = __DIR__ . '/../../' . $row['file_path'];
-                if (!file_exists($absPath)) {
+                if (in_array($status, ['published', 'archived'], true) && !AppReleaseAccess::filePath($row)) {
                     Envelope::conflict('FILE_MISSING', 'Cannot change status because file does not exist on disk.');
                 }
                 
+                if ($status === 'draft' || ($row['status'] === 'draft' && $status !== 'published')) {
+                    Envelope::invalid('Drafts must be published before entering release history.');
+                }
                 $updates[] = "status = ?";
                 $params[] = $status;
 
                 if ($status === 'published') {
-                    $this->archivePreviousPublished($row['platform']);
-                    $updates[] = "published_at = ?";
+                    $updates[] = "published_at = COALESCE(published_at, ?)";
                     $params[] = Wire::now();
-                    $updates[] = "published_by = ?";
+                    $updates[] = "published_by = COALESCE(published_by, ?)";
                     $params[] = Ctx::id();
-                } else if ($status === 'archived' && $row['status'] === 'published') {
-                    $updates[] = "published_at = NULL";
-                    $updates[] = "published_by = NULL";
                 }
             }
         }
@@ -350,7 +397,18 @@ final class AppReleaseController extends V1Controller
         $params[] = $id;
 
         $sql = "UPDATE app_releases SET " . implode(', ', $updates) . " WHERE id = ?";
-        db_execute($sql, $params);
+        global $pdo;
+        $pdo->beginTransaction();
+        try {
+            if (($body['status'] ?? '') === 'published' && $row['status'] !== 'published') {
+                $this->archivePreviousPublished($row['platform']);
+            }
+            db_execute($sql, $params);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
 
         $updatedRow = $this->findRelease($id);
         Envelope::ok($this->present($updatedRow));
@@ -442,16 +500,22 @@ final class AppReleaseController extends V1Controller
         ]);
     }
 
+    private function requireFile(array $row): string
+    {
+        $path = AppReleaseAccess::filePath($row);
+        if (!$path) Envelope::notFound('FILE_MISSING', 'This APK is currently unavailable. Please contact your administrator.');
+        return $path;
+    }
+
     private function serveFile(array $row): never
     {
-        $filePath = __DIR__ . '/../../' . $row['file_path'];
-        if (!file_exists($filePath)) {
-            Envelope::fail('FILE_MISSING', 'Release file not found on server', 500);
-        }
-
-        header('Content-Type: ' . $row['mime']);
-        header('Content-Disposition: attachment; filename="' . $row['file_name'] . '"');
-        header('Content-Length: ' . $row['file_size']);
+        $filePath = $this->requireFile($row);
+        $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($row['file_name']));
+        if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+        header('Content-Type: application/vnd.android.package-archive');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($filePath));
+        header('X-Content-Type-Options: nosniff');
         header('Cache-Control: no-store');
         readfile($filePath);
         exit;
@@ -497,6 +561,12 @@ final class AppReleaseController extends V1Controller
 
     private function storeApkFile(array $file, string $versionName, int $versionCode): string
     {
+        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._+-]{0,31}$/', $versionName) || $versionCode <= 0) {
+            Envelope::invalid('Use a valid version name (up to 32 letters, digits, dots or hyphens) and positive version code.');
+        }
+        if (db_fetch_one('SELECT id FROM app_releases WHERE platform = ? AND version_code = ?', ['android', $versionCode])) {
+            Envelope::conflict('VERSION_EXISTS', 'This Android version code already exists. Use a new version code.');
+        }
         $storageBase = env('APP_RELEASE_STORAGE', 'storage/apk');
         $dir = __DIR__ . '/../../' . $storageBase . '/' . $versionName;
 
@@ -506,6 +576,7 @@ final class AppReleaseController extends V1Controller
 
         $filename = 'app-v' . $versionCode . '.apk';
         $targetPath = $dir . '/' . $filename;
+        if (file_exists($targetPath)) Envelope::conflict('FILE_EXISTS', 'An APK already exists for this version. Use a new version code.');
 
         if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
             Envelope::fail('STORE_FAILED', 'Failed to save APK file to disk', 500);
@@ -523,7 +594,7 @@ final class AppReleaseController extends V1Controller
     private function archivePreviousPublished(string $platform): void
     {
         db_execute(
-            "UPDATE app_releases SET status = 'archived', published_at = NULL, published_by = NULL, updated_at = ? WHERE platform = ? AND status = 'published'",
+            "UPDATE app_releases SET status = 'archived', updated_at = ? WHERE platform = ? AND status = 'published'",
             [Wire::now(), $platform],
         );
     }
