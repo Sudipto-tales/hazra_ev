@@ -100,6 +100,10 @@ class ApiGatewayProvider extends RouteProvider
             'GET:api/v1/stream'            => ['StreamController', 'index', 'auth'],
 
             // --- Website Public & Admin Management --------------------------------
+            'GET:api/v1/website/dealer-locations' => ['DealerLocationsController', 'index'],
+            'GET:api/v1/admin/dealer-locations' => ['DealerLocationsController', 'adminIndex', 'auth'],
+            'POST:api/v1/admin/dealer-locations' => ['DealerLocationsController', 'store', 'auth'],
+            'PATCH:api/v1/admin/dealer-locations/{id}' => ['DealerLocationsController', 'update', 'auth'],
             'GET:api/v1/website/products'        => ['WebsiteController', 'products'],
             'GET:api/v1/website/products/{id}'   => ['WebsiteController', 'product'],
             'GET:api/v1/website/settings'        => ['WebsiteController', 'settings'],

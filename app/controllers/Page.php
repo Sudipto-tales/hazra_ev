@@ -259,6 +259,12 @@ class Page extends BaseController
         return $this->respond('/app/page/admin/settings.php');
     }
 
+    public function adminDealerLocations()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/dealer-locations.php');
+    }
+
     public function adminProfile()
     {
         $this->guardAdmin();

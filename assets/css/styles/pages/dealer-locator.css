@@ -82,7 +82,7 @@
     .dl-locator__eyebrow::before { content: ''; width: 10px; height: 10px; background: var(--brand-grad); border-radius: 2px; }
     .dl-locator__title { font-family: var(--font-display); font-size: clamp(24px, 2.8vw, 36px); font-weight: 800; letter-spacing: -.03em; }
     .dl-shell {
-      display: grid; grid-template-columns: 300px 1fr;
+      display: grid; grid-template-columns: 240px 300px minmax(0, 1fr);
       border-radius: 22px; overflow: hidden; border: 1px solid var(--hair-0);
       background: var(--surface-0); box-shadow: var(--sh-3); min-height: 620px;
     }
@@ -125,15 +125,22 @@
     .dl-map-area { position: relative; background: #e8e4f0; min-height: 620px; }
     #map { width: 100%; height: 100%; min-height: 620px; z-index: 1; }
     .dl-float-cards {
-      position: absolute; left: 0; right: 0; bottom: 0; z-index: 20;
-      padding: 16px 16px 20px; display: flex; gap: 14px;
-      overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch; scrollbar-width: none;
-      background: linear-gradient(to top, rgba(0,0,0,.18) 0%, transparent 70%);
+      padding: 12px; display: flex; flex-direction: column; gap: 14px;
+      overflow-y: auto; max-height: 560px;
     }
-    .dl-float-cards::-webkit-scrollbar { display: none; }
+    .dl-results { min-width: 0; border-right: 1px solid var(--hair-0); background: var(--surface-0); }
+    .dl-status { margin: 0; padding: 12px; font-size: 13px; color: var(--ink-soft-0); }
+    .dl-map-status { position:absolute; bottom:8px; left:8px; right:8px; z-index:400; background:var(--surface-0); font-size:12px; border-radius:8px; padding:8px; }
+    .dl-map-status:empty { display:none; }
+    .dl-empty { padding:16px; font-size:14px; }
+    .dl-card-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .dl-select-dealer { text-align:left; background:none; border:0; padding:0; font:inherit; font-weight:800; color:var(--ink-0); cursor:pointer; margin-bottom:10px; }
+    .dl-reset { padding:10px; background:transparent; color:var(--ink-soft-0); border:1px solid var(--hair-0); border-radius:8px; cursor:pointer; }
+    .dl-field input { width:100%; padding:12px; background:var(--surface-0); color:var(--ink-0); border:0; font:inherit; }
+    @media (max-width:1100px) and (min-width:901px) { .dl-shell { grid-template-columns:210px 260px minmax(0,1fr); } }
+    @media (max-width:900px) { .dl-shell { display:flex; flex-direction:column; } .dl-panel { order:0; } .dl-map-area { order:1; } .dl-results { order:2; } .dl-float-cards { max-height:500px; } }
     .dl-fcard {
-      flex: 0 0 min(280px, 78vw); scroll-snap-align: start;
+      flex: 0 0 auto; scroll-snap-align: start;
       background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 16px;
       overflow: hidden; box-shadow: 0 12px 32px -10px rgba(24,15,44,.28);
       transition: transform .3s var(--ease), box-shadow .3s var(--ease); cursor: pointer;

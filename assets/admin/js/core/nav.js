@@ -42,6 +42,7 @@ window.HAZRA_NAV = [
             { key: 'jobs', label: 'Jobs', icon: 'fa-briefcase', href: '/admin/jobs' },
             { key: 'test-drive', label: 'Test Drive', icon: 'fa-road', href: '/admin/test-drive' },
             { key: 'dealership', label: 'Dealership', icon: 'fa-store', href: '/admin/dealership' },
+            { key: 'dealer-locations', label: 'Dealer Locations', icon: 'fa-location-dot', href: '/admin/dealer-locations' },
             { key: 'contact', label: 'Contact', icon: 'fa-envelope', href: '/admin/contact' },
             { key: 'career-apps', label: 'Career Apps', icon: 'fa-file-signature', href: '/admin/career-apps' },
             { key: 'warranty', label: 'Warranty', icon: 'fa-shield-halved', href: '/admin/warranty', badge: () => window.HAZRA_NAV_COUNT('warranty', (r) => r.status === 'pending') },

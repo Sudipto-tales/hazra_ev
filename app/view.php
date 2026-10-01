@@ -110,6 +110,7 @@ class ViewRouteProvider extends RouteProvider
             'admin/career-apps' => ['Page', 'adminCareerApps'],
             'admin/test-drive' => ['Page', 'adminTestDrive'],
             'admin/dealership' => ['Page', 'adminDealership'],
+            'admin/dealer-locations' => ['Page', 'adminDealerLocations'],
             'admin/contact' => ['Page', 'adminContact'],
             'admin/warranty' => ['Page', 'adminWarranty'],
             'admin/app-releases' => ['Page', 'adminAppReleases'],
