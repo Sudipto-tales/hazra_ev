@@ -11,27 +11,12 @@ return static function (PDO $pdo): void {
     require_once __DIR__ . '/../../api/support/DealerLocation.php';
     require_once __DIR__ . '/../../api/support/Wire.php';
 
-    $locations = [
-        [
-            'id' => 'ddeea001-7131-4030-8000-000000000001',
-            'name' => 'Hazra Electrical Bike - Burdwan Main Showroom',
-            'address' => 'Ghordourchati More, Below LIC Division Office, Sripally, Burdwan, West Bengal - 713103',
-        ],
-        [
-            'id' => 'ddeea001-7131-4030-8000-000000000002',
-            'name' => 'Hazra Electrical Bike - Ichlabad Outlet',
-            'address' => 'Gopalnagar Ave, Ichlabad, Bardhaman, Gopalnagar P, West Bengal - 713103',
-        ],
-    ];
+    $locations = json_decode(file_get_contents(__DIR__ . '/../data/dealer-locations.json'), true, 512, JSON_THROW_ON_ERROR);
     $prepared = [];
     foreach ($locations as $location) {
-        $prepared[] = ['id' => $location['id']] + DealerLocation::validate([
-            'name' => $location['name'], 'address' => $location['address'],
-            'state' => 'West Bengal', 'district' => 'Purba Bardhaman',
-            'city' => 'Bardhaman', 'pincode' => '713103',
-            'type' => 'showroom', 'status' => 'draft',
-            'phone' => '', 'lat' => null, 'lng' => null, 'hours' => '',
-        ]);
+        $id = $location['id'];
+        unset($location['id']);
+        $prepared[] = ['id' => $id] + DealerLocation::validate($location);
     }
 
     $exists = $pdo->prepare('SELECT id FROM dealer_locations WHERE id = ? OR (state = ? AND city = ? AND address = ? AND pincode = ?) LIMIT 1');

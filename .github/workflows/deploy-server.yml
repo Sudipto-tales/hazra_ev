@@ -5,6 +5,13 @@ on:
     branches: [deploy]
   workflow_dispatch:
 
+concurrency:
+  group: production-website
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -14,13 +21,14 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+          GOOGLE_MAPS_BROWSER_KEY: ${{ vars.GOOGLE_MAPS_BROWSER_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 65002 }}
           script_stop: true
-          envs: PROD_ENV_FILE
+          envs: PROD_ENV_FILE,GOOGLE_MAPS_BROWSER_KEY
           script: |
             set -e
             TARGET_DIR="${{ secrets.SSH_TARGET_DIR || 'domains/hazraelectricalbike.com/public_html' }}"
@@ -34,37 +42,44 @@ jobs:
             mkdir -p ~/"$TARGET_DIR"
             cd ~/"$TARGET_DIR"
 
-            # Clean up misplaced clone in ~/public_html if present
-            if [ "$TARGET_DIR" != "public_html" ] && [ -f ~/public_html/index.php ] && [ -d ~/public_html/.git ]; then
-              echo "==> Cleaning up misplaced git repo in ~/public_html..."
-              rm -rf ~/public_html/* ~/public_html/.[!.]* 2>/dev/null || true
-            fi
-
-            # Force fresh clone if website files missing or sparse-checkout enabled
-            if [ ! -f index.php ] || git config core.sparseCheckout 2>/dev/null | grep -q true; then
-              echo "==> Initializing fresh git repo in ~/$TARGET_DIR..."
-              rm -rf ~/"$TARGET_DIR"
-              mkdir -p ~/"$TARGET_DIR"
-              cd ~/"$TARGET_DIR"
+            # Keep uploads, APKs, and runtime state when preparing the checkout.
+            if [ ! -d .git ]; then
               git init
               git remote add origin https://github.com/Sudipto-tales/hazra_ev.git
+            fi
+            if [ "$(git config --get core.sparseCheckout || true)" = "true" ]; then
+              git sparse-checkout disable
+            fi
+
+            BACKUP_DIR="$HOME/deployment-backups/hazra-$(date -u +%Y%m%dT%H%M%SZ)-${{ github.run_id }}"
+            mkdir -p "$BACKUP_DIR"
+            chmod 700 "$BACKUP_DIR"
+            git rev-parse HEAD > "$BACKUP_DIR/previous-commit" 2>/dev/null || true
+            if [ -f .env ]; then
+              cp .env "$BACKUP_DIR/server.env"
+              chmod 600 "$BACKUP_DIR/server.env"
             fi
 
             echo "==> Fetching website branch..."
             git fetch origin website
             git reset --hard origin/website
 
-            if [ -n "$PROD_ENV_FILE" ]; then
-              echo "$PROD_ENV_FILE" > .env
-              chmod 600 .env
+            if [ -z "$PROD_ENV_FILE" ] || [ -z "$GOOGLE_MAPS_BROWSER_KEY" ]; then
+              echo "Production environment or Google Maps browser key is missing."
+              exit 1
             fi
+            umask 077
+            printf '%s\n' "$PROD_ENV_FILE" | sed '/^GOOGLE_MAPS_BROWSER_KEY=/d' > .env.next
+            printf '\nGOOGLE_MAPS_BROWSER_KEY=%s\n' "$GOOGLE_MAPS_BROWSER_KEY" >> .env.next
+            mv .env.next .env
+            chmod 600 .env
 
             if [ -f composer.json ]; then
               composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --quiet
             fi
 
             if [ -f vayu ]; then
-              # Applies pending gallery seeds once; fail deployment if seeding fails.
+              # Applies pending migrations and seeders once; preserves existing records.
               php vayu db:sync
             fi
 
@@ -73,7 +88,6 @@ jobs:
 
             echo "==> Done. Current commit:"
             git log -1 --oneline
-            ls -la
             
             echo "==> PHP version check:"
             php -v

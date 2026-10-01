@@ -72,8 +72,8 @@ App::render('header', ['isStickyOnly' => true]);
         </div>
         <button type="button" class="dl-apply" id="applyFilter">Apply Filters</button><button type="button" class="dl-reset" id="resetFilters">Reset filters</button>
       </aside>
-      <div class="dl-results"><p id="resultCount" class="dl-status" role="status">Dealer locations</p><button type="button" id="retryDealers" class="dl-reset" hidden>Retry loading</button><div class="dl-float-cards" id="floatCards" aria-label="Matching dealers"></div></div>
       <div class="dl-map-area">
+        <div class="dl-results" aria-label="Dealer carousel"><p id="resultCount" class="dl-status" role="status">Dealer locations</p><button type="button" id="retryDealers" class="dl-reset" hidden>Retry loading</button><div class="dl-carousel-controls"><button type="button" id="dealerPrevious" class="dl-reset" aria-label="Previous dealers">&#8592;</button><button type="button" id="dealerNext" class="dl-reset" aria-label="Next dealers">&#8594;</button></div><div class="dl-float-cards" id="floatCards" aria-label="Matching dealers"></div></div>
         <div id="map" aria-label="Dealer locations map"></div>
         <p id="mapStatus" class="dl-map-status" role="status"></p>
       </div>
