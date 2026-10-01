@@ -28,17 +28,13 @@
         <div id="listCard"></div>
     `;
 
-    // Status badge helper
-    function statusBadge(status) {
-        const map = { published: 'good', draft: 'warn', archived: 'mid' };
-        const tone = map[status] || 'mid';
-        return `<span class="pill pill--${tone}">${U.esc(status || '—')}</span>`;
-    }
-
     // Data Table
     const list = table.create({
         mount: '#listCard',
         entity: 'app-releases',
+        bulkActions: [],
+        selectable: false,
+        statusOptions: [{value:'all',label:'All statuses'},{value:'published',label:'Latest'},{value:'archived',label:'Previous releases'},{value:'withdrawn',label:'Withdrawn'},{value:'draft',label:'Drafts'}],
         searchFields: ['version_name', 'git_tag', 'status'],
         searchPlaceholder: 'Search by version or tag',
         sort: 'created_at',
@@ -105,10 +101,17 @@
             // Archive (if published)
             if (st === 'published') {
                 actions.push({
-                    label: 'Archive',
+                    label: 'Move to Previous Versions',
                     icon: 'fa-box-archive',
                     onClick: () => archiveRelease(id, vn),
                 });
+            }
+
+            if (st === 'published' || st === 'archived') {
+                actions.push({label: 'Withdraw Release', icon: 'fa-ban', danger: true, onClick: () => changeAvailability(id, vn, 'withdrawn')});
+            }
+            if (st === 'withdrawn') {
+                actions.push({label: 'Restore to Previous Versions', icon: 'fa-rotate-left', onClick: () => changeAvailability(id, vn, 'archived')});
             }
 
             // Edit notes
@@ -120,15 +123,14 @@
 
             actions.push({ divider: true });
 
-            // Copy download link (only published)
-            if (st === 'published') {
+            // Share the verification page for any downloadable release.
+            if (st === 'published' || st === 'archived') {
                 actions.push({
-                    label: 'Copy Download Link',
+                    label: 'Copy Download Page',
                     icon: 'fa-link',
                     onClick: () => {
-                        const url = `${BASE}api/v1/app-releases/${id}/download`;
-                        navigator.clipboard.writeText(url);
-                        toast.success('Download link copied to clipboard');
+                        const url = `${BASE}download?release=${encodeURIComponent(id)}#changelog`;
+                        navigator.clipboard.writeText(url).then(() => toast.success('Download page copied')).catch(() => toast.error('Could not copy the link'));
                     },
                 });
             }
@@ -180,16 +182,14 @@
 
     async function paintStats() {
         try {
-            const all = await store.list('app-releases', { pageSize: 200 });
-            const rows = all.rows || [];
-            const published = rows.filter(r => r.status === 'published').length;
-            const drafts = rows.filter(r => r.status === 'draft').length;
-            const archived = rows.filter(r => r.status === 'archived').length;
+            const counts = await Promise.all(['', 'published', 'draft', 'archived', 'withdrawn'].map(status => store.list('app-releases', {pageSize: 0, status})));
+            const [total, published, drafts, archived, withdrawn] = counts.map(result => result.total || 0);
             document.getElementById('statStrip').innerHTML = [
-                statCard('fa-box-archive', 'Total', rows.length, 'var(--info)'),
+                statCard('fa-box-archive', 'Total', total, 'var(--info)'),
                 statCard('fa-circle-check', 'Published', published, 'var(--good)'),
                 statCard('fa-pen-ruler', 'Drafts', drafts, 'var(--warn)'),
-                statCard('fa-archive', 'Archived', archived, 'var(--text-mid)'),
+                statCard('fa-archive', 'Previous releases', archived, 'var(--text-mid)'),
+                statCard('fa-ban', 'Withdrawn', withdrawn, 'var(--bad)'),
             ].join('');
         } catch (e) { /* silent */ }
     }
@@ -225,7 +225,7 @@
     async function archiveRelease(id, vn) {
         const ok = await HAZRA.confirm({
             title: `Archive v${vn}?`,
-            body: 'This removes it from the public download page.',
+            body: 'This moves the release into Previous Versions. Employees can still verify and download it. Use Withdraw Release to disable downloads.',
             confirmLabel: 'Archive',
         });
         if (!ok) return;
@@ -239,6 +239,17 @@
         }
     }
 
+    async function changeAvailability(id, vn, status) {
+        const withdrawn = status === 'withdrawn';
+        const ok = await HAZRA.confirm({ title: `${withdrawn ? 'Withdraw' : 'Restore'} v${vn}?`, body: withdrawn ? 'Employees will no longer see or download this release. Its APK and history remain available to administrators.' : 'This release will appear in Previous Versions and become downloadable after employee verification.', danger: withdrawn, confirmLabel: withdrawn ? 'Withdraw' : 'Restore' });
+        if (!ok) return;
+        try {
+            await store.update('app-releases', id, {status});
+            toast.success(withdrawn ? 'Release withdrawn' : 'Release restored');
+            list.load(); paintStats();
+        } catch (err) { toast.error('Could not update release', {body: err.message}); }
+    }
+
     async function editNotes(id, currentNotes) {
         HAZRA.modal.open({
             title: 'Edit Release Notes',
@@ -248,14 +259,14 @@
                     <textarea id="editNotesArea" class="input" rows="8" placeholder="What's new in this release...">${U.esc(currentNotes)}</textarea>
                 </div>`,
             footer: `
-                <button class="btn btn--ghost" data-dismiss="modal">Cancel</button>
+                <button class="btn btn--ghost" data-close>Cancel</button>
                 <button class="btn btn--primary" id="saveNotesBtn">Save Notes</button>`,
-            onMount: (el) => {
+            onMount: (el, close) => {
                 el.querySelector('#saveNotesBtn').addEventListener('click', async () => {
                     const notes = el.querySelector('#editNotesArea').value;
                     await store.update('app-releases', id, { release_notes: notes });
                     toast.success('Release notes updated');
-                    HAZRA.modal.close();
+                    close();
                     list.load();
                 });
             },
@@ -284,6 +295,14 @@
                         </div>
                     </div>
                     <div>
+                        <label class="label">Minimum Android API (optional)</label>
+                        <input type="number" id="apkMinSdk" class="input" min="1" max="999" placeholder="e.g. 26 for Android 8.0">
+                    </div>
+                    <div>
+                        <label class="label">Channel</label>
+                        <select id="apkChannel" class="input"><option value="production">Production</option><option value="beta">Beta</option></select>
+                    </div>
+                    <div>
                         <label class="label">Release Notes</label>
                         <textarea id="apkNotes" class="input" rows="4" placeholder="What's new..."></textarea>
                     </div>
@@ -295,15 +314,15 @@
                     </div>
                 </div>`,
             footer: `
-                <button class="btn btn--ghost" data-dismiss="modal">Cancel</button>
+                <button class="btn btn--ghost" data-close>Cancel</button>
                 <button class="btn btn--primary" id="doUploadBtn"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button>`,
-            onMount: (el) => {
-                el.querySelector('#doUploadBtn').addEventListener('click', () => doUpload(el));
+            onMount: (el, close) => {
+                el.querySelector('#doUploadBtn').addEventListener('click', () => doUpload(el, close));
             },
         });
     }
 
-    async function doUpload(el) {
+    async function doUpload(el, close) {
         const fileInput = el.querySelector('#apkFile');
         const versionName = el.querySelector('#apkVersionName').value.trim();
         const versionCode = el.querySelector('#apkVersionCode').value.trim();
@@ -323,6 +342,8 @@
         fd.append('version_name', versionName);
         fd.append('version_code', versionCode);
         fd.append('platform', 'android');
+        fd.append('channel', el.querySelector('#apkChannel').value);
+        if (el.querySelector('#apkMinSdk').value) fd.append('min_android_sdk', el.querySelector('#apkMinSdk').value);
         if (notes) fd.append('release_notes', notes);
 
         try {
@@ -339,7 +360,7 @@
             }
 
             toast.success(`v${versionName} uploaded as draft`);
-            HAZRA.modal.close();
+            close();
             list.load();
             paintStats();
         } catch (err) {
@@ -359,8 +380,9 @@
     function statusBadge(status) {
         switch (status) {
             case 'published': return '<span class="tag ok"><i class="fa-solid fa-circle-check"></i> Published</span>';
+            case 'withdrawn': return '<span class="tag warn"><i class="fa-solid fa-ban"></i> Withdrawn</span>';
             case 'draft':     return '<span class="tag warn"><i class="fa-solid fa-pen-ruler"></i> Draft</span>';
-            case 'archived':  return '<span class="tag muted"><i class="fa-solid fa-box-archive"></i> Archived</span>';
+            case 'archived':  return '<span class="tag muted"><i class="fa-solid fa-box-archive"></i> Previous release</span>';
             default:          return `<span class="tag">${U.esc(status)}</span>`;
         }
     }
