@@ -65,7 +65,7 @@ $heroImg = ($rawHero && (str_starts_with($rawHero, 'http') || str_starts_with($r
 $colorsData = [];
 if (!empty($product['colors'])) {
     foreach ($product['colors'] as $c) {
-        $hex = '#' . substr(dechex($c['argb'] & 0xFFFFFF), -6);
+        $hex = '#' . str_pad(dechex($c['argb'] & 0xFFFFFF), 6, '0', STR_PAD_LEFT);
         $imgs = [];
         if (!empty($c['images'])) {
             foreach ($c['images'] as $u) {
@@ -99,24 +99,30 @@ App::render('head', [
 App::render('header', ['isStickyOnly' => true]);
 ?>
 
-<!-- ========== UNIQUE PAGE CONTENT START ========== -->
-<main class="page-body" style="padding-bottom: clamp(60px, 9vw, 120px);">
-  <!-- Breadcrumb -->
-  <div style="width: min(1280px, 93vw); margin: 30px auto 0; padding: 0 26px;">
-    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft-0);">
-      <a href="<?= e(base_url('')) ?>" style="color: inherit; text-decoration: none;">Home</a>
-      <span>/</span>
-      <a href="<?= e(base_url('products')) ?>" style="color: inherit; text-decoration: none;">Products</a>
-      <span>/</span>
-      <span style="color: var(--ink-0); font-weight: 600;"><?= e($product['name']) ?></span>
+<?php
+$specItems = [];
+foreach ([['range_km', 'Riding range', ' km'], ['top_speed_kmph', 'Top speed', ' km/h'], ['battery_capacity', 'Battery capacity', ''], ['motor_power', 'Motor power', ''], ['charging_time', 'Charging time', ''], ['load_capacity_kg', 'Payload capacity', ' kg']] as [$key, $label, $unit]) {
+    if (!empty($product[$key])) $specItems[] = ['label' => $label, 'value' => $product[$key] . $unit];
+}
+?>
+<main class="pd-page">
+  <nav class="pd-breadcrumb pd-container" aria-label="Breadcrumb"><a href="<?= e(base_url('')) ?>">Home</a><span>/</span><a href="<?= e(base_url('products')) ?>">Products</a><span>/</span><span><?= e($product['name']) ?></span></nav>
+  <nav class="pd-progress" aria-label="Page sections"><a href="#overview" aria-label="Overview" class="is-active"></a><a href="#showcase" aria-label="Product showcase"></a><a href="#specifications" aria-label="Specifications"></a><a href="#test-ride" aria-label="Book a test ride"></a></nav>
+  <section class="pd-hero pd-container" id="overview">
+    <div class="pd-hero-copy" data-reveal>
+      <span class="pd-kicker"><?= e($product['brand']) ?> / ELECTRIC MOBILITY</span>
+      <h1>Move<br>beyond <span>ordinary.</span></h1>
+      <div class="pd-model"><?= e($product['name']) ?><span><?= e($product['category']) ?> &middot; <?= e($product['model_code']) ?></span></div>
+      <p>Engineered for performance and comfort. Experience effortless urban mobility with cutting-edge EV technology.</p>
+      <div class="pd-actions"><a class="pd-button" href="#test-ride">Book a test ride <span>&#8599;</span></a><a class="pd-button pd-button-ghost" href="#specifications">Explore the details <span>&#8599;</span></a></div>
+      <a class="pd-scroll" href="#showcase"><span class="pd-mouse"></span> Scroll to explore</a>
     </div>
-  </div>
-
-  <!-- Hero Section -->
-  <section style="padding: 30px 26px clamp(40px, 6vw, 80px);">
-    <div style="width: min(1280px, 93vw); margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: clamp(30px, 5vw, 60px); align-items: center;">
-      
-      <!-- Product Gallery Display with Swiper, Glass Zoom & Swatches -->
+    <div class="pd-hero-art" data-reveal><span class="pd-edition">THE NEXT CHAPTER OF YOUR EVERYDAY</span><div class="pd-orbit"></div><img data-product-image src="<?= e($heroImg) ?>" alt="<?= e($product['brand'] . ' ' . $product['name']) ?>" fetchpriority="high"><span class="pd-art-label">01 / <?= e($product['model_code']) ?></span></div>
+  </section>
+  <section class="pd-showcase pd-container" id="showcase">
+    <div class="pd-section-heading" data-reveal><div><span class="pd-kicker">MEET YOUR NEXT RIDE</span><h2><?= e($product['name']) ?>.<br>Every angle. Every detail.</h2></div><p>Take a closer look. Choose your color and explore the full view.</p></div>
+    <div class="pd-stage-watermark" aria-hidden="true"><?= e($product['name']) ?></div>
+    <div class="pd-gallery" data-reveal>
       <div class="product-gallery-wrap">
         <div class="gallery-stage" id="galleryStage">
           <!-- Main Swiper Carousel -->
@@ -173,9 +179,9 @@ App::render('header', ['isStickyOnly' => true]);
             </div>
             <div class="gallery-swatches-list" id="swatchesContainer">
               <?php foreach ($colorsData as $idx => $c): ?>
-                <button type="button" class="color-swatch-btn <?= $idx === 0 ? 'is-active' : '' ?>" data-color-index="<?= $idx ?>" onclick="switchColorway(<?= $idx ?>)">
+                <button type="button" class="color-swatch-btn <?= $idx === 0 ? 'is-active' : '' ?>" data-color-index="<?= $idx ?>" aria-pressed="<?= $idx === 0 ? 'true' : 'false' ?>" onclick="switchColorway(<?= $idx ?>)">
                   <span class="color-swatch-dot" style="background: <?= e($c['hex']) ?>;"></span>
-                  <span><?= e($c['name']) ?></span>
+                  <span><?= e($c['name']) ?><?= !$c['in_stock'] ? ' (Out of stock)' : '' ?></span>
                 </button>
               <?php endforeach; ?>
             </div>
@@ -183,177 +189,23 @@ App::render('header', ['isStickyOnly' => true]);
         <?php endif; ?>
       </div>
 
-      <!-- Product Details & Specs -->
-      <div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
-          <?php if (!empty($product['category'])): ?>
-            <span style="font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-violet); background: rgb(var(--chip-rgb)); padding: 4px 12px; border-radius: 999px;">
-              <?= e(strtoupper($product['category'])) ?>
-            </span>
-          <?php endif; ?>
-          <?php if (!empty($product['model_code'])): ?>
-            <span style="font-size: 13px; font-weight: 700; color: var(--ink-soft-0);">
-              Model: <?= e($product['model_code']) ?>
-            </span>
-          <?php endif; ?>
-        </div>
-
-        <h1 style="font-family: 'Montserrat', sans-serif; font-size: clamp(34px, 4vw, 56px); font-weight: 900; color: var(--ink-0); line-height: 1.1; margin-bottom: 16px;">
-          <?= e($product['brand'] . ' ' . $product['name']) ?>
-        </h1>
-
-        <p style="font-size: 16px; color: var(--ink-soft-0); line-height: 1.6; margin-bottom: 24px;">
-          Engineered for performance and comfort. Experience effortless urban mobility with cutting-edge EV technology.
-        </p>
-
-        <!-- Highlights Bullet List -->
-        <?php if (!empty($product['highlights'])): ?>
-          <div style="margin-bottom: 28px;">
-            <h4 style="font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-0); margin-bottom: 12px;">Key Highlights</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-              <?php foreach ($product['highlights'] as $hl): ?>
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: var(--ink-0);">
-                  <i data-lucide="check-circle-2" style="width: 16px; height: 16px; color: #12a5e0; flex-shrink: 0;"></i>
-                  <span><?= e($hl) ?></span>
-                </div>
-              <?php endforeach; ?>
-            </div>
-          </div>
-        <?php endif; ?>
-
-        <!-- Quick CTA -->
-        <div style="display: flex; gap: 14px; margin-bottom: 36px; flex-wrap: wrap;">
-          <a href="<?= e(base_url('dealership-enquiry')) ?>" style="padding: 16px 36px; background: var(--brand-grad); color: #fff; text-decoration: none; border-radius: 999px; font-size: 14px; font-weight: 800; letter-spacing: .04em; transition: transform .25s, box-shadow .25s; box-shadow: 0 10px 25px -8px rgba(240, 83, 43, .4);">
-            Book a Test Drive
-          </a>
-          <a href="<?= e(base_url('dealer-locator')) ?>" style="padding: 16px 32px; background: var(--surface-0); border: 1px solid var(--hair-0); color: var(--ink-0); text-decoration: none; border-radius: 999px; font-size: 14px; font-weight: 700; transition: background .25s;">
-            Find Nearest Dealer
-          </a>
-        </div>
-
-        <!-- Warranty & Coverage Banner -->
-        <?php if (!empty($product['warranty_years']) && (int)$product['warranty_years'] > 0): ?>
-          <div style="padding: 18px 22px; background: rgb(var(--chip-rgb) / .4); border: 1px solid var(--hair-0); border-radius: 18px; display: flex; align-items: center; gap: 14px;">
-            <i data-lucide="shield-check" style="width: 28px; height: 28px; color: var(--brand-orange); flex-shrink: 0;"></i>
-            <div>
-              <div style="font-size: 13.5px; font-weight: 800; color: var(--ink-0);">
-                <?= (int)$product['warranty_years'] ?> <?= ((int)$product['warranty_years'] === 1 ? 'Year' : 'Years') ?> Official Warranty Coverage
-              </div>
-              <?php if (!empty($product['warranty_note'])): ?>
-                <div style="font-size: 12px; color: var(--ink-soft-0); margin-top: 2px;">
-                  <?= e($product['warranty_note']) ?>
-                </div>
-              <?php endif; ?>
-            </div>
-          </div>
-        <?php endif; ?>
-      </div>
     </div>
+    <div class="pd-metrics" data-reveal><?php foreach (array_slice($specItems, 0, 3) as $spec): ?><div><strong><?= e($spec['value']) ?></strong><span><?= e($spec['label']) ?></span></div><?php endforeach; ?></div>
   </section>
-
-  <!-- Deep Technical Specifications Grid -->
-  <?php
-  $specsCount = 0;
-  if (!empty($product['range_km']) && (int)$product['range_km'] > 0) $specsCount++;
-  if (!empty($product['top_speed_kmph']) && (int)$product['top_speed_kmph'] > 0) $specsCount++;
-  if (!empty($product['battery_capacity']) && trim($product['battery_capacity']) !== '') $specsCount++;
-  if (!empty($product['motor_power']) && trim($product['motor_power']) !== '') $specsCount++;
-  if (!empty($product['charging_time']) && trim($product['charging_time']) !== '') $specsCount++;
-  if (!empty($product['load_capacity_kg']) && (int)$product['load_capacity_kg'] > 0) $specsCount++;
-  ?>
-  <section style="padding: 60px 26px; background: rgb(var(--chip-rgb) / .3); border-top: 1px solid var(--hair-0); border-bottom: 1px solid var(--hair-0);">
-    <div style="width: min(1280px, 93vw); margin: 0 auto;">
-      <h2 style="font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 800; color: var(--ink-0); margin-bottom: 36px; text-align: center;">
-        Technical Specifications
-      </h2>
-
-      <?php if ($specsCount > 0): ?>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
-          <?php if (!empty($product['range_km']) && (int)$product['range_km'] > 0): ?>
-            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-              <i data-lucide="zap" style="width: 24px; height: 24px; color: var(--brand-flame); margin-bottom: 12px;"></i>
-              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">RIDING RANGE</span>
-              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['range_km'] ?> km</span>
-              <p style="font-size: 11.5px; color: var(--ink-soft-0); margin-top: 4px;">Per full charge under standard conditions</p>
-            </div>
-          <?php endif; ?>
-
-          <?php if (!empty($product['top_speed_kmph']) && (int)$product['top_speed_kmph'] > 0): ?>
-            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-              <i data-lucide="gauge" style="width: 24px; height: 24px; color: var(--brand-blue); margin-bottom: 12px;"></i>
-              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">TOP SPEED</span>
-              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['top_speed_kmph'] ?> km/h</span>
-            </div>
-          <?php endif; ?>
-
-          <?php if (!empty($product['battery_capacity']) && trim($product['battery_capacity']) !== ''): ?>
-            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-              <i data-lucide="battery-charging" style="width: 24px; height: 24px; color: var(--brand-violet); margin-bottom: 12px;"></i>
-              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">BATTERY CAPACITY</span>
-              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['battery_capacity']) ?></span>
-            </div>
-          <?php endif; ?>
-
-          <?php if (!empty($product['motor_power']) && trim($product['motor_power']) !== ''): ?>
-            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-              <i data-lucide="cpu" style="width: 24px; height: 24px; color: var(--brand-orange); margin-bottom: 12px;"></i>
-              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">MOTOR POWER</span>
-              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['motor_power']) ?></span>
-            </div>
-          <?php endif; ?>
-
-          <?php if (!empty($product['charging_time']) && trim($product['charging_time']) !== ''): ?>
-            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-              <i data-lucide="clock" style="width: 24px; height: 24px; color: var(--brand-blue); margin-bottom: 12px;"></i>
-              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">CHARGING TIME</span>
-              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= e($product['charging_time']) ?></span>
-            </div>
-          <?php endif; ?>
-
-          <?php if (!empty($product['load_capacity_kg']) && (int)$product['load_capacity_kg'] > 0): ?>
-            <div style="padding: 24px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px;">
-              <i data-lucide="weight" style="width: 24px; height: 24px; color: var(--brand-flame); margin-bottom: 12px;"></i>
-              <span style="display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft-0); letter-spacing: .08em; text-transform: uppercase;">PAYLOAD CAPACITY</span>
-              <span style="font-size: 24px; font-weight: 900; color: var(--ink-0);"><?= (int)$product['load_capacity_kg'] ?> kg</span>
-            </div>
-          <?php endif; ?>
-        </div>
-      <?php else: ?>
-        <p style="text-align: center; color: var(--ink-soft-0); font-size: 14px; margin: 0;">Specifications for this model will be updated soon.</p>
-      <?php endif; ?>
-    </div>
-  </section>
-
-  <!-- Related Models Section -->
-  <?php if (!empty($relatedProducts)): ?>
-    <section style="padding: 60px 26px 20px;">
-      <div style="width: min(1280px, 93vw); margin: 0 auto;">
-        <h2 style="font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 800; color: var(--ink-0); margin-bottom: 24px;">
-          Explore Other Models
-        </h2>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px;">
-          <?php foreach ($relatedProducts as $rel): 
-            $relChips = [];
-            if (!empty($rel['range_km']) && (int)$rel['range_km'] > 0) $relChips[] = (int)$rel['range_km'] . ' km Range';
-            if (!empty($rel['top_speed_kmph']) && (int)$rel['top_speed_kmph'] > 0) $relChips[] = (int)$rel['top_speed_kmph'] . ' km/h';
-            $relUrl = !empty($rel['slug']) ? base_url('product-detail?slug=' . urlencode($rel['slug'])) : base_url('product-detail?id=' . urlencode($rel['id']));
-          ?>
-            <div style="padding: 20px; background: var(--surface-0); border: 1px solid var(--hair-0); border-radius: 20px; display: flex; flex-direction: column;">
-              <h3 style="font-size: 18px; font-weight: 800; color: var(--ink-0); margin-bottom: 4px;"><?= e($rel['name']) ?></h3>
-              <?php if (!empty($relChips)): ?>
-                <span style="font-size: 12px; color: var(--ink-soft-0); font-weight: 600; margin-bottom: 16px;"><?= e(implode(' · ', $relChips)) ?></span>
-              <?php endif; ?>
-              <a href="<?= e($relUrl) ?>" style="margin-top: auto; padding: 10px 18px; background: rgb(var(--chip-rgb)); color: var(--ink-0); text-decoration: none; border-radius: 999px; font-size: 12.5px; font-weight: 700; text-align: center;">
-                View Model &rarr;
-              </a>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      </div>
-    </section>
+  <?php if (!empty($product['range_km'])): ?>
+  <section class="pd-range pd-container" data-reveal><span class="pd-kicker">GO THE DISTANCE / RANGE</span><div class="pd-range-row"><strong><?= (int)$product['range_km'] ?><small>km</small></strong><div><h2>More possibilities.<br>On a single charge.</h2><details><summary>About riding range <span>+</span></summary><p>Range is measured per full charge under standard conditions. Actual range varies with riding speed, rider weight, terrain, weather and battery condition.</p></details></div></div></section>
   <?php endif; ?>
+  <section class="pd-cinematic" data-reveal><div class="pd-container"><div class="pd-cinematic-copy"><span class="pd-kicker">MADE FOR YOUR EVERYDAY</span><h2>Designed for<br>modern mobility.</h2><a href="#features">Discover the details &#8599;</a></div><img data-product-image src="<?= e($heroImg) ?>" alt="<?= e($product['name']) ?> electric vehicle" loading="lazy"></div><span class="pd-road" aria-hidden="true"></span></section>
+  <section class="pd-container pd-section" id="features"><div class="pd-section-heading" data-reveal><div><span class="pd-kicker">THOUGHTFULLY ENGINEERED</span><h2>The details make<br>the difference.</h2></div><div class="pd-feature-controls"><button type="button" data-feature-step="-1" aria-label="Previous features">&#8592;</button><button type="button" data-feature-step="1" aria-label="Next features">&#8594;</button></div></div>
+    <div class="pd-features" id="featureTrack"><?php $featureLabels = !empty($product['highlights']) ? $product['highlights'] : array_column($specItems, 'label'); foreach ($featureLabels as $idx => $hl): ?><article class="pd-feature" data-reveal><div class="pd-feature-image pd-crop-<?= $idx % 4 ?>"><img data-product-image src="<?= e($heroImg) ?>" alt="<?= e($product['name']) ?> detail" loading="lazy"><span><?= str_pad((string)($idx + 1), 2, '0', STR_PAD_LEFT) ?></span></div><h3><?= e($hl) ?></h3></article><?php endforeach; ?></div>
+  </section>
+  <section class="pd-spec-section" id="specifications"><div class="pd-container pd-section"><div class="pd-section-heading" data-reveal><div><span class="pd-kicker">PERFORMANCE, AT A GLANCE</span><h2>Everything you<br>need to know.</h2></div><p>The complete specifications for <?= e($product['brand'] . ' ' . $product['name']) ?>.</p></div><div class="pd-spec-grid" data-reveal><?php foreach ($specItems as $spec): ?><div><span><?= e($spec['label']) ?></span><strong><?= e($spec['value']) ?></strong></div><?php endforeach; ?><?php if (empty($specItems)): ?><p>Specifications for this model will be updated soon.</p><?php endif; ?></div>
+    <div class="pd-ownership" data-reveal><div><span class="pd-kicker">RIDE WITH CONFIDENCE</span><h2>Support for the<br>road ahead.</h2></div><div><?php if (!empty($product['warranty_years'])): ?><strong><?= (int)$product['warranty_years'] ?> <?= (int)$product['warranty_years'] === 1 ? 'year' : 'years' ?> official warranty</strong><?php endif; ?><?php if (!empty($product['warranty_note'])): ?><p><?= e($product['warranty_note']) ?></p><?php endif; ?><?php if (!empty($product['rating'])): ?><p>Product rating: <?= e($product['rating']) ?> / 5</p><?php endif; ?><a class="pd-text-link" href="<?= e(base_url('dealer-locator')) ?>">Find your nearest dealer &#8599;</a></div></div>
+  </div></section>
+  <?php if (!empty($relatedProducts)): ?><section class="pd-container pd-section"><div class="pd-section-heading" data-reveal><div><span class="pd-kicker">FIND YOUR FIT</span><h2>More ways to move.</h2></div><a class="pd-text-link" href="<?= e(base_url('products')) ?>">View all models &#8599;</a></div><div class="pd-related"><?php foreach ($relatedProducts as $rel): $relUrl = !empty($rel['slug']) ? base_url('product-detail?slug=' . urlencode($rel['slug'])) : base_url('product-detail?id=' . urlencode($rel['id'])); ?><a href="<?= e($relUrl) ?>" data-reveal><span class="pd-kicker"><?= e($rel['brand']) ?></span><h3><?= e($rel['name']) ?></h3><p><?php if (!empty($rel['range_km'])): ?><?= (int)$rel['range_km'] ?> km range<?php endif; ?><?php if (!empty($rel['top_speed_kmph'])): ?> &middot; <?= (int)$rel['top_speed_kmph'] ?> km/h<?php endif; ?></p><span class="pd-text-link">View model &#8599;</span></a><?php endforeach; ?></div></section><?php endif; ?>
+  <section class="pd-booking pd-container" id="test-ride" data-reveal><div><span class="pd-kicker">YOUR NEXT CHAPTER STARTS HERE</span><h2>Experience <?= e($product['name']) ?>.</h2><p>Leave your details. Our team will help arrange your test ride.</p></div><form id="productTestRide" action="<?= e(base_url('api/v1/website/leads')) ?>" method="post"><input type="hidden" name="type" value="test_drive"><input type="hidden" name="product_id" value="<?= e($product['id']) ?>"><input type="hidden" name="model" value="<?= e($product['name']) ?>"><label>Full name<input name="name" autocomplete="name" placeholder="Your name" required maxlength="120"></label><label>Phone number<input name="phone" type="tel" autocomplete="tel" placeholder="Your mobile number" required pattern="\+?[0-9]{10,15}" maxlength="20"></label><label>City / State<input name="city" autocomplete="address-level2" placeholder="Where you ride" required maxlength="120"></label><button class="pd-button" type="submit">Book a test ride <span>&#8599;</span></button><p id="rideStatus" role="status" aria-live="polite"></p></form></section>
 </main>
+<script src="<?= e(base_url('assets/js/product-detail.js')) ?>" defer></script>
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
@@ -374,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initSwipers() {
+  if (typeof Swiper === 'undefined') return;
   thumbsSwiper = new Swiper('#productSwiperThumbs', {
     slidesPerView: 'auto',
     spaceBetween: 10,
@@ -412,11 +265,12 @@ function initLightbox() {
   if (galleryLightbox) {
     try { galleryLightbox.destroy(); } catch (e) {}
   }
-  const color = window.__PRODUCT_COLORS__[currentColorIndex] || window.__PRODUCT_COLORS__[0];
+  if (typeof GLightbox === 'undefined') return;
+  const color = window.__PRODUCT_COLORS__[currentColorIndex] || {name: '', images: <?= json_encode($initialImages, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>};
   const elements = (color.images || []).map(img => ({
     href: img,
     type: 'image',
-    title: <?= json_encode($product['name']) ?> + ' — ' + color.name,
+    title: <?= json_encode($product['name'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?> + ' — ' + color.name,
   }));
 
   galleryLightbox = GLightbox({
@@ -504,30 +358,32 @@ function switchColorway(colorIndex) {
   currentColorIndex = colorIndex;
   const color = colors[colorIndex];
 
+  document.querySelectorAll('[data-product-image]').forEach(img => { img.src = color.images[0]; });
   const label = document.getElementById('selectedColorLabel');
-  if (label) label.textContent = color.name;
+  if (label) label.textContent = color.name + (color.in_stock ? '' : ' (Out of stock)');
 
   document.querySelectorAll('.color-swatch-btn').forEach((btn, idx) => {
     btn.classList.toggle('is-active', idx === colorIndex);
+    btn.setAttribute('aria-pressed', String(idx === colorIndex));
   });
 
-  const mainWrapper = document.getElementById('swiper-main-wrapper');
-  if (mainWrapper) {
-    mainWrapper.innerHTML = color.images.map((img, idx) => `
-      <div class="swiper-slide" data-img-index="${idx}">
-        <img src="${img}" alt="${color.name}" loading="${idx === 0 ? 'eager' : 'lazy'}">
-      </div>
-    `).join('');
-  }
-
-  const thumbsWrapper = document.getElementById('swiper-thumbs-wrapper');
-  if (thumbsWrapper) {
-    thumbsWrapper.innerHTML = color.images.map((img, idx) => `
-      <div class="swiper-slide ${idx === 0 ? 'swiper-slide-thumb-active' : ''}" data-index="${idx}">
-        <img src="${img}" alt="${color.name} thumbnail ${idx + 1}">
-      </div>
-    `).join('');
-  }
+  const populateSlides = (wrapperId, thumbnails) => {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    wrapper.replaceChildren(...color.images.map((src, idx) => {
+      const slide = document.createElement('div');
+      slide.className = 'swiper-slide' + (thumbnails && idx === 0 ? ' swiper-slide-thumb-active' : '');
+      slide.dataset[thumbnails ? 'index' : 'imgIndex'] = idx;
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = color.name + (thumbnails ? ' thumbnail ' + (idx + 1) : '');
+      img.loading = idx === 0 ? 'eager' : 'lazy';
+      slide.append(img);
+      return slide;
+    }));
+  };
+  populateSlides('swiper-main-wrapper', false);
+  populateSlides('swiper-thumbs-wrapper', true);
 
   if (thumbsSwiper) {
     thumbsSwiper.update();
