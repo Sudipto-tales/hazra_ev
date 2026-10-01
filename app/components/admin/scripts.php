@@ -27,6 +27,10 @@ $core = array_merge(
     <script src="<?= e(base_url("assets/admin/js/core/{$module}.js?v={$v}")) ?>"></script>
 <?php endforeach; ?>
 
+<?php if (($script ?? '') === 'product-form'): ?>
+    <script>window.HAZRA.productPageDefaults = <?= json_encode(ProductContent::DEFAULTS, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;</script>
+    <script src="<?= e(base_url('assets/admin/js/pages/product-editor.js?v=' . filemtime(__BASEDIR__ . '/assets/admin/js/pages/product-editor.js'))) ?>"></script>
+<?php endif; ?>
 <?php if (!empty($script)): 
     $pPath = __BASEDIR__ . "/assets/admin/js/pages/{$script}.js";
     $pv = file_exists($pPath) ? filemtime($pPath) : '1';

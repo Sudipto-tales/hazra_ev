@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../support/V1Controller.php';
+require_once __DIR__ . '/../../core/ProductContent.php';
 
 /**
  * One catalogue route; the role decides visibility.
@@ -115,8 +116,9 @@ final class ProductsController extends V1Controller
     {
         $this->requireAdmin();
 
-        $body = ApiRequest::body();
+        $body = $this->normalizeDraft(ApiRequest::body());
         $this->validateDraft($body, true);
+        $body = $this->validateContent($body);
 
         $id = Uuid::v4();
         $now = Wire::now();
@@ -124,25 +126,37 @@ final class ProductsController extends V1Controller
         $columns = ['id', 'org_id', 'listed_at', 'created_by', 'updated_at'];
         $values  = [$id, Ctx::orgId(), $now, Ctx::id(), $now];
 
+        $written = [];
         foreach (self::WRITABLE as $wire => $column) {
+            if (isset($written[$column])) continue;
+            $written[$column] = true;
             $columns[] = $column;
             $values[] = $this->columnValue($wire, $body[$wire] ?? null);
         }
 
         $columns[] = 'highlights';
         $values[] = json_encode(array_values((array) ($body['highlights'] ?? [])));
+        foreach (['page_content', 'feature_cards', 'default_color_id'] as $key) {
+            $columns[] = $key;
+            $values[] = $key === 'default_color_id' ? ($body[$key] ?? null) : json_encode($body[$key] ?? ($key === 'page_content' ? ProductContent::DEFAULTS : []));
+        }
+        $columns[] = 'active';
+        $values[] = Wire::bool($body['active'] ?? true) ? 1 : 0;
 
+        global $pdo;
+        $pdo->beginTransaction();
         try {
             db_execute(
                 'INSERT INTO products (' . implode(', ', $columns) . ') VALUES ('
                 . implode(', ', array_fill(0, count($columns), '?')) . ')',
                 $values,
             );
-        } catch (PDOException) {
-            Envelope::conflict('MODEL_CODE_TAKEN', 'That model code already exists in this organisation');
+            $this->writeColors($id, $body['colors'] ?? []);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            $this->saveError($e);
         }
-
-        $this->writeColors($id, $body['colors'] ?? []);
 
         $product = $this->withColors([$this->find($id)])[0];
 
@@ -166,15 +180,20 @@ final class ProductsController extends V1Controller
 
         $id = (string) $this->param('id');
         $before = $this->withColors([$this->find($id)])[0];
-        $body = ApiRequest::body();
+        $body = $this->normalizeDraft(ApiRequest::body());
+        $this->validateDraft($body, false);
+        $body = $this->validateContent($body, $before);
 
         $sets = [];
         $params = [];
 
+        $written = [];
         foreach (self::WRITABLE as $wire => $column) {
             if (!array_key_exists($wire, $body)) {
                 continue;
             }
+            if (isset($written[$column])) continue;
+            $written[$column] = true;
 
             $sets[] = "{$column} = ?";
             $params[] = $this->columnValue($wire, $body[$wire]);
@@ -183,6 +202,11 @@ final class ProductsController extends V1Controller
         if (array_key_exists('highlights', $body)) {
             $sets[] = 'highlights = ?';
             $params[] = json_encode(array_values((array) $body['highlights']));
+        }
+        foreach (['page_content', 'feature_cards', 'default_color_id'] as $key) {
+            if (!array_key_exists($key, $body)) continue;
+            $sets[] = "{$key} = ?";
+            $params[] = $key === 'default_color_id' ? $body[$key] : json_encode($body[$key]);
         }
 
         // The listed/delisted switch is this, not a second route.
@@ -194,19 +218,24 @@ final class ProductsController extends V1Controller
             $params[] = $active ? 1 : 0;
         }
 
-        if ($sets) {
-            $params[] = Wire::now();
-            $params[] = $id;
+        global $pdo;
+        $pdo->beginTransaction();
+        try {
+            if ($sets || array_key_exists('colors', $body)) {
+                $params[] = Wire::now();
+                $params[] = $id;
 
-            try {
-                db_execute('UPDATE products SET ' . implode(', ', $sets) . ', updated_at = ? WHERE id = ?', $params);
-            } catch (PDOException) {
-                Envelope::conflict('MODEL_CODE_TAKEN', 'That model code already exists in this organisation');
+                $prefix = $sets ? implode(', ', $sets) . ', ' : '';
+                db_execute('UPDATE products SET ' . $prefix . 'updated_at = ? WHERE id = ?', $params);
             }
-        }
 
-        if (array_key_exists('colors', $body)) {
-            $this->writeColors($id, $body['colors']);
+            if (array_key_exists('colors', $body)) {
+                $this->writeColors($id, $body['colors']);
+            }
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            $this->saveError($e);
         }
 
         $after = $this->withColors([$this->find($id)])[0];
@@ -289,9 +318,8 @@ final class ProductsController extends V1Controller
             return;
         }
 
-        // Replaced wholesale: the draft carries the full colour set, and a
-        // partial merge would leave a removed colourway behind.
-        db_execute("DELETE FROM product_colors WHERE product_id = ?", [$productId]);
+        $existing = array_column(db_fetch_all('SELECT id FROM product_colors WHERE product_id = ?', [$productId]), 'id');
+        $kept = [];
 
         foreach (array_values($colors) as $position => $color) {
             if (!is_array($color) || empty($color['name'])) {
@@ -300,42 +328,133 @@ final class ProductsController extends V1Controller
 
             $colorId = !empty($color['id']) && is_string($color['id']) ? $color['id'] : Uuid::v4();
             $pos = isset($color['position']) ? Wire::int($color['position']) : $position;
-
-            db_execute(
-                "INSERT INTO product_colors (id, product_id, name, argb, in_stock, position)
-                 VALUES (?, ?, ?, ?, ?, ?)",
-                [
-                    $colorId, $productId, (string) $color['name'], Wire::int($color['argb'] ?? 0),
-                    Wire::bool($color['inStock'] ?? $color['in_stock'] ?? true) ? 1 : 0, $pos,
-                ],
-            );
+            $kept[] = $colorId;
+            $values = [(string) $color['name'], Wire::int($color['argb'] ?? 0),
+                Wire::bool($color['inStock'] ?? $color['in_stock'] ?? true) ? 1 : 0, $pos];
+            if (in_array($colorId, $existing, true)) {
+                db_execute('UPDATE product_colors SET name = ?, argb = ?, in_stock = ?, position = ? WHERE id = ? AND product_id = ?', [...$values, $colorId, $productId]);
+            } else {
+                db_execute('INSERT INTO product_colors (name, argb, in_stock, position, id, product_id) VALUES (?, ?, ?, ?, ?, ?)', [...$values, $colorId, $productId]);
+            }
+            $oldImages = db_fetch_all('SELECT * FROM product_color_images WHERE color_id = ? ORDER BY position', [$colorId]);
+            $imageIds = [];
 
             $rawImages = $color['imageUrls'] ?? $color['images'] ?? [];
             foreach (array_values((array) $rawImages) as $i => $item) {
                 $url = is_array($item) ? ($item['url'] ?? '') : (string) $item;
                 if ($url === '') continue;
-                db_execute(
-                    "INSERT INTO product_color_images (id, color_id, url, position) VALUES (?, ?, ?, ?)",
-                    [Uuid::v4(), $colorId, $url, $i],
-                );
+                $match = null;
+                foreach ($oldImages as $image) {
+                    if ($image['url'] === $url && !in_array($image['id'], $imageIds, true)) { $match = $image; break; }
+                }
+                $imageId = $match['id'] ?? Uuid::v4();
+                $imageIds[] = $imageId;
+                if ($match) db_execute('UPDATE product_color_images SET position = ? WHERE id = ?', [$i, $imageId]);
+                else db_execute('INSERT INTO product_color_images (id, color_id, url, position) VALUES (?, ?, ?, ?)', [$imageId, $colorId, $url, $i]);
+            }
+            foreach ($oldImages as $image) if (!in_array($image['id'], $imageIds, true)) db_execute('DELETE FROM product_color_images WHERE id = ?', [$image['id']]);
+        }
+        foreach ($existing as $colorId) if (!in_array($colorId, $kept, true)) db_execute('DELETE FROM product_colors WHERE id = ? AND product_id = ?', [$colorId, $productId]);
+    }
+
+    private function normalizeDraft(array $body): array
+    {
+        foreach (self::WRITABLE as $wire => $column) {
+            if (!array_key_exists($wire, $body) && array_key_exists($column, $body)) $body[$wire] = $body[$column];
+        }
+        foreach (['pageContent' => 'page_content', 'featureCards' => 'feature_cards', 'defaultColorId' => 'default_color_id'] as $wire => $column) {
+            if (!array_key_exists($column, $body) && array_key_exists($wire, $body)) $body[$column] = $body[$wire];
+        }
+        return $body;
+    }
+
+    private function validateContent(array $body, array $before = []): array
+    {
+        $colors = $body['colors'] ?? $before['colors'] ?? [];
+        if (!is_array($colors) || !array_is_list($colors) || count($colors) > 40) Envelope::invalid('Colors must be a list of up to 40 colors', 'colors');
+        $ids = [];
+        $names = [];
+        foreach ($colors as &$color) {
+            if (!is_array($color) || !is_string($color['name'] ?? null) || trim($color['name']) === '') Envelope::invalid('Each color needs a name', 'colors');
+            $color['name'] = trim($color['name']);
+            if (strlen($color['name']) > 250) Envelope::invalid('Color name is too long', 'colors');
+            $id = $color['id'] ?? Uuid::v4();
+            if (!is_string($id) || strlen($id) > 64 || $id === '' || in_array($id, $ids, true)) Envelope::invalid('Color IDs must be unique', 'colors');
+            $owner = db_fetch_one('SELECT product_id FROM product_colors WHERE id = ?', [$id]);
+            if ($owner && ($owner['product_id'] !== ($before['id'] ?? null))) Envelope::invalid('Color belongs to another product', 'colors');
+            $nameKey = strtolower($color['name']);
+            if (in_array($nameKey, $names, true)) Envelope::invalid('Color names must be unique within this product', 'colors');
+            $names[] = $nameKey;
+            $ids[] = $id;
+            $color['id'] = $id;
+            $images = $color['imageUrls'] ?? $color['images'] ?? [];
+            if (!is_array($images) || count($images) > 40) Envelope::invalid('Each color supports up to 40 images', 'colors');
+            foreach ($images as $image) {
+                $url = is_array($image) ? ($image['url'] ?? '') : $image;
+                if (!is_string($url) || strlen($url) > 2048 || !ProductContent::safeUrl($url)) Envelope::invalid('Invalid color image URL', 'colors');
             }
         }
+        unset($color);
+        if (array_key_exists('colors', $body)) $body['colors'] = $colors;
+        $default = $body['default_color_id'] ?? $before['defaultColorId'] ?? ($ids[0] ?? null);
+        if (!$default || !in_array($default, $ids, true)) {
+            if (!empty($body['default_color_id'])) Envelope::invalid('Choose a default color from this product', 'default_color_id');
+            $default = $ids[0] ?? null;
+        }
+        if (array_key_exists('colors', $body) || array_key_exists('default_color_id', $body) || !$before) $body['default_color_id'] = $default;
+        try {
+            if (array_key_exists('page_content', $body)) $body['page_content'] = array_replace(
+                $before['pageContent'] ?? [], ProductContent::validatePage($body['page_content'])
+            );
+            $cards = $body['feature_cards'] ?? $before['featureCards'] ?? null;
+            if ($cards === null) {
+                $imageUrls = [];
+                foreach ($colors as $color) foreach ($color['imageUrls'] ?? $color['images'] ?? [] as $image) $imageUrls[] = is_array($image) ? $image['url'] : $image;
+                $cards = ProductContent::legacyFeatures($body, $imageUrls);
+                $body['feature_cards'] = $cards;
+            }
+            ProductContent::validateFeatures($cards, $ids);
+            if (array_key_exists('feature_cards', $body)) $body['feature_cards'] = ProductContent::validateFeatures($cards, $ids);
+        } catch (InvalidArgumentException $e) {
+            Envelope::invalid($e->getMessage(), 'page_content');
+        }
+        foreach (['hero_image', 'heroImage'] as $key) if (isset($body[$key]) && !ProductContent::safeUrl((string) $body[$key])) Envelope::invalid('Invalid hero image URL', $key);
+        if (isset($body['slug']) && $body['slug'] !== '' && !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $body['slug'])) Envelope::invalid('Use lowercase letters, digits and hyphens for the slug', 'slug');
+        if (array_key_exists('page_content', $body)) {
+            foreach ($body['page_content']['related_ids'] ?? [] as $id) {
+                if (($before['id'] ?? null) === $id || !db_fetch_one('SELECT id FROM products WHERE id = ? AND org_id = ?', [$id, Ctx::orgId()])) Envelope::invalid('Choose related models from this catalogue', 'page_content');
+            }
+        }
+        return $body;
+    }
+
+    private function saveError(Throwable $e): never
+    {
+        if ($e instanceof PDOException && (str_contains($e->getMessage(), 'model_code') || str_contains($e->getMessage(), 'slug'))) {
+            Envelope::conflict('PRODUCT_IDENTIFIER_TAKEN', 'That model code or slug already exists');
+        }
+        error_log('Product save failed: ' . $e->getMessage());
+        Envelope::fail('PRODUCT_SAVE_FAILED', 'Could not save the product. Your previous data has been preserved.', 500);
     }
 
     private function validateDraft(array $body, bool $creating): void
     {
         foreach (['category', 'brand', 'name', 'modelCode'] as $field) {
-            if ($creating && empty($body[$field])) {
+            if (($creating || array_key_exists($field, $body)) && trim((string) ($body[$field] ?? '')) === '') {
                 Envelope::invalid("{$field} is required", $field);
             }
         }
+        foreach (['rangeKm', 'topSpeedKmph', 'warrantyYears', 'loadCapacityKg', 'featuredOrder', 'featured_order'] as $field) {
+            if (isset($body[$field]) && (!is_numeric($body[$field]) || (float) $body[$field] < 0 || floor((float) $body[$field]) != (float) $body[$field])) Envelope::invalid('Use a non-negative whole number', $field);
+        }
+        if (isset($body['highlights']) && (!is_array($body['highlights']) || count($body['highlights']) > 100 || array_filter($body['highlights'], static fn($item) => !is_string($item) || strlen($item) > 500))) Envelope::invalid('Highlights must be a list of short text items', 'highlights');
 
         if (isset($body['category'])
             && Wire::enumIn((string) $body['category'], ['scooty', 'bike', 'bicycle', 'others']) === null) {
             Envelope::invalid('category must be one of scooty, bike, bicycle, others', 'category');
         }
 
-        if (isset($body['rating']) && ((float) $body['rating'] < 0 || (float) $body['rating'] > 5)) {
+        if (isset($body['rating']) && (!is_numeric($body['rating']) || (float) $body['rating'] < 0 || (float) $body['rating'] > 5)) {
             Envelope::invalid('rating must be between 0 and 5', 'rating');
         }
 

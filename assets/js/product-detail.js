@@ -3,6 +3,23 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const page = document.querySelector('.pd-page');
   if (!page) return;
+  window.updateProductColorDetails = color => {
+    page.querySelectorAll('[data-feature-color]').forEach(card => {
+      card.hidden = Boolean(card.dataset.featureColor && card.dataset.featureColor !== color?.id);
+    });
+    const empty = document.getElementById('featureEmpty');
+    if (empty) empty.hidden = Boolean(page.querySelector('[data-feature-color]:not([hidden])'));
+    const track = document.getElementById('featureTrack');
+    if (track) track.scrollLeft = 0;
+    const form = document.getElementById('productTestRide');
+    if (form) {
+      form.elements.color_id.value = color?.id || '';
+      form.elements.color_name.value = color?.name || '';
+    }
+    const label = document.getElementById('bookingColorLabel');
+    if (label && color) label.textContent = 'Selected color: ' + color.name + (color.in_stock ? '' : ' (Currently out of stock)');
+  };
+  window.updateProductColorDetails(window.__PRODUCT_COLORS__?.[0]);
   if ('IntersectionObserver' in window) {
     const revealObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
@@ -41,28 +58,37 @@
   }));
   page.querySelectorAll('[data-feature-step]').forEach(button => button.addEventListener('click', () => {
     const track = document.getElementById('featureTrack');
-    const card = track.querySelector('.pd-feature');
+    const card = track.querySelector('.pd-feature:not([hidden])');
     if (card) track.scrollBy({left: Number(button.dataset.featureStep) * (card.offsetWidth + 18), behavior: reducedMotion ? 'instant' : 'smooth'});
   }));
   const form = document.getElementById('productTestRide');
   const status = document.getElementById('rideStatus');
+  let submissionKey = crypto.randomUUID();
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (!form.reportValidity()) return;
     const button = form.querySelector('button[type="submit"]');
+    if (button.disabled) return;
     button.disabled = true;
     status.textContent = 'Sending your request...';
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), 20000);
     try {
+      const payload = Object.fromEntries(new FormData(form));
+      payload.submission_key = submissionKey;
       const response = await fetch(form.action, {
         method: 'POST', headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: JSON.stringify(Object.fromEntries(new FormData(form)))
+        body: JSON.stringify(payload), signal: abortController.signal
       });
       const result = await response.json();
-      if (!response.ok || result.ok === false || result.success === false || result.error) throw new Error('Submission failed');
+      if (!response.ok || result.ok === false || result.success === false || result.error) throw new Error(result.error?.message || 'We could not send your request. Please try again.');
       status.textContent = 'Thank you! Our team will contact you to arrange your test ride.';
       form.reset();
+      submissionKey = crypto.randomUUID();
+      const color = window.__PRODUCT_COLORS__?.[typeof currentColorIndex === 'number' ? currentColorIndex : 0];
+      window.updateProductColorDetails(color);
     } catch (error) {
-      status.textContent = 'We could not send your request. Please try again or contact your nearest dealer.';
-    } finally { button.disabled = false; }
+      status.textContent = error.name === 'AbortError' ? 'The request took too long. Please try again; your request will not be duplicated.' : error.message;
+    } finally { clearTimeout(timeout); button.disabled = false; }
   });
 })();

@@ -57,6 +57,7 @@ final class WebsiteController extends V1Controller
             static function (array $p) use ($byProduct) {
                 $item = Present::product($p, $byProduct[$p['id']] ?? []);
                 $firstColor = $item['colors'][0] ?? null;
+                foreach ($item['colors'] as $color) if ($color['id'] === ($p['default_color_id'] ?? null)) { $firstColor = $color; break; }
                 $rawImg = ($firstColor && !empty($firstColor['imageUrls'])) ? $firstColor['imageUrls'][0] : ($p['hero_image'] ?? 'assets/scutie_light.webp');
                 $imgUrl = ($rawImg && (str_starts_with($rawImg, 'http') || str_starts_with($rawImg, '/'))) ? $rawImg : base_url($rawImg);
 
@@ -110,6 +111,7 @@ final class WebsiteController extends V1Controller
 
         $item = Present::product($p, $colorList);
         $firstColor = $item['colors'][0] ?? null;
+        foreach ($item['colors'] as $color) if ($color['id'] === ($p['default_color_id'] ?? null)) { $firstColor = $color; break; }
         $rawImg = ($firstColor && !empty($firstColor['imageUrls'])) ? $firstColor['imageUrls'][0] : ($p['hero_image'] ?? 'assets/scutie_light.webp');
         $imgUrl = ($rawImg && (str_starts_with($rawImg, 'http') || str_starts_with($rawImg, '/'))) ? $rawImg : base_url($rawImg);
 
@@ -218,6 +220,43 @@ final class WebsiteController extends V1Controller
         $phone = trim((string) ($body['phone'] ?? $body['mobile'] ?? ''));
         $email = trim((string) ($body['email'] ?? ''));
 
+        $productId = null;
+        $colorId = null;
+        $source = null;
+        $submissionKey = null;
+        if ($type === 'test_drive') {
+            $phone = preg_replace('/[\s()-]+/', '', $phone);
+            if ($name === '' || strlen($name) > 120) Envelope::invalid('Enter your full name (up to 120 characters)', 'name');
+            if (!preg_match('/^\+?[0-9]{10,15}$/', $phone)) Envelope::invalid('Enter a valid mobile number', 'phone');
+            if (!empty($body['product_id'])) {
+                $productId = (string) $body['product_id'];
+                $product = db_fetch_one('SELECT id, name, brand, model_code FROM products WHERE id = ? AND active = 1', [$productId]);
+                if (!$product) Envelope::invalid('This product is no longer available. Please select another model.', 'product_id');
+                $city = trim((string) ($body['city'] ?? ''));
+                if ($city === '' || strlen($city) > 120) Envelope::invalid('Enter your city or state (up to 120 characters)', 'city');
+                $colorId = !empty($body['color_id']) ? (string) $body['color_id'] : null;
+                $color = $colorId ? db_fetch_one('SELECT id, name FROM product_colors WHERE id = ? AND product_id = ?', [$colorId, $productId]) : null;
+                if ($colorId && !$color) Envelope::invalid('Please choose an available product color', 'color_id');
+                $source = 'product_detail';
+                $body = array_replace($body, ['product_id' => $productId, 'model' => $product['name'],
+                    'brand' => $product['brand'], 'model_code' => $product['model_code'], 'city' => $city,
+                    'color_id' => $colorId, 'color_name' => $color['name'] ?? null, 'source' => $source]);
+                if (!empty($body['submission_key'])) {
+                    $submissionKey = (string) $body['submission_key'];
+                    if (!preg_match('/^[a-f0-9-]{36}$/i', $submissionKey)) Envelope::invalid('Invalid submission identifier', 'submission_key');
+                    $saved = db_fetch_one('SELECT id, phone, product_id FROM website_leads WHERE submission_key = ?', [$submissionKey]);
+                    if ($saved) {
+                        if ($saved['phone'] !== $phone || $saved['product_id'] !== $productId) Envelope::invalid('Please reload the form and try again', 'submission_key');
+                        Envelope::created(['id' => $saved['id'], 'message' => 'Your test-ride request has already been received.']);
+                    }
+                }
+            }
+        }
+        if (strlen($name) > 250 || strlen($phone) > 40 || strlen($email) > 250) Envelope::invalid('Contact details are too long');
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) Envelope::invalid('Enter a valid email address', 'email');
+        $body['name'] = $name;
+        $body['phone'] = $phone;
+
         if ($name === '' && $phone === '' && $email === '') {
             Envelope::invalid('Name, phone or email is required');
         }
@@ -226,11 +265,18 @@ final class WebsiteController extends V1Controller
         $now = Wire::now();
         $detailsJson = json_encode($body);
 
-        db_execute(
-            "INSERT INTO website_leads (id, type, name, phone, email, details_json, status, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?)",
-            [$id, $type, $name, $phone, $email, $detailsJson, $now, $now]
-        );
+        try {
+            db_execute(
+                "INSERT INTO website_leads (id, type, name, phone, email, details_json, status, created_at, updated_at, product_id, color_id, source, submission_key)
+                 VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?, ?, ?)",
+                [$id, $type, $name, $phone, $email, $detailsJson, $now, $now, $productId, $colorId, $source, $submissionKey]
+            );
+        } catch (PDOException $e) {
+            // A simultaneous retry can race the lookup; the unique key settles it.
+            $saved = $submissionKey ? db_fetch_one('SELECT id, phone, product_id FROM website_leads WHERE submission_key = ?', [$submissionKey]) : null;
+            if (!$saved || $saved['phone'] !== $phone || $saved['product_id'] !== $productId) throw $e;
+            Envelope::created(['id' => $saved['id'], 'message' => 'Your test-ride request has already been received.']);
+        }
 
         $leadRecord = [
             'id' => $id,
@@ -244,7 +290,11 @@ final class WebsiteController extends V1Controller
         ];
 
         // Trigger email notification
-        EmailService::notifyNewLead($leadRecord);
+        try {
+            EmailService::notifyNewLead($leadRecord);
+        } catch (Throwable $e) {
+            error_log('Lead saved, notification failed: ' . $id);
+        }
 
         Envelope::created([
             'id' => $id,
@@ -276,6 +326,10 @@ final class WebsiteController extends V1Controller
         if ($statusQuery !== '' && $statusQuery !== 'all') {
             $where[] = 'status = ?';
             $params[] = $statusQuery;
+        }
+        if ($productId = $this->query('product_id')) {
+            $where[] = 'product_id = ?';
+            $params[] = (string) $productId;
         }
 
         $clause = implode(' AND ', $where);

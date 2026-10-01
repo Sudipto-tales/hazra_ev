@@ -328,6 +328,9 @@ final class Present
             'isFeatured'       => (bool) ($r['is_featured'] ?? 0),
             'featuredOrder'    => Wire::int($r['featured_order'] ?? 0),
             'heroImage'        => $r['hero_image'] ?? '',
+            'pageContent'      => json_decode($r['page_content'] ?? '{}', true) ?: [],
+            'featureCards'     => json_decode($r['feature_cards'] ?? '[]', true) ?? [],
+            'defaultColorId'   => $r['default_color_id'] ?? null,
             'slug'             => $r['slug'] ?? '',
             'updatedAt'        => Wire::ts($r['updated_at'] ?? null),
         ];

@@ -13,7 +13,7 @@ $heroProduct = null;
 try {
     if (function_exists('db_fetch_all')) {
         $productsList = db_fetch_all("
-            SELECT id, name, brand, model_code, slug, hero_image, range_km, top_speed_kmph, 
+            SELECT id, name, brand, model_code, slug, hero_image, default_color_id, range_km, top_speed_kmph,
                    rating, warranty_years, warranty_note, battery_capacity, motor_power, 
                    charging_time, load_capacity_kg, category, is_featured, featured_order, updated_at
             FROM products 
@@ -58,7 +58,10 @@ try {
                 $pId = $p['id'];
                 $colors = [];
                 if (isset($colorsByProduct[$pId])) {
-                    foreach ($colorsByProduct[$pId] as $col) {
+                    $productColors = $colorsByProduct[$pId];
+                    $defaultId = $p['default_color_id'] ?? '';
+                    if (isset($productColors[$defaultId])) $productColors = [$defaultId => $productColors[$defaultId]] + $productColors;
+                    foreach ($productColors as $col) {
                         $colors[] = [
                             'name'  => $col['name'],
                             'hex'   => $col['hex'],

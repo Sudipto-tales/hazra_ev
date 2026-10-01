@@ -271,7 +271,7 @@
         let colorsState = [];
         if (record && Array.isArray(record.colors) && record.colors.length > 0) {
             colorsState = record.colors.map((c, i) => ({
-                id: c.id || ('col_' + (i + 1)),
+                id: c.id || crypto.randomUUID(),
                 name: c.name || `Color ${i + 1}`,
                 argb: c.argb !== undefined ? Number(c.argb) : hexToArgb('#202020'),
                 hex: argbToHex(c.argb),
@@ -281,7 +281,7 @@
         } else {
             colorsState = [
                 {
-                    id: 'col_1',
+                    id: crypto.randomUUID(),
                     name: 'Matte Black',
                     argb: hexToArgb('#202020'),
                     hex: '#202020',
@@ -309,6 +309,9 @@
             status: 'published'
         };
 
+        initial.highlights_text = (initial.highlights || []).join('\n');
+        let editor = null;
+        let colorUploads = 0;
         const f = HAZRAForm.create({
             mount: '#view',
             initial,
@@ -327,6 +330,10 @@
                 { name: 'top_speed_kmph', label: 'Top Speed (km/h)', type: 'text' },
                 { name: 'battery_capacity', label: 'Battery Capacity', type: 'text' },
                 { name: 'motor_power', label: 'Motor Power', type: 'text' },
+                { name: 'charging_time', label: 'Charging Time', type: 'text' },
+                { name: 'load_capacity_kg', label: 'Payload Capacity (kg)', type: 'number' },
+                { name: 'rating', label: 'Product Rating (0 to 5)', type: 'number' },
+                { name: 'highlights_text', label: 'Product Highlights (one per line)', type: 'textarea' },
                 { name: 'warranty_years', label: 'Warranty (Years)', type: 'number' },
                 { name: 'warranty_note', label: 'Warranty Note', type: 'text' },
                 { name: 'hero_image', label: 'Hero Image (Fallback if no colour selected)', type: 'image' },
@@ -335,17 +342,26 @@
                 { name: 'status', label: 'Status', type: 'select', options: ['published', 'hidden'] },
             ],
             onSave: async (data) => {
+                if (colorUploads) throw new Error('Please wait for color image uploads to finish');
+                for (const key of ['range_km', 'top_speed_kmph', 'warranty_years', 'load_capacity_kg', 'featured_order']) {
+                    if (data[key] !== null && data[key] !== '' && (!Number.isInteger(Number(data[key])) || Number(data[key]) < 0)) throw new Error('Use a non-negative whole number for ' + key.replace(/_/g, ' '));
+                }
+                if (editor) editor.collect(data);
+                data.highlights = String(data.highlights_text || '').split('\n').map(value => value.trim()).filter(Boolean);
+                delete data.highlights_text;
                 data.modelCode = data.model_code || data.modelCode;
                 data.rangeKm = parseInt(data.range_km || data.rangeKm || 0, 10);
                 data.topSpeedKmph = parseInt(data.top_speed_kmph || data.topSpeedKmph || 0, 10);
                 data.warrantyYears = parseInt(data.warranty_years || data.warrantyYears || 0, 10);
                 data.batteryCapacity = data.battery_capacity || data.batteryCapacity || '';
                 data.motorPower = data.motor_power || data.motorPower || '';
+                data.chargingTime = data.charging_time || '';
+                data.loadCapacityKg = Number(data.load_capacity_kg || 0);
                 data.warrantyNote = data.warranty_note || data.warrantyNote || '';
 
                 // Build clean colors payload with multiple images
                 data.colors = colorsState.map((c, idx) => ({
-                    id: c.id && !c.id.startsWith('col_') ? c.id : undefined,
+                    id: c.id,
                     name: (c.name || '').trim() || `Color ${idx + 1}`,
                     argb: hexToArgb(c.hex),
                     inStock: Boolean(c.inStock),
@@ -390,6 +406,8 @@
             renderColorsUI(colorsContainer);
         }
 
+        editor = window.HAZRA.productEditor.mount(f, record, () => colorsState);
+
         function renderColorsUI(container) {
             container.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
@@ -416,7 +434,7 @@
             if (addBtn) {
                 addBtn.addEventListener('click', () => {
                     colorsState.push({
-                        id: 'col_' + Date.now(),
+                        id: crypto.randomUUID(),
                         name: 'New Colourway',
                         argb: hexToArgb('#12a5e0'),
                         hex: '#12a5e0',
@@ -428,6 +446,7 @@
             }
 
             wireColorEvents(container);
+            if (editor) editor.refreshColors();
         }
 
         function applyColorToCard(idx, hex, container, colorName = null) {
@@ -1014,6 +1033,8 @@
         }
 
         async function uploadImagesForColor(colorIdx, files, container) {
+            const targetColor = colorsState[colorIdx];
+            colorUploads++;
             toast.info(`Uploading ${files.length} image${files.length > 1 ? 's' : ''}...`);
             let successCount = 0;
 
@@ -1025,7 +1046,7 @@
                     const item = res.data || res;
                     const url = item.url || item.image_url || item.path;
                     if (url) {
-                        colorsState[colorIdx].imageUrls.push(url);
+                        if (colorsState.includes(targetColor)) targetColor.imageUrls.push(url);
                         successCount++;
                     }
                 } catch (err) {
@@ -1033,6 +1054,7 @@
                 }
             }
 
+            colorUploads--;
             if (successCount > 0) {
                 toast.success(`Uploaded ${successCount} image${successCount > 1 ? 's' : ''}`);
                 renderColorsUI(container);
