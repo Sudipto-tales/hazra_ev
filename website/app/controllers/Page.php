@@ -1,6 +1,9 @@
 <?php
 class Page extends BaseController
 {
+    public function privacyPolicy() { return $this->respond('/app/page/privacy-policy.php'); }
+    public function termsConditions() { return $this->respond('/app/page/terms-and-conditions.php'); }
+
     public function index()
     {
         return $this->respond('/app/page/index.php');
@@ -257,6 +260,12 @@ class Page extends BaseController
     {
         $this->guardAdmin();
         return $this->respond('/app/page/admin/settings.php');
+    }
+
+    public function adminMessageDelivery()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/message-delivery.php');
     }
 
     public function adminDealerLocations()

@@ -101,9 +101,9 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(employee?.firstName ?? 'Employee'),
+        title: Text(employee?.isDeleted == true ? 'Unknown · Deleted' : employee?.firstName ?? 'Employee'),
         actions: <Widget>[
-          if (employee != null)
+          if (employee != null && !employee.isDeleted)
             PopupMenuButton<String>(
               onSelected: (String value) async {
                 switch (value) {

@@ -16,9 +16,12 @@ class Employee {
     required this.bloodGroup,
     required this.address,
     this.mustChangePassword = false,
+    this.accountStatus = 'active',
   });
 
   final String id;
+  final String accountStatus;
+  bool get isDeleted => accountStatus == 'deleted';
 
   /// Human-facing ID shown next to the name everywhere (`EMP-1042`).
   final String employeeCode;
@@ -43,11 +46,15 @@ class Employee {
   final bool mustChangePassword;
 
   String get initials {
-    final List<String> parts =
-        name.trim().split(RegExp(r'\s+')).where((String p) => p.isNotEmpty).toList();
+    final List<String> parts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
   }
 
   String get firstName => name.split(' ').first;
@@ -69,9 +76,11 @@ class Employee {
     String? bloodGroup,
     String? address,
     bool? mustChangePassword,
+    String? accountStatus,
   }) {
     return Employee(
       id: id,
+      accountStatus: accountStatus ?? this.accountStatus,
       employeeCode: employeeCode ?? this.employeeCode,
       name: name ?? this.name,
       designation: designation ?? this.designation,

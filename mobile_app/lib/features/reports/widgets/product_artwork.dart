@@ -3,18 +3,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/config/api_config.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../core/theme/theme_ext.dart';
 import '../../../data/models/models.dart';
 
-/// Product photo stand-in.
-///
-/// The catalogue carries an image set **per colour** (`ProductColor.imageUrls`),
-/// but this build ships no assets and makes no network calls, so the vehicle is
-/// painted instead — in the selected colour, from [variant] different angles.
-/// The behaviour the seller sees is the real one: change the colour, the picture
-/// changes. Swap the body of [build] for `Image.network(color.imageUrls[variant])`
-/// when the catalogue is served.
+/// Displays the selected colour's real product photograph. Relative image paths
+/// resolve against the API origin; unavailable photographs use a painted fallback.
 class ProductArtwork extends StatelessWidget {
   const ProductArtwork({
     super.key,
@@ -47,8 +42,7 @@ class ProductArtwork extends StatelessWidget {
     final String u = raw.trim();
     if (u.isEmpty) return null;
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
-    // CHANGE domain if needed
-    const String base = 'https://hazraelectricalbike.com';
+    final String base = ApiConfig.originUrl;
     if (u.startsWith('/')) return '$base$u';
     return '$base/$u';
   }

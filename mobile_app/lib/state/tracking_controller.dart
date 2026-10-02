@@ -457,6 +457,14 @@ class TrackingController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> terminateDeletedAccount() async {
+    // Clear first: stopTracking normally attempts a final queue flush.
+    if (_location is GeoLocationService) {
+      _location.discardDeletedAccountQueue();
+    }
+    await resetDay();
+  }
+
   // ---------------------------------------------------------------- internals
 
   void _closeSession(

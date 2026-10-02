@@ -7,6 +7,7 @@ import '../../core/utils/formatters.dart';
 import '../../state/notification_center.dart';
 import '../mock/admin_mock_data.dart';
 import '../mock/day_lock_store.dart';
+import '../mock/account_deletion_store.dart';
 import '../mock/mock_data.dart';
 import '../mock/product_store.dart';
 import '../models/models.dart';
@@ -30,11 +31,37 @@ class MockAdminRepository implements AdminRepository {
     ProductStore? products,
     NotificationCenter? notifications,
     DayLockStore? dayLock,
+    AccountDeletionStore? deletions,
   })  : _products = products ?? ProductStore(),
         _notifications = notifications ?? NotificationCenter(),
-        _dayLock = dayLock ?? DayLockStore();
+        _dayLock = dayLock ?? DayLockStore(),
+        _deletions = deletions ?? AccountDeletionStore();
+
+  @override
+  Future<List<AccountDeletionRequest>> accountDeletionRequests() =>
+      _delayed(_deletions.requests.values.toList());
+  @override
+  Future<AccountDeletionRequest> approveAccountDeletion(String id,
+      {required String confirmation}) {
+    final request = _deletions.approve(id, confirmation);
+    final employee = _find(request.employeeId);
+    if (employee != null) {
+      _edited[employee.id] = employee.copyWith(
+          accountStatus: 'deleted',
+          name: 'Unknown',
+          email: 'deleted-${employee.id}@invalid.local',
+          phone: '',
+          avatarUrl: '',
+          bannerUrl: '',
+          address: '',
+          bloodGroup: '');
+      _inactive.add(employee.id);
+    }
+    return _delayed(request);
+  }
 
   final Duration latency;
+  final AccountDeletionStore _deletions;
   final ProductStore _products;
   final NotificationCenter _notifications;
 

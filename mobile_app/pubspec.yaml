@@ -1,7 +1,7 @@
 name: employeetracking_mobile_app
 description: Salesman / Employee tracking mobile app — UI layer with static data.
 publish_to: "none"
-version: 0.1.0+1
+version: 0.1.1+2
 
 # Requires Flutter 3.27+ (uses Color.withValues and TextScaler.clamp).
 environment:
@@ -34,6 +34,7 @@ dependencies:
   # Camera / gallery picker for report attachments. The bytes go up as
   # multipart to POST /reports/{id}/images.
   image_picker: ^1.1.2
+  url_launcher: ^6.3.2
 
   # LatLng type flutter_map speaks. The app's own models stay plain doubles;
   # conversion happens at the map boundary only.

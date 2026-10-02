@@ -63,7 +63,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.x'
+          flutter-version: '3.44.9'
           channel: stable
           cache: true
 
@@ -71,6 +71,10 @@ jobs:
       - name: Flutter pub get
         working-directory: mobile_app
         run: flutter pub get
+
+      - name: Test mobile app
+        working-directory: mobile_app
+        run: flutter test
 
       # ── Signing setup ──────────────────────────────────────
       - name: Decode Android keystore
@@ -131,7 +135,6 @@ jobs:
 
       # ── Upload to Hostinger ─────────────────────────────────
       - name: Upload to Hostinger deploy API
-        continue-on-error: true
         run: |
           HTTP_STATUS=$(curl --http1.1 --connect-timeout 30 --max-time 180 -s -o /tmp/deploy-response.json -w '%{http_code}' \
             -X POST "${{ secrets.DEPLOY_API_URL }}" \
@@ -148,9 +151,33 @@ jobs:
           echo "Deploy API response (HTTP $HTTP_STATUS):"
           cat /tmp/deploy-response.json 2>/dev/null || true
 
-          if [ "$HTTP_STATUS" -ge 400 ] || [ "$HTTP_STATUS" = "000" ]; then
-            echo "::warning::Deploy API returned HTTP $HTTP_STATUS"
+          if [ "$HTTP_STATUS" != "201" ]; then
+            echo "::error::Deploy API returned HTTP $HTTP_STATUS"
+            exit 1
           fi
+
+      - name: Publish verified app release
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version_name }}
+          RELEASE_CODE: ${{ steps.pubspec.outputs.version_code }}
+          RELEASE_SHA256: ${{ steps.checksum.outputs.sha256 }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 65002 }}
+          script_stop: true
+          envs: RELEASE_VERSION,RELEASE_CODE,RELEASE_SHA256,RELEASE_COMMIT
+          script: |
+            set -e
+            TARGET_DIR="${{ secrets.SSH_TARGET_DIR || 'domains/hazraelectricalbike.com/public_html' }}"
+            if [ "$TARGET_DIR" = "public_html" ] && [ -d ~/domains/hazraelectricalbike.com/public_html ]; then
+              TARGET_DIR="domains/hazraelectricalbike.com/public_html"
+            fi
+            cd ~/"$TARGET_DIR"
+            php tools/publish-app-release.php "$RELEASE_VERSION" "$RELEASE_CODE" "$RELEASE_SHA256" "$RELEASE_COMMIT"
 
       # ── Cleanup ─────────────────────────────────────────────
       - name: Cleanup keystore

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/website_links.dart';
 import '../../data/models/models.dart';
 import '../../state/app_scope.dart';
 import '../../widgets/app_card.dart';
@@ -208,6 +209,24 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: Insets.xl),
+                SettingsGroup(
+                  title: 'Legal',
+                  tiles: <Widget>[
+                    SettingsTile(
+                        icon: Icons.privacy_tip_outlined,
+                        title: 'Privacy policy',
+                        subtitle: 'Read on our website',
+                        onTap: () =>
+                            WebsiteLinks.open(context, WebsiteLinks.privacy)),
+                    SettingsTile(
+                        icon: Icons.description_outlined,
+                        title: 'Terms & conditions',
+                        subtitle: 'Read on our website',
+                        onTap: () =>
+                            WebsiteLinks.open(context, WebsiteLinks.terms)),
                   ],
                 ),
                 const SizedBox(height: Insets.xl),

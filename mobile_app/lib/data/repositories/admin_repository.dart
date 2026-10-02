@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 import '../../core/config/tracking_config.dart';
 import '../models/models.dart';
 
@@ -37,6 +39,10 @@ import '../models/models.dart';
 abstract class AdminRepository {
   /// The signed-in admin.
   Future<AdminUser> profile();
+
+  Future<List<AccountDeletionRequest>> accountDeletionRequests();
+  Future<AccountDeletionRequest> approveAccountDeletion(String id,
+      {required String confirmation});
 
   /// Dashboard payload for [date] (defaults to today).
   Future<TeamOverview> overview({DateTime? date});

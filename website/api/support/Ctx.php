@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/AccountDeletion.php';
 
 /**
  * Request context: who is calling, which organisation they belong to, what the
@@ -58,6 +59,7 @@ final class Ctx
             }
         }
 
+        AccountDeletion::checkAccess($user);
         if (!(int) $user['active']) {
             Envelope::forbidden('This account is deactivated');
         }
@@ -74,6 +76,15 @@ final class Ctx
         self::$principal = $user;
         self::$org = null;
         self::$config = null;
+    }
+
+    /** Scoped context for background calculations; restores the caller afterwards. */
+    public static function forOrganization(string $orgId, callable $operation): mixed
+    {
+        $saved = [self::$principal, self::$org, self::$config];
+        self::impersonate(['id' => 'system', 'org_id' => $orgId, 'role' => 'system']);
+        try { return $operation(); }
+        finally { [self::$principal, self::$org, self::$config] = $saved; }
     }
 
     public static function id(): string

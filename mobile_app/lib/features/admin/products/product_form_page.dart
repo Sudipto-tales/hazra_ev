@@ -1,876 +1,684 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
-import '../../../core/theme/theme_ext.dart';
 import '../../../data/models/models.dart';
+import '../../../data/models/product_page_content.dart';
 import '../../../state/app_scope.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/select_field.dart';
-import '../../reports/widgets/product_artwork.dart';
-import '../../reports/widgets/product_widgets.dart';
+import 'product_color_editor.dart';
+import 'product_editor_fields.dart';
+import 'product_feature_editor.dart';
 
-/// List a product or edit a listed one. A null [product] means create, the same
-/// way [ProductDraft] treats a null id.
-///
-/// Saving pops `true` so the list behind it reloads. Every field here is a
-/// field the field team sees on the report form or in the spec sheet — there is
-/// **no price input**, because there is no price anywhere in this build.
+/// Product and website content are saved together using the shared catalogue API.
 class ProductFormPage extends StatefulWidget {
   const ProductFormPage({super.key, this.product});
-
   final Product? product;
-
   @override
   State<ProductFormPage> createState() => _ProductFormPageState();
 }
 
 class _ProductFormPageState extends State<ProductFormPage> {
-  final GlobalKey<FormState> _form = GlobalKey<FormState>();
-
-  late final TextEditingController _brand =
-      TextEditingController(text: widget.product?.brand ?? '');
-  late final TextEditingController _name =
-      TextEditingController(text: widget.product?.name ?? '');
-  late final TextEditingController _modelCode =
-      TextEditingController(text: widget.product?.modelCode ?? '');
-  late final TextEditingController _warrantyNote =
-      TextEditingController(text: widget.product?.warrantyNote ?? '');
-  late final TextEditingController _range = TextEditingController(
-    text: widget.product == null ? '' : '${widget.product!.rangeKm}',
+  final _form = GlobalKey<FormState>();
+  late final _brand = TextEditingController(
+    text: widget.product?.brand ?? 'Hazra EV',
   );
-  late final TextEditingController _topSpeed = TextEditingController(
-    text: widget.product == null ? '' : '${widget.product!.topSpeedKmph}',
+  late final _name = TextEditingController(text: widget.product?.name ?? '');
+  late final _modelCode = TextEditingController(
+    text: widget.product?.modelCode ?? '',
   );
-  late final TextEditingController _charging =
-      TextEditingController(text: widget.product?.chargingTime ?? '');
-  late final TextEditingController _battery =
-      TextEditingController(text: widget.product?.batteryCapacity ?? '');
-  late final TextEditingController _motor =
-      TextEditingController(text: widget.product?.motorPower ?? '');
-  late final TextEditingController _load = TextEditingController(
+  late final _slug = TextEditingController(text: widget.product?.slug ?? '');
+  late final _range = TextEditingController(
+    text: '${widget.product?.rangeKm ?? 100}',
+  );
+  late final _speed = TextEditingController(
+    text: '${widget.product?.topSpeedKmph ?? 65}',
+  );
+  late final _battery = TextEditingController(
+    text: widget.product?.batteryCapacity ?? '72V 30Ah',
+  );
+  late final _motor = TextEditingController(
+    text: widget.product?.motorPower ?? '1200W',
+  );
+  late final _charging = TextEditingController(
+    text: widget.product?.chargingTime ?? '',
+  );
+  late final _load = TextEditingController(
     text: widget.product == null ? '' : '${widget.product!.loadCapacityKg}',
   );
-
-  /// One highlight per line — a list field would be four taps to enter three
-  /// bullet points.
-  late final TextEditingController _highlights = TextEditingController(
-    text: (widget.product?.highlights ?? const <String>[]).join('\n'),
+  late final _rating = TextEditingController(
+    text: widget.product == null ? '' : '${widget.product!.rating}',
   );
-
+  late final _warranty = TextEditingController(
+    text: '${widget.product?.warrantyYears ?? 3}',
+  );
+  late final _warrantyNote = TextEditingController(
+    text: widget.product?.warrantyNote ?? '3 Years Comprehensive Warranty',
+  );
+  late final _highlights = TextEditingController(
+    text: (widget.product?.highlights ?? []).join('\n'),
+  );
+  late final _order = TextEditingController(
+    text: '${widget.product?.featuredOrder ?? 0}',
+  );
   late ProductCategory _category =
       widget.product?.category ?? ProductCategory.scooty;
-  late double _rating = widget.product?.rating ?? 4.5;
-  late int _warrantyYears = widget.product?.warrantyYears ?? 2;
-  late List<ProductColor> _colors = <ProductColor>[
-    ...?widget.product?.colors,
-  ];
-
+  late bool _active = widget.product?.active ?? true;
+  late bool _featured = widget.product?.isFeatured ?? false;
+  late String _heroImage = widget.product?.heroImage ?? '';
+  late final List<ProductColor> _colors = (widget.product?.colors ??
+          [
+            ProductColor(
+              id: productEditorId(),
+              name: 'Matte Black',
+              argb: 0xff202020,
+            ),
+          ])
+      .map(
+        (c) => ProductColor(
+          id: c.id ?? productEditorId(),
+          position: c.position,
+          name: c.name,
+          argb: c.argb,
+          inStock: c.inStock,
+          imageUrls: List<String>.from(c.imageUrls),
+        ),
+      )
+      .toList();
+  late String? _defaultColorId = widget.product?.defaultColorId ??
+      (_colors.isEmpty ? null : _colors.first.id);
+  late List<ProductFeatureCard> _cards = [...?widget.product?.featureCards];
+  late final Map<String, dynamic> _page = {
+    ...productPageDefaults,
+    ...?widget.product?.pageContent,
+  };
+  late final Map<String, TextEditingController> _pageText = {
+    for (final key in productPageGroups.values.expand((keys) => keys))
+      if (!key.startsWith('show_') && key != 'cinematic_image')
+        key: TextEditingController(text: (_page[key] ?? '').toString()),
+  };
+  late final Set<String> _relatedIds = Set<String>.from(
+    (_page['related_ids'] as List? ?? []).whereType<String>(),
+  );
+  List<Product> _relatedProducts = [];
+  Object? _relatedError;
+  bool _loadingRelated = false;
+  bool _started = false;
   bool _busy = false;
+  int _uploads = 0;
 
-  bool get _isCreate => widget.product == null;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started) {
+      _started = true;
+      _loadRelated();
+    }
+  }
+
+  Future<void> _loadRelated() async {
+    setState(() {
+      _loadingRelated = true;
+      _relatedError = null;
+    });
+    try {
+      final products = await AppScope.of(context).adminRepository.products();
+      if (mounted) {
+        setState(
+          () => _relatedProducts =
+              products.where((p) => p.id != widget.product?.id).toList(),
+        );
+      }
+    } catch (error) {
+      if (mounted) setState(() => _relatedError = error);
+    } finally {
+      if (mounted) setState(() => _loadingRelated = false);
+    }
+  }
 
   @override
   void dispose() {
-    _brand.dispose();
-    _name.dispose();
-    _modelCode.dispose();
-    _warrantyNote.dispose();
-    _range.dispose();
-    _topSpeed.dispose();
-    _charging.dispose();
-    _battery.dispose();
-    _motor.dispose();
-    _load.dispose();
-    _highlights.dispose();
+    for (final controller in [
+      _brand,
+      _name,
+      _modelCode,
+      _slug,
+      _range,
+      _speed,
+      _battery,
+      _motor,
+      _charging,
+      _load,
+      _rating,
+      _warranty,
+      _warrantyNote,
+      _highlights,
+      _order,
+      ..._pageText.values,
+    ]) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
-  void _complain(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+  void _message(String message) => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+
+  void _uploading(bool uploading) {
+    if (mounted) setState(() => _uploads += uploading ? 1 : -1);
   }
 
-  Future<void> _editColor({ProductColor? existing, int? index}) async {
-    final ProductColor? result = await showModalBottomSheet<ProductColor>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (BuildContext ctx) => _ColorEditorSheet(color: existing),
+  Future<void> _editColor({int? index}) async {
+    final result = await Navigator.of(context).push<ProductColor>(
+      MaterialPageRoute(
+        builder: (_) =>
+            ProductColorEditor(color: index == null ? null : _colors[index]),
+      ),
     );
     if (result == null || !mounted) return;
-
-    // Colour names are the key a sale line is written against, so two colours
-    // of one product may not share a name.
-    final bool clash = _colors.asMap().entries.any(
-          (MapEntry<int, ProductColor> e) =>
+    if (_colors.asMap().entries.any(
+          (e) =>
               e.key != index &&
               e.value.name.toLowerCase() == result.name.toLowerCase(),
-        );
-    if (clash) {
-      _complain('${result.name} is already on this product');
+        )) {
+      _message('${result.name} is already on this product');
       return;
     }
-
     setState(() {
       if (index == null) {
-        _colors = <ProductColor>[..._colors, result];
+        _colors.add(result);
       } else {
-        _colors = <ProductColor>[..._colors]..[index] = result;
+        _colors[index] = result;
+      }
+      _defaultColorId ??= result.id;
+    });
+  }
+
+  Future<void> _removeColor(int index) async {
+    final color = _colors[index];
+    final affected = _cards.where((c) => c.colorId == color.id).length;
+    final remove = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Remove ${color.name}?'),
+        content: Text(
+          affected == 0
+              ? 'This removes the colour and its gallery from the product.'
+              : '$affected feature card(s) will become shared across all colours.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (remove != true || !mounted) return;
+    setState(() {
+      _colors.removeAt(index);
+      _cards =
+          _cards.map((c) => c.colorId == color.id ? c.shared() : c).toList();
+      if (_defaultColorId == color.id) {
+        _defaultColorId = _colors.isEmpty ? null : _colors.first.id;
       }
     });
   }
 
+  Future<void> _editCard({int? index}) async {
+    final result = await Navigator.of(context).push<ProductFeatureCard>(
+      MaterialPageRoute(
+        builder: (_) => ProductFeatureEditor(
+          card: index == null ? null : _cards[index],
+          colors: _colors,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      if (index == null) {
+        _cards.add(result);
+      } else {
+        _cards[index] = result;
+      }
+    });
+  }
+
+  void _move<T>(List<T> items, int index, int direction) => setState(() {
+        final item = items.removeAt(index);
+        items.insert(index + direction, item);
+      });
+
   Future<void> _save() async {
-    if (!_form.currentState!.validate()) return;
-    if (_colors.isEmpty) {
-      _complain('Add at least one colour — the gallery is per colour');
-      return;
-    }
-    if (!_colors.any((ProductColor c) => c.inStock)) {
-      _complain('At least one colour has to be in stock to list this');
-      return;
-    }
-
-    setState(() => _busy = true);
-    final List<String> highlights = _highlights.text
-        .split('\n')
-        .map((String l) => l.trim())
-        .where((String l) => l.isNotEmpty)
-        .toList(growable: false);
-
-    await AppScope.of(context).adminRepository.saveProduct(
-          ProductDraft(
-            id: widget.product?.id,
-            category: _category,
-            brand: _brand.text.trim(),
-            name: _name.text.trim(),
-            modelCode: _modelCode.text.trim().toUpperCase(),
-            rating: _rating,
-            warrantyYears: _warrantyYears,
-            warrantyNote: _warrantyNote.text.trim(),
-            rangeKm: int.parse(_range.text.trim()),
-            topSpeedKmph: int.parse(_topSpeed.text.trim()),
-            chargingTime: _charging.text.trim(),
-            batteryCapacity: _battery.text.trim(),
-            motorPower: _motor.text.trim(),
-            loadCapacityKg: int.parse(_load.text.trim()),
-            colors: _colors,
-            highlights: highlights,
-          ),
-        );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isCreate
-              ? 'Listed — the field team has been notified'
-              : 'Product updated — the field team has been notified',
-        ),
-      ),
-    );
-    Navigator.of(context).pop(true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isCreate ? 'List product' : 'Edit product'),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(Insets.lg),
-          child: SizedBox(
-            height: Sizes.primaryActionHeight,
-            child: FilledButton(
-              onPressed: _busy ? null : _save,
-              child: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(_isCreate ? 'List product' : 'Save changes'),
-            ),
-          ),
-        ),
-      ),
-      body: Form(
-        key: _form,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            Insets.lg,
-            Insets.lg,
-            Insets.lg,
-            Insets.xxxl,
-          ),
-          children: <Widget>[
-            // What the seller sees first, so it is what the admin sees first.
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      SizedBox(
-                        width: 104,
-                        child: ProductArtwork(
-                          category: _category,
-                          argb: _colors.isEmpty
-                              ? AppColors.primary.value
-                              : _colors.first.argb,
-                          imageUrls: _colors.isEmpty
-                              ? const <String>[]
-                              : _colors.first.imageUrls,
-                          height: 68,
-                          padding: Insets.xs,
-                          radius: Radii.sm,
-                        ),
-                      ),
-                      const SizedBox(width: Insets.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              <String>[
-                                _brand.text.trim(),
-                                _name.text.trim(),
-                              ].where((String s) => s.isNotEmpty).join(' '),
-                              style: theme.textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${_category.label} · '
-                              '${_colors.length} colour'
-                              '${_colors.length == 1 ? '' : 's'}',
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      WarrantyBadge(years: _warrantyYears, dense: true),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Insets.lg),
-            AppCard(
-              child: Column(
-                children: <Widget>[
-                  SelectField<ProductCategory>(
-                    label: 'Category',
-                    hint: 'Pick a category',
-                    icon: Icons.category_outlined,
-                    value: _category,
-                    options: ProductCategory.values
-                        .map(
-                          (ProductCategory c) => SelectOption<ProductCategory>(
-                            value: c,
-                            label: c.label,
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (ProductCategory? v) =>
-                        setState(() => _category = v ?? _category),
-                  ),
-                  const SizedBox(height: Insets.md),
-                  _field(
-                    controller: _brand,
-                    label: 'Brand',
-                    icon: Icons.storefront_outlined,
-                    onChanged: (_) => setState(() {}),
-                    validator: (String? v) =>
-                        (v ?? '').trim().isEmpty ? 'Required' : null,
-                  ),
-                  _field(
-                    controller: _name,
-                    label: 'Model name',
-                    icon: Icons.label_outline_rounded,
-                    onChanged: (_) => setState(() {}),
-                    validator: (String? v) =>
-                        (v ?? '').trim().isEmpty ? 'Required' : null,
-                  ),
-                  _field(
-                    controller: _modelCode,
-                    label: 'Model code',
-                    icon: Icons.qr_code_2_rounded,
-                    textCapitalization: TextCapitalization.characters,
-                    validator: (String? v) => (v ?? '').trim().length < 3
-                        ? 'At least 3 characters'
-                        : null,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Insets.lg),
-            _SectionTitle(
-              'Colours',
-              trailing: TextButton.icon(
-                onPressed: () => _editColor(),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Add colour'),
-              ),
-            ),
-            AppCard(
-              child: Column(
-                children: <Widget>[
-                  if (_colors.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: Insets.md,
-                      ),
-                      child: Text(
-                        'No colours yet. The gallery is per colour, so a '
-                        'product needs at least one.',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    )
-                  else
-                    ..._colors.asMap().entries.map(
-                          (MapEntry<int, ProductColor> e) => _ColorRow(
-                            color: e.value,
-                            onEdit: () =>
-                                _editColor(existing: e.value, index: e.key),
-                            onRemove: () => setState(() {
-                              _colors = <ProductColor>[..._colors]
-                                ..removeAt(e.key);
-                            }),
-                          ),
-                        ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Insets.lg),
-            const _SectionTitle('Warranty & rating'),
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          'Warranty',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ),
-                      UnitStepper(
-                        value: _warrantyYears,
-                        min: 1,
-                        max: 10,
-                        onChanged: (int v) =>
-                            setState(() => _warrantyYears = v),
-                      ),
-                      const SizedBox(width: Insets.sm),
-                      Text('yrs', style: theme.textTheme.bodySmall),
-                    ],
-                  ),
-                  const SizedBox(height: Insets.md),
-                  _field(
-                    controller: _warrantyNote,
-                    label: 'Warranty detail',
-                    icon: Icons.verified_user_outlined,
-                    maxLines: 2,
-                    validator: (String? v) =>
-                        (v ?? '').trim().isEmpty ? 'Required' : null,
-                  ),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text('Rating', style: theme.textTheme.bodyMedium),
-                      ),
-                      RatingStars(rating: _rating),
-                    ],
-                  ),
-                  Slider(
-                    value: _rating,
-                    min: 1,
-                    max: 5,
-                    divisions: 8,
-                    label: _rating.toStringAsFixed(1),
-                    onChanged: (double v) => setState(() => _rating = v),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Insets.lg),
-            const _SectionTitle('Specs'),
-            AppCard(
-              child: Column(
-                children: <Widget>[
-                  _field(
-                    controller: _range,
-                    label: 'Range on a full charge (km)',
-                    icon: Icons.route_outlined,
-                    keyboardType: TextInputType.number,
-                    digitsOnly: true,
-                    validator: _positiveInt,
-                  ),
-                  _field(
-                    controller: _topSpeed,
-                    label: 'Top speed (km/h)',
-                    icon: Icons.speed_rounded,
-                    keyboardType: TextInputType.number,
-                    digitsOnly: true,
-                    validator: _positiveInt,
-                  ),
-                  _field(
-                    controller: _charging,
-                    label: 'Charging time',
-                    icon: Icons.electrical_services_rounded,
-                    validator: (String? v) =>
-                        (v ?? '').trim().isEmpty ? 'Required' : null,
-                  ),
-                  _field(
-                    controller: _battery,
-                    label: 'Battery',
-                    icon: Icons.battery_charging_full_rounded,
-                    validator: (String? v) =>
-                        (v ?? '').trim().isEmpty ? 'Required' : null,
-                  ),
-                  _field(
-                    controller: _motor,
-                    label: 'Motor',
-                    icon: Icons.settings_input_component_rounded,
-                    validator: (String? v) =>
-                        (v ?? '').trim().isEmpty ? 'Required' : null,
-                  ),
-                  _field(
-                    controller: _load,
-                    label: 'Load capacity (kg)',
-                    icon: Icons.fitness_center_rounded,
-                    keyboardType: TextInputType.number,
-                    digitsOnly: true,
-                    validator: _positiveInt,
-                  ),
-                  _field(
-                    controller: _highlights,
-                    label: 'Highlights — one per line',
-                    icon: Icons.star_outline_rounded,
-                    maxLines: 4,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Insets.md),
-            Text(
-              'Listing a product notifies every field employee. Photos are not '
-              'uploaded in this build — the catalogue is drawn from the colour '
-              'you pick.',
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String? _positiveInt(String? v) {
-    final int? n = int.tryParse((v ?? '').trim());
-    if (n == null) return 'Numbers only';
-    return n <= 0 ? 'Must be more than 0' : null;
-  }
-
-  Widget _field({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    String? Function(String?)? validator,
-    TextInputType? keyboardType,
-    TextCapitalization textCapitalization = TextCapitalization.sentences,
-    ValueChanged<String>? onChanged,
-    bool digitsOnly = false,
-    int maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Insets.md),
-      child: TextFormField(
-        controller: controller,
-        validator: validator,
-        keyboardType: keyboardType,
-        textCapitalization: textCapitalization,
-        onChanged: onChanged,
-        maxLines: maxLines,
-        inputFormatters: digitsOnly
-            ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
-            : null,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title, {this.trailing});
-
-  final String title;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Insets.sm, left: Insets.xs),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(title, style: Theme.of(context).textTheme.titleSmall),
-          ),
-          if (trailing != null) trailing!,
-        ],
-      ),
-    );
-  }
-}
-
-class _ColorRow extends StatelessWidget {
-  const _ColorRow({
-    required this.color,
-    required this.onEdit,
-    required this.onRemove,
-  });
-
-  final ProductColor color;
-  final VoidCallback onEdit;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      onTap: onEdit,
-      leading: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: Color(color.argb),
-          shape: BoxShape.circle,
-          border: Border.all(color: context.lineColor),
-        ),
-      ),
-      title: Text(color.name),
-      subtitle: Text(
-        color.inStock
-            ? '${color.imageCount} images'
-            : 'Out of stock — sellers cannot log it',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: color.inStock ? null : AppColors.danger,
-        ),
-      ),
-      trailing: IconButton(
-        onPressed: onRemove,
-        icon: const Icon(Icons.delete_outline_rounded),
-        tooltip: 'Remove colour',
-      ),
-    );
-  }
-}
-
-/// Add or edit one colourway. Colours are picked from a fixed swatch set rather
-/// than a colour wheel — the catalogue reads better when "Pearl White" is the
-/// same white on every product.
-class _ColorEditorSheet extends StatefulWidget {
-  const _ColorEditorSheet({this.color});
-
-  final ProductColor? color;
-
-  @override
-  State<_ColorEditorSheet> createState() => _ColorEditorSheetState();
-}
-
-class _ColorEditorSheetState extends State<_ColorEditorSheet> {
-  late final TextEditingController _name =
-      TextEditingController(text: widget.color?.name ?? '');
-  late int _argb = widget.color?.argb ?? _swatches.first.argb;
-  late bool _inStock = widget.color?.inStock ?? true;
-
-  // Remote URLs already saved
-  late List<String> _urls =
-      List<String>.from(widget.color?.imageUrls ?? const <String>[]);
-
-  // Local files not uploaded yet
-  final List<XFile> _pending = <XFile>[];
-
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickGallery() async {
-    final ImagePicker picker = ImagePicker();
-    final List<XFile> files = await picker.pickMultiImage(
-      imageQuality: 85,
-      maxWidth: 1600,
-    );
-    if (files.isEmpty) return;
-    setState(() => _pending.addAll(files));
-  }
-
-  Future<void> _pickCamera() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? file = await picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 85,
-      maxWidth: 1600,
-    );
-    if (file == null) return;
-    setState(() => _pending.add(file));
-  }
-
-  Future<void> _submit() async {
-    final String name = _name.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name the colour')),
+    if (_busy || _uploads > 0) return;
+    if (!_form.currentState!.validate()) {
+      _message(
+        'Check the highlighted fields, including the page content sections.',
       );
       return;
     }
-
-    // Upload pending files
-    final List<String> uploaded = <String>[];
-    for (final XFile f in _pending) {
-      try {
-        final String url =
-            await AppScope.of(context).adminRepository.uploadProductImage(f);
-        uploaded.add(url);
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
-        );
-        return;
-      }
+    if (_colors.isEmpty) {
+      _message('Add at least one colour');
+      return;
     }
-
-    if (!mounted) return;
-    Navigator.of(context).pop(
-      ProductColor(
-        name: name,
-        argb: _argb,
-        inStock: _inStock,
-        imageUrls: <String>[..._urls, ...uploaded],
-      ),
-    );
+    if (_colors.length > 40 || _cards.length > 40) {
+      _message('Use up to 40 colours and 40 feature cards');
+      return;
+    }
+    final highlights = _highlights.text
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    if (highlights.length > 100 ||
+        highlights.any((s) => productTextLimit(s, 500) != null)) {
+      _message('Use up to 100 highlights, with at most 500 bytes each');
+      return;
+    }
+    final page = <String, dynamic>{
+      ..._page,
+      for (final entry in _pageText.entries) entry.key: entry.value.text,
+      'related_ids': _relatedIds.toList(),
+    };
+    final fallback = _heroImage.trim().isNotEmpty
+        ? _heroImage.trim()
+        : (_colors.first.imageUrls.isEmpty
+            ? ''
+            : _colors.first.imageUrls.first);
+    setState(() => _busy = true);
+    try {
+      await AppScope.of(context).adminRepository.saveProduct(
+            ProductDraft(
+              id: widget.product?.id,
+              category: _category,
+              brand: _brand.text.trim(),
+              name: _name.text.trim(),
+              modelCode: _modelCode.text.trim(),
+              slug: _slug.text.trim(),
+              heroImage: fallback,
+              isFeatured: _featured,
+              featuredOrder: productWholeNumberValue(_order.text),
+              active: _active,
+              defaultColorId: _defaultColorId ?? _colors.first.id,
+              rating: double.tryParse(_rating.text.trim()) ?? 0,
+              warrantyYears: productWholeNumberValue(_warranty.text),
+              warrantyNote: _warrantyNote.text.trim(),
+              rangeKm: productWholeNumberValue(_range.text),
+              topSpeedKmph: productWholeNumberValue(_speed.text),
+              chargingTime: _charging.text.trim(),
+              batteryCapacity: _battery.text.trim(),
+              motorPower: _motor.text.trim(),
+              loadCapacityKg: productWholeNumberValue(_load.text),
+              colors: List<ProductColor>.from(_colors),
+              highlights: highlights,
+              featureCards: List<ProductFeatureCard>.from(_cards),
+              pageContent: page,
+            ),
+          );
+      if (!mounted) return;
+      _message(widget.product == null ? 'Product created' : 'Product updated');
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (mounted) _message(productEditorError(error));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        Insets.lg,
-        0,
-        Insets.lg,
-        MediaQuery.viewInsetsOf(context).bottom + Insets.lg,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            widget.color == null ? 'Add colour' : 'Edit colour',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: Insets.md),
-          TextField(
-            controller: _name,
-            autofocus: widget.color == null,
-            textCapitalization: TextCapitalization.words,
-            onSubmitted: (_) => _submit(),
-            decoration: const InputDecoration(
-              labelText: 'Colour name',
-              hintText: 'Pearl White',
-              prefixIcon: Icon(Icons.palette_outlined),
-            ),
-          ),
-          const SizedBox(height: Insets.lg),
-          Text('Swatch', style: theme.textTheme.labelSmall),
-          const SizedBox(height: Insets.sm),
-          Wrap(
-            spacing: Insets.sm,
-            runSpacing: Insets.sm,
-            children: _swatches
-                .map(
-                  (_Swatch s) => Tooltip(
-                    message: s.label,
-                    child: InkWell(
-                      onTap: () => setState(() {
-                        _argb = s.argb;
-                        if (_name.text.trim().isEmpty) _name.text = s.label;
-                      }),
-                      borderRadius: BorderRadius.circular(Radii.pill),
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: s.argb == _argb
-                                ? AppColors.primary
-                                : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: Color(s.argb),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: context.lineColor),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                .toList(growable: false),
-          ),
-          const SizedBox(height: Insets.sm),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _inStock,
-            onChanged: (bool v) => setState(() => _inStock = v),
-            title: const Text('In stock'),
-            subtitle: const Text(
-              'Out-of-stock colours stay on the product but cannot be sold',
-            ),
-          ),
-          const SizedBox(height: Insets.lg),
-          Text('Photos', style: theme.textTheme.labelSmall),
-          const SizedBox(height: Insets.sm),
-          SizedBox(
-            height: 88,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: <Widget>[
-                // existing remote urls
-                ..._urls.asMap().entries.map((e) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Stack(
-                      children: <Widget>[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            ProductArtwork.resolveUrl(e.value) ?? e.value,
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const SizedBox(width: 80, height: 80),
-                          ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: IconButton(
-                            iconSize: 18,
-                            padding: EdgeInsets.zero,
-                            onPressed: () => setState(() => _urls.removeAt(e.key)),
-                            icon: const Icon(Icons.close, color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                // local pending
-                ..._pending.asMap().entries.map((e) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Stack(
-                      children: <Widget>[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(e.value.path),
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: IconButton(
-                            iconSize: 18,
-                            padding: EdgeInsets.zero,
-                            onPressed: () => setState(() => _pending.removeAt(e.key)),
-                            icon: const Icon(Icons.close, color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-          const SizedBox(height: Insets.sm),
-          Row(
-            children: <Widget>[
-              OutlinedButton.icon(
-                onPressed: _pickGallery,
-                icon: const Icon(Icons.photo_library_outlined, size: 18),
-                label: const Text('Gallery'),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: _pickCamera,
-                icon: const Icon(Icons.photo_camera_outlined, size: 18),
-                label: const Text('Camera'),
-              ),
+  Widget _section(String title, List<Widget> children) => Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              ...children,
             ],
           ),
-          const SizedBox(height: Insets.sm),
-          SizedBox(
-            width: double.infinity,
-            height: Sizes.primaryActionHeight,
-            child: FilledButton(
-              onPressed: _submit,
-              child: Text(widget.color == null ? 'Add colour' : 'Save colour'),
-            ),
+        ),
+      );
+
+  Widget _number(String label, TextEditingController controller) =>
+      ProductEditorText(
+        label: label,
+        controller: controller,
+        number: true,
+        validator: productWholeNumber,
+      );
+
+  Widget _ordering<T>(
+    List<T> items,
+    int index,
+    VoidCallback remove, {
+    required String label,
+  }) =>
+      Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          IconButton(
+            tooltip: 'Move $label up',
+            icon: const Icon(Icons.arrow_upward),
+            onPressed: index == 0 ? null : () => _move(items, index, -1),
+          ),
+          IconButton(
+            tooltip: 'Move $label down',
+            icon: const Icon(Icons.arrow_downward),
+            onPressed:
+                index == items.length - 1 ? null : () => _move(items, index, 1),
+          ),
+          IconButton(
+            tooltip: 'Remove $label',
+            icon: const Icon(Icons.delete_outline),
+            onPressed: remove,
           ),
         ],
-      ),
-    );
-  }
-}
+      );
 
-class _Swatch {
-  const _Swatch(this.label, this.argb);
-  final String label;
-  final int argb;
-}
+  Widget _pageGroup(MapEntry<String, List<String>> group) => ExpansionTile(
+        key: ValueKey(group.key),
+        title: Text(group.key),
+        maintainState: true,
+        children: group.value.map((key) {
+          final words =
+              key.replaceAll('_', ' ').replaceAll('cta', 'button label');
+          final label = '${words[0].toUpperCase()}${words.substring(1)}';
+          if (key.startsWith('show_')) {
+            return SwitchListTile(
+              title: Text(label),
+              value: _page[key] == true,
+              onChanged: (v) => setState(() => _page[key] = v),
+            );
+          }
+          if (key == 'cinematic_image') {
+            return ProductImageInput(
+              label: 'Banner image',
+              value: (_page[key] ?? '').toString(),
+              onChanged: (v) => setState(() => _page[key] = v),
+              onUploading: _uploading,
+            );
+          }
+          return ProductEditorText(
+            label: label,
+            controller: _pageText[key],
+            lines: RegExp('title|description|note').hasMatch(key) ? 3 : 1,
+            validator: (v) => key == 'cinematic_link'
+                ? productUrl(v, allowAnchor: true)
+                : productTextLimit(v, 5000),
+          );
+        }).toList(),
+      );
 
-/// Same values the seed catalogue uses, so a colour an admin adds sits next to
-/// the shipped ones without a shade clash.
-const List<_Swatch> _swatches = <_Swatch>[
-  _Swatch('Pearl White', 0xFFF8FAFC),
-  _Swatch('Matte Black', 0xFF1E293B),
-  _Swatch('Space Grey', 0xFF94A3B8),
-  _Swatch('Sports Red', 0xFFDC2626),
-  _Swatch('Sunset Orange', 0xFFF97316),
-  _Swatch('Solar Yellow', 0xFFFACC15),
-  _Swatch('Lime Green', 0xFF22C55E),
-  _Swatch('Teal', 0xFF14B8A6),
-  _Swatch('Sky Blue', 0xFF7DD3FC),
-  _Swatch('Midnight Blue', 0xFF1D4ED8),
-  _Swatch('Electric Purple', 0xFF8B5CF6),
-];
+  @override
+  Widget build(BuildContext context) => PopScope(
+        canPop: !_busy && _uploads == 0,
+        child: Scaffold(
+          appBar: AppBar(
+            title:
+                Text(widget.product == null ? 'Add product' : 'Edit product'),
+          ),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(Insets.lg),
+              child: FilledButton(
+                onPressed: _busy || _uploads > 0 ? null : _save,
+                child: _busy
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(_uploads > 0 ? 'Uploading photos…' : 'Save product'),
+              ),
+            ),
+          ),
+          body: AbsorbPointer(
+            absorbing: _busy || _uploads > 0,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(Insets.lg),
+              child: Form(
+                key: _form,
+                child: Column(
+                  children: [
+                    _section('Product information', [
+                      ProductEditorText(
+                        label: 'Product name',
+                        controller: _name,
+                        validator: (v) =>
+                            (v ?? '').trim().isEmpty ? 'Required' : null,
+                      ),
+                      ProductEditorText(
+                        label: 'Brand',
+                        controller: _brand,
+                        validator: (v) =>
+                            (v ?? '').trim().isEmpty ? 'Required' : null,
+                      ),
+                      ProductEditorText(
+                        label: 'Model code',
+                        controller: _modelCode,
+                        validator: (v) =>
+                            (v ?? '').trim().isEmpty ? 'Required' : null,
+                      ),
+                      ProductEditorText(
+                        label: 'URL slug',
+                        controller: _slug,
+                        validator: (v) => (v ?? '').trim().isEmpty ||
+                                RegExp(
+                                  r'^[a-z0-9]+(?:-[a-z0-9]+)*$',
+                                ).hasMatch(v!.trim())
+                            ? null
+                            : 'Use lowercase letters, digits and hyphens',
+                      ),
+                      SelectField<ProductCategory>(
+                        label: 'Category',
+                        hint: 'Pick a category',
+                        value: _category,
+                        options: ProductCategory.values
+                            .map((c) => SelectOption(value: c, label: c.label))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _category = v ?? _category),
+                      ),
+                      const SizedBox(height: 16),
+                      ProductEditorText(
+                        label: 'Highlights (one per line)',
+                        controller: _highlights,
+                        lines: 4,
+                      ),
+                      ProductImageInput(
+                        label: 'Hero / fallback image',
+                        value: _heroImage,
+                        onChanged: (v) => setState(() => _heroImage = v),
+                        onUploading: _uploading,
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title:
+                            const Text('Featured product (show on homepage)'),
+                        value: _featured,
+                        onChanged: (v) => setState(() => _featured = v),
+                      ),
+                      _number('Featured display order', _order),
+                      SelectField<bool>(
+                        label: 'Status',
+                        hint: 'Publication status',
+                        value: _active,
+                        options: const [
+                          SelectOption(value: true, label: 'Published'),
+                          SelectOption(value: false, label: 'Hidden'),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _active = v ?? _active),
+                      ),
+                    ]),
+                    _section('Colours & galleries', [
+                      if (_colors.isNotEmpty)
+                        SelectField<String>(
+                          label: 'Default colour',
+                          hint: 'Choose a colour',
+                          value: _defaultColorId,
+                          options: _colors
+                              .map((c) =>
+                                  SelectOption(value: c.id!, label: c.name))
+                              .toList(),
+                          onChanged: (v) => setState(() => _defaultColorId = v),
+                        ),
+                      const SizedBox(height: 12),
+                      ..._colors.asMap().entries.map(
+                            (e) => Column(
+                              children: [
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: CircleAvatar(
+                                    backgroundColor: Color(e.value.argb),
+                                  ),
+                                  title: Text(e.value.name),
+                                  subtitle: Text(
+                                    '${e.value.imageUrls.length} photos · ${e.value.inStock ? 'In stock' : 'Out of stock'}',
+                                  ),
+                                  trailing: const Icon(Icons.edit_outlined),
+                                  onTap: () => _editColor(index: e.key),
+                                ),
+                                _ordering(
+                                  _colors,
+                                  e.key,
+                                  () => _removeColor(e.key),
+                                  label: 'colour',
+                                ),
+                                const Divider(),
+                              ],
+                            ),
+                          ),
+                      OutlinedButton.icon(
+                        onPressed:
+                            _colors.length >= 40 ? null : () => _editColor(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add colour'),
+                      ),
+                    ]),
+                    _section('Feature cards', [
+                      const Text(
+                        'Shared cards appear for every colour. Select a colour to show a card only for that colour.',
+                      ),
+                      ..._cards.asMap().entries.map(
+                            (e) => Column(
+                              children: [
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(e.value.title),
+                                  subtitle: Text(
+                                    e.value.visible ? 'Visible' : 'Hidden',
+                                  ),
+                                  trailing: const Icon(Icons.edit_outlined),
+                                  onTap: () => _editCard(index: e.key),
+                                ),
+                                _ordering(
+                                  _cards,
+                                  e.key,
+                                  () => setState(() => _cards.removeAt(e.key)),
+                                  label: 'feature card',
+                                ),
+                                const Divider(),
+                              ],
+                            ),
+                          ),
+                      OutlinedButton.icon(
+                        onPressed:
+                            _cards.length >= 40 ? null : () => _editCard(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add feature card'),
+                      ),
+                    ]),
+                    _section('Page content', [
+                      const Text(
+                        'Use {name}, {brand}, and {model} to insert product information. New lines in headings create line breaks.',
+                      ),
+                      ...productPageGroups.entries.map(_pageGroup),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Related models (leave empty for automatic selection; up to 12)',
+                      ),
+                      if (_loadingRelated) const LinearProgressIndicator(),
+                      if (_relatedError != null)
+                        Column(
+                          children: [
+                            const Text(
+                              'Could not load related models. Your existing selection is preserved.',
+                            ),
+                            TextButton(
+                              onPressed: _loadRelated,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ..._relatedProducts.map(
+                        (p) => CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(p.displayName),
+                          value: _relatedIds.contains(p.id),
+                          onChanged: (selected) {
+                            if (selected == true && _relatedIds.length >= 12) {
+                              _message('Choose up to 12 related models');
+                              return;
+                            }
+                            setState(() {
+                              selected == true
+                                  ? _relatedIds.add(p.id)
+                                  : _relatedIds.remove(p.id);
+                            });
+                          },
+                        ),
+                      ),
+                    ]),
+                    _section('Specifications & warranty', [
+                      _number('Range (km)', _range),
+                      _number('Top speed (km/h)', _speed),
+                      ProductEditorText(
+                        label: 'Battery capacity',
+                        controller: _battery,
+                      ),
+                      ProductEditorText(
+                          label: 'Motor power', controller: _motor),
+                      ProductEditorText(
+                        label: 'Charging time',
+                        controller: _charging,
+                      ),
+                      _number('Payload capacity (kg)', _load),
+                      ProductEditorText(
+                        label: 'Product rating (0 to 5)',
+                        controller: _rating,
+                        number: true,
+                        validator: (v) {
+                          if ((v ?? '').trim().isEmpty) return null;
+                          final rating = double.tryParse(v!.trim());
+                          return rating == null ||
+                                  !rating.isFinite ||
+                                  rating < 0 ||
+                                  rating > 5
+                              ? 'Use a rating between 0 and 5'
+                              : null;
+                        },
+                      ),
+                      _number('Warranty (years)', _warranty),
+                      ProductEditorText(
+                        label: 'Warranty note',
+                        controller: _warrantyNote,
+                        lines: 2,
+                      ),
+                    ]),
+                    const Text(
+                      'Photos upload from your gallery or camera. Save product applies product details, website content and galleries together.',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}

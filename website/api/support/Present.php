@@ -20,6 +20,7 @@ final class Present
             'type'           => 'employee',
             'id'             => $r['id'],
             'employeeCode'   => $r['employee_code'] ?? '',
+            'accountStatus'  => $r['account_status'] ?? 'active',
             'name'           => $r['name'],
             'designation'    => $r['designation'] ?? '',
             'department'     => $r['department'] ?? '',

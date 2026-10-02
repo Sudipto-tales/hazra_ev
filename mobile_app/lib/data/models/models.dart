@@ -4,6 +4,7 @@ export 'app_notification.dart';
 export 'company.dart';
 export 'day_closeout.dart';
 export 'employee.dart';
+export 'account_deletion_request.dart';
 export 'home_snapshot.dart';
 export 'product.dart';
 export 'report.dart';

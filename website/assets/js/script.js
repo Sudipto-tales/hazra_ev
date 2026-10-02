@@ -860,6 +860,7 @@
     const fd = new FormData(form);
     const body = {
       type: 'test_ride',
+      whatsapp_consent: fd.get('whatsapp_consent') === '1',
       name: fd.get('name'),
       phone: fd.get('phone'),
       city: fd.get('city'),

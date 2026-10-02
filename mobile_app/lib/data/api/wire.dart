@@ -72,6 +72,7 @@ class Wire {
   static Employee employee(Map<String, dynamic> j) => Employee(
         id: str(j['id']),
         employeeCode: str(j['employeeCode']),
+        accountStatus: j['accountStatus'] as String? ?? 'active',
         name: str(j['name']),
         designation: str(j['designation']),
         department: str(j['department']),
@@ -327,13 +328,17 @@ class Wire {
   // --------------------------------------------------------------- catalogue
 
   static Product product(Map<String, dynamic> j) {
-    final List<ProductColor> colors =
-        maps(j['colors']).map(productColor).toList();
+    final List<ProductColor> colors = maps(
+      j['colors'],
+    ).map(productColor).toList();
 
     return Product(
       id: str(j['id']),
-      category:
-          _enum(ProductCategory.values, j['category'], ProductCategory.others),
+      category: _enum(
+        ProductCategory.values,
+        j['category'],
+        ProductCategory.others,
+      ),
       brand: str(j['brand']),
       name: str(j['name']),
       modelCode: str(j['modelCode']),
@@ -350,14 +355,41 @@ class Wire {
       // detail sheet. The API requires at least one colour on create; this is
       // the guard for older rows.
       colors: colors.isEmpty
-          ? const <ProductColor>[ProductColor(name: 'Default', argb: 0xFF9E9E9E)]
+          ? const <ProductColor>[
+              ProductColor(name: 'Default', argb: 0xFF9E9E9E),
+            ]
           : colors,
       highlights: strings(j['highlights']),
       listedAt: dateOrNull(j['listedAt']),
+      slug: str(j['slug']),
+      heroImage: str(j['heroImage']),
+      isFeatured: j['isFeatured'] as bool? ?? false,
+      featuredOrder: integer(j['featuredOrder']),
+      active: j['active'] as bool? ?? true,
+      defaultColorId: j['defaultColorId'] as String?,
+      pageContent: j['pageContent'] is Map
+          ? Map<String, dynamic>.from(j['pageContent'] as Map)
+          : <String, dynamic>{},
+      featureCards: maps(j['featureCards'])
+          .map(
+            (c) => ProductFeatureCard(
+              id: str(c['id']),
+              title: str(c['title']),
+              description: str(c['description']),
+              image: str(c['image']),
+              alt: str(c['alt']),
+              colorId: str(c['color_id']),
+              visible: c['visible'] as bool? ?? true,
+              legacyCrop: c['legacy_crop'] as bool? ?? false,
+            ),
+          )
+          .toList(),
     );
   }
 
   static ProductColor productColor(Map<String, dynamic> j) => ProductColor(
+        id: j['id'] as String?,
+        position: integer(j['position']),
         name: str(j['name']),
         argb: integer(j['argb']),
         imageUrls: strings(j['imageUrls']),
@@ -380,13 +412,40 @@ class Wire {
         'motorPower': d.motorPower,
         'loadCapacityKg': d.loadCapacityKg,
         'highlights': d.highlights,
+        'slug': d.slug,
+        'heroImage': d.heroImage,
+        'isFeatured': d.isFeatured,
+        'featuredOrder': d.featuredOrder,
+        if (d.active != null) 'active': d.active,
+        if (d.defaultColorId != null) 'defaultColorId': d.defaultColorId,
+        'pageContent': d.pageContent,
+        'featureCards': d.featureCards
+            .map(
+              (c) => <String, dynamic>{
+                'id': c.id,
+                'title': c.title,
+                'description': c.description,
+                'image': c.image,
+                'alt': c.alt,
+                'color_id': c.colorId,
+                'visible': c.visible,
+                'legacy_crop': c.legacyCrop,
+              },
+            )
+            .toList(),
         'colors': d.colors
-            .map((ProductColor c) => <String, dynamic>{
-                  'name': c.name,
-                  'argb': c.argb,
-                  'inStock': c.inStock,
-                  'imageUrls': c.imageUrls,
-                })
+            .asMap()
+            .entries
+            .map(
+              (e) => <String, dynamic>{
+                if (e.value.id != null) 'id': e.value.id,
+                'position': e.key,
+                'name': e.value.name,
+                'argb': e.value.argb,
+                'inStock': e.value.inStock,
+                'imageUrls': e.value.imageUrls,
+              },
+            )
             .toList(),
       };
 

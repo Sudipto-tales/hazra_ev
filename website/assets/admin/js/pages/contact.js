@@ -78,6 +78,7 @@
                 },
             ],
             rowActions: (row) => [
+                { label: 'WhatsApp Send / Retry & History', icon: 'fa-comment', onClick: () => window.HAZRA.whatsapp.open(row) },
                 { label: 'Mark Contacted', icon: 'fa-phone', onClick: () => updateStatus(row, 'contacted') },
                 { label: 'Mark Read', icon: 'fa-check', onClick: () => updateStatus(row, 'read') },
                 { label: 'Archive', icon: 'fa-box-archive', onClick: () => updateStatus(row, 'archived') },

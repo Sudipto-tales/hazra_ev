@@ -31,8 +31,9 @@ class EmailService
         return array_merge($defaults, $settings);
     }
 
-    public static function notifyNewLead(array $lead): void
+    public static function notifyNewLead(array $lead): bool
     {
+        $customerSent = false;
         try {
             $cfg = self::getEmailSettings();
             $typeLabel = ucwords(str_replace('_', ' ', $lead['type'] ?? 'contact'));
@@ -80,15 +81,17 @@ class EmailService
                         <p style='font-size: 12px; color: #888;'>Best regards,<br>Team {$siteName}</p>
                     </div>
                 </div>";
-                Mailer::send($email, $subject, $html, true);
+                $customerSent = Mailer::send($email, $subject, $html, true);
             }
         } catch (\Throwable $e) {
             error_log("[EmailService::notifyNewLead] Error: " . $e->getMessage());
         }
+        return $customerSent;
     }
 
-    public static function notifyLeadApproved(array $lead): void
+    public static function notifyLeadApproved(array $lead): bool
     {
+        $customerSent = false;
         try {
             $cfg = self::getEmailSettings();
             $typeLabel = ucwords(str_replace('_', ' ', $lead['type'] ?? 'contact'));
@@ -142,15 +145,17 @@ class EmailService
                         <p style='font-size: 12px; color: #888;'>Best regards,<br>Team {$siteName}</p>
                     </div>
                 </div>";
-                Mailer::send($email, $subject, $html, true);
+                $customerSent = Mailer::send($email, $subject, $html, true);
             }
         } catch (\Throwable $e) {
             error_log("[EmailService::notifyLeadApproved] Error: " . $e->getMessage());
         }
+        return $customerSent;
     }
 
-    public static function notifyLeadRejected(array $lead): void
+    public static function notifyLeadRejected(array $lead): bool
     {
+        $customerSent = false;
         try {
             $cfg = self::getEmailSettings();
             $typeLabel = ucwords(str_replace('_', ' ', $lead['type'] ?? 'contact'));
@@ -174,10 +179,11 @@ class EmailService
                         <p style='font-size: 12px; color: #888;'>Best regards,<br>Team {$siteName}</p>
                     </div>
                 </div>";
-                Mailer::send($email, $subject, $html, true);
+                $customerSent = Mailer::send($email, $subject, $html, true);
             }
         } catch (\Throwable $e) {
             error_log("[EmailService::notifyLeadRejected] Error: " . $e->getMessage());
         }
+        return $customerSent;
     }
 }

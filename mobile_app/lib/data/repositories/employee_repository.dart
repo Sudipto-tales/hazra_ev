@@ -19,6 +19,9 @@ import '../models/models.dart';
 abstract class EmployeeRepository {
   Future<Employee> profile();
 
+  Future<AccountDeletionRequest?> accountDeletionRequest();
+  Future<AccountDeletionRequest> submitAccountDeletion({String reason = ''});
+
   /// `PATCH /me`. Self-service edits, and the server is strict about which:
   /// `avatarUrl` and `phone` are the only fields it accepts, and it rejects a
   /// body containing anything else. Name, designation, department and address

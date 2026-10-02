@@ -194,7 +194,8 @@ App::render('header', ['isStickyOnly' => true]);
         <span class="bd-submit__label">Submit application</span>
         <span class="bd-submit__bar" aria-hidden="true"></span>
       </button>
-    </form>
+    <label style="display:block;margin:12px 0"><input type="checkbox" name="whatsapp_consent" value="1"> I agree to receive updates about this enquiry on WhatsApp.</label>
+</form>
   </div>
 </section>
 
@@ -333,6 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fd = new FormData(form);
     const body = {
       type: 'dealer',
+      whatsapp_consent: fd.get('whatsapp_consent') === '1',
       name: fd.get('fullName'),
       phone: fd.get('phone'),
       email: fd.get('email'),

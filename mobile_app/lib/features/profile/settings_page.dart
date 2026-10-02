@@ -11,6 +11,7 @@ import '../../widgets/settings_tile.dart';
 import '../auth/role_select_page.dart';
 import '../home/widgets/tracking_sheet.dart';
 import 'app_info.dart';
+import 'account_deletion_page.dart';
 import 'change_password_page.dart';
 import 'edit_profile_page.dart';
 import 'info_pages.dart';
@@ -184,6 +185,14 @@ class SettingsPage extends StatelessWidget {
                 SettingsGroup(
                   title: 'Security',
                   tiles: <Widget>[
+                    SettingsTile(
+                        icon: Icons.person_off_outlined,
+                        title: 'Delete account',
+                        subtitle: 'Submit a request or view its status',
+                        destructive: true,
+                        onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                                builder: (_) => const AccountDeletionPage()))),
                     // "Change password" is back: `POST /me/password` exists
                     // now. It takes the current password as its authorisation
                     // and signs out every other device.

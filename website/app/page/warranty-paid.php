@@ -89,6 +89,7 @@ App::render('header', ['isStickyOnly' => true]);
         <p class="eyebrow"><i class="sq"></i>VERIFY &amp; REGISTER</p>
         <h2>Verify your vehicle</h2>
         <p>Enter vehicle and customer details, verify OTP, confirm plan, then complete registration.</p>
+        <noscript><p>Enable JavaScript to verify your mobile number and submit your registration. You can still review the plans and coverage on this page.</p></noscript>
       </header>
 
       <!-- steps indicator -->
@@ -116,7 +117,7 @@ App::render('header', ['isStickyOnly' => true]);
                 <div class="wp-field wp-field--btn" style="display:flex;align-items:flex-end;">
                   <button type="button" class="btn btn--ink" id="paidSendOtpBtn" style="height:44px;width:100%;justify-content:center;">
                     <span id="paidSendOtpLabel">Send OTP Code</span>
-                  </button>
+                  </button><label style="display:block;margin:8px 0"><input type="checkbox" id="otpSmsOnly"> Request your OTP on WhatsApp, with SMS fallback. Choose SMS instead (also use this if WhatsApp hasn't arrived).</label>
                 </div>
               </div>
 
@@ -137,7 +138,8 @@ App::render('header', ['isStickyOnly' => true]);
 
               <div id="paidOtpMsg" style="margin-top:12px;font-size:13px;display:none;"></div>
             </fieldset>
-          </form>
+          <label style="display:block;margin:12px 0"><input type="checkbox" name="whatsapp_consent" value="1"> I agree to receive warranty registration updates on WhatsApp.</label>
+</form>
         </div>
 
         <!-- STEP 2: VEHICLE LOOKUP -->
@@ -219,7 +221,7 @@ App::render('header', ['isStickyOnly' => true]);
               <legend>Review &amp; Confirmation</legend>
               <label class="wf-check" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;">
                 <input type="checkbox" id="agreePaidTerms" required style="margin-top:3px;">
-                <span>I confirm the vehicle details and agree to the <a href="#" target="_blank">Paid Warranty Extension Terms</a>.</span>
+                <span>I confirm the vehicle details and agree to the <a href="<?= e(base_url('terms-and-conditions')) ?>" target="_blank" rel="noopener">Paid Warranty Extension Terms</a>.</span>
               </label>
             </fieldset>
 
@@ -291,6 +293,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.lucide) lucide.createIcons();
   }
 
+  // Carry the plan selected above into registration without bypassing verification.
+  document.querySelectorAll('[data-select-plan]').forEach(button => {
+    button.addEventListener('click', () => {
+      const plan = button.dataset.selectPlan;
+      const radio = document.querySelector('#formStep3 input[name="plan"][value="' + plan + '"]');
+      if (!radio) return;
+      radio.checked = true;
+      state.plan = plan;
+      showStep(state.parentRegId ? 3 : state.sessionToken ? 2 : 1);
+    });
+  });
+
   // Restore stored session if exists
   (() => {
     try {
@@ -334,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/v1/warranty/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ mobile: mobile, purpose: 'warranty_paid' }),
+        body: JSON.stringify({ mobile: mobile, purpose: 'warranty_paid', channel: document.getElementById('otpSmsOnly').checked ? 'sms' : 'auto' }),
       });
       const data = await res.json();
 
@@ -393,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/v1/warranty/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ mobile: mobile, code: code, purpose: 'warranty_paid' }),
+        body: JSON.stringify({ mobile: mobile, code: code, purpose: 'warranty_paid', channel: document.getElementById('otpSmsOnly').checked ? 'sms' : 'auto' }),
       });
       const data = await res.json();
 
@@ -505,6 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const payload = {
       type: 'paid',
+      whatsapp_consent: document.querySelector('[name="whatsapp_consent"]').checked,
       sessionToken: state.sessionToken,
       mobile: state.mobile,
       name: state.name,

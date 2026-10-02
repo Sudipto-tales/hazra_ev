@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
+import '../../../core/utils/website_links.dart';
 import '../../../data/models/models.dart';
 import '../../../state/app_scope.dart';
 import '../../../widgets/app_card.dart';
@@ -13,6 +14,7 @@ import '../../auth/role_select_page.dart';
 import '../../profile/app_info.dart';
 import '../employees/employees_page.dart';
 import '../manage/tracking_rules_page.dart';
+import '../manage/account_deletion_requests_page.dart';
 import '../products/products_page.dart';
 import 'admin_settings_page.dart';
 
@@ -176,6 +178,15 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                   title: 'Manage',
                   tiles: <Widget>[
                     SettingsTile(
+                        icon: Icons.person_off_outlined,
+                        title: 'Account deletion requests',
+                        subtitle:
+                            'Review employee requests and deletion records',
+                        onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    const AccountDeletionRequestsPage()))),
+                    SettingsTile(
                       icon: Icons.badge_outlined,
                       title: 'Employees',
                       subtitle: 'Add and edit field employees',
@@ -205,6 +216,22 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                         ),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: Insets.lg),
+                SettingsGroup(
+                  title: 'Legal',
+                  tiles: <Widget>[
+                    SettingsTile(
+                        icon: Icons.privacy_tip_outlined,
+                        title: 'Privacy policy',
+                        onTap: () =>
+                            WebsiteLinks.open(context, WebsiteLinks.privacy)),
+                    SettingsTile(
+                        icon: Icons.description_outlined,
+                        title: 'Terms & conditions',
+                        onTap: () =>
+                            WebsiteLinks.open(context, WebsiteLinks.terms)),
                   ],
                 ),
                 const SizedBox(height: Insets.lg),

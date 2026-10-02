@@ -13,16 +13,18 @@ extension ProductCategoryX on ProductCategory {
   String get label => switch (this) {
         ProductCategory.scooty => 'Scooty',
         ProductCategory.bike => 'Bike',
-        ProductCategory.bicycle => 'Bycycle',
+        ProductCategory.bicycle => 'E-Bicycle',
         ProductCategory.others => 'Others',
       };
 
   /// Wire value — what the backend would send/accept.
   String get code => name;
 
-  static ProductCategory fromCode(String code) => ProductCategory.values
-      .firstWhere((ProductCategory c) => c.name == code,
-          orElse: () => ProductCategory.others);
+  static ProductCategory fromCode(String code) =>
+      ProductCategory.values.firstWhere(
+        (ProductCategory c) => c.name == code,
+        orElse: () => ProductCategory.others,
+      );
 }
 
 /// One colourway of a product. The gallery is **per colour** — whoever uploads
@@ -34,16 +36,18 @@ class ProductColor {
     required this.argb,
     this.imageUrls = const <String>[],
     this.inStock = true,
+    this.id,
+    this.position = 0,
   });
 
+  final String? id;
+  final int position;
   final String name;
 
   /// 0xAARRGGBB. Rendered with `Color(argb)` in the UI layer.
   final int argb;
 
-  /// Remote gallery for this colour. Empty in this build — no network, no
-  /// bundled assets — so the UI paints a placeholder instead. Count still
-  /// drives how many frames the gallery shows.
+  /// Ordered remote gallery. The first photo is the primary image.
   final List<String> imageUrls;
 
   final bool inStock;
@@ -71,8 +75,24 @@ class Product {
     required this.colors,
     this.listedAt,
     this.highlights = const <String>[],
+    this.slug = '',
+    this.heroImage = '',
+    this.isFeatured = false,
+    this.featuredOrder = 0,
+    this.active = true,
+    this.defaultColorId,
+    this.pageContent = const <String, dynamic>{},
+    this.featureCards = const <ProductFeatureCard>[],
   });
 
+  final String slug;
+  final String heroImage;
+  final bool isFeatured;
+  final int featuredOrder;
+  final bool active;
+  final String? defaultColorId;
+  final Map<String, dynamic> pageContent;
+  final List<ProductFeatureCard> featureCards;
   final String id;
   final ProductCategory category;
   final String brand;
@@ -159,6 +179,14 @@ class ProductDraft {
     required this.colors,
     this.id,
     this.highlights = const <String>[],
+    this.slug = '',
+    this.heroImage = '',
+    this.isFeatured = false,
+    this.featuredOrder = 0,
+    this.active,
+    this.defaultColorId,
+    this.pageContent = const <String, dynamic>{},
+    this.featureCards = const <ProductFeatureCard>[],
   });
 
   factory ProductDraft.from(Product p) => ProductDraft(
@@ -178,8 +206,26 @@ class ProductDraft {
         loadCapacityKg: p.loadCapacityKg,
         colors: p.colors,
         highlights: p.highlights,
+        slug: p.slug,
+        heroImage: p.heroImage,
+        isFeatured: p.isFeatured,
+        featuredOrder: p.featuredOrder,
+        active: p.active,
+        defaultColorId: p.defaultColorId,
+        pageContent: p.pageContent,
+        featureCards: p.featureCards,
       );
 
+  final String slug;
+  final String heroImage;
+  final bool isFeatured;
+  final int featuredOrder;
+
+  /// Null leaves publication unchanged on PATCH; creation defaults to published.
+  final bool? active;
+  final String? defaultColorId;
+  final Map<String, dynamic> pageContent;
+  final List<ProductFeatureCard> featureCards;
   final String? id;
   final ProductCategory category;
   final String brand;
@@ -198,6 +244,39 @@ class ProductDraft {
   final List<String> highlights;
 
   bool get isCreate => id == null;
+}
+
+/// A website detail card, optionally shown for just one colour.
+class ProductFeatureCard {
+  const ProductFeatureCard({
+    required this.id,
+    required this.title,
+    this.description = '',
+    this.image = '',
+    this.alt = '',
+    this.colorId = '',
+    this.visible = true,
+    this.legacyCrop = false,
+  });
+
+  final String id;
+  final String title;
+  final String description;
+  final String image;
+  final String alt;
+  final String colorId;
+  final bool visible;
+  final bool legacyCrop;
+
+  ProductFeatureCard shared() => ProductFeatureCard(
+        id: id,
+        title: title,
+        description: description,
+        image: image,
+        alt: alt,
+        visible: visible,
+        legacyCrop: legacyCrop,
+      );
 }
 
 /// One line of the sale logged on a report: which product, in which colour,

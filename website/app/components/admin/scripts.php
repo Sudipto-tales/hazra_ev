@@ -16,7 +16,7 @@ $type = $type ?? 'plain';
 $core = array_merge(
     ['util', 'nav', 'toast', 'modal', 'api', 'session'],
     $bundles[$type] ?? [],
-    ['layout']
+    ['layout', 'whatsapp']
 );
 ?>
 

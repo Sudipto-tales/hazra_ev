@@ -24,6 +24,14 @@ class ApiGatewayProvider extends RouteProvider
     public static function routes(): array
     {
         return [
+            'GET:api/v1/whatsapp/webhook' => ['WhatsAppController', 'verifyWebhook'],
+            'POST:api/v1/whatsapp/webhook' => ['WhatsAppController', 'webhook'],
+            'POST:api/v1/sms/webhook/twilio' => ['SmsWebhookController', 'twilio'],
+            'POST:api/v1/sms/webhook/msg91' => ['SmsWebhookController', 'msg91'],
+            'GET:api/v1/admin/message-delivery' => ['MessageDeliveryController', 'index', 'auth'],
+            'POST:api/v1/admin/message-delivery/{channel}/{id}/retry' => ['MessageDeliveryController', 'retry', 'auth'],
+            'GET:api/v1/website/leads/{id}/whatsapp' => ['WhatsAppController', 'history', 'auth'],
+            'POST:api/v1/website/leads/{id}/whatsapp' => ['WhatsAppController', 'sendLead', 'auth'],
             // --- Auth (public) -------------------------------------------- §3.1
             'POST:api/v1/auth/login'    => ['AuthController', 'login'],
             'POST:api/v1/auth/refresh'  => ['AuthController', 'refresh'],
@@ -39,6 +47,10 @@ class ApiGatewayProvider extends RouteProvider
             'GET:api/v1/me/preferences'    => ['MeController', 'preferences',       'auth'],
             'PATCH:api/v1/me/preferences'  => ['MeController', 'updatePreferences', 'auth'],
             'POST:api/v1/me/password'      => ['MeController', 'changePassword',    'auth'],
+            'GET:api/v1/me/account-deletion' => ['AccountDeletionController', 'mine', 'auth'],
+            'POST:api/v1/me/account-deletion' => ['AccountDeletionController', 'request', 'auth'],
+            'GET:api/v1/account-deletion-requests' => ['AccountDeletionController', 'index', 'auth'],
+            'POST:api/v1/account-deletion-requests/{id}/approve' => ['AccountDeletionController', 'approve', 'auth'],
 
             // --- Employees: roster, dashboard and member-by-id -------------- §3.3
             'GET:api/v1/employees'         => ['EmployeesController', 'index',  'auth'],

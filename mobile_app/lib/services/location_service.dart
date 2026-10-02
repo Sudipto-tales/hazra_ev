@@ -227,6 +227,12 @@ typedef LocationUploader = Future<Set<String>> Function(
 ///   background or the screen is off. Nothing is recorded once you end the
 ///   session."
 class GeoLocationService implements LocationService {
+  /// Deleted accounts must not upload queued positions or collect new ones.
+  void discardDeletedAccountQueue() {
+    _queue.clear();
+    _emitSync();
+  }
+
   GeoLocationService({
     this.config = TrackingConfig.defaults,
     LocationUploader? uploader,

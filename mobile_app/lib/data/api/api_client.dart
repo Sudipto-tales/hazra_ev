@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io' show File, SocketException;
 
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/config/api_config.dart';
 import 'api_exception.dart';
@@ -46,6 +47,15 @@ class ApiClient {
   /// Fired when the refresh token is dead too — the shell listens and bounces
   /// back to sign-in rather than showing an error on every screen at once.
   void Function()? onSessionExpired;
+  void Function()? onAccountDeleted;
+  bool _deletionNotified = false;
+  bool _expiryNotified = false;
+
+  void _notifySessionExpired() {
+    if (_expiryNotified || _deletionNotified) return;
+    _expiryNotified = true;
+    onSessionExpired?.call();
+  }
 
   /// Guards against a burst of parallel 401s each firing its own refresh.
   Future<bool>? _refreshInFlight;
@@ -72,7 +82,8 @@ class ApiClient {
     Map<String, dynamic>? query,
     String? idempotencyKey,
   }) =>
-      _send('POST', path, body: body, query: query, idempotencyKey: idempotencyKey);
+      _send('POST', path,
+          body: body, query: query, idempotencyKey: idempotencyKey);
 
   Future<ApiResult> patch(String path, {Object? body}) =>
       _send('PATCH', path, body: body);
@@ -102,6 +113,8 @@ class ApiClient {
     );
 
     final AuthSession session = AuthSession.fromLogin(result.map);
+    _deletionNotified = false;
+    _expiryNotified = false;
     await _tokens.save(session);
     return session;
   }
@@ -231,10 +244,10 @@ class ApiClient {
         return uploadReportImages(reportId, filePaths, allowRetry: false);
       }
 
-      onSessionExpired?.call();
+      _notifySessionExpired();
     }
 
-    return _decode(response, uri).list;
+    return (await _decodeSession(response, uri)).list;
   }
 
   /// `POST /api/v1/media/upload` (or your real path). Uploads a single product
@@ -242,7 +255,8 @@ class ApiClient {
   ///
   /// The response envelope is expected to be `{ data: { url: "..." } }` or
   /// `{ data: { path: "..." } }`.
-  Future<String> uploadProductImage(XFile file, {bool allowRetry = true}) async {
+  Future<String> uploadProductImage(XFile file,
+      {bool allowRetry = true}) async {
     final Uri uri = _uri('/api/v1/media/upload', null);
 
     Future<http.MultipartRequest> build() async {
@@ -273,14 +287,15 @@ class ApiClient {
         return uploadProductImage(file, allowRetry: false);
       }
 
-      onSessionExpired?.call();
+      _notifySessionExpired();
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Upload failed: ${response.body}');
     }
 
-    final Map<String, dynamic> json = jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> json =
+        jsonDecode(response.body) as Map<String, dynamic>;
     final dynamic data = json['data'] ?? json;
     final String url = (data['url'] ?? data['path'] ?? '') as String;
     if (url.isEmpty) throw Exception('No url in upload response');
@@ -335,10 +350,10 @@ class ApiClient {
         );
       }
 
-      onSessionExpired?.call();
+      _notifySessionExpired();
     }
 
-    return _decode(response, uri);
+    return _decodeSession(response, uri);
   }
 
   Future<http.Response> _dispatch(
@@ -351,9 +366,12 @@ class ApiClient {
 
     return switch (method) {
       'GET' => _http.get(uri, headers: headers).timeout(_timeout),
-      'POST' => _http.post(uri, headers: headers, body: encoded).timeout(_timeout),
-      'PATCH' => _http.patch(uri, headers: headers, body: encoded).timeout(_timeout),
-      'PUT' => _http.put(uri, headers: headers, body: encoded).timeout(_timeout),
+      'POST' =>
+        _http.post(uri, headers: headers, body: encoded).timeout(_timeout),
+      'PATCH' =>
+        _http.patch(uri, headers: headers, body: encoded).timeout(_timeout),
+      'PUT' =>
+        _http.put(uri, headers: headers, body: encoded).timeout(_timeout),
       'DELETE' => _http.delete(uri, headers: headers).timeout(_timeout),
       _ => throw ArgumentError('Unsupported method $method'),
     };
@@ -414,6 +432,19 @@ class ApiClient {
       ...base.queryParameters,
       ...params,
     });
+  }
+
+  Future<ApiResult> _decodeSession(http.Response response, Uri uri) async {
+    try {
+      return _decode(response, uri);
+    } on ApiException catch (error) {
+      if (error.code == 'ACCOUNT_DELETED' && !_deletionNotified) {
+        _deletionNotified = true;
+        await _tokens.clear();
+        onAccountDeleted?.call();
+      }
+      rethrow;
+    }
   }
 
   ApiResult _decode(http.Response response, Uri uri) {

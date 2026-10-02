@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'features/auth/role_select_page.dart';
 import 'package:flutter/services.dart';
 
 import 'app.dart';
@@ -7,6 +9,7 @@ import 'data/api/api_client.dart';
 import 'data/api/token_store.dart';
 import 'data/company_directory.dart';
 import 'data/mock/day_lock_store.dart';
+import 'data/mock/account_deletion_store.dart';
 import 'data/mock/product_store.dart';
 import 'data/repositories/admin_repository.dart';
 import 'data/repositories/employee_repository.dart';
@@ -60,16 +63,19 @@ Future<void> main() async {
     // the real API the server does this instead.
     final ProductStore productStore = ProductStore();
     final DayLockStore dayLock = DayLockStore();
+    final AccountDeletionStore deletions = AccountDeletionStore();
 
     repository = MockEmployeeRepository(
       products: productStore,
       notifications: notifications,
       dayLock: dayLock,
+      deletions: deletions,
     );
     adminRepository = MockAdminRepository(
       products: productStore,
       notifications: notifications,
       dayLock: dayLock,
+      deletions: deletions,
     );
     // Nothing to write to. The no-op hands the device's own session id back,
     // so the offline build behaves exactly as it did before the write path.
@@ -78,12 +84,6 @@ Future<void> main() async {
     final TokenStore tokens = await TokenStore.open();
 
     api = ApiClient(tokens: tokens);
-
-    // Both refresh attempts failed — the only honest thing left is to send the
-    // user back to sign-in rather than fail every screen independently.
-    api.onSessionExpired = () {
-      appNavigatorKey.currentState?.popUntil((Route<dynamic> r) => r.isFirst);
-    };
 
     repository = HttpEmployeeRepository(api);
     adminRepository = HttpAdminRepository(api);
@@ -105,6 +105,26 @@ Future<void> main() async {
     locationService: locationService,
     trackingRepository: trackingRepository,
   );
+
+  if (api != null) {
+    api.onAccountDeleted = () {
+      unawaited(tracking.terminateDeletedAccount());
+      appNavigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute<void>(
+            builder: (_) => const RoleSelectPage(
+                notice:
+                    'Your account has been deleted. You can no longer sign in.')),
+        (Route<dynamic> route) => false,
+      );
+    };
+    api.onSessionExpired = () {
+      unawaited(locationService.stopTracking());
+      appNavigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const RoleSelectPage()),
+        (Route<dynamic> route) => false,
+      );
+    };
+  }
 
   // The queue's way out. Only the real GPS service has a queue worth draining;
   // the mock's is simulated and has nothing to upload. The controller is the

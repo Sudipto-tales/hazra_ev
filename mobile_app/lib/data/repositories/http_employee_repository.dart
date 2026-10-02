@@ -31,6 +31,22 @@ class HttpEmployeeRepository implements EmployeeRepository {
   final ApiClient _api;
 
   @override
+  Future<AccountDeletionRequest?> accountDeletionRequest() async {
+    final result = await _api.get('/me/account-deletion');
+    return result.data == null
+        ? null
+        : AccountDeletionRequest.fromJson(result.map);
+  }
+
+  @override
+  Future<AccountDeletionRequest> submitAccountDeletion(
+      {String reason = ''}) async {
+    final result = await _api.post('/me/account-deletion',
+        body: {'confirmed': true, 'reason': reason});
+    return AccountDeletionRequest.fromJson(result.map);
+  }
+
+  @override
   Future<Employee> profile() async {
     final ApiResult result = await _api.get('/me');
     return Wire.employee(result.map);

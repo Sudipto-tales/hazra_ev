@@ -75,6 +75,7 @@
     const timeout = setTimeout(() => abortController.abort(), 20000);
     try {
       const payload = Object.fromEntries(new FormData(form));
+      payload.whatsapp_consent = payload.whatsapp_consent === '1';
       payload.submission_key = submissionKey;
       const response = await fetch(form.action, {
         method: 'POST', headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},

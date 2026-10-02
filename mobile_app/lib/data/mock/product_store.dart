@@ -16,7 +16,9 @@ import 'product_catalog.dart';
 /// write in this build.
 class ProductStore extends ChangeNotifier {
   ProductStore({List<Product>? seed})
-      : _items = <Product>[...(seed ?? ProductCatalog.all)];
+      : _items = <Product>[...(seed ?? ProductCatalog.all)] {
+    _inactive.addAll(_items.where((p) => !p.active).map((p) => p.id));
+  }
 
   final List<Product> _items;
 
@@ -43,7 +45,10 @@ class ProductStore extends ChangeNotifier {
     return null;
   }
 
-  List<Product> byCategory(ProductCategory category, {bool activeOnly = true}) =>
+  List<Product> byCategory(
+    ProductCategory category, {
+    bool activeOnly = true,
+  }) =>
       (activeOnly ? active : _items)
           .where((Product p) => p.category == category)
           .toList(growable: false);
@@ -52,9 +57,13 @@ class ProductStore extends ChangeNotifier {
   /// catalogue keeps its order.
   Product upsert(ProductDraft draft) {
     if (draft.isCreate) {
-      final Product created = _fromDraft(draft, 'prd_local_${_seq++}',
-          listedAt: DateTime.now());
+      final Product created = _fromDraft(
+        draft,
+        'prd_local_${_seq++}',
+        listedAt: DateTime.now(),
+      );
       _items.insert(0, created);
+      if (!created.active) _inactive.add(created.id);
       notifyListeners();
       return created;
     }
@@ -65,12 +74,14 @@ class ProductStore extends ChangeNotifier {
       draft,
       draft.id!,
       listedAt: i < 0 ? DateTime.now() : _items[i].listedAt,
+      active: draft.active ?? !_inactive.contains(draft.id),
     );
     if (i < 0) {
       _items.insert(0, updated);
     } else {
       _items[i] = updated;
     }
+    updated.active ? _inactive.remove(updated.id) : _inactive.add(updated.id);
     notifyListeners();
     return updated;
   }
@@ -78,6 +89,15 @@ class ProductStore extends ChangeNotifier {
   void setActive(String id, bool active) {
     // Both Set.remove and Set.add report whether anything actually changed.
     final bool changed = active ? _inactive.remove(id) : _inactive.add(id);
+    final int index = _items.indexWhere((p) => p.id == id);
+    if (index >= 0) {
+      _items[index] = _fromDraft(
+        ProductDraft.from(_items[index]),
+        id,
+        listedAt: _items[index].listedAt,
+        active: active,
+      );
+    }
     if (changed) notifyListeners();
   }
 
@@ -85,6 +105,7 @@ class ProductStore extends ChangeNotifier {
     ProductDraft d,
     String id, {
     DateTime? listedAt,
+    bool? active,
   }) =>
       Product(
         id: id,
@@ -104,5 +125,13 @@ class ProductStore extends ChangeNotifier {
         colors: d.colors,
         highlights: d.highlights,
         listedAt: listedAt,
+        slug: d.slug,
+        heroImage: d.heroImage,
+        isFeatured: d.isFeatured,
+        featuredOrder: d.featuredOrder,
+        active: active ?? d.active ?? true,
+        defaultColorId: d.defaultColorId,
+        pageContent: Map<String, dynamic>.from(d.pageContent),
+        featureCards: List<ProductFeatureCard>.from(d.featureCards),
       );
 }

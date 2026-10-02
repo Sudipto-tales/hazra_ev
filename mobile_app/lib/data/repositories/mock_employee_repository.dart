@@ -2,6 +2,7 @@ import '../../core/utils/formatters.dart';
 import '../api/api_exception.dart';
 import '../../state/notification_center.dart';
 import '../mock/day_lock_store.dart';
+import '../mock/account_deletion_store.dart';
 import '../mock/mock_data.dart';
 import '../mock/product_store.dart';
 import '../models/models.dart';
@@ -17,11 +18,14 @@ class MockEmployeeRepository implements EmployeeRepository {
     ProductStore? products,
     NotificationCenter? notifications,
     DayLockStore? dayLock,
+    AccountDeletionStore? deletions,
   })  : _products = products ?? ProductStore(),
         _notifications = notifications ?? NotificationCenter(),
-        _dayLock = dayLock ?? DayLockStore();
+        _dayLock = dayLock ?? DayLockStore(),
+        _deletions = deletions ?? AccountDeletionStore();
 
   final Duration latency;
+  final AccountDeletionStore _deletions;
 
   /// Shared with `MockAdminRepository` — see [ProductStore]. Reading the store
   /// rather than `ProductCatalog` is what makes an admin listing show up here.
@@ -47,13 +51,28 @@ class MockEmployeeRepository implements EmployeeRepository {
 
   DayCloseout? get _closeout => _dayLock.closeout;
 
-  Future<T> _delayed<T>(T value) => Future<T>.delayed(latency, () => value);
+  Future<T> _delayed<T>(T value) => Future<T>.delayed(latency, () {
+        if (_deletions.requests[_me.id]?.status == 'deleted') {
+          throw const ApiException(
+              code: 'ACCOUNT_DELETED',
+              message: 'This account has been deleted.',
+              status: 410);
+        }
+        return value;
+      });
 
   List<VisitReport> get _reports =>
       <VisitReport>[..._extraReports, ...MockData.allReports];
 
   @override
   Future<Employee> profile() => _delayed(_me);
+
+  @override
+  Future<AccountDeletionRequest?> accountDeletionRequest() =>
+      _delayed(_deletions.requests[_me.id]);
+  @override
+  Future<AccountDeletionRequest> submitAccountDeletion({String reason = ''}) =>
+      _delayed(_deletions.submit(_me, reason));
 
   /// Mirrors the server's field whitelist: everything else on the record is
   /// admin-owned and stays put.

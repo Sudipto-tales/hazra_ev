@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/website_links.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../core/theme/theme_ext.dart';
 import '../../../data/models/models.dart';
@@ -35,7 +36,8 @@ Future<String?> showProductDetailSheet(
 }
 
 class _ProductDetailSheet extends StatefulWidget {
-  const _ProductDetailSheet({required this.product, required this.initialColor});
+  const _ProductDetailSheet(
+      {required this.product, required this.initialColor});
 
   final Product product;
   final String initialColor;
@@ -68,6 +70,12 @@ class _ProductDetailSheetState extends State<_ProductDetailSheet> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Product p = widget.product;
+    final List<String> images = _color.imageUrls.isNotEmpty
+        ? _color.imageUrls
+        : p.heroImage.isNotEmpty
+            ? [p.heroImage]
+            : [];
+    final int imageCount = images.isEmpty ? 1 : images.length;
 
     return SafeArea(
       child: ConstrainedBox(
@@ -101,14 +109,14 @@ class _ProductDetailSheetState extends State<_ProductDetailSheet> {
                     height: 220,
                     child: PageView.builder(
                       controller: _pages,
-                      itemCount: _color.imageCount,
+                      itemCount: imageCount,
                       onPageChanged: (int i) => setState(() => _frame = i),
                       itemBuilder: (BuildContext context, int i) => Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
                         child: ProductArtwork(
                           category: p.category,
                           argb: _color.argb,
-                          imageUrls: _color.imageUrls,
+                          imageUrls: images,
                           variant: i,
                           height: 220,
                           radius: Radii.lg,
@@ -121,7 +129,7 @@ class _ProductDetailSheetState extends State<_ProductDetailSheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List<Widget>.generate(
-                      _color.imageCount,
+                      imageCount,
                       (int i) => Container(
                         width: i == _frame ? 18 : 6,
                         height: 6,
@@ -137,8 +145,9 @@ class _ProductDetailSheetState extends State<_ProductDetailSheet> {
                   ),
                   const SizedBox(height: Insets.md),
                   Text(
-                    '${_color.name} · image ${_frame + 1} of '
-                    '${_color.imageCount}',
+                    images.isEmpty
+                        ? 'No product photos available'
+                        : '${_color.name} · image ${_frame + 1} of $imageCount',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodySmall,
                   ),
@@ -153,6 +162,11 @@ class _ProductDetailSheetState extends State<_ProductDetailSheet> {
                   const SizedBox(height: Insets.lg),
 
                   Text(p.name, style: theme.textTheme.headlineSmall),
+                  OutlinedButton.icon(
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('Visit on website'),
+                      onPressed: () => WebsiteLinks.open(
+                          context, WebsiteLinks.product(p, color: _color))),
                   const SizedBox(height: 2),
                   Row(
                     children: <Widget>[
@@ -222,7 +236,8 @@ class _ProductDetailSheetState extends State<_ProductDetailSheet> {
                         children: p.highlights
                             .map(
                               (String h) => Padding(
-                                padding: const EdgeInsets.only(bottom: Insets.sm),
+                                padding:
+                                    const EdgeInsets.only(bottom: Insets.sm),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: <Widget>[

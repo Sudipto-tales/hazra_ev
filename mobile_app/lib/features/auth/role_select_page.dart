@@ -12,7 +12,8 @@ import 'login_page.dart';
 /// First screen of the app. Splits the two audiences before any credential is
 /// asked for, so the admin surface is never reachable from the employee form.
 class RoleSelectPage extends StatelessWidget {
-  const RoleSelectPage({super.key});
+  const RoleSelectPage({super.key, this.notice});
+  final String? notice;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +31,12 @@ class RoleSelectPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
+                      if (notice != null)
+                        Padding(
+                            padding: const EdgeInsets.only(top: 24),
+                            child: Text(notice!,
+                                style:
+                                    TextStyle(color: theme.colorScheme.error))),
                       const SizedBox(height: 72),
                       Container(
                         width: 58,

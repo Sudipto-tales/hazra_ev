@@ -17,6 +17,20 @@ class HttpAdminRepository implements AdminRepository {
 
   final ApiClient _api;
 
+  @override
+  Future<List<AccountDeletionRequest>> accountDeletionRequests() async {
+    final result = await _api.get('/account-deletion-requests');
+    return result.list.map(AccountDeletionRequest.fromJson).toList();
+  }
+
+  @override
+  Future<AccountDeletionRequest> approveAccountDeletion(String id,
+      {required String confirmation}) async {
+    final result = await _api.post('/account-deletion-requests/$id/approve',
+        body: {'confirmation': confirmation});
+    return AccountDeletionRequest.fromJson(result.map);
+  }
+
   static const String _dayIncludes =
       'sessions,stops,visits,reports,activity,summary,lastFix,attendance,'
       'closeout';

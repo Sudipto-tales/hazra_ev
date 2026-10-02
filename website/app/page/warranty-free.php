@@ -168,7 +168,7 @@ App::render('header', ['isStickyOnly' => true]);
               <span>&nbsp;</span>
               <button type="button" class="btn btn--ink" id="sendOtpBtn" style="height:44px;display:flex;align-items:center;justify-content:center;">
                 <span id="sendOtpLabel">Send OTP Code</span>
-              </button>
+              </button><label style="display:block;margin:8px 0"><input type="checkbox" id="otpSmsOnly"> Request your OTP on WhatsApp, with SMS fallback. Choose SMS instead (also use this if WhatsApp hasn't arrived).</label>
             </div>
 
             <div class="wf-field wf-otp-entry" id="otpEntryGroup" style="display:none;">
@@ -321,7 +321,8 @@ App::render('header', ['isStickyOnly' => true]);
             <i data-lucide="arrow-right"></i>
           </button>
         </div>
-      </form>
+      <label style="display:block;margin:12px 0"><input type="checkbox" name="whatsapp_consent" value="1"> I agree to receive warranty registration updates on WhatsApp.</label>
+</form>
     </div>
   </section>
 </main>
@@ -465,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/v1/warranty/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ mobile: mobile, purpose: 'warranty_free' }),
+        body: JSON.stringify({ mobile: mobile, purpose: 'warranty_free', channel: document.getElementById('otpSmsOnly').checked ? 'sms' : 'auto' }),
       });
       const data = await res.json();
 
@@ -527,7 +528,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/v1/warranty/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ mobile: mobile, code: code, purpose: 'warranty_free' }),
+        body: JSON.stringify({ mobile: mobile, code: code, purpose: 'warranty_free', channel: document.getElementById('otpSmsOnly').checked ? 'sms' : 'auto' }),
       });
       const data = await res.json();
 

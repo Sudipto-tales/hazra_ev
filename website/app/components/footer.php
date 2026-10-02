@@ -213,7 +213,7 @@ try {
     <div class="foot__base">
       <p>&copy; <?= date('Y') ?> Hazra Electrical Bike. Specs, finance options and availability vary by city and dealer.</p>
       <div class="foot__legal">
-        <a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a>
+        <a href="<?= e(base_url('privacy-policy')) ?>">Privacy</a><a href="<?= e(base_url('terms-and-conditions')) ?>">Terms</a><a href="<?= e(base_url('privacy-policy#cookies')) ?>">Cookies</a>
       </div>
     </div>
 

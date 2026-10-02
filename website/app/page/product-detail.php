@@ -31,6 +31,17 @@ try {
             }
             unset($c);
 
+            // A mobile gallery link may ask to start with its selected colour.
+            $requestedColor = $_GET['color'] ?? '';
+            if (is_string($requestedColor) && $requestedColor !== '') {
+                foreach ($colors as $index => $color) {
+                    if (($color['id'] ?? '') === $requestedColor || strcasecmp($color['name'], $requestedColor) === 0) {
+                        array_splice($colors, $index, 1);
+                        array_unshift($colors, $color);
+                        break;
+                    }
+                }
+            }
             $product['colors'] = $colors;
             $product['highlights'] = json_decode($product['highlights'] ?? '[]', true) ?? [];
             $pageContent = ProductContent::page($product['page_content'] ?? null);
@@ -313,7 +324,8 @@ if ($cinematicLink === '#features' && (!$pageContent['show_features'] || !$featu
       <label>Phone number<input name="phone" type="tel" autocomplete="tel" placeholder="Your mobile number" required pattern="\+?[0-9]{10,15}" maxlength="16"></label>
       <label>City / State<input name="city" autocomplete="address-level2" placeholder="Where you ride" required maxlength="120"></label>
       <button class="pd-button" type="submit"><?= $copy('primary_cta') ?> <span>&#8599;</span></button><p id="rideStatus" role="status" aria-live="polite"></p>
-    </form>
+    <label style="display:block;margin:12px 0"><input type="checkbox" name="whatsapp_consent" value="1"> I agree to receive updates about this enquiry on WhatsApp.</label>
+</form>
   </section>
 </main>
 <script src="<?= e(base_url('assets/js/product-detail.js?v=' . filemtime(__BASEDIR__ . '/assets/js/product-detail.js'))) ?>" defer></script>
