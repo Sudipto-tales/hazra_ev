@@ -26,7 +26,8 @@ class AccountDeletionStore {
     });
   }
 
-  AccountDeletionRequest approve(String id, String confirmation) {
+  AccountDeletionRequest approve(String id, String confirmation,
+      {String adminNote = ''}) {
     if (confirmation != 'delete account') {
       throw ArgumentError('Type delete account exactly');
     }
@@ -42,7 +43,8 @@ class AccountDeletionStore {
         requestedAt: old.requestedAt,
         deleteAfter: old.deleteAfter,
         deletedAt: old.deletedAt ?? DateTime.now().toUtc(),
-        deletionSource: old.deletionSource ?? 'admin');
+        deletionSource: old.deletionSource ?? 'admin',
+        adminNote: old.isPending ? adminNote.trim() : old.adminNote);
     requests[old.employeeId] = result;
     return result;
   }

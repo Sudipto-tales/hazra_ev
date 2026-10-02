@@ -9,7 +9,9 @@ workflow; unapproved requests expire automatically.
 
 Mobile admin: Profile → Account deletion requests. Open a ticket and type exactly
 `delete account` to enable **Delete account**. The server validates the phrase,
-admin role and organisation independently of the mobile UI.
+admin role and organisation independently of the mobile UI. An optional deletion
+note is saved on the ticket and shown in the completed review for future
+verification. Migration 030 adds the note field; retries preserve the original note.
 
 Deletion runs in one transaction: retain the user ID, change the current name to
 `Unknown`, set `account_status = deleted` and `active = 0`, replace the email and

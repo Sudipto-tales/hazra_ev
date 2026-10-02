@@ -59,8 +59,9 @@ final class AccountDeletion
     }
 
     /** An actor approves early. With no actor, only an expired ticket may complete. */
-    public static function complete(string $id, string $orgId, ?string $actorId = null, ?string $now = null): array
+    public static function complete(string $id, string $orgId, ?string $actorId = null, ?string $now = null, string $adminNote = ''): array
     {
+        if (strlen($adminNote) > 2000) throw new InvalidArgumentException('Use a note of at most 2000 bytes');
         global $pdo;
         $now ??= Wire::now();
         $pdo->beginTransaction();
@@ -96,7 +97,7 @@ final class AccountDeletion
                 // Recalculate hours without re-deriving or removing historic stops/routes.
                 foreach (array_unique(array_column($sessions, 'work_date')) as $date) Engine::rollupDay($employee, $date);
             });
-            db_execute("UPDATE account_deletion_requests SET status = 'deleted', deleted_at = ?, deleted_by = ?, deletion_source = ? WHERE id = ?", [$effective, $actorId, $source, $id]);
+            db_execute("UPDATE account_deletion_requests SET status = 'deleted', deleted_at = ?, deleted_by = ?, deletion_source = ?, admin_note = ? WHERE id = ?", [$effective, $actorId, $source, trim($adminNote), $id]);
             db_execute('INSERT INTO account_deletion_events (id, request_id, employee_id, actor_id, source, deleted_at) VALUES (?, ?, ?, ?, ?, ?)', [Uuid::v4(), $id, $employee, $actorId, $source, $effective]);
             $ticket = db_fetch_one('SELECT * FROM account_deletion_requests WHERE id = ?', [$id]);
             $pdo->commit();
@@ -114,6 +115,7 @@ final class AccountDeletion
             'employeeId' => $ticket['employee_id'], 'employee' => json_decode($ticket['employee_snapshot'], true),
             'reason' => $ticket['reason'], 'status' => $ticket['status'], 'requestedAt' => $ticket['requested_at'],
             'deleteAfter' => $ticket['delete_after'], 'deletedAt' => $ticket['deleted_at'],
+            'adminNote' => $ticket['admin_note'] ?? '',
             'deletedBy' => $ticket['deleted_by'], 'deletionSource' => $ticket['deletion_source'],
         ];
     }

@@ -42,7 +42,7 @@ abstract class AdminRepository {
 
   Future<List<AccountDeletionRequest>> accountDeletionRequests();
   Future<AccountDeletionRequest> approveAccountDeletion(String id,
-      {required String confirmation});
+      {required String confirmation, String adminNote = ''});
 
   /// Dashboard payload for [date] (defaults to today).
   Future<TeamOverview> overview({DateTime? date});

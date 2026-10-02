@@ -43,8 +43,12 @@ final class AccountDeletionController extends V1Controller
         $this->requireAdmin();
         Envelope::noStore();
         if ($this->input('confirmation') !== AccountDeletion::CONFIRMATION) Envelope::invalid('Type exactly: delete account', 'confirmation');
+        $note = $this->input('adminNote') ?? '';
+        if (!is_string($note)) Envelope::invalid('Admin note must be text', 'adminNote');
         try {
-            $ticket = AccountDeletion::complete((string) $this->param('id'), Ctx::orgId(), Ctx::id());
+            $ticket = AccountDeletion::complete((string) $this->param('id'), Ctx::orgId(), Ctx::id(), null, $note);
+        } catch (InvalidArgumentException $error) {
+            Envelope::invalid($error->getMessage(), 'adminNote');
         } catch (OutOfBoundsException) {
             Envelope::notFound('DELETION_REQUEST_NOT_FOUND', 'No such deletion request');
         } catch (DomainException $error) {

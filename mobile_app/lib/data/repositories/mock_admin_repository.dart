@@ -42,8 +42,8 @@ class MockAdminRepository implements AdminRepository {
       _delayed(_deletions.requests.values.toList());
   @override
   Future<AccountDeletionRequest> approveAccountDeletion(String id,
-      {required String confirmation}) {
-    final request = _deletions.approve(id, confirmation);
+      {required String confirmation, String adminNote = ''}) {
+    final request = _deletions.approve(id, confirmation, adminNote: adminNote);
     final employee = _find(request.employeeId);
     if (employee != null) {
       _edited[employee.id] = employee.copyWith(
