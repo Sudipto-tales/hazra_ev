@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The development API is served over plain HTTP — localhost by default, a
+    LAN address or 10.0.2.2 when overridden (see
+    lib/core/config/api_config.dart). Android 9 (API 28) and newer block
+    cleartext by default, so without this every request fails with
+    "Cleartext HTTP traffic to ... not permitted".
+
+    The dev host is an API_HOST dart-define, so it cannot be pinned to one
+    <domain-config> here. When the API moves to HTTPS, delete this file and the
+    android:networkSecurityConfig attribute in AndroidManifest.xml.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
