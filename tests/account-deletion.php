@@ -28,6 +28,9 @@ foreach (['employee', 'untouched', 'automatic', 'due-on-access', 'admin', 'other
 }
 $before = db_fetch_one("SELECT * FROM users WHERE id = 'untouched'");
 $migration = new AccountDeletionRequests($pdo); $migration->up(); $migration->up();
+require_once __DIR__ . '/../database/migrations/030_account_deletion_admin_note.php';
+(new AccountDeletionAdminNote($pdo))->up();
+(new AccountDeletionAdminNote($pdo))->up();
 $after = db_fetch_one("SELECT * FROM users WHERE id = 'untouched'");
 foreach ($before as $key => $value) check($after[$key] === $value, 'Migration changed existing user: ' . $key);
 check($after['account_status'] === 'active', 'Incorrect default account state');
@@ -57,7 +60,10 @@ rejects(fn() => AccountDeletion::complete($ticket['id'], 'org', 'admin', $now), 
 check(db_fetch_one("SELECT name FROM users WHERE id = 'employee'")['name'] === 'Original employee', 'Partial deletion was not rolled back');
 check(db_fetch_one("SELECT revoked_at FROM refresh_tokens WHERE id = 'token'")['revoked_at'] === null, 'Token revocation was not rolled back');
 $pdo->exec('DROP TRIGGER simulate_failure');
-$deleted = AccountDeletion::complete($ticket['id'], 'org', 'admin', $now);
+$deleted = AccountDeletion::complete($ticket['id'], 'org', 'admin', $now, '  Employee requested closure  ');
+check(AccountDeletion::present($deleted)['adminNote'] === 'Employee requested closure', 'Admin note was not retained');
+check(AccountDeletion::complete($ticket['id'], 'org', 'admin', $now, 'Changed')['admin_note'] === 'Employee requested closure', 'Retry changed deletion note');
+rejects(fn() => AccountDeletion::complete($ticket['id'], 'org', 'admin', $now, str_repeat('x', 2001)), InvalidArgumentException::class);
 foreach ($history as $table => $rows) check(db_fetch_all('SELECT * FROM ' . $table) === $rows, 'Historical records changed: ' . $table);
 $user = db_fetch_one("SELECT * FROM users WHERE id = 'employee'");
 check($user['id'] === 'employee' && $user['name'] === 'Unknown' && $user['account_status'] === 'deleted' && !$user['active'], 'Missing tombstone');

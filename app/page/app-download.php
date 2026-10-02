@@ -6,18 +6,26 @@
 
 require_once __DIR__ . '/../../core/AppReleaseAccess.php';
 
-// Fetch latest published release
-$release = db_fetch_one(
-    "SELECT * FROM app_releases
-     WHERE status = 'published' AND platform = 'android'
-     ORDER BY version_code DESC LIMIT 1"
-);
-
+$release = null;
+$history = [];
+$releaseLoadFailed = false;
 require_once __DIR__ . '/../../api/support/Cursor.php';
-$history = db_fetch_all(
-    "SELECT * FROM app_releases WHERE platform = 'android' AND status IN ('published', 'archived') AND id != ? ORDER BY version_code DESC LIMIT 7",
-    [$release['id'] ?? '']
-);
+try {
+    // Fetch latest published release
+    $release = db_fetch_one(
+        "SELECT * FROM app_releases
+         WHERE status = 'published' AND platform = 'android'
+         ORDER BY version_code DESC LIMIT 1"
+    );
+
+    $history = db_fetch_all(
+        "SELECT * FROM app_releases WHERE platform = 'android' AND status IN ('published', 'archived') AND id != ? ORDER BY version_code DESC LIMIT 7",
+        [$release['id'] ?? '']
+    );
+} catch (Throwable $error) {
+    error_log('App download page: ' . $error->getMessage());
+    $releaseLoadFailed = true;
+}
 $nextCursor = null;
 if (count($history) > 6) {
     array_pop($history);
@@ -40,6 +48,7 @@ $iconUrl = base_url('assets/hazraev.png');
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
 <script>
+  window.tailwind = window.tailwind || {};
   tailwind.config = {
     darkMode: ['selector', '[data-theme="dark"]'],
     theme: {
@@ -192,7 +201,7 @@ $iconUrl = base_url('assets/hazraev.png');
     <!-- Ambient background gradient -->
     <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-emerald-100/60 to-emerald-200/30 dark:from-emerald-900/30 dark:to-emerald-950/20 blur-3xl pointer-events-none -z-10 rounded-full"></div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal-on-scroll">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
 
       <!-- Employee Access Eyebrow Badge -->
       <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100/90 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-300 text-xs font-bold uppercase tracking-wider mb-6 border border-emerald-300/60 dark:border-emerald-800/80 shadow-xs">
@@ -239,9 +248,10 @@ $iconUrl = base_url('assets/hazraev.png');
         <?php else: ?>
           <button type="button" disabled class="inline-flex items-center gap-3 px-8 py-4 bg-slate-300 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-base rounded-2xl cursor-not-allowed">
             <i data-lucide="clock" class="w-5 h-5"></i>
-            <span>App Release Coming Soon</span>
+            <span>Download APK</span>
           </button>
         <?php endif; ?>
+        <p class="download-message" role="status"><?= $releaseAvailable ? 'Enter your registered employee code or mobile number to download the Android app.' : ($releaseLoadFailed ? 'Downloads are temporarily unavailable. Please try again later or contact your administrator.' : ($release ? 'The APK file is currently unavailable. Please contact your administrator.' : 'The Android app will be available here once an administrator publishes a release.')) ?></p>
       </div>
 
       <!-- Triple Phone Mockup Showcase -->
