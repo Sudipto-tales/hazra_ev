@@ -1,0 +1,13 @@
+RewriteEngine On
+
+LimitRequestBody 104857600
+
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+RewriteRule ^index\.php$ - [L]
+RewriteRule ^server\.php$ - [F,L]
+RewriteRule ^vayu$ - [F,L]
+RewriteRule ^storage/apk(?:/|$) - [F,L,NC]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?route=$1 [L,QSA]

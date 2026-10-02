@@ -1,0 +1,21 @@
+[
+  {"file":"storm.png","source":"storm-opt.png","codes":["DYN-STORM"]},
+  {"file":"lima.png","source":"lima-opt.png","codes":["DYN-LIMA"]},
+  {"file":"thunder.png","source":"thunder-opt.png","codes":["DYN-THUNDER"]},
+  {"file":"x1.png","source":"x1-opt.png","codes":["DYN-X1"]},
+  {"file":"dual.png","source":"dual-opt.png","codes":["DYN-DUAL"]},
+  {"file":"x2.png","source":"x2-opt.png","codes":["DYN-X2"]},
+  {"file":"x3t.png","source":"x3-t-opt.png","codes":["DYN-X3T"]},
+  {"file":"xplore.png","source":"xplore-opt.png","codes":["DYN-XPLORE"]},
+  {"file":"xplore-2.png","source":"xplore-2o-opt.png","codes":["DYN-XPLORE2"]},
+  {"file":"vibe.png","source":"vibe-opt.png","codes":["DYN-VIBE"]},
+  {"file":"neon.png","source":"neon-opt.png","codes":["DYN-NEON"]},
+  {"file":"infinity-plus.png","source":"infinity-plus-opt.png","codes":["DYN-INFPLUS"]},
+  {"file":"trex.png","source":"trex-opt.png","codes":["DYN-TREX"]},
+  {"file":"xl-with-seat.png","source":"xl-with-seat-opt.png","codes":["DYN-XLLOADER","DYN-XLSEAT"]},
+  {"file":"3xl-loader.png","source":"3xl-loader-opt.png","codes":["DYN-3XLLOADER"]},
+  {"file":"3x1.png","source":"3-x1-opt.png","codes":["DYN-3X1HANDI"]},
+  {"file":"eway-sl.png","source":"eway-sl-opt.png","codes":["DYN-EWAY-SL"]},
+  {"file":"flyer.png","source":"Flyer.png","codes":["DYN-FLYER"]},
+  {"file":"x5.png","source":"vx1.png","codes":["DYN-X5"]}
+]

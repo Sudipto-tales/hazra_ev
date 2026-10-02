@@ -1,0 +1,60 @@
+/* ══════════════════════════════════════════════════════════
+   typography.css — local faces + the type scale
+   Faces are declared in assets/fonts/fonts.css (variable woff2,
+   latin + latin-ext only). No external font request is made.
+   ══════════════════════════════════════════════════════════ */
+
+@import url('../assets/fonts/fonts.css');
+
+:root{
+  --font-body:    'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --font-display: 'Montserrat', 'Inter', system-ui, sans-serif;
+
+  /* fluid scale — each step is legible at 360px and composed at 1440px */
+  --fs-xs:  clamp(11px,  .70rem + .10vw, 12.5px);
+  --fs-sm:  clamp(13px,  .80rem + .15vw, 14.5px);
+  --fs-md:  clamp(15px,  .90rem + .20vw, 17px);
+  --fs-lg:  clamp(18px, 1.00rem + .40vw, 22px);
+  --fs-xl:  clamp(23px, 1.20rem + .90vw, 32px);
+  --fs-2xl: clamp(29px, 1.40rem + 1.9vw, 46px);
+  --fs-3xl: clamp(36px, 1.60rem + 3.4vw, 72px);
+
+  --lh-tight:  1.06;
+  --lh-snug:   1.24;
+  --lh-normal: 1.6;
+
+  --tr-tight: -.03em;
+  --tr-wide:   .14em;
+}
+
+body{
+  font-family: var(--font-body);
+  font-size:   var(--fs-md);
+  line-height: var(--lh-normal);
+  color:       var(--ink-0);
+}
+
+h1,h2,h3,h4{
+  font-family: var(--font-display);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tr-tight);
+  font-weight: 800;
+  text-wrap: balance;
+}
+
+h1{font-size:var(--fs-3xl)}
+h2{font-size:var(--fs-2xl)}
+h3{font-size:var(--fs-xl)}
+h4{font-size:var(--fs-lg);font-weight:700}
+
+p{text-wrap:pretty}
+
+/* the small all-caps label that sits above most section headings */
+.eyebrow{
+  font-family: var(--font-display);
+  font-size:   var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: var(--tr-wide);
+  text-transform: uppercase;
+  color: var(--ink-soft-0);
+}
