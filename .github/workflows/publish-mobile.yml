@@ -1,0 +1,53 @@
+name: Publish Existing Mobile Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version name of the existing mobile-v tag
+        required: true
+      code:
+        description: Android version code
+        required: true
+      sha256:
+        description: SHA-256 from the signed GitHub release artifact
+        required: true
+      commit:
+        description: Full source commit of the signed release
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: production-mobile-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Import and publish verified signed APK
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_CODE: ${{ inputs.code }}
+          RELEASE_SHA256: ${{ inputs.sha256 }}
+          RELEASE_COMMIT: ${{ inputs.commit }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 65002 }}
+          script_stop: true
+          envs: RELEASE_VERSION,RELEASE_CODE,RELEASE_SHA256,RELEASE_COMMIT
+          script: |
+            set -e
+            case "$RELEASE_VERSION" in *[!A-Za-z0-9._+-]*|'') exit 1 ;; esac
+            TARGET_DIR="${{ secrets.SSH_TARGET_DIR || 'domains/hazraelectricalbike.com/public_html' }}"
+            if [ "$TARGET_DIR" = "public_html" ] && [ -d ~/domains/hazraelectricalbike.com/public_html ]; then
+              TARGET_DIR="domains/hazraelectricalbike.com/public_html"
+            fi
+            cd ~/"$TARGET_DIR"
+            APK=$(mktemp "$HOME/hazra-release-XXXXXX.apk")
+            trap 'rm -f "$APK"' EXIT
+            curl --fail --location --retry 3 --connect-timeout 30 --max-time 300 "https://github.com/Sudipto-tales/hazra_ev/releases/download/mobile-v$RELEASE_VERSION/app-release.apk" -o "$APK"
+            php tools/import-app-release.php "$RELEASE_VERSION" "$RELEASE_CODE" "$RELEASE_SHA256" "$RELEASE_COMMIT" "$APK"
+            php tools/publish-app-release.php "$RELEASE_VERSION" "$RELEASE_CODE" "$RELEASE_SHA256" "$RELEASE_COMMIT"
