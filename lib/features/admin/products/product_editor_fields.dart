@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -121,6 +122,8 @@ class ProductImageInput extends StatefulWidget {
 class _ProductImageInputState extends State<ProductImageInput> {
   late final _url = TextEditingController(text: widget.value);
   bool _uploading = false;
+  Uint8List? _preview;
+  String? _selectedName;
 
   @override
   void didUpdateWidget(ProductImageInput oldWidget) {
@@ -147,6 +150,12 @@ class _ProductImageInputState extends State<ProductImageInput> {
         maxWidth: 1600,
       );
       if (file == null || !mounted) return;
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      setState(() {
+        _preview = bytes;
+        _selectedName = file.name;
+      });
       final url = await repository.uploadProductImage(file);
       if (!mounted) return;
       _url.text = url;
@@ -171,9 +180,21 @@ class _ProductImageInputState extends State<ProductImageInput> {
             label: widget.label,
             controller: _url,
             validator: productUrl,
-            onChanged: widget.onChanged,
+            onChanged: (value) {
+              setState(() {
+                _preview = null;
+                _selectedName = null;
+              });
+              widget.onChanged(value);
+            },
           ),
-          if (widget.value.isNotEmpty)
+          if (_preview != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Image.memory(_preview!,
+                  height: 110, width: 160, fit: BoxFit.contain),
+            )
+          else if (widget.value.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Image.network(
@@ -196,12 +217,16 @@ class _ProductImageInputState extends State<ProductImageInput> {
               OutlinedButton.icon(
                 onPressed: _uploading ? null : () => _pick(ImageSource.camera),
                 icon: const Icon(Icons.photo_camera_outlined),
-                label: const Text('Camera'),
+                label: const Text('Take a photo'),
               ),
               TextButton(
                 onPressed: _uploading
                     ? null
                     : () {
+                        setState(() {
+                          _preview = null;
+                          _selectedName = null;
+                        });
                         _url.clear();
                         widget.onChanged('');
                       },
@@ -209,6 +234,7 @@ class _ProductImageInputState extends State<ProductImageInput> {
               ),
             ],
           ),
+          if (_selectedName != null) Text('Selected: $_selectedName'),
           if (_uploading) const LinearProgressIndicator(),
           const SizedBox(height: 16),
         ],

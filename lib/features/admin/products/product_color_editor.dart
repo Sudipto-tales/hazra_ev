@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -24,6 +25,8 @@ class _ProductColorEditorState extends State<ProductColorEditor> {
   late bool _inStock = widget.color?.inStock ?? true;
   late final _urls = List<String>.from(widget.color?.imageUrls ?? []);
   bool _uploading = false;
+  final Map<String, Uint8List> _previews = {};
+  Uint8List? _pendingPreview;
   static const _palette = <String, int>{
     'Matte Black': 0x202020,
     'Pearl White': 0xefeaf8,
@@ -70,9 +73,16 @@ class _ProductColorEditorState extends State<ProductColorEditor> {
       // Keep successful uploads visible if a later file fails, so the user
       // can retry just the remaining photos.
       for (final file in files) {
+        final bytes = await file.readAsBytes();
+        if (!mounted) return;
+        setState(() => _pendingPreview = bytes);
         final url = await repo.uploadProductImage(file);
         if (!mounted) return;
-        setState(() => _urls.add(url));
+        setState(() {
+          _urls.add(url);
+          _previews[url] = bytes;
+          _pendingPreview = null;
+        });
       }
     } catch (error) {
       if (mounted) {
@@ -81,7 +91,12 @@ class _ProductColorEditorState extends State<ProductColorEditor> {
         ).showSnackBar(SnackBar(content: Text(productEditorError(error))));
       }
     } finally {
-      if (mounted) setState(() => _uploading = false);
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+          _pendingPreview = null;
+        });
+      }
     }
   }
 
@@ -132,6 +147,9 @@ class _ProductColorEditorState extends State<ProductColorEditor> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (_uploading) const LinearProgressIndicator(),
+                    if (_pendingPreview != null)
+                      Image.memory(_pendingPreview!,
+                          height: 140, fit: BoxFit.contain),
                     ProductEditorText(
                       label: 'Colour name',
                       controller: _name,
@@ -203,14 +221,18 @@ class _ProductColorEditorState extends State<ProductColorEditor> {
                               padding: const EdgeInsets.all(8),
                               child: Column(
                                 children: [
-                                  Image.network(
-                                    ProductArtwork.resolveUrl(e.value) ??
-                                        e.value,
-                                    height: 140,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (_, __, ___) =>
-                                        const Text('Preview unavailable'),
-                                  ),
+                                  if (_previews.containsKey(e.value))
+                                    Image.memory(_previews[e.value]!,
+                                        height: 140, fit: BoxFit.contain)
+                                  else
+                                    Image.network(
+                                      ProductArtwork.resolveUrl(e.value) ??
+                                          e.value,
+                                      height: 140,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) =>
+                                          const Text('Preview unavailable'),
+                                    ),
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
@@ -263,7 +285,7 @@ class _ProductColorEditorState extends State<ProductColorEditor> {
                               ? null
                               : () => _upload(camera: true),
                           icon: const Icon(Icons.photo_camera_outlined),
-                          label: const Text('Camera'),
+                          label: const Text('Take a photo'),
                         ),
                       ],
                     ),

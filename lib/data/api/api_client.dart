@@ -257,13 +257,17 @@ class ApiClient {
   /// `{ data: { path: "..." } }`.
   Future<String> uploadProductImage(XFile file,
       {bool allowRetry = true}) async {
-    final Uri uri = _uri('/api/v1/media/upload', null);
+    final Uri uri = _uri('/upload', null);
 
     Future<http.MultipartRequest> build() async {
       final http.MultipartRequest request = http.MultipartRequest('POST', uri);
 
       request.headers.addAll(await _headers(authenticated: true, json: false));
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        await file.readAsBytes(),
+        filename: file.name,
+      ));
 
       return request;
     }
@@ -272,7 +276,7 @@ class ApiClient {
 
     try {
       final http.StreamedResponse streamed =
-          await (await build()).send().timeout(_uploadTimeout);
+          await _http.send(await build()).timeout(_uploadTimeout);
       response = await http.Response.fromStream(streamed);
     } on SocketException catch (e) {
       throw ApiException.network(e, uri.toString());
@@ -290,13 +294,8 @@ class ApiClient {
       _notifySessionExpired();
     }
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Upload failed: ${response.body}');
-    }
-
-    final Map<String, dynamic> json =
-        jsonDecode(response.body) as Map<String, dynamic>;
-    final dynamic data = json['data'] ?? json;
+    final result = await _decodeSession(response, uri);
+    final data = result.map;
     final String url = (data['url'] ?? data['path'] ?? '') as String;
     if (url.isEmpty) throw Exception('No url in upload response');
     return url;

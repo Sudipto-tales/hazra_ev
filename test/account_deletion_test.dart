@@ -98,6 +98,11 @@ void main() {
     expect(requests.last.url.path,
         '/api/v1/account-deletion-requests/ticket/approve');
     expect(jsonDecode(requests.last.body), {'confirmation': 'delete account'});
+    await HttpAdminRepository(api).approveAccountDeletion('ticket',
+        confirmation: 'delete account',
+        adminNote: '  Employee requested closure  ');
+    expect(jsonDecode(requests.last.body)['adminNote'],
+        'Employee requested closure');
   });
   test('deleted account response clears tokens and notifies once', () async {
     final tokens = await TokenStore.open();
@@ -157,17 +162,21 @@ void main() {
                 of: find.byType(ListView), matching: find.byType(Scrollable))
             .first);
     expect(tester.widget<FilledButton>(button).onPressed, isNull);
-    await tester.ensureVisible(find.byType(TextField));
-    await tester.enterText(find.byType(TextField), 'Delete account');
+    await tester.enterText(
+        find.byType(TextField).first, 'Employee requested closure');
+    await tester.ensureVisible(find.byType(TextField).last);
+    await tester.enterText(find.byType(TextField).last, 'Delete account');
     await tester.pump();
     expect(tester.widget<FilledButton>(button).onPressed, isNull);
-    await tester.enterText(find.byType(TextField), 'delete account');
+    await tester.enterText(find.byType(TextField).last, 'delete account');
     await tester.pump();
     expect(tester.widget<FilledButton>(button).onPressed, isNotNull);
     await tester.ensureVisible(button);
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(store.requests.values.single.status, 'deleted');
+    expect(
+        store.requests.values.single.adminNote, 'Employee requested closure');
     expect(find.text('Account deleted'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
     expect(tester.takeException(), isNull);

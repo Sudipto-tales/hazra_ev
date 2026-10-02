@@ -9,13 +9,15 @@ class AccountDeletionRequest {
       required this.requestedAt,
       required this.deleteAfter,
       this.deletedAt,
-      this.deletionSource});
+      this.deletionSource,
+      this.adminNote = ''});
 
   final String id, ticketNumber, employeeId, reason, status;
   final Map<String, dynamic> employee;
   final DateTime requestedAt, deleteAfter;
   final DateTime? deletedAt;
   final String? deletionSource;
+  final String adminNote;
   bool get isPending => status == 'pending';
   String get employeeName => employee['name'] as String? ?? 'Unknown';
   factory AccountDeletionRequest.fromJson(Map<String, dynamic> json) =>
@@ -31,5 +33,6 @@ class AccountDeletionRequest {
           deletedAt: json['deletedAt'] == null
               ? null
               : DateTime.parse(json['deletedAt'] as String),
-          deletionSource: json['deletionSource'] as String?);
+          deletionSource: json['deletionSource'] as String?,
+          adminNote: json['adminNote'] as String? ?? '');
 }

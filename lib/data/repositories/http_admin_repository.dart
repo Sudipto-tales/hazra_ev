@@ -25,9 +25,12 @@ class HttpAdminRepository implements AdminRepository {
 
   @override
   Future<AccountDeletionRequest> approveAccountDeletion(String id,
-      {required String confirmation}) async {
-    final result = await _api.post('/account-deletion-requests/$id/approve',
-        body: {'confirmation': confirmation});
+      {required String confirmation, String adminNote = ''}) async {
+    final result =
+        await _api.post('/account-deletion-requests/$id/approve', body: {
+      'confirmation': confirmation,
+      if (adminNote.trim().isNotEmpty) 'adminNote': adminNote.trim()
+    });
     return AccountDeletionRequest.fromJson(result.map);
   }
 

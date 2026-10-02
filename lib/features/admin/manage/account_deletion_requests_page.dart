@@ -84,6 +84,7 @@ class AccountDeletionReviewPage extends StatefulWidget {
 }
 
 class _AccountDeletionReviewPageState extends State<AccountDeletionReviewPage> {
+  final TextEditingController _adminNote = TextEditingController();
   final TextEditingController _confirmation = TextEditingController();
   late AccountDeletionRequest _request = widget.request;
   bool _busy = false;
@@ -91,6 +92,7 @@ class _AccountDeletionReviewPageState extends State<AccountDeletionReviewPage> {
   @override
   void dispose() {
     _confirmation.dispose();
+    _adminNote.dispose();
     super.dispose();
   }
 
@@ -103,7 +105,7 @@ class _AccountDeletionReviewPageState extends State<AccountDeletionReviewPage> {
       final result = await AppScope.of(context)
           .adminRepository
           .approveAccountDeletion(_request.id,
-              confirmation: _confirmation.text);
+              confirmation: _confirmation.text, adminNote: _adminNote.text);
       if (mounted) setState(() => _request = result);
     } catch (_) {
       if (mounted) {
@@ -137,11 +139,23 @@ class _AccountDeletionReviewPageState extends State<AccountDeletionReviewPage> {
         if (!_request.isPending) ...[
           Text('Deleted: ${deletionDateLabel(_request.deletedAt!)}'),
           Text('Source: ${_request.deletionSource ?? 'admin'}'),
+          Text(
+              'Admin note: ${_request.adminNote.isEmpty ? 'Not provided' : _request.adminNote}'),
         ],
         if (_request.isPending) ...[
           const SizedBox(height: 24),
           const Text(
               'Approving deletes access immediately, changes the current employee name to Unknown and marks the account Deleted. Work history is preserved. This cannot be undone.'),
+          const SizedBox(height: 16),
+          TextField(
+              controller: _adminNote,
+              enabled: !_busy,
+              maxLines: 3,
+              maxLength: 500,
+              decoration: const InputDecoration(
+                  labelText: 'Deletion note (optional)',
+                  helperText: 'Saved for future verification',
+                  border: OutlineInputBorder())),
           const SizedBox(height: 16),
           TextField(
               controller: _confirmation,

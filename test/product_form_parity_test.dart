@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 
 import 'package:employeetracking_mobile_app/data/api/api_client.dart';
 import 'package:employeetracking_mobile_app/data/api/api_exception.dart';
@@ -143,6 +145,30 @@ Future<void> tapVisible(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  test('product photos upload once to the registered endpoint', () async {
+    SharedPreferences.setMockInitialValues({});
+    final tokens = await TokenStore.open();
+    final client = MockClient((request) async {
+      expect(request.url.path, '/api/v1/upload');
+      expect(request.method, 'POST');
+      expect(
+          request.headers['content-type'], startsWith('multipart/form-data'));
+      expect(request.body, contains('name="file"; filename="photo.png"'));
+      return http.Response(
+          jsonEncode({
+            'data': {'url': 'assets/uploads/images/photo.png'},
+            'meta': {}
+          }),
+          200);
+    });
+    final api = ApiClient(tokens: tokens, client: client);
+    addTearDown(api.dispose);
+    expect(
+        await api.uploadProductImage(
+            XFile.fromData(Uint8List.fromList([1, 2, 3]), name: 'photo.png', path: 'photo.png')),
+        'assets/uploads/images/photo.png');
+  });
+
   test('HTTP edit preserves website content and stable colour references',
       () async {
     TestWidgetsFlutterBinding.ensureInitialized();
