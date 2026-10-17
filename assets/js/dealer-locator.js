@@ -9,9 +9,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     function selectDealer(d, scroll = false) {
         document.querySelectorAll('.dl-fcard').forEach((card) => card.classList.toggle('is-active', card.dataset.id === d.id));
         const marker = markers.get(d.id);
-        if (marker) { map.setView([d.lat, d.lng], 14); marker.openPopup(); }
-        if (scroll) [...cards.children].find((c) => c.dataset.id === d.id)?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        if (marker) { map.setView([d.lat, d.lng], 14); map.panBy([0, 110], {animate:false}); marker.openPopup(); }
+        if (scroll) [...cards.children].find((c) => c.dataset.id === d.id)?.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' });
     }
+    const carouselMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    $('dealerPrevious').addEventListener('click', () => cards.scrollBy({left:-(cards.querySelector('.dl-fcard')?.offsetWidth + 14 || 294), behavior:carouselMotion()}));
+    $('dealerNext').addEventListener('click', () => cards.scrollBy({left:cards.querySelector('.dl-fcard')?.offsetWidth + 14 || 294, behavior:carouselMotion()}));
+    function updateCarousel() {
+        $('dealerPrevious').disabled = cards.scrollLeft <= 1;
+        $('dealerNext').disabled = cards.scrollLeft + cards.clientWidth >= cards.scrollWidth - 1;
+    }
+    cards.addEventListener('scroll', updateCarousel, {passive:true});
+    window.addEventListener('resize', updateCarousel);
     function distance(d) {
         const rad = (n) => n * Math.PI / 180;
         const a = Math.sin(rad(d.lat - userPosition.lat) / 2) ** 2 + Math.cos(rad(userPosition.lat)) * Math.cos(rad(d.lat)) * Math.sin(rad(d.lng - userPosition.lng) / 2) ** 2;
@@ -52,10 +61,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 marker.bindPopup(popup); marker.on('click', () => selectDealer(d, true)); markers.set(d.id, marker);
             }
         });
+        cards.scrollLeft = 0; requestAnimationFrame(updateCarousel);
         if (map) {
             const points = list.map((d) => [d.lat, d.lng]);
             if (userPosition) points.push([userPosition.lat, userPosition.lng]);
-            if (points.length) map.fitBounds(points, { padding:[35,35], maxZoom:13 });
+            if (points.length) map.fitBounds(points, { paddingTopLeft:[35,35], paddingBottomRight:[35,270], maxZoom:13 });
             else map.setView([22.5,78.5], 5);
         }
     }
@@ -114,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const totals = [dealers.length, new Set(dealers.map((d) => d.city)).size, new Set(dealers.map((d) => d.state)).size];
             document.querySelectorAll('.dl-stat__num').forEach((el, i) => { el.textContent = totals[i]; });
             refreshDistricts();
-        } catch (e) { cards.textContent = 'Dealer locations could not load. Please try again.'; $('retryDealers').hidden = false; }
+        } catch (e) { cards.textContent = 'Dealer locations could not load. Please try again.'; $('retryDealers').hidden = false; requestAnimationFrame(updateCarousel); }
     }
     $('retryDealers').addEventListener('click', load);
     await load(); if (window.lucide) window.lucide.createIcons();

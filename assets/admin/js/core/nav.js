@@ -53,6 +53,7 @@ window.HAZRA_NAV = [
         items: [
             { key: 'app-releases', label: 'App Releases', icon: 'fa-mobile-screen', href: '/admin/app-releases' },
             { key: 'settings', label: 'Settings', icon: 'fa-sliders', href: '/admin/settings' },
+            { key: 'message-delivery', label: 'Message Delivery', icon: 'fa-paper-plane', href: '/admin/message-delivery' },
         ],
     },
 ];

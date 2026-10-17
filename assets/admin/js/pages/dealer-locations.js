@@ -19,7 +19,7 @@
             <button id="currentLocation" type="button" class="btn btn--ghost">Use current location</button></div>
             <div id="locationNotice" class="dealer-notice" role="status" aria-live="polite"></div>
             <div id="placeResults" class="dealer-results"></div><div id="dealerMap" aria-label="Select dealership location on the map"></div>
-            <p class="dealer-hint">Search and select a result, click the map, or drag the pin to the showroom entrance. Check the address before publishing. Search data: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>.</p>
+            <p class="dealer-hint">Search and select a result, click the map, or drag the pin to the showroom entrance. Check the address before publishing. Search data: Google Maps.</p>
             <form id="dealerForm"><div class="dealer-fields">
             ${input('name', 'Dealer name', true, 'wide')}${input('phone', 'Public phone')}
             <label><span>Location type</span><select name="type"><option value="showroom">Showroom</option><option value="service">Service centre</option><option value="both">Showroom & service</option></select></label>
@@ -40,12 +40,12 @@
         $('dealerForm').addEventListener('submit', save);
         ['lat', 'lng'].forEach((f) => control(f).addEventListener('change', manualPosition));
         edit(null);
-        if (window.L) {
-            map = L.map('dealerMap', { scrollWheelZoom: false }).setView([22.57, 88.36], 7);
-            const tiles = L.tileLayer(config.tileUrl, { attribution: config.attribution, subdomains: 'abcd', maxZoom: 19 }).addTo(map);
-            tiles.on('tileerror', () => notice('Map tiles could not load. Check your connection; location search and coordinate entry are still available.', true));
-            map.on('click', (e) => { locationVersion++; position(e.latlng.lat, e.latlng.lng); notice('Pin selected. Enter or verify the address below.'); });
-        } else notice('Map could not load. You can still search or enter coordinates manually.', true);
+        try {
+            await loadGoogle();
+            map = new google.maps.Map($('dealerMap'), { center:{lat:22.57, lng:88.36}, zoom:7, scrollwheel:false, mapTypeControl:false });
+            if (control('lat').value !== '' && control('lng').value !== '') position(Number(control('lat').value), Number(control('lng').value));
+            map.addListener('click', (e) => { locationVersion++; position(e.latLng.lat(), e.latLng.lng()); notice('Pin selected. Enter or verify the address below.'); });
+        } catch (e) { notice(e.message, true); }
         await load();
     }
     function input(name, label, required = false, className = '', type = 'text') {
@@ -77,10 +77,10 @@
         fields.forEach((f) => { control(f).value = record?.[f] ?? ({ type:'showroom', status:'draft' }[f] || ''); });
         $('editorTitle').textContent = editing ? 'Edit location' : 'Add location';
         $('placeResults').replaceChildren(); $('placeSearch').value = ''; $('saveNotice').textContent = ''; notice('');
-        if (pin) { pin.remove(); pin = null; }
+        if (pin) { pin.setMap(null); pin = null; }
         $('previewDirections').hidden = true;
         if (record?.lat != null && record?.lng != null) position(Number(record.lat), Number(record.lng));
-        else map?.setView([22.57, 88.36], 7);
+        else if (map) { map.setCenter({lat:22.57, lng:88.36}); map.setZoom(7); }
         renderList();
     }
     function position(lat, lng) {
@@ -88,10 +88,10 @@
         control('lat').value = lat.toFixed(6); control('lng').value = lng.toFixed(6);
         if (map) {
             if (!pin) {
-                pin = L.marker([lat, lng], { draggable:true }).addTo(map);
-                pin.on('dragend', () => { locationVersion++; const p = pin.getLatLng(); position(p.lat, p.lng); notice('Pin moved. Verify the address before saving.'); });
-            } else pin.setLatLng([lat, lng]);
-            map.setView([lat, lng], Math.max(map.getZoom(), 15));
+                pin = new google.maps.Marker({ position:{lat, lng}, draggable:true, map });
+                pin.addListener('dragend', () => { locationVersion++; const p = pin.getPosition(); position(p.lat(), p.lng()); notice('Pin moved. Verify the address before saving.'); });
+            } else pin.setPosition({lat, lng});
+            map.setCenter({lat, lng}); map.setZoom(Math.max(map.getZoom(), 15));
         }
         $('previewDirections').href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(lat + ',' + lng)}`;
         $('previewDirections').hidden = false;
@@ -100,22 +100,60 @@
         locationVersion++;
         if (control('lat').value !== '' && control('lng').value !== '' && control('lat').checkValidity() && control('lng').checkValidity()) {
             position(Number(control('lat').value), Number(control('lng').value));
-        } else { pin?.remove(); pin = null; $('previewDirections').hidden = true; }
+        } else { pin?.setMap(null); pin = null; $('previewDirections').hidden = true; }
+    }
+    let googleReady;
+    function loadGoogle() {
+        if (window.google?.maps?.importLibrary) return Promise.resolve();
+        if (!config.googleKey) return Promise.reject(new Error('Google Maps key is missing. Configure GOOGLE_MAPS_BROWSER_KEY.'));
+        if (!googleReady) googleReady = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            const timer = setTimeout(() => reject(new Error('Google Maps could not load. Check your connection or enter coordinates manually.')), 15000);
+            window.hazraGoogleReady = () => { clearTimeout(timer); resolve(); };
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(config.googleKey)}&loading=async&libraries=places&v=weekly&callback=hazraGoogleReady`;
+            script.onerror = () => { clearTimeout(timer); reject(new Error('Google Maps could not load. Enter coordinates manually.')); };
+            document.head.append(script);
+        });
+        return googleReady;
+    }
+    function googleFeature(place) {
+        const components = place.addressComponents || [];
+        const component = (...types) => types.map((t) => components.find((c) => c.types.includes(t))?.longText).find(Boolean) || '';
+        return { geometry:{coordinates:[place.location.lng(), place.location.lat()]}, properties:{
+            name:place.displayName || '', fullAddress:place.formattedAddress || '',
+            state:component('administrative_area_level_1'), district:component('administrative_area_level_3', 'administrative_area_level_2'),
+            city:component('locality', 'postal_town', 'sublocality_level_1'), postcode:component('postal_code')
+        } };
+    }
+    async function withTimeout(promise) {
+        let timer;
+        try {
+            return await Promise.race([promise, new Promise((_, reject) => {
+                timer = setTimeout(() => reject(new DOMException('Search timed out', 'AbortError')), 15000);
+            })]);
+        } finally { clearTimeout(timer); }
     }
     async function geocode(path, params) {
         searchController?.abort(); searchController = new AbortController();
-        const controller = searchController;
-        const timer = setTimeout(() => controller.abort(), 12000);
-        try {
-            const url = new URL(path, config.searchUrl.endsWith('/') ? config.searchUrl : config.searchUrl + '/');
-            Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-            const response = await fetch(url, { signal:controller.signal, credentials:'omit' });
-            if (!response.ok) throw new Error('Location search is unavailable. Try again or select a pin manually.');
-            return (await response.json()).features || [];
-        } finally { clearTimeout(timer); }
+        const signal = searchController.signal;
+        await loadGoogle();
+        let results;
+        if (path === 'reverse') {
+            const response = await new google.maps.Geocoder().geocode({ location:{lat:params.lat, lng:params.lon}, language:'en' });
+            results = response.results.slice(0, 1).map((r) => googleFeature({ location:r.geometry.location, formattedAddress:r.formatted_address,
+                addressComponents:r.address_components.map((c) => ({ types:c.types, longText:c.long_name })) }));
+        } else {
+            const { Place } = await google.maps.importLibrary('places');
+            const response = await Place.searchByText({ textQuery:params.q, fields:['displayName', 'formattedAddress', 'location', 'addressComponents'],
+                language:'en', region:'in', maxResultCount:6 });
+            results = (response.places || []).filter((p) => p.location).map(googleFeature);
+        }
+        if (signal.aborted) throw new DOMException('Search superseded', 'AbortError');
+        return results;
     }
     function label(feature) {
         const p = feature.properties || {};
+        if (p.fullAddress) return [p.name, p.fullAddress].filter(Boolean).join(', ');
         return [...new Set([p.name, [p.housenumber, p.street].filter(Boolean).join(' '), p.city || p.town || p.village, p.district || p.county, p.state, p.postcode, p.country].filter(Boolean))].join(', ');
     }
     function useFeature(feature) {
@@ -124,7 +162,7 @@
         locationVersion++; position(lat, lng);
         const p = feature.properties || {};
         // Replace address details together so an earlier selection cannot leave stale fields.
-        const values = { state:p.state || '', district:p.district || p.county || '', city:p.city || p.town || p.village || '', address:label(feature), pincode:/^[1-9][0-9]{5}$/.test(p.postcode || '') ? p.postcode : '' };
+        const values = { state:p.state || '', district:p.district || p.county || '', city:p.city || p.town || p.village || '', address:p.fullAddress || label(feature), pincode:/^[1-9][0-9]{5}$/.test(p.postcode || '') ? p.postcode : '' };
         Object.entries(values).forEach(([key, value]) => { control(key).value = value; });
         $('placeResults').replaceChildren(); notice('Location selected. Check the district, address and PIN code before publishing.');
     }
@@ -134,14 +172,14 @@
         const version = ++locationVersion;
         $('searchPlace').disabled = true; $('placeResults').replaceChildren(); notice('Searching locations…');
         try {
-            const results = await geocode('api/', { q:query, limit:6, lang:'en' });
+            const results = await withTimeout(geocode('api/', { q:query, limit:6, lang:'en' }));
             if (version !== locationVersion) return;
             notice(results.length ? 'Select the correct location below.' : 'No locations found. Try a nearby street or place a pin on the map.');
             results.forEach((feature) => {
                 const button = document.createElement('button'); button.type = 'button'; button.textContent = label(feature);
                 button.addEventListener('click', () => useFeature(feature)); $('placeResults').append(button);
             });
-        } catch (e) { if (version === locationVersion) notice(e.name === 'AbortError' ? 'Search timed out. Try again or use the map.' : e.message, true); }
+        } catch (e) { if (version === locationVersion) notice(e.name === 'AbortError' ? 'Search timed out. Try again or use the map.' : 'Google location search failed. Check that Places API (New) is enabled and the key permits this website, or enter coordinates manually.', true); }
         finally { $('searchPlace').disabled = false; }
     }
     function locate() {
@@ -154,7 +192,7 @@
             ['address', 'state', 'district', 'city', 'pincode'].forEach((f) => { control(f).value = ''; });
             notice(`Current location selected (accuracy about ${Math.round(coords.accuracy)} m). Looking up address…`);
             try {
-                const results = await geocode('reverse', { lat:coords.latitude, lon:coords.longitude, limit:1, lang:'en' });
+                const results = await withTimeout(geocode('reverse', { lat:coords.latitude, lon:coords.longitude, limit:1, lang:'en' }));
                 if (version !== locationVersion) return;
                 if (results[0]) {
                     useFeature(results[0]);

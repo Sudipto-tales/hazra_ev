@@ -49,7 +49,7 @@ class App {
     public static function render(string $name, array $data = []): void {}
 }
 function e($value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
-function db_fetch_one($sql, $params = []) { return $GLOBALS['pageRelease']; }
+function db_fetch_one($sql, $params = []) { if (!empty($GLOBALS['pageLoadFailure'])) throw new RuntimeException('Release storage unavailable'); return $GLOBALS['pageRelease']; }
 function db_fetch_all($sql, $params = []) { return $GLOBALS['pageHistory']; }
 function renderDownloadPage(): string {
     ob_start();
@@ -63,6 +63,11 @@ try {
     $pageRelease = null; $pageHistory = [];
     $html = renderDownloadPage();
     check(str_contains($html, 'Previous releases will appear here'), 'Empty release history must render');
+    check(str_contains($html, 'Download APK'), 'Empty state must show a download button');
+    $pageLoadFailure = true;
+    $html = renderDownloadPage();
+    check(str_contains($html, 'Downloads are temporarily unavailable'), 'Storage failure must show a readable message');
+    $pageLoadFailure = false;
     $pageRelease = array_replace($release, ['status' => 'published']);
     $pageHistory = [];
     for ($i = 11; $i >= 5; $i--) {

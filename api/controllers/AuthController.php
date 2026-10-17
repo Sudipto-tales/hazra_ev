@@ -25,6 +25,7 @@ final class AuthController extends V1Controller
             Envelope::fail('INVALID_CREDENTIALS', 'Email or password is incorrect', 401);
         }
 
+        AccountDeletion::checkAccess($user);
         if (!(int) $user['active']) {
             Envelope::forbidden('This account is deactivated');
         }
@@ -53,6 +54,7 @@ final class AuthController extends V1Controller
 
         $user = Users::byId($row['user_id']);
 
+        if ($user) AccountDeletion::checkAccess($user);
         if (!$user || !(int) $user['active']) {
             Envelope::forbidden('This account is deactivated');
         }

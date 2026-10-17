@@ -97,6 +97,7 @@
                 },
             ],
             rowActions: (row) => [
+                { label: 'WhatsApp Send / Retry & History', icon: 'fa-comment', onClick: () => window.HAZRA.whatsapp.open(row) },
                 { label: 'Approve & Schedule', icon: 'fa-calendar-check', onClick: () => approveModal(row) },
                 { label: 'Mark Contacted', icon: 'fa-phone', onClick: () => updateStatus(row, 'contacted') },
                 { label: 'Reject', icon: 'fa-ban', onClick: () => rejectLead(row) },

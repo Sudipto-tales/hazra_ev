@@ -21,6 +21,7 @@ require __DIR__ . '/core/Console/DbSyncCommand.php';
 require __DIR__ . '/core/Console/DbExportCommand.php';
 require __DIR__ . '/core/Console/MatchCommand.php';
 require __DIR__ . '/core/Console/CloseDaysCommand.php';
+require __DIR__ . '/core/Console/DeleteAccountsCommand.php';
 
 $command = $argv[1] ?? null;
 
@@ -32,6 +33,7 @@ $commands = [
     'db:export' => 'Write the schema + bootstrap admin as .sql for phpMyAdmin import',
     'match'   => 'Backfill road-matched route geometry (--days, --date, --employee, --force)',
     'days:close' => 'Close days nobody ended, at org-local midnight (--date, --employee, --dry)',
+    'accounts:delete-due' => 'Process account deletion requests after 30 days (--dry)',
 ];
 
 if ($command === null || $command === 'help' || $command === '--help') {
@@ -57,6 +59,7 @@ match ($command) {
     'db:export' => (new DbExportCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'match'   => (new MatchCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'days:close' => (new CloseDaysCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
+    'accounts:delete-due' => (new DeleteAccountsCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     default => (function () use ($command) {
         echo PHP_EOL;
         echo "  \033[31mUnknown command: {$command}\033[0m" . PHP_EOL;

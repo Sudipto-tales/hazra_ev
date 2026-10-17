@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ddeea001-7131-4030-8000-000000000001",
+    "name": "Hazra Electrical Bike - Burdwan Main Showroom",
+    "address": "Ghordourchati More, Below LIC Division Office, Sripally, Burdwan, West Bengal - 713103",
+    "state": "West Bengal",
+    "district": "Purba Bardhaman",
+    "city": "Bardhaman",
+    "pincode": "713103",
+    "type": "showroom",
+    "status": "draft",
+    "phone": "",
+    "lat": null,
+    "lng": null,
+    "hours": ""
+  },
+  {
+    "id": "ddeea001-7131-4030-8000-000000000002",
+    "name": "Hazra Electrical Bike - Ichlabad Outlet",
+    "address": "Gopalnagar Ave, Ichlabad, Bardhaman, Gopalnagar P, West Bengal - 713103",
+    "state": "West Bengal",
+    "district": "Purba Bardhaman",
+    "city": "Bardhaman",
+    "pincode": "713103",
+    "type": "showroom",
+    "status": "draft",
+    "phone": "",
+    "lat": null,
+    "lng": null,
+    "hours": ""
+  }
+]

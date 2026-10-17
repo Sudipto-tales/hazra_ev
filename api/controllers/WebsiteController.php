@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../support/V1Controller.php';
 require_once __BASEDIR__ . '/core/Mailer.php';
 require_once __BASEDIR__ . '/core/EmailService.php';
+require_once __BASEDIR__ . '/core/WhatsAppService.php';
 
 final class WebsiteController extends V1Controller
 {
@@ -127,7 +128,7 @@ final class WebsiteController extends V1Controller
     /** GET /api/v1/website/settings (Public get) */
     public function settings(): never
     {
-        $rows = db_fetch_all("SELECT setting_key, setting_value FROM website_settings");
+        $rows = db_fetch_all("SELECT group_name, setting_key, setting_value FROM website_settings");
         $settings = [];
 
         $isAdmin = false;
@@ -140,7 +141,7 @@ final class WebsiteController extends V1Controller
 
         foreach ($rows as $row) {
             // Mask password if non-admin
-            if (!$isAdmin && str_contains($row['setting_key'], 'password')) {
+            if ($row['group_name'] === 'whatsapp_locks' || (!$isAdmin && (str_contains($row['setting_key'], 'password') || str_starts_with($row['setting_key'], 'wa_') || str_starts_with($row['setting_key'], 'whatsapp_')))) {
                 continue;
             }
             $settings[$row['setting_key']] = $row['setting_value'];
@@ -187,10 +188,12 @@ final class WebsiteController extends V1Controller
 
         foreach ($body as $key => $value) {
             $keyStr = (string) $key;
+            if (str_starts_with($keyStr, 'wa:') || in_array($keyStr, ['whatsapp_access_token', 'whatsapp_app_secret', 'whatsapp_verify_token'], true)) Envelope::invalid('This setting is server-managed');
+            if (str_starts_with($keyStr, 'wa_') && !in_array($keyStr, ['wa_enabled', 'wa_auto_leads', 'wa_lead_mode', 'wa_language', 'wa_template_otp', 'wa_template_lead_received', 'wa_template_lead_approved', 'wa_template_lead_rejected', 'wa_template_warranty_received'], true)) Envelope::invalid('Unknown WhatsApp setting');
             $valStr = is_array($value) ? json_encode($value) : (string) $value;
 
             $existing = db_fetch_one("SELECT group_name FROM website_settings WHERE setting_key = ?", [$keyStr]);
-            $group = $existing['group_name'] ?? (in_array($keyStr, ['address', 'phone', 'email', 'whatsapp', 'map_url', 'map_embed']) ? 'contact' : (in_array($keyStr, ['smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name', 'recipient_emails']) ? 'email' : (in_array($keyStr, ['facebook', 'instagram', 'youtube', 'linkedin']) ? 'social' : 'general')));
+            $group = str_starts_with($keyStr, 'wa_') ? 'general' : ($existing['group_name'] ?? (in_array($keyStr, ['address', 'phone', 'email', 'whatsapp', 'map_url', 'map_embed']) ? 'contact' : (in_array($keyStr, ['smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password', 'smtp_from_email', 'smtp_from_name', 'recipient_emails']) ? 'email' : (in_array($keyStr, ['facebook', 'instagram', 'youtube', 'linkedin']) ? 'social' : 'general'))));
 
             db_execute(
                 "INSERT INTO website_settings (id, group_name, setting_key, setting_value, updated_at)
@@ -291,7 +294,8 @@ final class WebsiteController extends V1Controller
 
         // Trigger email notification
         try {
-            EmailService::notifyNewLead($leadRecord);
+            $emailSent = EmailService::notifyNewLead($leadRecord);
+            if (WhatsAppService::setting('wa_auto_leads', '0') === '1' && (WhatsAppService::setting('wa_lead_mode', 'additional') !== 'fallback' || !$emailSent)) WhatsAppService::notifyLead($leadRecord, 'lead_received');
         } catch (Throwable $e) {
             error_log('Lead saved, notification failed: ' . $id);
         }
@@ -390,12 +394,19 @@ final class WebsiteController extends V1Controller
             'details' => json_decode($existing['details_json'] ?? '{}', true) ?? [],
         ]);
 
+        $emailSent = false;
         if ($status === 'approved' && $existing['status'] !== 'approved') {
-            EmailService::notifyLeadApproved($updatedLead);
+            $emailSent = EmailService::notifyLeadApproved($updatedLead);
         } elseif ($status === 'rejected' && $existing['status'] !== 'rejected') {
-            EmailService::notifyLeadRejected($updatedLead);
+            $emailSent = EmailService::notifyLeadRejected($updatedLead);
         }
 
+        try {
+            if (WhatsAppService::setting('wa_auto_leads', '0') === '1' && (WhatsAppService::setting('wa_lead_mode', 'additional') !== 'fallback' || !$emailSent) && $status !== $existing['status']) {
+                if ($status === 'approved') WhatsAppService::notifyLead($updatedLead, 'lead_approved');
+                elseif ($status === 'rejected') WhatsAppService::notifyLead($updatedLead, 'lead_rejected');
+            }
+        } catch (Throwable $e) { error_log('Lead saved, WhatsApp notification failed: ' . $id); }
         Envelope::ok($updatedLead);
     }
 

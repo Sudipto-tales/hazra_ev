@@ -65,7 +65,7 @@
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ employee_code: employeeCode, mobile: number })
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => { throw new Error('The download service is temporarily unavailable. Please try again later.'); });
       if (request !== controller || controller.signal.aborted) return;
       if (!response.ok) throw new Error(result.error?.message || 'Verification failed. Check your employee details.');
       const url = new URL(result.data?.downloadUrl, location.href);
@@ -75,7 +75,7 @@
       close();
       document.getElementById('releaseLoadStatus').textContent = `Your download of v${result.data.versionName} is starting.`;
     } catch (failure) {
-      if (request === controller) showError(failure.name === 'AbortError' ? 'Verification timed out. Please try again.' : failure.message);
+      if (request === controller) showError(failure.name === 'AbortError' ? 'Verification timed out. Please try again.' : (failure instanceof TypeError ? 'Unable to connect. Check your internet connection and try again.' : failure.message));
     } finally {
       clearTimeout(timeout);
       if (request === controller) { request = null; submit.disabled = false; submit.querySelector('span').textContent = 'Verify & Download'; }
@@ -110,7 +110,7 @@
     try {
       const query = new URLSearchParams({ limit: '6', exclude: config.latestId, cursor });
       const response = await fetch(`${config.base}api/v1/app-releases?${query}`, { headers: { Accept: 'application/json' } });
-      const result = await response.json();
+      const result = await response.json().catch(() => { throw new Error('The download service is temporarily unavailable. Please try again later.'); });
       if (!response.ok) throw new Error(result.error?.message || 'Could not load more versions. Please try again.');
       result.data.forEach(release => { if (!document.getElementById(`release-${release.id}`)) list.append(card(release)); });
       cursor = result.meta?.nextCursor; more.hidden = !cursor;

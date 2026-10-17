@@ -11,8 +11,8 @@
     async function init() {
         document.getElementById('pageHead').innerHTML = layout.pageHead({
             crumb: [{ label: 'System' }, { label: 'Settings' }],
-            title: 'Website & Email Settings',
-            sub: 'Configure site identity, contact channels, social presence, SMTP mailer, and lead notifications.',
+            title: 'Website & Messaging Settings',
+            sub: 'Configure site identity, contact channels, social presence, email, WhatsApp, and lead notifications.',
         });
 
         document.getElementById('view').innerHTML = `
@@ -28,12 +28,55 @@
                     <button type="button" role="tab" data-tab="social" aria-selected="false">
                         <i class="fa-solid fa-share-nodes"></i> Social Presence
                     </button>
+                    <button type="button" role="tab" data-tab="whatsapp-api" aria-selected="false">
+                        <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                    </button>
                     <button type="button" role="tab" data-tab="email" aria-selected="false">
                         <i class="fa-solid fa-envelope"></i> SMTP & Notifications
                     </button>
                 </nav>
 
                 <form id="settingsForm" novalidate>
+                    <div class="tab-panel" id="whatsapp-api" role="tabpanel" hidden>
+                        <div class="settings-v2-card">
+                            <div class="settings-v2-card__head">
+                                <div class="settings-v2-icon"><i class="fa-brands fa-whatsapp"></i></div>
+                                <div>
+                                    <h3>WhatsApp Messaging</h3>
+                                    <p>Manage OTP delivery and enquiry updates using your approved WhatsApp templates.</p>
+                                </div>
+                            </div>
+                            <div class="form-grid mb-4">
+                                <div class="st-toggle-card">
+                                    <div class="st-toggle-info"><strong id="waEnabledLabel">Enable WhatsApp</strong><span>Send OTPs through WhatsApp, with SMS fallback.</span></div>
+                                    <label class="st-switch"><input type="checkbox" id="wa_enabled" name="general[wa_enabled]" value="1" aria-labelledby="waEnabledLabel"><span class="st-slider"></span></label>
+                                </div>
+                                <div class="st-toggle-card">
+                                    <div class="st-toggle-info"><strong id="waAutoLabel">Automatic enquiry updates</strong><span>Send updates to customers who opted in to WhatsApp.</span></div>
+                                    <label class="st-switch"><input type="checkbox" id="wa_auto_leads" name="general[wa_auto_leads]" value="1" aria-labelledby="waAutoLabel"><span class="st-slider"></span></label>
+                                </div>
+                                <div class="field">
+                                    <label for="wa_lead_mode">Enquiry Delivery</label>
+                                    <select class="input" id="wa_lead_mode" name="general[wa_lead_mode]">
+                                        <option value="additional">WhatsApp alongside email</option>
+                                        <option value="fallback">WhatsApp when customer email is unavailable or fails to send</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="wa_language">Template Language</label>
+                                    <div class="input-icon-group"><i class="fa-solid fa-language"></i><input class="input" type="text" id="wa_language" name="general[wa_language]" maxlength="128" placeholder="en_US"></div>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                ${[['wa_template_otp', 'OTP Authentication Template'], ['wa_template_lead_received', 'Enquiry Acknowledgement Template'], ['wa_template_lead_approved', 'Approval Template'], ['wa_template_lead_rejected', 'Rejection Template'], ['wa_template_warranty_received', 'Warranty Registration Template']].map(([key, label]) => `
+                                    <div class="field">
+                                        <label for="${key}">${label}</label>
+                                        <div class="input-icon-group"><i class="fa-solid fa-message"></i><input class="input" type="text" id="${key}" name="general[${key}]" maxlength="128" placeholder="Approved template name"></div>
+                                    </div>`).join('')}
+                            </div>
+                            <p class="text-sm muted mt-4">Use the exact template names approved in Meta. API credentials are configured on the server.</p>
+                        </div>
+                    </div>
                     <!-- General & Branding Tab -->
                     <div class="tab-panel" id="general" role="tabpanel">
                         <div class="settings-v2-card">
@@ -287,7 +330,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="form-grid">
                                 <div class="field">
                                     <label for="smtp_from_email">Sender "From" Address</label>
@@ -454,6 +496,8 @@
 
             // Default checkboxes to '0' so unchecking saves '0'
             payload.general.show_footer_bg = '0';
+            payload.general.wa_enabled = '0';
+            payload.general.wa_auto_leads = '0';
             const checkboxes = ['notify_team_new_lead', 'notify_customer_new_lead', 'notify_team_on_approve', 'notify_customer_on_approve', 'notify_team_on_reject', 'notify_customer_on_reject'];
             checkboxes.forEach(cb => { payload.email[cb] = '0'; });
 
@@ -473,7 +517,7 @@
 
             await Promise.all([
                 store.setDoc('settings', payload),
-                API.post('api/v1/website/settings', flatPayload).catch(() => {}),
+                API.post('api/v1/website/settings', flatPayload),
             ]);
 
             toast.success('Settings saved successfully!');

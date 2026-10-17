@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../support/V1Controller.php';
-require_once __BASEDIR__ . '/core/SmsService.php';
+require_once __BASEDIR__ . '/core/OtpService.php';
 
 final class WarrantyController extends V1Controller
 {
@@ -61,7 +61,7 @@ final class WarrantyController extends V1Controller
             Envelope::fail('INVALID_MOBILE', 'Mobile number is required.', 400, 'mobile');
         }
 
-        $res = SmsService::sendOtp($mobile, $purpose);
+        $res = OtpService::sendOtp($mobile, $purpose, (string) ($body["channel"] ?? "auto"));
 
         if (!$res['success']) {
             $statusCode = ($res['cooldown'] ?? 0) > 0 ? 429 : 400;
@@ -70,6 +70,7 @@ final class WarrantyController extends V1Controller
 
         Envelope::ok([
             'sent'            => true,
+            'channel'         => $res['channel'],
             'message'         => $res['message'],
             'cooldownSeconds' => $res['cooldown'],
             'debugCode'       => $res['debug_code'] ?? null,
@@ -91,7 +92,7 @@ final class WarrantyController extends V1Controller
             Envelope::fail('INVALID_INPUT', 'Mobile number and OTP code are required.', 400);
         }
 
-        $res = SmsService::verifyOtp($mobile, $purpose, $code);
+        $res = OtpService::verifyOtp($mobile, $purpose, $code);
 
         if (!$res['success']) {
             Envelope::fail('OTP_VERIFY_FAILED', $res['message'], 400, 'code');
@@ -133,7 +134,7 @@ final class WarrantyController extends V1Controller
             $where[] = 'LOWER(chassis_no) = LOWER(?)';
             $params[] = $chassis;
         } else {
-            $norm = SmsService::normalizeMobile($mobile);
+            $norm = OtpService::normalizeMobile($mobile);
             $where[] = 'mobile = ?';
             $params[] = $norm ?: $mobile;
         }
@@ -252,7 +253,7 @@ final class WarrantyController extends V1Controller
         $customerName = trim((string) ($input['name'] ?? $input['customer_name'] ?? ''));
         $email        = trim((string) ($input['email'] ?? $input['userEmail'] ?? ''));
         $mobile       = trim((string) ($input['mobile'] ?? $input['userMobile'] ?? ''));
-        $normMobile   = SmsService::normalizeMobile($mobile);
+        $normMobile   = OtpService::normalizeMobile($mobile);
 
         if (!$customerName) {
             Envelope::fail('VALIDATION_ERROR', 'Customer full name is required.', 400, 'name');
@@ -407,6 +408,7 @@ final class WarrantyController extends V1Controller
         $ip = $_SERVER['REMOTE_ADDR'] ?? null;
         $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500);
         $verifiedAt = $challenge['verified_at'] ?? $now;
+        $whatsappConsentAt = in_array($input['whatsapp_consent'] ?? false, [true, 1, '1'], true) ? $now : null;
 
         db_execute(
             "INSERT INTO warranty_registrations (
@@ -414,20 +416,20 @@ final class WarrantyController extends V1Controller
                 vehicle_model, chassis_no, motor_no, controller_no, battery_type, battery_serial,
                 battery_volt, charger_serial, state, district, dealer_name, dealer_email,
                 purchase_date, invoice_path, plan, amount_paise, payment_status,
-                parent_registration_id, ip_address, user_agent, created_at, updated_at
+                parent_registration_id, ip_address, user_agent, created_at, updated_at, whatsapp_consent_at
             ) VALUES (
                 ?, ?, 'pending', ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?
             )",
             [
                 $id, $type, $refNo, $customerName, $email, $normMobile, $verifiedAt,
                 $vehicleModel, $chassisNo, $motorNo, $controllerNo, $batteryType, $batterySerial,
                 $batteryVolt, $chargerSerial, $state, $district, $dealerName, $dealerEmail,
                 $purchaseDate, $invoicePath, $plan, $amountPaise, $type === 'paid' ? 'unpaid' : null,
-                $parentRegId, $ip, $ua, $now, $now
+                $parentRegId, $ip, $ua, $now, $now, $whatsappConsentAt
             ]
         );
 
@@ -450,6 +452,11 @@ final class WarrantyController extends V1Controller
             @Mailer::send($adminEmail, $subject, $message);
         } catch (\Throwable) {}
 
+        try {
+            if ($whatsappConsentAt !== null) {
+                WhatsAppService::send($normMobile, 'warranty_received', [$customerName, $refNo], $id);
+            }
+        } catch (Throwable $e) { error_log('Warranty saved, WhatsApp confirmation failed: ' . $id); }
         Envelope::created([
             'id'           => $id,
             'reference_no' => $refNo,

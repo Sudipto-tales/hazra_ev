@@ -76,6 +76,7 @@ final class AdminController extends V1Controller
 
         foreach ($rows as $row) {
             $group = $row['group_name'] ?? 'general';
+            if ($group === 'whatsapp_locks') continue;
             $key   = $row['setting_key'] ?? $row['key'] ?? '';
             $val   = $row['setting_value'] ?? $row['value'] ?? '';
 
@@ -122,14 +123,18 @@ final class AdminController extends V1Controller
 
         $group = $args['group'] ?? 'general';
         $body = ApiRequest::body();
+        if ($group === 'whatsapp_locks') Envelope::invalid('This settings group is server-managed');
 
         if (is_array($body)) {
             foreach ($body as $key => $val) {
+                if (str_starts_with($key, 'wa:') || str_starts_with($key, 'whatsapp_')) Envelope::invalid('This setting is server-managed');
+                if (str_starts_with($key, 'wa_') && !in_array($key, ['wa_enabled', 'wa_auto_leads', 'wa_lead_mode', 'wa_language', 'wa_template_otp', 'wa_template_lead_received', 'wa_template_lead_approved', 'wa_template_lead_rejected', 'wa_template_warranty_received'], true)) Envelope::invalid('Unknown WhatsApp setting');
+                if (str_starts_with($key, 'wa_') && $group !== 'general') Envelope::invalid('WhatsApp settings belong to general');
                 db_execute(
-                    "INSERT INTO website_settings (group_name, setting_key, setting_value, updated_at)
-                     VALUES (?, ?, ?, ?)
+                    "INSERT INTO website_settings (id, group_name, setting_key, setting_value, updated_at)
+                     VALUES (?, ?, ?, ?, ?)
                      ON CONFLICT(group_name, setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = excluded.updated_at",
-                    [$group, $key, (string) $val, gmdate('Y-m-d H:i:s')]
+                    [Uuid::v4(), $group, $key, (string) $val, gmdate('Y-m-d H:i:s')]
                 );
             }
         }

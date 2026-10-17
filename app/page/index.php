@@ -986,7 +986,7 @@ $arcStep = $numFeatured > 4 ? '18deg' : '23deg';
             By submitting, you agree to be contacted by Hazra EV or an authorised partner.
           </p>
           <p class="ride__ok" id="rideOk" role="status" aria-live="polite"></p>
-        </form>
+        <label><input type="checkbox" name="whatsapp_consent" value="1"> I agree to receive updates about this enquiry on WhatsApp.</label></form>
       </div>
 
     </div>

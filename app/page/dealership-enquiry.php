@@ -84,7 +84,8 @@ App::render('header', ['isStickyOnly' => true]);
           <div class="success__desc">Your enquiry has been received. Our team will contact you within 24 hours.</div>
         </div>
       </div>
-    </form>
+    <label style="display:block;margin:12px 0"><input type="checkbox" name="whatsapp_consent" value="1"> I agree to receive updates about this enquiry on WhatsApp.</label>
+</form>
   </div>
 </section>
 
@@ -102,8 +103,24 @@ App::render('header', ['isStickyOnly' => true]);
 document.addEventListener('DOMContentLoaded', () => {
   if (window.lucide) lucide.createIcons();
 
-  document.getElementById('enquiryForm')?.addEventListener('submit', (e) => {
+  document.getElementById('enquiryForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!e.target.reportValidity()) return;
+    const payload = Object.fromEntries(new FormData(e.target));
+    payload.name = payload.contact;
+    payload.business_type = payload.type;
+    payload.type = 'dealership';
+    payload.whatsapp_consent = payload.whatsapp_consent === '1';
+    const button = e.target.querySelector('[type="submit"]');
+    button.disabled = true;
+    try {
+      const response = await fetch(<?= json_encode(base_url('api/v1/website/leads')) ?>, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message || 'Could not submit enquiry.');
+    } catch (error) { alert(error.message); button.disabled = false; return; }
+    button.disabled = false;
     const successMsg = document.getElementById('successMsg');
     successMsg.classList.add('show');
     e.target.reset();

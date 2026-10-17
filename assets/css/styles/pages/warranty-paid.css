@@ -16,8 +16,9 @@
 }
 
 .wp .reveal-up {
-  opacity: 0;
-  transform: translateY(24px);
+  /* Content must remain readable when JavaScript or observers are unavailable. */
+  opacity: 1;
+  transform: none;
   transition: opacity .8s var(--wp-ease), transform .8s var(--wp-ease);
   transition-delay: var(--d, 0s);
 }

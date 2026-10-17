@@ -202,6 +202,7 @@ final class EmployeesController extends V1Controller
             Envelope::notFound('EMPLOYEE_NOT_FOUND', 'No such employee');
         }
 
+        if (AccountDeletion::isDeleted(AccountDeletion::expireIfDue($employee))) Envelope::invalid('Deleted accounts cannot be modified or reactivated');
         $body = ApiRequest::body();
 
         $generated = !isset($body['password']) || $body['password'] === '';
@@ -235,6 +236,7 @@ final class EmployeesController extends V1Controller
             Envelope::notFound('EMPLOYEE_NOT_FOUND', 'No such employee');
         }
 
+        if (AccountDeletion::isDeleted(AccountDeletion::expireIfDue($employee))) Envelope::invalid('Deleted accounts cannot be modified or reactivated');
         $before = Present::employee($employee);
         $body = ApiRequest::body();
         $this->validateDraft($body, false);
@@ -262,7 +264,7 @@ final class EmployeesController extends V1Controller
             $userParams[] = $id;
 
             try {
-                db_execute('UPDATE users SET ' . implode(', ', $userSets) . ', updated_at = ? WHERE id = ?', $userParams);
+                db_execute('UPDATE users SET ' . implode(', ', $userSets) . ", updated_at = ? WHERE id = ? AND account_status <> 'deleted'", $userParams);
             } catch (PDOException) {
                 Envelope::conflict('EMAIL_TAKEN', 'That email is already registered in this organisation');
             }
@@ -294,7 +296,7 @@ final class EmployeesController extends V1Controller
 
             try {
                 db_execute(
-                    'UPDATE employee_profiles SET ' . implode(', ', $profileSets) . ' WHERE user_id = ?',
+                    'UPDATE employee_profiles SET ' . implode(', ', $profileSets) . " WHERE user_id = ? AND EXISTS (SELECT 1 FROM users WHERE users.id = employee_profiles.user_id AND users.account_status <> 'deleted')",
                     $profileParams,
                 );
             } catch (PDOException) {

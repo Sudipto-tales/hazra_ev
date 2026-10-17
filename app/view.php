@@ -17,6 +17,9 @@ class ViewRouteProvider extends RouteProvider
             'career' => ['Page', 'career'],
             'career.php' => ['Page', 'career'],
 
+            'privacy-policy' => ['Page', 'privacyPolicy'],
+            'terms-and-conditions' => ['Page', 'termsConditions'],
+
             'products' => ['Page', 'products'],
             'products.php' => ['Page', 'products'],
 
@@ -115,6 +118,7 @@ class ViewRouteProvider extends RouteProvider
             'admin/warranty' => ['Page', 'adminWarranty'],
             'admin/app-releases' => ['Page', 'adminAppReleases'],
             'admin/settings' => ['Page', 'adminSettings'],
+            'admin/message-delivery' => ['Page', 'adminMessageDelivery'],
             'admin/profile' => ['Page', 'adminProfile'],
             'admin/profile.php' => ['Page', 'adminProfile'],
 
