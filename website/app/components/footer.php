@@ -48,15 +48,15 @@ try {
 .foot__app-qr {
   display: inline-block;
   margin-top: 0.5rem;
-  padding: 4px;
+  padding: 6px;
   background: #fff;
   border-radius: 8px;
   line-height: 0;
 }
 .foot__app-qr img {
   display: block;
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
 }
 </style>
 <!-- ══════════ FOOTER ══════════ -->
@@ -142,9 +142,9 @@ try {
                title="Scan to open download page"
                aria-label="QR code to app download page">
               <img
-                src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=<?= rawurlencode(rtrim(base_url('app-download'), '/')) ?>"
-                width="72"
-                height="72"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=<?= rawurlencode(rtrim(base_url('app-download'), '/')) ?>"
+                width="96"
+                height="96"
                 alt="QR code — open app download page"
                 loading="lazy"
               >
