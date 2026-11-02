@@ -399,6 +399,8 @@ final class Present
             'offlineThresholdMinutes'              => Wire::int($r['offline_threshold_minutes']),
             'locationUnavailableThresholdMinutes'  => Wire::int($r['location_unavailable_threshold_minutes']),
             'syncBatchSize'                        => Wire::int($r['sync_batch_size']),
+            'syncIntervalSeconds'                  => Wire::int($r['sync_interval_seconds'] ?? 300),
+            'distanceFilterMetres'                 => Wire::int($r['distance_filter_metres'] ?? 20),
             'version'                              => Wire::int($r['version']),
             'updatedAt'                            => Wire::ts($r['updated_at']),
             'updatedBy'                            => $r['updated_by'] ?? null,
