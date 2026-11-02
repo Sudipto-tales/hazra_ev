@@ -1,0 +1,48 @@
+/* ══════════════════════════════════════════════════════════
+   admin-manual.css — a thin layer on the shared manual shell.
+
+   The admin manual loads pages/employee-manual.css first (the
+   canonical help-page shell: hero, sticky TOC, section rhythm,
+   callouts, FAQ, media slots) and then this file on top. The
+   ONLY thing added here is a desktop / browser-frame media
+   variant, because admin screenshots are captured in a browser
+   at desktop aspect — not in the phone frame the app uses.
+
+   Nothing hard-codes a colour — every value resolves through
+   tokens.css, so light and dark both come for free.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── desktop browser-frame screenshot slot ─────── */
+/* A full-width 16:10 capture inside a faux browser chrome: a
+   toolbar strip with three brand "traffic light" dots. Mirrors
+   the --phone / --video slot API so .manual-media__frame /
+   __screen / __cap markup is identical and the capture pass
+   greps data-media="img/admin-…png" exactly as before. */
+.manual-media--desktop{width:100%}
+.manual-media--desktop .manual-media__frame{
+  width:100%;
+  aspect-ratio:16 / 10;
+  border-radius:var(--r-lg);
+  border:1px solid var(--hair-0);
+  box-shadow:var(--sh-2);
+  background:rgb(var(--chip-rgb) / .55);
+  padding-top:40px;                 /* clears the faux toolbar */
+}
+.manual-media--desktop .manual-media__frame::before{   /* toolbar strip */
+  content:"";
+  position:absolute;top:0;left:0;right:0;height:40px;
+  background:rgb(var(--surface-rgb) / .92);
+  border-bottom:1px solid var(--hair-0);
+}
+.manual-media--desktop .manual-media__frame::after{    /* three brand dots */
+  content:"";
+  position:absolute;top:16px;left:18px;
+  width:9px;height:9px;border-radius:50%;
+  background:var(--brand-flame);
+  box-shadow:17px 0 0 var(--brand-orange),
+             34px 0 0 var(--brand-violet);
+}
+.manual-media--desktop .manual-media__glyph svg{color:var(--brand-blue)}
+
+/* On narrow screens the desktop frame simply fills the column —
+   its 16:10 ratio already behaves, so nothing extra is needed. */

@@ -184,6 +184,8 @@ class ApiGatewayProvider extends RouteProvider
             'GET:api/v1/admin/warranty/registrations/{id}/invoice' => ['WarrantyController', 'adminInvoice'],
 
             // --- App Releases: Public, Admin & CI Deploy ------------------
+            'GET:api/v1/app-releases/update'              => ['AppReleaseController', 'updateInfo', 'auth'],
+            'GET:api/v1/app-releases/{id}/update-apk'      => ['AppReleaseController', 'updateDownload', 'auth'],
             'GET:api/v1/app-releases/latest'              => ['AppReleaseController', 'latest'],
             'GET:api/v1/app-releases'                     => ['AppReleaseController', 'index'],
             'GET:api/v1/app-releases/{id}/download'       => ['AppReleaseController', 'download'],

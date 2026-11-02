@@ -26,16 +26,19 @@ final class Engine
     /**
      * Accepts a batch of fixes for one session.
      *
-     * The device filters on minAccuracyMetres before upload; the server
-     * re-checks and also applies maxJumpKmh. Client-side filtering is an
-     * optimisation, never the guarantee.
+     * Accuracy is never a reason to reject. A fix worse than
+     * minAccuracyMetres is still stored — a weak-GPS stretch has to leave a
+     * trail, not a gap — and its low-accuracy status is derived at read time
+     * by comparing the stored accuracy_m against config.min_accuracy_metres,
+     * which keeps it honest when an admin later retunes the threshold (config
+     * is read-time semantics; a stored flag would go stale). The only reasons
+     * a fix is turned away are MALFORMED, JUMP (maxJumpKmh) and DUPLICATE.
      *
      * @return array{accepted: string[], rejected: array<int, array{id: string, reason: string}>}
      */
     public static function ingest(array $session, array $fixes): array
     {
         $config      = Ctx::config();
-        $minAccuracy = (float) $config['min_accuracy_metres'];
         $maxJump     = (float) $config['max_jump_kmh'];
 
         usort($fixes, static fn(array $a, array $b) => strcmp((string) $a['recordedAt'], (string) $b['recordedAt']));
@@ -64,11 +67,8 @@ final class Engine
             $speed      = (float) ($fix['speedKmh'] ?? 0);
             $recordedAt = Wire::ts($fix['recordedAt'] ?? null) ?? $now;
 
-            if ($accuracy > $minAccuracy) {
-                $rejected[] = ['id' => $clientId, 'reason' => 'ACCURACY'];
-                continue;
-            }
-
+            // Accuracy is no longer a rejection reason — a low-accuracy fix is
+            // stored like any other and flagged at read time (see docblock).
             if ($previous !== null) {
                 $km      = Geo::distanceKm((float) $previous['lat'], (float) $previous['lng'], $lat, $lng);
                 $seconds = Wire::seconds($previous['recorded_at'], $recordedAt);

@@ -26,6 +26,8 @@ final class ConfigController extends V1Controller
         'offlineThresholdMinutes'             => 'offline_threshold_minutes',
         'locationUnavailableThresholdMinutes' => 'location_unavailable_threshold_minutes',
         'syncBatchSize'                       => 'sync_batch_size',
+        'syncIntervalSeconds'                 => 'sync_interval_seconds',
+        'distanceFilterMetres'                => 'distance_filter_metres',
     ];
 
     /** `version` backs the ETag, so an unchanged config is a 304. */
@@ -64,6 +66,27 @@ final class ConfigController extends V1Controller
             Envelope::invalid('No writable configuration fields in the body');
         }
 
+        // v8 cross-field rule: the device must post at least twice inside the
+        // offline window, or it would be flagged offline between its own
+        // uploads. Validate the effective pair — a write may move either side,
+        // so fall back to the stored value for whichever is absent from the
+        // body. This mirrors the long_stop >= stop discipline, enforced here as
+        // a 422 before the write and backed by a DB CHECK (migration 031).
+        $syncInterval = array_key_exists('syncIntervalSeconds', $body)
+            ? $body['syncIntervalSeconds'] + 0
+            : (int) ($before['sync_interval_seconds'] ?? 300);
+        $offlineMinutes = array_key_exists('offlineThresholdMinutes', $body)
+            ? $body['offlineThresholdMinutes'] + 0
+            : (int) $before['offline_threshold_minutes'];
+
+        if ($syncInterval > $offlineMinutes * 30) {
+            Envelope::invalid(
+                'syncIntervalSeconds must be at most offlineThresholdMinutes × 60 / 2 '
+                    . "(≤ {$offlineMinutes} × 30 = " . ($offlineMinutes * 30) . 's)',
+                'syncIntervalSeconds',
+            );
+        }
+
         $params[] = Wire::now();
         $params[] = Ctx::id();
         $params[] = Ctx::orgId();
@@ -76,15 +99,20 @@ final class ConfigController extends V1Controller
                 $params,
             );
         } catch (PDOException) {
-            Envelope::invalid('longStopThresholdMinutes must be at least stopThresholdMinutes, and locationIntervalSeconds must be 5-600');
+            Envelope::invalid('longStopThresholdMinutes must be at least stopThresholdMinutes, locationIntervalSeconds must be 5-600, and syncIntervalSeconds must be at most offlineThresholdMinutes × 60 / 2');
         }
 
         $after = db_fetch_one("SELECT * FROM tracking_configs WHERE org_id = ?", [Ctx::orgId()]);
 
         db_execute(
-            "INSERT INTO tracking_config_history (id, org_id, version, payload, changed_at, changed_by)
-             VALUES (?, ?, ?, ?, ?, ?)",
-            [Uuid::v4(), Ctx::orgId(), $after['version'], json_encode($after), Wire::now(), Ctx::id()],
+            "INSERT INTO tracking_config_history
+                 (id, org_id, version, payload, sync_interval_seconds, distance_filter_metres, changed_at, changed_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                Uuid::v4(), Ctx::orgId(), $after['version'], json_encode($after),
+                $after['sync_interval_seconds'] ?? null, $after['distance_filter_metres'] ?? null,
+                Wire::now(), Ctx::id(),
+            ],
         );
 
         Ctx::audit('tracking_config', Ctx::orgId(), 'update', Present::config($before), Present::config($after));
