@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../../core/config/tracking_config.dart';
 import '../api/api_client.dart';
 import '../api/wire.dart';
 import '../models/models.dart';
@@ -75,6 +76,17 @@ class HttpEmployeeRepository implements EmployeeRepository {
     });
 
     return Wire.homeSnapshot(result.map);
+  }
+
+  /// `GET /config`. Read-only here — the employee never PUTs it (that is an
+  /// admin-only route). Mirrors `HttpAdminRepository.config` so both consumers
+  /// decode the same shape through `Wire.config`, which also preserves
+  /// `autoCloseAfterMinutes` (the server does not send it, so the decoder
+  /// leaves it at the `TrackingConfig` default).
+  @override
+  Future<TrackingConfig> config() async {
+    final ApiResult result = await _api.get('/config');
+    return Wire.config(result.map);
   }
 
   @override

@@ -40,6 +40,11 @@ dependencies:
   # conversion happens at the map boundary only.
   latlong2: ^0.10.1
 
+  # Reads the real app version + build number at runtime so the value shown in
+  # Settings, on the login screens and in the login device payload always
+  # matches pubspec `version:` without a hand-maintained constant.
+  package_info_plus: ^10.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

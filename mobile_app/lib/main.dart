@@ -18,6 +18,7 @@ import 'data/repositories/http_employee_repository.dart';
 import 'data/repositories/mock_admin_repository.dart';
 import 'data/repositories/mock_employee_repository.dart';
 import 'data/repositories/tracking_repository.dart';
+import 'features/profile/app_info.dart';
 import 'services/location_service.dart';
 import 'state/app_scope.dart';
 import 'state/notification_center.dart';
@@ -37,6 +38,9 @@ import 'state/tracking_controller.dart';
 /// ```
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Read the real build identity (version + build number) once, so every
+  // screen and the login device payload render the live value from pubspec.
+  await AppInfo.init();
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

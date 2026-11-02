@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../data/api/api_exception.dart';
 import '../../state/app_scope.dart';
+import '../profile/app_info.dart';
 import '../shell/main_shell.dart';
 
 /// Sign-in screen.
@@ -22,11 +23,9 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Pre-filled with the seeded development account from database/seed.php.
-  final TextEditingController _email =
-      TextEditingController(text: 'arif@hazra-ev.test');
-  final TextEditingController _password =
-      TextEditingController(text: 'password123');
+  // Start empty — the fields show only their placeholder hints.
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _password = TextEditingController();
   bool _obscure = true;
   bool _busy = false;
   String? _error;
@@ -53,7 +52,7 @@ class _LoginPageState extends State<LoginPage> {
           password: _password.text,
           device: <String, dynamic>{
             'platform': defaultTargetPlatform.name,
-            'appVersion': '0.1.0',
+            'appVersion': AppInfo.version,
           },
         );
 
@@ -230,7 +229,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: Insets.xl),
                           child: Text(
-                            'Version 0.1.0 · ${ApiConfig.describe()}',
+                            '${AppInfo.label} · ${ApiConfig.describe()}',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall,
                           ),

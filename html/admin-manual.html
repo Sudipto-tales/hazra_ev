@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8" />
+<script>
+/* Applied before first paint so a dark-mode visitor never sees a light
+   flash. Kept inline and tiny on purpose: an external file would race
+   the paint it exists to prevent. */
+(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+  <title>Admin Panel Manual | Hazra Electrical Bike</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazra Electrical Bike">
+<meta property="og:title" content="Admin Panel Manual | Hazra Electrical Bike">
+<meta property="og:description" content="How to run the Hazra admin panel — sign in, watch the live team map, manage employees, review reports and routes, tune tracking rules, and keep the catalog, messaging and dealer map up to date.">
+<meta property="og:url" content="https://hazraelectricalbike.com/admin-manual.html">
+<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://hazraelectricalbike.com/admin-manual.html">
+<meta name="description" content="A step-by-step guide to the Hazra admin panel: signing in and the first-login password change, the live team map, employees, route history, report review, product catalog, tracking rules, messaging and dealer locations.">
+  <link rel="icon" href="assets/hazraev.png" type="image/png">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/typography.css">
+<link rel="stylesheet" href="styles/global.css">
+<link rel="stylesheet" href="styles/utilities.css">
+<link rel="stylesheet" href="styles/components/page-chrome.css">
+  <link rel="stylesheet" href="styles/pages/employee-manual.css">
+  <link rel="stylesheet" href="styles/pages/admin-manual.css">
+  <link rel="stylesheet" href="styles/pages/manual-mockups.css">
+</head>
+<body>
+
+<a class="skip-link" href="#s1">Skip to the manual</a>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+      <img class="brand__mark" src="assets/hazraevLogo.jpg" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle light and dark theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<!-- ── HERO ─────────────────────────────────────── -->
+<section class="manual-hero">
+  <div class="manual-hero__inner">
+    <span class="manual-hero__eyebrow"><i data-lucide="shield-check"></i> Admin guide</span>
+    <h1 class="manual-hero__title">The Hazra admin panel, end to end.</h1>
+    <p class="manual-hero__lead">
+      Everything you run from the browser — signing in, watching the team on a live
+      map, managing employees, reviewing their routes and reports, tuning the tracking
+      rules, and keeping the catalog, messaging and dealer map current. Work through it
+      in order the first time; after that, jump straight to the screen you need.
+    </p>
+    <div class="manual-hero__meta">
+      <span class="manual-hero__chip"><i data-lucide="monitor"></i> Web panel</span>
+      <span class="manual-hero__chip"><i data-lucide="clock"></i> ~12 min read</span>
+      <span class="manual-hero__chip"><i data-lucide="list-checks"></i> 9 sections</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── SHELL: sticky index + body ───────────────── -->
+<div class="manual-shell">
+
+  <!-- on-page section index -->
+  <nav class="manual-toc" id="toc" aria-label="Manual sections">
+    <p class="manual-toc__title">On this page</p>
+    <ul class="manual-toc__list">
+      <li><a class="manual-toc__link" href="#s1"><span class="manual-toc__num">1</span><span class="manual-toc__label">Sign in &amp; first password</span></a></li>
+      <li><a class="manual-toc__link" href="#s2"><span class="manual-toc__num">2</span><span class="manual-toc__label">Dashboard &amp; live map</span></a></li>
+      <li><a class="manual-toc__link" href="#s3"><span class="manual-toc__num">3</span><span class="manual-toc__label">Employees</span></a></li>
+      <li><a class="manual-toc__link" href="#s4"><span class="manual-toc__num">4</span><span class="manual-toc__label">Route history &amp; stops</span></a></li>
+      <li><a class="manual-toc__link" href="#s5"><span class="manual-toc__num">5</span><span class="manual-toc__label">Report review</span></a></li>
+      <li><a class="manual-toc__link" href="#s6"><span class="manual-toc__num">6</span><span class="manual-toc__label">Product catalog</span></a></li>
+      <li><a class="manual-toc__link" href="#s7"><span class="manual-toc__num">7</span><span class="manual-toc__label">Tracking rules</span></a></li>
+      <li><a class="manual-toc__link" href="#s8"><span class="manual-toc__num">8</span><span class="manual-toc__label">Messaging &amp; dealers</span></a></li>
+      <li><a class="manual-toc__link" href="#s9"><span class="manual-toc__num">9</span><span class="manual-toc__label">Troubleshooting</span></a></li>
+    </ul>
+  </nav>
+
+  <main class="manual-body">
+
+    <!-- 1 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s1">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">01</span>
+        <span class="manual-section__eyebrow">Getting in</span>
+      </div>
+      <h2 class="manual-section__title">Signing in &amp; your first password</h2>
+      <p class="manual-section__lead">
+        The admin panel is the control room for the website and the field team. It runs
+        in a browser at <span class="ui">/admin</span> — there is nothing to install.
+        Accounts are created for you; you never sign up yourself.
+      </p>
+
+      <h3 class="manual-sub">Sign in</h3>
+      <ol class="manual-steps">
+        <li>Open <span class="ui">/admin</span>. If you are not signed in you land on the sign-in card, headed <em>“The control panel for this website.”</em></li>
+        <li>Enter your <strong>Email</strong> and <strong>Password</strong>. Tick <strong>Keep me signed in on this device</strong> only on a machine that is yours.</li>
+        <li>Tap <strong>Sign in</strong>. A wrong address or password is reported right under the button as <em>“Email or password is incorrect.”</em></li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="shield"></i></span>
+        <span>Only an <b>admin</b> account can enter here. An employee (field) login is refused with <em>“Admin role required”</em>, and a deactivated account with <em>“This account is deactivated.”</em></span>
+      </div>
+
+      <h3 class="manual-sub">Forced first-login password change</h3>
+      <p>
+        When an admin creates your account — or resets a forgotten password — the system
+        issues a <strong>temporary password</strong> and flags the account
+        <span class="ui">must_change_password</span>. That flag is the panel asking you to
+        set a password only you know before you do anything else.
+      </p>
+      <ol class="manual-steps">
+        <li>Sign in with the temporary password you were given.</li>
+        <li>You are sent straight to <strong>Change password</strong>. Enter the <strong>temporary password</strong> as your current one, then a <strong>new password</strong> and confirm it.</li>
+        <li>Save. The temporary credential stops working and the <span class="ui">must_change_password</span> flag clears — you will not be asked again.</li>
+      </ol>
+      <div class="manual-note manual-note--warn">
+        <span class="manual-note__icon"><i data-lucide="key-round"></i></span>
+        <span>Temporary passwords are shown to the admin who created the account <b>exactly once</b> and are never stored in readable form. If one is lost it is <b>reset, not recovered</b> — see section 3.</span>
+      </div>
+
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-login.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin</b></div>
+          <div class="mka mka--auth">
+            <div class="mka-auth">
+              <div class="mka-auth__logo"><i data-lucide="shield-check"></i></div>
+              <h3>Sign in</h3>
+              <p>The control panel for this website. Ask an administrator if you do not have an account.</p>
+              <div>
+                <span class="mka-label2">Email</span>
+                <div class="mka-input"><i data-lucide="at-sign"></i> admin@hazraelectricalbike.com</div>
+              </div>
+              <div>
+                <span class="mka-label2">Password</span>
+                <div class="mka-input mka-input--focus"><i data-lucide="lock"></i> ••••••••• <i data-lucide="eye" style="margin-left:auto"></i></div>
+              </div>
+              <div class="mka-check"><span class="mka-box mka-box--on"><i data-lucide="check"></i></span> Keep me signed in on this device</div>
+              <button class="mka-btn mka-btn--primary" style="width:100%"><i data-lucide="log-in"></i> Sign in</button>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Admin sign-in <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-first-password.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/change-password</b></div>
+          <div class="mka mka--auth">
+            <div class="mka-auth">
+              <div class="mka-auth__logo"><i data-lucide="key-round"></i></div>
+              <h3>Change your password</h3>
+              <p>Set a password only you know before you continue.</p>
+              <div class="mka-banner mka-banner--warn"><i data-lucide="shield-alert"></i><div><b>Temporary password in use</b>This account is flagged <span class="mka-code">must_change_password</span>.</div></div>
+              <div>
+                <span class="mka-label2">Current (temporary) password</span>
+                <div class="mka-input"><i data-lucide="lock"></i> •••••••••</div>
+              </div>
+              <div>
+                <span class="mka-label2">New password</span>
+                <div class="mka-input mka-input--focus"><i data-lucide="key-round"></i> ••••••••••••</div>
+              </div>
+              <div>
+                <span class="mka-label2">Confirm new password</span>
+                <div class="mka-input"><i data-lucide="key-round"></i> ••••••••••••</div>
+              </div>
+              <button class="mka-btn mka-btn--primary" style="width:100%"><i data-lucide="check"></i> Save and continue</button>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> First-login password change <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 2 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s2">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">02</span>
+        <span class="manual-section__eyebrow">Your home screen</span>
+      </div>
+      <h2 class="manual-section__title">Dashboard &amp; the live team map</h2>
+      <p class="manual-section__lead">
+        After sign-in you land on the <strong>Dashboard</strong>. It opens with a greeting,
+        a row of totals across your EV business, and a lead inbox — then the live team
+        surfaces tell you who is out there right now.
+      </p>
+
+      <h3 class="manual-sub">Read the dashboard</h3>
+      <ul class="manual-list">
+        <li><strong>Totals strip</strong> — counts of products, blogs, news, gallery items, open jobs, and incoming leads (test drive, dealership, contact, career).</li>
+        <li><strong>Lead overview</strong> — a single figure for incoming leads, broken down by source, each row a link into that inbox.</li>
+        <li><strong>Quick actions</strong> — jump straight to add a product, write a blog, post a job or open the lead inbox.</li>
+      </ul>
+
+      <h3 class="manual-sub">Watch the team live</h3>
+      <ol class="manual-steps">
+        <li>Open the <strong>team roster</strong>. Each member shows a live <strong>status</strong> — <span class="ui">working</span>, <span class="ui">idle</span>, <span class="ui">offline</span> or <span class="ui">location unavailable</span> — with their last GPS fix and how long they have been active.</li>
+        <li>The <strong>totals</strong> above the roster count who is present, working, idle and offline, plus total distance, visits and reports for the chosen <strong>date</strong>.</li>
+        <li>The view is <strong>live</strong>: positions and statuses stream in and update on their own. A long, stationary stop is flagged so you can check in.</li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="radio"></i></span>
+        <span>The live feed updates itself every few seconds and reconnects automatically if the stream drops. If a connection can't be held, the panel quietly falls back to polling — you still see current positions, just refreshed a little less often.</span>
+      </div>
+      <div class="manual-note manual-note--tip">
+        <span class="manual-note__icon"><i data-lucide="calendar"></i></span>
+        <span>Pick a <b>date</b> to review any past day. Totals, statuses and the map all follow the date you choose.</span>
+      </div>
+
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-dashboard.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/dashboard</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+              <div class="mka-side__group">System</div>
+              <div class="mka-side__i"><i data-lucide="send"></i> Messaging</div>
+              <div class="mka-side__i"><i data-lucide="map-pin"></i> Dealers</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t">Good morning, admin<small>Here's what's happening across your EV business today.</small></div>
+                <div class="mka-top__search"><i data-lucide="search"></i> Search…</div>
+                <div class="mka-top__av">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-stats mka-stats--6">
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--violet"><i data-lucide="bike"></i></div><b>24</b><span>Products</span></div>
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--blue"><i data-lucide="pen-nib"></i></div><b>12</b><span>Blogs</span></div>
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--magenta"><i data-lucide="newspaper"></i></div><b>8</b><span>News</span></div>
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--amber"><i data-lucide="images"></i></div><b>36</b><span>Gallery</span></div>
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--green"><i data-lucide="briefcase"></i></div><b>3</b><span>Open jobs</span></div>
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--red"><i data-lucide="inbox"></i></div><b>14</b><span>Leads</span></div>
+                </div>
+                <div class="mka-row2">
+                  <div class="mka-card">
+                    <div class="mka-card__h"><i data-lucide="inbox"></i><b>Lead overview</b><small>14 incoming</small></div>
+                    <div class="mka-kv"><span>Test drive</span><b>6</b></div>
+                    <div class="mka-kv"><span>Dealership</span><b>4</b></div>
+                    <div class="mka-kv"><span>Contact</span><b>3</b></div>
+                    <div class="mka-kv"><span>Career</span><b>1</b></div>
+                  </div>
+                  <div class="mka-card">
+                    <div class="mka-card__h"><i data-lucide="zap"></i><b>Quick actions</b></div>
+                    <div class="mka-btns" style="flex-direction:column">
+                      <button class="mka-btn mka-btn--primary" style="width:100%;justify-content:flex-start"><i data-lucide="plus"></i> Add a product</button>
+                      <button class="mka-btn mka-btn--ghost" style="width:100%;justify-content:flex-start"><i data-lucide="pen-nib"></i> Write a blog</button>
+                      <button class="mka-btn mka-btn--ghost" style="width:100%;justify-content:flex-start"><i data-lucide="briefcase"></i> Post a job</button>
+                      <button class="mka-btn mka-btn--ghost" style="width:100%;justify-content:flex-start"><i data-lucide="inbox"></i> Open lead inbox</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Admin dashboard <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-live-map.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/live-team</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t">Live team</div>
+                <div class="mka-pill mka-pill--on" style="margin-left:auto"><i data-lucide="calendar"></i> 18 Aug 2026</div>
+                <div class="mka-pill"><span class="mka-dot mka-dot--working"></span> Live</div>
+                <div class="mka-top__av">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-stats">
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--green"><i data-lucide="navigation"></i></div><b>6</b><span>Working</span></div>
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--amber"><i data-lucide="pause"></i></div><b>2</b><span>Idle</span></div>
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--red"><i data-lucide="octagon-alert"></i></div><b>2</b><span>Long stops</span></div>
+                  <div class="mka-stat"><div class="mka-stat__ic mka-i--violet"><i data-lucide="user-check"></i></div><b>75%</b><span>Attendance</span></div>
+                </div>
+                <div class="mka-row2 mka-row2--even">
+                  <div class="mka-map">
+                    <i></i><i></i><i></i><i></i>
+                    <span class="mka-pin mka-pin--working" style="left:24%;top:38%"><b>AD</b></span>
+                    <span class="mka-pin mka-pin--idle" style="left:52%;top:30%"><b>PS</b></span>
+                    <span class="mka-pin mka-pin--flag" style="left:68%;top:58%"><b>SP</b></span>
+                    <span class="mka-pin mka-pin--offline" style="left:38%;top:70%"><b>RN</b></span>
+                    <div class="mka-flagcard"><i data-lucide="octagon-alert"></i> Long stop · Sourav P. · 52 min</div>
+                    <div class="mka-legend">
+                      <span><span class="mka-dot mka-dot--working"></span> Working</span>
+                      <span><span class="mka-dot mka-dot--idle"></span> Idle</span>
+                      <span><span class="mka-dot mka-dot--unavail"></span> No location</span>
+                      <span><span class="mka-dot mka-dot--offline"></span> Offline</span>
+                    </div>
+                  </div>
+                  <div class="mka-card mka-card--flush">
+                    <div class="mka-card__h"><i data-lucide="users"></i><b>Team roster</b><small>10 active</small></div>
+                    <div class="mka-roster">
+                      <div class="mka-roster__r"><span class="mka-av">AD</span><div><div class="mka-who__n">Arindam Das</div><div class="mka-who__m">EMP-2041 · Bardhaman</div></div><div class="mka-roster__st"><span class="mka-badge mka-badge--working"><span class="mka-dot mka-dot--working"></span> Working</span><span class="mka-roster__fix">now · ±6 m</span></div></div>
+                      <div class="mka-roster__r"><span class="mka-av mka-av--e">PS</span><div><div class="mka-who__n">Priya Sen</div><div class="mka-who__m">EMP-2088 · Durgapur</div></div><div class="mka-roster__st"><span class="mka-badge mka-badge--idle"><span class="mka-dot mka-dot--idle"></span> Idle</span><span class="mka-roster__fix">4 min ago</span></div></div>
+                      <div class="mka-roster__r"><span class="mka-av mka-av--d">SP</span><div><div class="mka-who__n">Sourav Pal</div><div class="mka-who__m">EMP-3156 · Asansol</div></div><div class="mka-roster__st"><span class="mka-badge mka-badge--working"><span class="mka-dot mka-dot--working"></span> Working</span><span class="mka-roster__fix">long stop 52 min</span></div></div>
+                      <div class="mka-roster__r"><span class="mka-av mka-av--b">RN</span><div><div class="mka-who__n">Rahul Nandi</div><div class="mka-who__m">EMP-1042 · Bardhaman</div></div><div class="mka-roster__st"><span class="mka-badge mka-badge--offline"><span class="mka-dot mka-dot--offline"></span> Offline</span><span class="mka-roster__fix">18 min ago</span></div></div>
+                      <div class="mka-roster__r"><span class="mka-av mka-av--c">MR</span><div><div class="mka-who__n">Mitali Roy</div><div class="mka-who__m">EMP-2210 · Durgapur</div></div><div class="mka-roster__st"><span class="mka-badge mka-badge--unavail"><span class="mka-dot mka-dot--unavail"></span> No location</span><span class="mka-roster__fix">signal lost</span></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Live team map <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+      <figure class="manual-media manual-media--video manual-media--mock" data-media="video/admin-live-map.mp4">
+        <div class="manual-media__frame mk-stage mk-stage--3">
+          <div class="mka-stage__win">
+            <div class="mk-stage__screens">
+              <!-- step 1: team working -->
+              <div class="mka">
+                <div class="mka-main">
+                  <div class="mka-top"><div class="mka-top__t">Live team</div><div class="mka-pill" style="margin-left:auto"><span class="mka-dot mka-dot--working"></span> Live</div></div>
+                  <div class="mka-canvas" style="padding:10px 12px">
+                    <div class="mka-map">
+                      <i></i><i></i><i></i><i></i>
+                      <span class="mka-pin mka-pin--working" style="left:26%;top:40%"><b>AD</b></span>
+                      <span class="mka-pin mka-pin--working" style="left:56%;top:34%"><b>PS</b></span>
+                      <span class="mka-pin mka-pin--idle" style="left:64%;top:62%"><b>SP</b></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- step 2: a pin moves along its route -->
+              <div class="mka">
+                <div class="mka-main">
+                  <div class="mka-top"><div class="mka-top__t">Live team</div><div class="mka-pill" style="margin-left:auto"><span class="mka-dot mka-dot--working"></span> Live</div></div>
+                  <div class="mka-canvas" style="padding:10px 12px">
+                    <div class="mka-map">
+                      <i></i><i></i><i></i><i></i>
+                      <span class="mka-pin mka-pin--working" style="left:40%;top:34%"><b>AD</b></span>
+                      <span class="mka-pin mka-pin--working" style="left:60%;top:46%"><b>PS</b></span>
+                      <span class="mka-pin mka-pin--idle" style="left:64%;top:62%"><b>SP</b></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- step 3: a long stop is flagged -->
+              <div class="mka">
+                <div class="mka-main">
+                  <div class="mka-top"><div class="mka-top__t">Live team</div><div class="mka-pill" style="margin-left:auto"><span class="mka-dot mka-dot--working"></span> Live</div></div>
+                  <div class="mka-canvas" style="padding:10px 12px">
+                    <div class="mka-map">
+                      <i></i><i></i><i></i><i></i>
+                      <span class="mka-pin mka-pin--working" style="left:46%;top:30%"><b>AD</b></span>
+                      <span class="mka-pin mka-pin--working" style="left:62%;top:46%"><b>PS</b></span>
+                      <span class="mka-pin mka-pin--flag" style="left:64%;top:62%"><b>SP</b></span>
+                      <div class="mka-flagcard"><i data-lucide="octagon-alert"></i> Long stop · 45 min</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mk-stage__hud">
+            <div class="mk-stage__caps">
+              <div class="mk-stage__cap"><i data-lucide="users"></i> The team is working</div>
+              <div class="mk-stage__cap"><i data-lucide="navigation"></i> Positions stream in live</div>
+              <div class="mk-stage__cap"><i data-lucide="octagon-alert"></i> A long stop is flagged</div>
+            </div>
+            <div class="mk-stage__dots"><i></i><i></i><i></i></div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="clapperboard"></i> Example walkthrough</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="video"></i> Walkthrough: the live map <span class="manual-media__exmp">· animated example</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 3 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s3">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">03</span>
+        <span class="manual-section__eyebrow">Your people</span>
+      </div>
+      <h2 class="manual-section__title">Employees — add, reset, deactivate</h2>
+      <p class="manual-section__lead">
+        The <strong>Employees</strong> screen is the roster. Search it by name, employee
+        code, region or department, and filter to active accounts only. From here you add
+        new field staff, reset passwords and deactivate anyone who has left.
+      </p>
+
+      <h3 class="manual-sub">Add an employee</h3>
+      <ol class="manual-steps">
+        <li>Tap <strong>Add employee</strong> and fill in the required fields: <strong>name</strong> (at least 3 characters), a valid <strong>email</strong>, an <strong>employee code</strong> in the form <span class="ui">EMP-1042</span>, and a <strong>joining date</strong> that is not in the future.</li>
+        <li>Optionally set phone, designation, department, region, reporting manager, blood group and address.</li>
+        <li>Either type a <strong>starting password</strong>, or leave it blank and let the panel <strong>generate one</strong>.</li>
+        <li>Save. If you let the panel generate the password, a <strong>temporary password is shown once</strong> on the confirmation — copy it and pass it on. The account opens flagged for a forced password change (section 1).</li>
+      </ol>
+      <div class="manual-note manual-note--warn">
+        <span class="manual-note__icon"><i data-lucide="triangle-alert"></i></span>
+        <span>Email and employee code are <b>unique per organisation</b>. A duplicate is refused with <em>“That email is already registered”</em> or <em>“That employee code is already in use.”</em></span>
+      </div>
+
+      <h3 class="manual-sub">Reset a password</h3>
+      <ol class="manual-steps">
+        <li>Open the employee and choose <strong>Reset password</strong>.</li>
+        <li>Type a new password, or leave it blank to have one generated. A generated one is shown <strong>once</strong> and arrives flagged for a forced change.</li>
+        <li>Resetting <strong>signs the employee out of every device</strong> — that is the point of a reset. Hand them the new credential and they sign in fresh.</li>
+      </ol>
+
+      <h3 class="manual-sub">Deactivate an account</h3>
+      <ol class="manual-steps">
+        <li>Open the employee and switch <strong>Active</strong> off.</li>
+        <li>They can no longer sign in, and they drop out of the live alert counts — but they <strong>stay in the roster and keep their history</strong>, so past routes and reports are never lost.</li>
+        <li>Switch <strong>Active</strong> back on at any time to restore access.</li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="user-x"></i></span>
+        <span>Deactivating is reversible and keeps the record. A full account deletion is a separate, heavier path — a deleted account cannot be edited or reactivated.</span>
+      </div>
+
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-employees.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/employees</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t">Employees</div>
+                <button class="mka-btn mka-btn--primary mka-btn--sm" style="margin-left:auto"><i data-lucide="user-plus"></i> Add employee</button>
+                <div class="mka-top__av">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-bar">
+                  <div class="mka-pill" style="flex:1;min-width:0;justify-content:flex-start"><i data-lucide="search"></i> Search by name, code, region or department…</div>
+                  <div class="mka-pill mka-pill--on"><i data-lucide="check"></i> Active only</div>
+                </div>
+                <div class="mka-tablewrap">
+                  <table class="mka-table">
+                    <thead><tr><th>Employee</th><th>Code</th><th>Designation</th><th>Region</th><th>Status</th></tr></thead>
+                    <tbody>
+                      <tr><td><div class="mka-who"><span class="mka-av">AD</span><div class="mka-who__n">Arindam Das</div></div></td><td class="mka-code">EMP-2041</td><td>Field Sales</td><td>Bardhaman</td><td><span class="mka-badge mka-badge--approved">Active</span></td></tr>
+                      <tr><td><div class="mka-who"><span class="mka-av mka-av--e">PS</span><div class="mka-who__n">Priya Sen</div></div></td><td class="mka-code">EMP-2088</td><td>Field Sales</td><td>Durgapur</td><td><span class="mka-badge mka-badge--approved">Active</span></td></tr>
+                      <tr><td><div class="mka-who"><span class="mka-av mka-av--d">SP</span><div class="mka-who__n">Sourav Pal</div></div></td><td class="mka-code">EMP-3156</td><td>Senior Field Exec</td><td>Asansol</td><td><span class="mka-badge mka-badge--approved">Active</span></td></tr>
+                      <tr><td><div class="mka-who"><span class="mka-av mka-av--c">MR</span><div class="mka-who__n">Mitali Roy</div></div></td><td class="mka-code">EMP-2210</td><td>Field Sales</td><td>Durgapur</td><td><span class="mka-badge mka-badge--approved">Active</span></td></tr>
+                      <tr><td><div class="mka-who"><span class="mka-av mka-av--b">RN</span><div class="mka-who__n">Rahul Nandi</div></div></td><td class="mka-code">EMP-1042</td><td>Field Sales</td><td>Bardhaman</td><td><span class="mka-badge mka-badge--hidden">Inactive</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Employee roster <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-employee-add.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/employees/new</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t"><i data-lucide="arrow-left" style="vertical-align:-2px"></i> Add employee</div>
+                <div class="mka-top__av" style="margin-left:auto">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-card">
+                  <div class="mka-form">
+                    <div><span class="mka-label2">Name <span class="mka-req">*</span></span><div class="mka-input">Arindam Das</div></div>
+                    <div><span class="mka-label2">Employee code <span class="mka-req">*</span></span><div class="mka-input mka-input--focus"><span class="mka-code">EMP-1042</span></div></div>
+                    <div><span class="mka-label2">Email <span class="mka-req">*</span></span><div class="mka-input"><i data-lucide="at-sign"></i> arindam.das@example.com</div></div>
+                    <div><span class="mka-label2">Joining date <span class="mka-req">*</span></span><div class="mka-input"><i data-lucide="calendar"></i> 18 Aug 2026</div></div>
+                    <div><span class="mka-label2">Department</span><div class="mka-input mka-input--select">Field Sales <i data-lucide="chevron-down"></i></div></div>
+                    <div><span class="mka-label2">Region</span><div class="mka-input">Bardhaman</div></div>
+                    <div class="mka-form__full"><span class="mka-label2">Starting password <span class="mka-hint">Leave blank to generate one automatically</span></span><div class="mka-input"><span class="mka-ph">Generate for me</span><span class="mka-suf">Auto</span></div></div>
+                  </div>
+                </div>
+                <div class="mka-banner mka-banner--success"><i data-lucide="key-round"></i><div><b>Temporary password — shown once</b>Copy <span class="mka-code">Hz7-Kp42-Qm</span> and pass it on. The account opens flagged for a forced password change.</div></div>
+                <div class="mka-btns"><button class="mka-btn mka-btn--primary"><i data-lucide="check"></i> Save employee</button><button class="mka-btn mka-btn--ghost">Cancel</button></div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Adding an employee <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 4 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s4">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">04</span>
+        <span class="manual-section__eyebrow">Where they went</span>
+      </div>
+      <h2 class="manual-section__title">Route history &amp; stops</h2>
+      <p class="manual-section__lead">
+        Open any employee on any date to see the day drawn on a map: the path they
+        travelled, every <strong>stop</strong> they made, and every <strong>company visit</strong>
+        detected along the way.
+      </p>
+      <ul class="manual-list">
+        <li><strong>The route</strong> — the matched track for the day. A closed day shows the finished, road-snapped path; today's open day draws live from the fixes that have arrived so far.</li>
+        <li><strong>Stops</strong> — each place the employee stayed put long enough to count, with arrival and departure times. An open stop (still there) shows how long it has run.</li>
+        <li><strong>Visits</strong> — stops matched to a customer location, which is what links a stop to a report.</li>
+      </ul>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="route"></i></span>
+        <span>Routes for the <b>whole team</b> on a date can be loaded together, or narrowed to specific people. Pick a <b>date</b> to step back through history.</span>
+      </div>
+      <div class="manual-note manual-note--tip">
+        <span class="manual-note__icon"><i data-lucide="git-commit-horizontal"></i></span>
+        <span>What counts as a stop — the radius, how long is "stopped", and when a stop becomes a <b>long stop</b> — all come from the <b>tracking rules</b> in section 7. Change a rule and today's open day re-derives against it immediately; closed historical days are left exactly as they were.</span>
+      </div>
+
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-route-history.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/routes</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t">Route history</div>
+                <div class="mka-pill" style="margin-left:auto"><i data-lucide="user"></i> Arindam Das</div>
+                <div class="mka-pill mka-pill--on"><i data-lucide="calendar"></i> 18 Aug 2026</div>
+                <div class="mka-top__av">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-row2 mka-row2--even">
+                  <div class="mka-map">
+                    <i></i><i></i><i></i><i></i>
+                    <span class="mka-route" style="left:16%;top:46%;width:30%;transform:rotate(-16deg)"></span>
+                    <span class="mka-route" style="left:42%;top:34%;width:28%;transform:rotate(14deg)"></span>
+                    <span class="mka-route" style="left:62%;top:46%;width:24%;transform:rotate(-8deg)"></span>
+                    <span class="mka-stop" style="left:15%;top:44%">1</span>
+                    <span class="mka-stop mka-stop--visit" style="left:43%;top:31%">2</span>
+                    <span class="mka-stop mka-stop--visit" style="left:68%;top:52%">3</span>
+                    <div class="mka-legend">
+                      <span><span class="mka-stop" style="position:static;width:12px;height:12px;border-width:2px"></span> Stop</span>
+                      <span><span class="mka-stop mka-stop--visit" style="position:static;width:12px;height:12px;border-width:2px"></span> Detected visit</span>
+                      <span><span style="display:inline-block;width:14px;border-top:3px dashed var(--ka-violet)"></span> Route</span>
+                    </div>
+                  </div>
+                  <div class="mka-card mka-card--flush">
+                    <div class="mka-card__h"><i data-lucide="flag"></i><b>Stops &amp; visits</b><small>42.6 km</small></div>
+                    <div class="mka-roster">
+                      <div class="mka-roster__r"><span class="mka-stop" style="position:static">1</span><div><div class="mka-who__n">Morning stop</div><div class="mka-who__m">09:12 – 09:34 · 22 min</div></div><span class="mka-badge mka-badge--neutral" style="margin-left:auto">Stop</span></div>
+                      <div class="mka-roster__r"><span class="mka-stop mka-stop--visit" style="position:static">2</span><div><div class="mka-who__n">Mohakhali EV Point</div><div class="mka-who__m">11:02 – 11:48 · report linked</div></div><span class="mka-badge mka-badge--approved" style="margin-left:auto">Visit</span></div>
+                      <div class="mka-roster__r"><span class="mka-stop mka-stop--visit" style="position:static">3</span><div><div class="mka-who__n">Bardhaman EV Hub</div><div class="mka-who__m">14:20 – now · open stop</div></div><span class="mka-badge mka-badge--idle" style="margin-left:auto">Open</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Route history <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+      <figure class="manual-media manual-media--video manual-media--mock" data-media="video/admin-route-replay.mp4">
+        <div class="manual-media__frame mk-stage mk-stage--3">
+          <div class="mka-stage__win">
+            <div class="mk-stage__screens">
+              <!-- step 1: the day's route -->
+              <div class="mka">
+                <div class="mka-main">
+                  <div class="mka-top"><div class="mka-top__t">Route history</div><div class="mka-pill" style="margin-left:auto"><i data-lucide="calendar"></i> 18 Aug</div></div>
+                  <div class="mka-canvas" style="padding:10px 12px">
+                    <div class="mka-map">
+                      <i></i><i></i><i></i><i></i>
+                      <span class="mka-route" style="left:16%;top:46%;width:30%;transform:rotate(-16deg)"></span>
+                      <span class="mka-route" style="left:42%;top:34%;width:28%;transform:rotate(14deg)"></span>
+                      <span class="mka-stop" style="left:15%;top:44%">1</span>
+                      <span class="mka-stop mka-stop--visit" style="left:43%;top:31%">2</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- step 2: route extends to the next stop -->
+              <div class="mka">
+                <div class="mka-main">
+                  <div class="mka-top"><div class="mka-top__t">Route history</div><div class="mka-pill" style="margin-left:auto"><i data-lucide="calendar"></i> 18 Aug</div></div>
+                  <div class="mka-canvas" style="padding:10px 12px">
+                    <div class="mka-map">
+                      <i></i><i></i><i></i><i></i>
+                      <span class="mka-route" style="left:16%;top:46%;width:30%;transform:rotate(-16deg)"></span>
+                      <span class="mka-route" style="left:42%;top:34%;width:28%;transform:rotate(14deg)"></span>
+                      <span class="mka-route" style="left:62%;top:46%;width:24%;transform:rotate(-8deg)"></span>
+                      <span class="mka-stop" style="left:15%;top:44%">1</span>
+                      <span class="mka-stop mka-stop--visit" style="left:43%;top:31%">2</span>
+                      <span class="mka-stop mka-stop--visit" style="left:68%;top:52%">3</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- step 3: open a stop -->
+              <div class="mka">
+                <div class="mka-main">
+                  <div class="mka-top"><div class="mka-top__t">Stop · Mohakhali EV Point</div></div>
+                  <div class="mka-canvas" style="padding:12px">
+                    <div class="mka-card">
+                      <div class="mka-card__h"><i data-lucide="store"></i><b>Mohakhali EV Point</b></div>
+                      <div class="mka-kv"><span>Arrived</span><b>11:02</b></div>
+                      <div class="mka-kv"><span>Departed</span><b>11:48</b></div>
+                      <div class="mka-kv"><span>Report</span><b>1 linked</b></div>
+                      <div class="mka-linked" style="margin-top:8px"><i data-lucide="link"></i> Matched to a customer location</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mk-stage__hud">
+            <div class="mk-stage__caps">
+              <div class="mk-stage__cap"><i data-lucide="route"></i> Open a day's route</div>
+              <div class="mk-stage__cap"><i data-lucide="flag"></i> Step through the stops</div>
+              <div class="mk-stage__cap"><i data-lucide="store"></i> Open a stop's detail</div>
+            </div>
+            <div class="mk-stage__dots"><i></i><i></i><i></i></div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="clapperboard"></i> Example walkthrough</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="video"></i> Walkthrough: reviewing a route <span class="manual-media__exmp">· animated example</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 5 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s5">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">05</span>
+        <span class="manual-section__eyebrow">Checking the work</span>
+      </div>
+      <h2 class="manual-section__title">Report review — approve or send back</h2>
+      <p class="manual-section__lead">
+        Every visit report an employee submits lands here for review. Filter by decision
+        —<span class="ui">pending</span>, <span class="ui">approved</span> or
+        <span class="ui">rejected</span> — and work through the queue. The sidebar badge
+        counts how many are still waiting.
+      </p>
+      <ol class="manual-steps">
+        <li>Open a report. You see the shop, the write-up, attached photos, any products sold and payment collected, and the session, GPS location and timestamp the app attached automatically.</li>
+        <li>To accept it, choose <strong>Approve</strong>. To return it for a fix, choose <strong>Send back</strong> and add a <strong>note</strong> saying what needs changing.</li>
+        <li>The decision and note are recorded with your name and the time, and the pending count drops by one.</li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="clipboard-check"></i></span>
+        <span>A decision can be changed later — moving a report back to <b>pending</b> clears the review time so it re-enters the queue. Every change is kept in the audit trail.</span>
+      </div>
+      <div class="manual-note manual-note--tip">
+        <span class="manual-note__icon"><i data-lucide="message-square-text"></i></span>
+        <span>Always leave a <b>note</b> when you send a report back — it is the one thing the employee sees explaining why, so make it specific.</span>
+      </div>
+
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-report-queue.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/reports</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t">Report review<small>11 pending your decision</small></div>
+                <div class="mka-top__av" style="margin-left:auto">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-bar">
+                  <div class="mka-pill mka-pill--on"><i data-lucide="clock"></i> Pending</div>
+                  <div class="mka-pill">Approved</div>
+                  <div class="mka-pill">Rejected</div>
+                </div>
+                <div class="mka-tablewrap">
+                  <table class="mka-table">
+                    <thead><tr><th>Shop / company</th><th>Employee</th><th>Submitted</th><th>Decision</th></tr></thead>
+                    <tbody>
+                      <tr><td class="mka-r">Mohakhali EV Point</td><td><div class="mka-who"><span class="mka-av" style="width:22px;height:22px;font-size:8px">AD</span> Arindam Das</div></td><td class="mka-sub">11:48 today</td><td><span class="mka-badge mka-badge--pending"><i data-lucide="clock"></i> Pending</span></td></tr>
+                      <tr><td class="mka-r">Bardhaman EV Hub</td><td><div class="mka-who"><span class="mka-av mka-av--e" style="width:22px;height:22px;font-size:8px">PS</span> Priya Sen</div></td><td class="mka-sub">10:21 today</td><td><span class="mka-badge mka-badge--pending"><i data-lucide="clock"></i> Pending</span></td></tr>
+                      <tr><td class="mka-r">Shakti Auto</td><td><div class="mka-who"><span class="mka-av mka-av--d" style="width:22px;height:22px;font-size:8px">SP</span> Sourav Pal</div></td><td class="mka-sub">Yesterday</td><td><span class="mka-badge mka-badge--pending"><i data-lucide="clock"></i> Pending</span></td></tr>
+                      <tr><td class="mka-r">Galaxy Motors</td><td><div class="mka-who"><span class="mka-av mka-av--c" style="width:22px;height:22px;font-size:8px">MR</span> Mitali Roy</div></td><td class="mka-sub">Yesterday</td><td><span class="mka-badge mka-badge--pending"><i data-lucide="clock"></i> Pending</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Report queue <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-report-review.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/reports/8f21</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t"><i data-lucide="arrow-left" style="vertical-align:-2px"></i> Mohakhali EV Point</div>
+                <span class="mka-badge mka-badge--pending" style="margin-left:auto"><i data-lucide="clock"></i> Pending</span>
+                <div class="mka-top__av">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-row2">
+                  <div class="mka-col">
+                    <div class="mka-card">
+                      <div class="mka-card__h"><i data-lucide="pencil-line"></i><b>Walk-in dealer — first order</b></div>
+                      <p class="mka-muted" style="font-size:9.5px;margin:0 0 9px">Met the owner and demoed the NJA-7. Ordered 3 units, follow-up next week.</p>
+                      <div class="mka-photos"><span class="mka-photo"><i data-lucide="image"></i></span><span class="mka-photo mka-photo--2"><i data-lucide="image"></i></span><span class="mka-photo mka-photo--3"><i data-lucide="image"></i></span></div>
+                    </div>
+                    <div class="mka-card mka-card--flush">
+                      <div class="mka-kv"><span>Products sold</span><b>Hazra NJA-7 × 3</b></div>
+                      <div class="mka-kv"><span>Payment collected</span><b>₹ 18,000</b></div>
+                      <div class="mka-kv"><span>Deal value</span><b>₹ 2,64,000</b></div>
+                    </div>
+                  </div>
+                  <div class="mka-col">
+                    <div class="mka-card mka-card--flush">
+                      <div class="mka-card__h"><i data-lucide="paperclip"></i><b>Attached automatically</b></div>
+                      <div class="mka-kv"><span>Employee</span><b>Arindam Das</b></div>
+                      <div class="mka-kv"><span>Session</span><b>#2 · 11:02</b></div>
+                      <div class="mka-kv"><span>Location</span><b>23.24, 87.86</b></div>
+                      <div class="mka-kv"><span>Submitted</span><b>11:48</b></div>
+                    </div>
+                    <div class="mka-card">
+                      <div class="mka-label2">Note (sent with "Send back")</div>
+                      <div class="mka-input mka-input--area"><span class="mka-ph">Say what needs changing…</span></div>
+                      <div class="mka-btns" style="margin-top:9px"><button class="mka-btn mka-btn--green"><i data-lucide="check"></i> Approve</button><button class="mka-btn mka-btn--amber"><i data-lucide="undo-2"></i> Send back</button></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Reviewing a report <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 6 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s6">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">06</span>
+        <span class="manual-section__eyebrow">The storefront</span>
+      </div>
+      <h2 class="manual-section__title">Product catalog management</h2>
+      <p class="manual-section__lead">
+        The <strong>Products</strong> screen manages the EV scooters shown on the public
+        site — their names, model codes, specifications, featured status and hero images.
+        Search by name or model code and filter by whether each is published or hidden.
+      </p>
+      <ol class="manual-steps">
+        <li>Tap <strong>Add Product</strong> to create one, or open an existing row to edit it.</li>
+        <li>Fill in the product's name, model code, category and brand, its specifications, and upload hero images.</li>
+        <li>Set its visibility to <strong>Published</strong> to show it on the site, or <strong>Hidden</strong> to keep it off. Mark a model <strong>featured</strong> to surface it on the home page.</li>
+        <li>Save. Use <strong>View on site</strong> to open the live products page in a new tab and confirm it looks right.</li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="images"></i></span>
+        <span>Hero images drive the look of the product page — upload clean, correctly-oriented photos. The same catalog feeds both the website and the field app's product picker, so a model you publish here is what employees select when logging a sale.</span>
+      </div>
+
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-products.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/products</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t">Products<small>Manage EV scooters, specs, featured status and hero images.</small></div>
+                <button class="mka-btn mka-btn--primary mka-btn--sm" style="margin-left:auto"><i data-lucide="plus"></i> Add Product</button>
+                <div class="mka-top__av">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-bar">
+                  <div class="mka-pill" style="flex:1;min-width:0;justify-content:flex-start"><i data-lucide="search"></i> Search products by name or model code</div>
+                  <div class="mka-pill mka-pill--on">Published</div>
+                  <div class="mka-pill">Hidden</div>
+                </div>
+                <div class="mka-tablewrap">
+                  <table class="mka-table">
+                    <thead><tr><th>Model</th><th>Category</th><th>Featured</th><th>Status</th></tr></thead>
+                    <tbody>
+                      <tr><td><div class="mka-who"><span class="mka-photo" style="width:34px;height:26px"><i data-lucide="bike"></i></span><div><div class="mka-who__n">Hazra NJA-7</div><div class="mka-who__m">Hazra EV · NJA-7</div></div></div></td><td><span class="mka-badge mka-badge--neutral">Scooty</span></td><td><span class="mka-badge mka-badge--approved"><i data-lucide="star"></i> Featured (1)</span></td><td><span class="mka-badge mka-badge--pub">Published</span></td></tr>
+                      <tr><td><div class="mka-who"><span class="mka-photo mka-photo--2" style="width:34px;height:26px"><i data-lucide="bike"></i></span><div><div class="mka-who__n">Hazra Volt X</div><div class="mka-who__m">Hazra EV · VX-9</div></div></div></td><td><span class="mka-badge mka-badge--neutral">Scooty</span></td><td class="mka-sub">—</td><td><span class="mka-badge mka-badge--pub">Published</span></td></tr>
+                      <tr><td><div class="mka-who"><span class="mka-photo mka-photo--3" style="width:34px;height:26px"><i data-lucide="bike"></i></span><div><div class="mka-who__n">Hazra City Pro</div><div class="mka-who__m">Hazra EV · CP-3</div></div></div></td><td><span class="mka-badge mka-badge--neutral">Bike</span></td><td class="mka-sub">—</td><td><span class="mka-badge mka-badge--hidden">Hidden</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Product catalog <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-product-form.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/products/nja-7</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t"><i data-lucide="arrow-left" style="vertical-align:-2px"></i> Edit product</div>
+                <button class="mka-btn mka-btn--ghost mka-btn--sm" style="margin-left:auto"><i data-lucide="external-link"></i> View on site</button>
+                <button class="mka-btn mka-btn--primary mka-btn--sm"><i data-lucide="check"></i> Save</button>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-row2">
+                  <div class="mka-col">
+                    <div class="mka-card">
+                      <div class="mka-form">
+                        <div><span class="mka-label2">Name</span><div class="mka-input">Hazra NJA-7</div></div>
+                        <div><span class="mka-label2">Model code</span><div class="mka-input"><span class="mka-code">NJA-7</span></div></div>
+                        <div><span class="mka-label2">Category</span><div class="mka-input mka-input--select">Scooty <i data-lucide="chevron-down"></i></div></div>
+                        <div><span class="mka-label2">Brand</span><div class="mka-input">Hazra EV</div></div>
+                        <div class="mka-form__full"><span class="mka-label2">Specifications</span><div class="mka-input mka-input--area">Range 110 km · Top speed 65 km/h · 2.5 kWh battery · 4 h charge</div></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mka-col">
+                    <div class="mka-card">
+                      <div class="mka-card__h"><i data-lucide="images"></i><b>Hero images</b></div>
+                      <span class="mka-photo mka-photo--hero"><i data-lucide="image"></i></span>
+                      <div class="mka-photos" style="margin-top:9px"><span class="mka-photo" style="width:48px;height:36px"><i data-lucide="image"></i></span><span class="mka-photo mka-photo--add" style="width:48px;height:36px"><i data-lucide="plus"></i> Add</span></div>
+                    </div>
+                    <div class="mka-card mka-card--flush">
+                      <div class="mka-togrow" style="margin-bottom:9px"><i data-lucide="eye"></i> Published <span class="mka-toggle mka-toggle--on" style="margin-left:auto"></span></div>
+                      <div class="mka-togrow"><i data-lucide="star"></i> Featured on home <span class="mka-toggle mka-toggle--on" style="margin-left:auto"></span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Editing a product <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 7 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s7">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">07</span>
+        <span class="manual-section__eyebrow">How tracking behaves</span>
+      </div>
+      <h2 class="manual-section__title">Tracking rules</h2>
+      <p class="manual-section__lead">
+        One screen controls how the field app records location and how the server reads
+        it back — for the whole organisation, not per employee. These are the knobs behind
+        every status, stop and distance figure you see elsewhere in the panel.
+      </p>
+
+      <h3 class="manual-sub">What you can tune</h3>
+      <ul class="manual-list">
+        <li><strong>Location interval</strong> — how often the app samples a fix (5–600 seconds).</li>
+        <li><strong>Minimum accuracy</strong> — the metre threshold below which a fix is treated as too rough.</li>
+        <li><strong>Stop radius &amp; stop threshold</strong> — how close counts as "the same place", and how many minutes stationary makes it a <em>stop</em>.</li>
+        <li><strong>Long-stop threshold</strong> — minutes before a stop is flagged as a <em>long stop</em>; must be at least the stop threshold.</li>
+        <li><strong>Movement speed threshold</strong> — the speed above which someone counts as moving rather than idle.</li>
+        <li><strong>Max jump</strong> — a speed ceiling that rejects impossible GPS leaps.</li>
+        <li><strong>Offline &amp; location-unavailable thresholds</strong> — how long without data before a member reads <span class="ui">offline</span> or <span class="ui">location unavailable</span>.</li>
+        <li><strong>Sync batch size</strong> — how many queued fixes the app uploads per batch.</li>
+      </ul>
+      <ol class="manual-steps">
+        <li>Edit the values you want to change and save.</li>
+        <li>The change applies <strong>read-time</strong>: stored fixes are never rewritten, but today's open day and same-day sessions are <strong>re-derived immediately</strong> against the new rules.</li>
+        <li>Closed historical days are deliberately left untouched, so last month's calendar never silently changes under you. Every edit is versioned and kept in history.</li>
+      </ol>
+      <div class="manual-note manual-note--warn">
+        <span class="manual-note__icon"><i data-lucide="sliders-horizontal"></i></span>
+        <span>These are powerful. The panel guards the obvious mistakes — <b>long-stop must be ≥ stop threshold</b> and <b>interval must be 5–600 seconds</b> — and rejects anything non-numeric. Change one knob at a time and watch the live roster to see its effect.</span>
+      </div>
+
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-tracking-rules.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/tracking-rules</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="map"></i> Live team</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="route"></i> Route history</div>
+              <div class="mka-side__i"><i data-lucide="clipboard-check"></i> Reports <span class="mka-side__ct">11</span></div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="sliders-horizontal"></i> Tracking rules</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t">Tracking rules<small>Organisation-wide. Applied read-time to today's open day.</small></div>
+                <button class="mka-btn mka-btn--primary mka-btn--sm" style="margin-left:auto"><i data-lucide="check"></i> Save rules</button>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-card">
+                  <div class="mka-form">
+                    <div><span class="mka-label2">Location interval <span class="mka-hint">5–600 seconds</span></span><div class="mka-input">30 <span class="mka-suf">sec</span></div></div>
+                    <div><span class="mka-label2">Minimum accuracy</span><div class="mka-input">50 <span class="mka-suf">m</span></div></div>
+                    <div><span class="mka-label2">Stop radius</span><div class="mka-input">75 <span class="mka-suf">m</span></div></div>
+                    <div><span class="mka-label2">Stop threshold</span><div class="mka-input">10 <span class="mka-suf">min</span></div></div>
+                    <div><span class="mka-label2">Long-stop threshold <span class="mka-hint">≥ stop threshold</span></span><div class="mka-input mka-input--focus">45 <span class="mka-suf">min</span></div></div>
+                    <div><span class="mka-label2">Movement speed threshold</span><div class="mka-input">2 <span class="mka-suf">km/h</span></div></div>
+                    <div><span class="mka-label2">Max jump</span><div class="mka-input">180 <span class="mka-suf">km/h</span></div></div>
+                    <div><span class="mka-label2">Offline threshold</span><div class="mka-input">10 <span class="mka-suf">min</span></div></div>
+                    <div><span class="mka-label2">Location-unavailable threshold</span><div class="mka-input">15 <span class="mka-suf">min</span></div></div>
+                    <div><span class="mka-label2">Sync batch size</span><div class="mka-input">50 <span class="mka-suf">fixes</span></div></div>
+                  </div>
+                </div>
+                <div class="mka-banner mka-banner--warn"><i data-lucide="sliders-horizontal"></i><div><b>Guarded</b>Long-stop must be ≥ stop threshold; interval must be 5–600 s. Closed historical days are left untouched.</div></div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Tracking rules <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 8 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s8">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">08</span>
+        <span class="manual-section__eyebrow">Reach &amp; presence</span>
+      </div>
+      <h2 class="manual-section__title">Messaging &amp; dealer locations</h2>
+      <p class="manual-section__lead">
+        Two screens cover how you reach people and where you appear on the map:
+        <strong>Message Delivery</strong> tracks every WhatsApp and SMS send, and
+        <strong>Dealer Locations</strong> curates the public showroom map.
+      </p>
+
+      <h3 class="manual-sub">Message delivery</h3>
+      <ol class="manual-steps">
+        <li>Open <strong>Message Delivery</strong> to see WhatsApp and SMS sends. Filter by channel, status and date, or search by phone, purpose or reference.</li>
+        <li>Each row shows its state: <span class="ui">Sending</span>, <span class="ui">Accepted by provider</span>, <span class="ui">Sent</span>, <span class="ui">Delivered</span>, <span class="ui">Read</span>, <span class="ui">Failed</span>, or <span class="ui">Development log only</span>.</li>
+        <li>For a message that <strong>failed</strong>, use <strong>Retry</strong> to send it again. The list refreshes on its own so statuses stay current.</li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="send"></i></span>
+        <span><b>Accepted</b> means the provider received the request; <b>Delivered</b> needs a delivery report back. Development logs record what <em>would</em> have been sent without sending anything.</span>
+      </div>
+
+      <h3 class="manual-sub">Dealer locations</h3>
+      <ol class="manual-steps">
+        <li>Open <strong>Dealer Locations</strong>. Tap <strong>Add location</strong> and search a place, click the map, or drag the pin to the showroom entrance. Search data comes from Google Maps.</li>
+        <li>Fill in the dealer name, phone, type (<em>showroom</em>, <em>service centre</em>, or <em>both</em>), full address, PIN code and opening hours. Verify the auto-filled address before saving.</li>
+        <li>Set <strong>Visibility</strong>: <strong>Published</strong> shows it on the public map; <strong>Draft</strong> and <strong>Inactive</strong> stay hidden. Publishing requires a complete address, phone and map coordinates.</li>
+      </ol>
+      <div class="manual-note manual-note--tip">
+        <span class="manual-note__icon"><i data-lucide="map-pin"></i></span>
+        <span>Use <b>Check directions</b> to open the pin in Google Maps and confirm it lands on the right doorway before you publish.</span>
+      </div>
+
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-message-delivery.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/message-delivery</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__group">System</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="send"></i> Message Delivery</div>
+              <div class="mka-side__i"><i data-lucide="map-pin"></i> Dealer Locations</div>
+              <div class="mka-side__i"><i data-lucide="sliders"></i> Settings</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t">Message Delivery<small>Track WhatsApp and SMS sends, review failures, and retry.</small></div>
+                <div class="mka-top__av" style="margin-left:auto">HA</div>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-bar">
+                  <div class="mka-pill mka-pill--on">All channels</div>
+                  <div class="mka-pill"><i data-lucide="message-circle"></i> WhatsApp</div>
+                  <div class="mka-pill"><i data-lucide="message-square"></i> SMS</div>
+                  <div class="mka-pill" style="margin-left:auto"><i data-lucide="calendar"></i> 18 Aug 2026</div>
+                </div>
+                <div class="mka-tablewrap">
+                  <table class="mka-table">
+                    <thead><tr><th>Channel</th><th>Recipient / Purpose</th><th>Status</th><th>Retry</th></tr></thead>
+                    <tbody>
+                      <tr><td><span class="mka-badge mka-badge--info">WhatsApp</span></td><td><div class="mka-who__n">+91 98300 00001</div><div class="mka-who__m">Test-drive confirmation</div></td><td><span class="mka-badge mka-badge--approved"><i data-lucide="check-check"></i> Delivered</span></td><td class="mka-sub">—</td></tr>
+                      <tr><td><span class="mka-badge mka-badge--info">WhatsApp</span></td><td><div class="mka-who__n">+91 98300 00042</div><div class="mka-who__m">Dealer enquiry reply</div></td><td><span class="mka-badge mka-badge--pub"><i data-lucide="check-check"></i> Read</span></td><td class="mka-sub">—</td></tr>
+                      <tr><td><span class="mka-badge mka-badge--neutral">SMS</span></td><td><div class="mka-who__n">+91 98300 00108</div><div class="mka-who__m">OTP</div></td><td><span class="mka-badge mka-badge--info">Accepted by provider</span></td><td class="mka-sub">—</td></tr>
+                      <tr><td><span class="mka-badge mka-badge--neutral">SMS</span></td><td><div class="mka-who__n">+91 98300 00210</div><div class="mka-who__m">Dealership lead</div></td><td><span class="mka-badge mka-badge--rejected"><i data-lucide="triangle-alert"></i> Failed</span></td><td><button class="mka-btn mka-btn--ghost mka-btn--sm"><i data-lucide="rotate-cw"></i> Retry</button></td></tr>
+                      <tr><td><span class="mka-badge mka-badge--neutral">SMS</span></td><td><div class="mka-who__n">+91 98300 00311</div><div class="mka-who__m">Contact reply</div></td><td><span class="mka-badge mka-badge--neutral">Development log only</span></td><td class="mka-sub">—</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Message delivery <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+      <figure class="manual-media manual-media--desktop manual-media--mock" data-media="img/admin-dealer-locations.png">
+        <div class="manual-media__frame">
+          <div class="mka-omni"><i data-lucide="lock"></i> hazraelectricalbike.com<b>/admin/dealer-locations</b></div>
+          <div class="mka">
+            <div class="mka-side">
+              <div class="mka-side__brand"><span class="mka-side__logo"><i data-lucide="zap"></i></span><b>Hazra EV<small>Admin</small></b></div>
+              <div class="mka-side__group">Main</div>
+              <div class="mka-side__i"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+              <div class="mka-side__i"><i data-lucide="users"></i> Employees</div>
+              <div class="mka-side__i"><i data-lucide="bike"></i> Products</div>
+              <div class="mka-side__group">System</div>
+              <div class="mka-side__i"><i data-lucide="send"></i> Message Delivery</div>
+              <div class="mka-side__i mka-side__i--on"><i data-lucide="map-pin"></i> Dealer Locations</div>
+              <div class="mka-side__i"><i data-lucide="sliders"></i> Settings</div>
+            </div>
+            <div class="mka-main">
+              <div class="mka-top">
+                <div class="mka-top__t"><i data-lucide="arrow-left" style="vertical-align:-2px"></i> Add location</div>
+                <button class="mka-btn mka-btn--primary mka-btn--sm" style="margin-left:auto"><i data-lucide="check"></i> Save</button>
+              </div>
+              <div class="mka-canvas">
+                <div class="mka-row2 mka-row2--even">
+                  <div class="mka-map">
+                    <i></i><i></i><i></i><i></i>
+                    <span class="mka-pin mka-pin--flag" style="left:48%;top:46%;background:var(--ka-violet);box-shadow:0 0 0 4px rgba(123,47,247,.2),0 3px 6px rgba(24,15,44,.28)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z"/></svg></span>
+                    <div class="mka-legend"><span><i data-lucide="search" style="width:10px;height:10px"></i> Search a place, click the map, or drag the pin</span></div>
+                  </div>
+                  <div class="mka-col">
+                    <div class="mka-card">
+                      <div class="mka-form">
+                        <div class="mka-form__full"><span class="mka-label2">Dealer name</span><div class="mka-input">Hazra EV — Bardhaman Showroom</div></div>
+                        <div><span class="mka-label2">Phone</span><div class="mka-input"><i data-lucide="phone"></i> +91 98300 00001</div></div>
+                        <div><span class="mka-label2">Type</span><div class="mka-input mka-input--select">Both <i data-lucide="chevron-down"></i></div></div>
+                        <div><span class="mka-label2">PIN code</span><div class="mka-input">713101</div></div>
+                        <div><span class="mka-label2">Visibility</span><div class="mka-input mka-input--select">Published <i data-lucide="chevron-down"></i></div></div>
+                        <div class="mka-form__full"><span class="mka-label2">Address <span class="mka-hint">Verify the auto-filled address before saving</span></span><div class="mka-input mka-input--area">GT Road, Parkus Road, Bardhaman, West Bengal 713101</div></div>
+                      </div>
+                    </div>
+                    <div class="mka-banner mka-banner--info"><i data-lucide="map-pin"></i><div>Publishing needs a complete address, phone and map coordinates. Use <b>Check directions</b> before you publish.</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Dealer locations <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 9 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s9">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">09</span>
+        <span class="manual-section__eyebrow">When something's off</span>
+      </div>
+      <h2 class="manual-section__title">Troubleshooting &amp; FAQ</h2>
+      <p class="manual-section__lead">
+        Quick answers to the things that come up most when running the panel.
+      </p>
+
+      <div class="manual-faq">
+        <details>
+          <summary>I can't sign in</summary>
+          <div class="manual-faq__a">
+            Check the address and password first. If it says <strong>“Admin role required,”</strong> you are using a field (employee) account — admins need an admin account. <strong>“This account is deactivated”</strong> means an administrator must switch it back on. Forgotten passwords are reset by another admin, not recovered.
+          </div>
+        </details>
+        <details>
+          <summary>A new employee can't log into the app</summary>
+          <div class="manual-faq__a">
+            New accounts open with a <strong>temporary password</strong> and a forced password change. Make sure you passed on the exact temporary password shown once when you created them — if it was missed, open the employee and <strong>Reset password</strong> to issue a fresh one.
+          </div>
+        </details>
+        <details>
+          <summary>The temporary password disappeared before I copied it</summary>
+          <div class="manual-faq__a">
+            It is shown <strong>once</strong> and never stored in readable form, so it cannot be looked up again. Open the employee and <strong>Reset password</strong> — that issues a new temporary credential and signs them out everywhere.
+          </div>
+        </details>
+        <details>
+          <summary>The live map looks frozen</summary>
+          <div class="manual-faq__a">
+            The feed reconnects on its own, and falls back to polling if a live stream can't be held — so positions still refresh, just a little less often. If it still looks stale, the employee may simply be <strong>offline</strong> or have <strong>location unavailable</strong>; check their status and last fix. Reloading the page restarts the feed.
+          </div>
+        </details>
+        <details>
+          <summary>Someone shows a very long stop</summary>
+          <div class="manual-faq__a">
+            A long stop is any stop past the <strong>long-stop threshold</strong> in Tracking rules (section 7). It is a prompt to check in, not an error — they may be in a genuine long meeting. If long stops fire too often, raise the threshold.
+          </div>
+        </details>
+        <details>
+          <summary>Changing a tracking rule didn't update old days</summary>
+          <div class="manual-faq__a">
+            That is by design. Rule changes re-derive <strong>today's open day</strong> and same-day sessions immediately, but <strong>closed historical days are left untouched</strong> so past calendars never change retroactively. Stored fixes are never rewritten either.
+          </div>
+        </details>
+        <details>
+          <summary>A message failed to send</summary>
+          <div class="manual-faq__a">
+            Open <strong>Message Delivery</strong>, filter to <strong>Failed</strong>, and use <strong>Retry</strong> on the row. Remember <strong>Accepted</strong> only means the provider took the request; <strong>Delivered</strong> needs a delivery report, and development logs never actually send.
+          </div>
+        </details>
+        <details>
+          <summary>A dealer won't publish</summary>
+          <div class="manual-faq__a">
+            Publishing needs a <strong>complete address, a phone number and map coordinates</strong>. Fill any that are missing, drop the pin on the map, then switch Visibility to Published. Drafts and inactive locations stay hidden from visitors.
+          </div>
+        </details>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── FOOT ─────────────────────────────────────── -->
+<section class="manual-foot">
+  <p>That's the whole panel. Keep this page handy — it updates as the admin tools do.</p>
+  <a class="footer__link" href="index.html">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script>
+  lucide.createIcons();
+</script>
+<script src="script.js"></script>
+<script>
+/* Highlight the section the reader is in, and keep the active chip in view
+   on the mobile strip. Pure class toggling — no motion, so nothing to gate
+   behind prefers-reduced-motion here. */
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.manual-toc__link'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+
+  var sections = Array.prototype.slice.call(document.querySelectorAll('.manual-section'));
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      var link = map[e.target.id];
+      if(!link) return;
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('is-active'); });
+        link.classList.add('is-active');
+        link.setAttribute('aria-current','true');
+        links.forEach(function(l){ if(l!==link) l.removeAttribute('aria-current'); });
+        if(window.matchMedia('(max-width:960px)').matches){
+          link.scrollIntoView({block:'nearest',inline:'center'});
+        }
+      }
+    });
+  },{rootMargin:'-45% 0px -50% 0px'});
+  sections.forEach(function(s){ io.observe(s); });
+
+  /* Gentle reveal for each section as it enters. */
+  if(window.matchMedia('(prefers-reduced-motion:no-preference)').matches){
+    var reveal = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('is-in'); reveal.unobserve(e.target); }
+      });
+    },{threshold:0.08});
+    sections.forEach(function(s){ reveal.observe(s); });
+  } else {
+    sections.forEach(function(s){ s.classList.add('is-in'); });
+  }
+})();
+</script>
+</body>
+</html>

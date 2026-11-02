@@ -33,6 +33,28 @@ final class AppReleaseController extends V1Controller
         Envelope::ok(AppReleaseAccess::publicMetadata($row));
     }
 
+    /** Authenticated updater: publishing a newer production build makes it required. */
+    public function updateInfo(): never
+    {
+        Ctx::principal();
+        header('Cache-Control: no-store');
+        $row = db_fetch_one("SELECT * FROM app_releases WHERE status = 'published' AND platform = 'android' AND channel = 'production' ORDER BY version_code DESC LIMIT 1", []);
+        if (!$row) Envelope::notFound('NO_PUBLISHED_RELEASE', 'No published production release available');
+        Envelope::ok(array_merge(AppReleaseAccess::publicMetadata($row), [
+            'checksumSha256' => $row['checksum_sha256'],
+        ]));
+    }
+
+    public function updateDownload(): never
+    {
+        Ctx::principal();
+        $row = $this->findRelease($this->param('id'));
+        if ($row['status'] !== 'published' || $row['platform'] !== 'android' || $row['channel'] !== 'production') {
+            Envelope::notFound('RELEASE_NOT_FOUND', 'This update is no longer published');
+        }
+        $this->serveFile($row);
+    }
+
     public function index(): never
     {
         $limit = Cursor::limit((string) ($this->query('limit') ?? $this->query('pageSize', '20')));

@@ -271,6 +271,42 @@ void main() {
     expect(server.healthPings, <LocationHealth>[LocationHealth.ok]);
   });
 
+  test(
+      'the per-second ticker drives the clock but does not notify general '
+      'listeners; real state changes still do (P1.1)', () async {
+    await tracking.startDay();
+    await settle();
+    expect(tracking.activeSession, isNotNull);
+
+    // Elapsed-time is computed from an arbitrary instant, not the controller's
+    // internal _now — that is what lets a ValueListenableBuilder on `clock`
+    // repaint the timer without rebuilding the rest of Home.
+    final DateTime start = tracking.activeSession!.startTime;
+    expect(
+      tracking.sessionElapsedAt(start.add(const Duration(minutes: 10))),
+      const Duration(minutes: 10),
+    );
+
+    int notifies = 0;
+    tracking.addListener(() => notifies++);
+    int clockTicks = 0;
+    tracking.clock.addListener(() => clockTicks++);
+
+    // Let the 1-second ticker run a few times with nothing else changing.
+    await Future<void>.delayed(const Duration(milliseconds: 2500));
+
+    expect(clockTicks, greaterThanOrEqualTo(1),
+        reason: 'the clock listenable must tick for the live timer widgets');
+    expect(notifies, 0,
+        reason: 'a plain tick with no state change must not rebuild the '
+            'whole controller tree — this is the battery/heat fix');
+
+    // A real state change still notifies its general listeners.
+    await tracking.pauseSession();
+    expect(notifies, greaterThan(0),
+        reason: 'closing the session is observable state and must notify');
+  });
+
   test('the no-op repository hands the device id back unchanged', () async {
     const NoopTrackingRepository noop = NoopTrackingRepository();
 

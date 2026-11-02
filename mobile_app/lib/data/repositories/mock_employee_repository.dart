@@ -1,3 +1,4 @@
+import '../../core/config/tracking_config.dart';
 import '../../core/utils/formatters.dart';
 import '../api/api_exception.dart';
 import '../../state/notification_center.dart';
@@ -115,6 +116,11 @@ class MockEmployeeRepository implements EmployeeRepository {
       ),
     );
   }
+
+  /// `GET /config`. No server behind the mock build, so the device just runs
+  /// on the defaults — the same values the live stack falls back to.
+  @override
+  Future<TrackingConfig> config() => _delayed(TrackingConfig.defaults);
 
   @override
   Future<List<ActivityEvent>> activity({DateTime? date}) {

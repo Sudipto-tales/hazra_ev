@@ -10,3 +10,6 @@ linter:
 analyzer:
   errors:
     prefer_const_constructors: info
+  exclude:
+    - build/**
+    - android/**

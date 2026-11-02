@@ -8,6 +8,19 @@ Volume model — 12 employees × 8 h × 1 fix / 30 s ≈ **11 500 rows/day**, ~4
 At 200 employees that is 70 M/year. The schema below stays flat at that size; a naive one
 does not.
 
+> **Shipped port (2026-08-19 SQLite, 2026-08-25 MySQL).** `website/` runs one codebase
+> over two drivers: SQLite is the dev default, **MySQL/MariaDB 11.8.8 is production**
+> (deployed). `config/dialect.php` is the only driver-aware file — column types are tokens
+> (`{uuid}` → `CHAR(36)`, `{json}` → `LONGTEXT`, `{ts}` → sortable ISO string), upserts are
+> rewritten (`ON CONFLICT…`→`ON DUPLICATE KEY`, `IS ?`→`<=>`). Divergences from the
+> PostgreSQL design below, both ports: no PostGIS (haversine + Douglas–Peucker in
+> `Geo.php`), no partitioning/BRIN (`location_fixes` is one table with a
+> `(employee_id, recorded_at)` index), enums are `TEXT`+`CHECK`, arrays/`polyline`/`box`
+> are JSON or scalar columns, and partial indexes flatten on MySQL. FKs are declared
+> table-level (MySQL silently ignores inline `REFERENCES`). The live DB has migrations
+> 001–030 applied. This doc stays the design target; the port notes mark where reality
+> differs.
+
 ---
 
 ## 1. The five ideas
@@ -178,12 +191,32 @@ CREATE TABLE tracking_configs (
   offline_threshold_minutes              integer NOT NULL DEFAULT 10,
   location_unavailable_threshold_minutes integer NOT NULL DEFAULT 15,
   sync_batch_size                        integer NOT NULL DEFAULT 50,
+  sync_interval_seconds                  integer NOT NULL DEFAULT 300,  -- config v8, PENDING web-agent
+  distance_filter_metres                 integer NOT NULL DEFAULT 20,   -- config v8, PENDING web-agent
   updated_at                             timestamptz NOT NULL DEFAULT now(),
   updated_by                             uuid REFERENCES users(id),
   CHECK (location_interval_seconds BETWEEN 5 AND 600),
-  CHECK (long_stop_threshold_minutes >= stop_threshold_minutes)
+  CHECK (long_stop_threshold_minutes >= stop_threshold_minutes),
+  CHECK (sync_interval_seconds <= offline_threshold_minutes * 30)  -- v8: ≤ offlineThreshold×60/2
 );
 ```
+
+**Config version 8 — PENDING web-agent implementation (not yet migrated).** The two rows
+flagged above back the new `TrackingConfig.syncIntervalSeconds` / `distanceFilterMetres`
+fields (see `02-API-PLAN.md` §3.12). They are documented here as the authoritative plan so
+the admin "tracking rules" screen can set them; **no migration has been written and the
+columns do not exist in the deployed MySQL schema yet.** Open points left to web-agent when
+implementing:
+
+- Whether the validation ceiling (`sync_interval_seconds ≤ offline_threshold_minutes × 60 /
+  2`) lands as the `CHECK` shown above or as an app-level clamp in the update path. A `CHECK`
+  is the stricter, self-documenting choice and matches the existing cross-field
+  `long_stop_threshold_minutes >= stop_threshold_minutes` discipline, but a clamp lets a
+  violating `PUT` succeed with a corrected value rather than a `422` — product call.
+- `tracking_config_history` (§4, below) mirrors these columns automatically since it is
+  "same columns + `changed_at`, `changed_by`"; the history migration must add them too.
+- Bump the seeded/default `version` to 8 on the migration that adds the columns, so a device
+  that was on 7 sees the `ETag` change and re-pulls.
 
 One row per organisation — **not** per employee, not per device. `version` bumps on every
 write and backs the `ETag`, so a device that already has the current config gets a `304`.
@@ -262,9 +295,12 @@ Notes that matter:
 - `UNIQUE (employee_id, client_id)` is the idempotency guarantee for
   `POST /tracking/locations`. A replayed batch conflicts and is reported as
   `rejected: DUPLICATE` rather than duplicating the route.
-- Fixes failing `accuracy_m > min_accuracy_metres` or the `max_jump_kmh` check are
-  **rejected at ingest, not stored**. The rejection reason goes back in the response so the
-  device can drop them from its queue.
+- Fixes failing the `max_jump_kmh` check — or malformed/duplicate ones — are
+  **rejected at ingest, not stored**. The rejection reason (`JUMP`/`MALFORMED`/`DUPLICATE`)
+  goes back in the response so the device can drop them from its queue. Accuracy is **not**
+  an ingest check: a fix with `accuracy_m > min_accuracy_metres` is stored like any other
+  and flagged low-accuracy at read time (`accuracy_m` vs `min_accuracy_metres`), so a
+  threshold change reclassifies stored rows without rewriting them.
 
 **Retention.** Keep raw fixes 90 days (configurable), then `DETACH` and archive the
 partition to object storage. `day_routes` (§8) preserves the drawn route indefinitely, so
@@ -471,6 +507,28 @@ Built on session close by Douglas–Peucker at ~8 m tolerance. A 1 000-point day
 a product one.
 
 ```sql
+-- route_geometry (migration 008) — road-matched geometry cache, one row per employee-day.
+-- Backs the `matched` object on GET /routes. Filled on first single-employee read of a
+-- closed day (subject=team serves cache-only); `php vayu match` backfills.
+CREATE TABLE route_geometry (
+  employee_id        uuid NOT NULL REFERENCES users(id),
+  work_date          date NOT NULL,
+  engine             text NOT NULL,            -- osrm | valhalla
+  profile            text NOT NULL,
+  status             text NOT NULL,            -- ok | partial
+  confidence         double precision,
+  distance_km        double precision NOT NULL,
+  segments           {json} NOT NULL,          -- per session: {seq, polyline6, pointCount, matched, ratio}
+  source_point_count integer NOT NULL,         -- invalidation vs day_routes.point_count
+  PRIMARY KEY (employee_id, work_date)
+);
+```
+
+Invalidated when `source_point_count` drifts from `day_routes.point_count`, or the engine /
+profile names change. A day where nothing matched is deliberately not cached (usual cause
+is a matcher that was down — retry, don't remember).
+
+```sql
 -- Timeline. Built from sessions + stops + visits + reports so the client never joins.
 CREATE TABLE activity_events (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -493,6 +551,43 @@ CREATE INDEX ON activity_events (employee_id, work_date, occurred_at);
 Materialised rather than computed per request: the same timeline is read by the employee's
 Home, the employee's activity tab and the admin's employee-day view, and it is a four-way
 join otherwise.
+
+### Day closeout and reopen (migration 009)
+
+```sql
+-- day_closeouts — APPEND-ONLY. A day may close, be reopened, and close again, and the
+-- original declaration is kept each time, so there is deliberately NO UNIQUE on
+-- (employee_id, work_date). The day is locked iff a row exists with reopened_at IS NULL.
+CREATE TABLE day_closeouts (
+  id                   uuid PRIMARY KEY,
+  employee_id          uuid NOT NULL REFERENCES users(id),
+  work_date            date NOT NULL,
+  client_id            text NOT NULL,          -- idempotency guard
+  state                text NOT NULL,          -- closed_by_employee | closed_by_system
+  ended_at             timestamptz NOT NULL,
+  declared_distance_km double precision, declared_visits smallint,
+  rating               smallint NOT NULL,      -- 1..5; system close writes a fixed 5 placeholder
+  tags                 {json} NOT NULL DEFAULT '[]',
+  feedback             text,
+  -- measured figures stored beside declared; declared never overwrites attendance_days
+  reopened_at          timestamptz,
+  UNIQUE (employee_id, client_id)
+);
+
+-- day_reopen_audit — its own table (not audit_log) so reopen count/reason stay queryable.
+CREATE TABLE day_reopen_audit (
+  closeout_id uuid NOT NULL REFERENCES day_closeouts(id),
+  actor_id    uuid NOT NULL REFERENCES users(id),
+  reason      text NOT NULL,
+  occurred_at timestamptz NOT NULL
+);
+```
+
+**`rating=5` on a `closed_by_system` row is a placeholder, not an opinion** — anything that
+ever averages `rating` MUST exclude `state='closed_by_system'`.
+
+`users.must_change_password` (migration 010, first ALTER in the project) is true exactly
+while an account is on a server-generated password; advisory, nothing gates on it.
 
 ---
 
@@ -678,3 +773,9 @@ job) → `company_visits` → `stop_records` (circular FK with visits: create th
 both) → `visit_reports` → `report_sales`, `report_images`, `report_reviews` →
 `attendance_days`, `day_routes`, `activity_events` → `notifications`,
 `notification_recipients` → `audit_log`.
+
+Shipped migration ledger (`website/database/migrations/`, 001–030): 001–007 core/tracking/
+catalogue/session/report/rollup/notification tables, **008** `route_geometry`, **009**
+`day_closeouts` + `day_reopen_audit`, **010** `users.must_change_password`, 011+ the website
+admin / content / catalogue / warranty / app-release / dealer-locations / account-deletion /
+messaging tables (website side, no inbox note — not described above).

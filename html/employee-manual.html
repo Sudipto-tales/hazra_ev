@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="Q4FWGLTexIVX2B-2jie8q39ECbwaq2fqtEXgayv8XW8" />
+<script>
+/* Applied before first paint so a dark-mode visitor never sees a light
+   flash. Kept inline and tiny on purpose: an external file would race
+   the paint it exists to prevent. */
+(function(){try{var t=localStorage.getItem('theme')||localStorage.getItem('vm-theme');
+if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+  <title>Employee App Manual | Hazra Electrical Bike</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hazra Electrical Bike">
+<meta property="og:title" content="Employee App Manual | Hazra Electrical Bike">
+<meta property="og:description" content="How to install the Hazra field app, start your day, log visits, submit reports and close out — a step-by-step guide for employees.">
+<meta property="og:url" content="https://hazraelectricalbike.com/employee-manual.html">
+<meta property="og:image" content="https://hazraelectricalbike.com/assets/scutie_light.webp">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://hazraelectricalbike.com/employee-manual.html">
+<meta name="description" content="How to install the Hazra field app, start your day, log company visits, submit reports with photos and close out your day — a step-by-step manual for employees.">
+  <link rel="icon" href="assets/hazraev.png" type="image/png">
+<link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/typography.css">
+<link rel="stylesheet" href="styles/global.css">
+<link rel="stylesheet" href="styles/utilities.css">
+<link rel="stylesheet" href="styles/components/page-chrome.css">
+  <link rel="stylesheet" href="styles/pages/employee-manual.css">
+  <link rel="stylesheet" href="styles/pages/manual-mockups.css">
+</head>
+<body>
+
+<a class="skip-link" href="#s1">Skip to the manual</a>
+
+<header class="header">
+  <div class="header__top">
+    <a class="brand" href="index.html" aria-label="Hazra Electrical Bike — home">
+      <img class="brand__mark" src="assets/hazraevLogo.jpg" alt="Hazra Electrical Bike">
+      <span class="brand__txt">Hazra Electrical Bike</span>
+    </a>
+    <button class="theme" id="theme" aria-label="Toggle light and dark theme">
+      <i data-lucide="sun-medium" class="theme__sun"></i>
+      <i data-lucide="moon" class="theme__moon"></i>
+    </button>
+  </div>
+</header>
+
+<!-- ── HERO ─────────────────────────────────────── -->
+<section class="manual-hero">
+  <div class="manual-hero__inner">
+    <span class="manual-hero__eyebrow"><i data-lucide="book-open"></i> Employee guide</span>
+    <h1 class="manual-hero__title">The Hazra field app, start to finish.</h1>
+    <p class="manual-hero__lead">
+      Everything you do on a working day — signing in, starting the day, logging the
+      shops you visit, submitting reports with photos, and closing out. Follow the
+      sections in order the first time; after that, jump straight to what you need.
+    </p>
+    <div class="manual-hero__meta">
+      <span class="manual-hero__chip"><i data-lucide="smartphone"></i> Android app</span>
+      <span class="manual-hero__chip"><i data-lucide="clock"></i> ~10 min read</span>
+      <span class="manual-hero__chip"><i data-lucide="list-checks"></i> 9 sections</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── SHELL: sticky index + body ───────────────── -->
+<div class="manual-shell">
+
+  <!-- on-page section index -->
+  <nav class="manual-toc" id="toc" aria-label="Manual sections">
+    <p class="manual-toc__title">On this page</p>
+    <ul class="manual-toc__list">
+      <li><a class="manual-toc__link" href="#s1"><span class="manual-toc__num">1</span><span class="manual-toc__label">Install &amp; sign in</span></a></li>
+      <li><a class="manual-toc__link" href="#s2"><span class="manual-toc__num">2</span><span class="manual-toc__label">Permissions &amp; Start Day</span></a></li>
+      <li><a class="manual-toc__link" href="#s3"><span class="manual-toc__num">3</span><span class="manual-toc__label">Session notification</span></a></li>
+      <li><a class="manual-toc__link" href="#s4"><span class="manual-toc__num">4</span><span class="manual-toc__label">Visits &amp; reports</span></a></li>
+      <li><a class="manual-toc__link" href="#s5"><span class="manual-toc__num">5</span><span class="manual-toc__label">Breaks &amp; pauses</span></a></li>
+      <li><a class="manual-toc__link" href="#s6"><span class="manual-toc__num">6</span><span class="manual-toc__label">End of day</span></a></li>
+      <li><a class="manual-toc__link" href="#s7"><span class="manual-toc__num">7</span><span class="manual-toc__label">Weak signal &amp; offline</span></a></li>
+      <li><a class="manual-toc__link" href="#s8"><span class="manual-toc__num">8</span><span class="manual-toc__label">Profile &amp; password</span></a></li>
+      <li><a class="manual-toc__link" href="#s9"><span class="manual-toc__num">9</span><span class="manual-toc__label">Troubleshooting</span></a></li>
+    </ul>
+  </nav>
+
+  <main class="manual-body">
+
+    <!-- 1 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s1">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">01</span>
+        <span class="manual-section__eyebrow">Getting on board</span>
+      </div>
+      <h2 class="manual-section__title">Install &amp; sign in</h2>
+      <p class="manual-section__lead">
+        The field app runs on Android. Install it, then sign in with the email and
+        password your admin set up for you — there is nothing to create yourself.
+      </p>
+
+      <h3 class="manual-sub">Install the app</h3>
+      <ol class="manual-steps">
+        <li>Open the <a href="app-download-page.html">download page</a> on your phone and tap to get the latest build.</li>
+        <li>If Android asks, allow installs from this source, then open the app once it finishes.</li>
+        <li>The first screen is <span class="ui">Field Tracker</span> — the sign-in chooser.</li>
+      </ol>
+
+      <h3 class="manual-sub">Employee vs Restricted</h3>
+      <p>Two cards appear before any password is asked for. Pick the one that matches your account:</p>
+      <ul class="manual-list">
+        <li><strong>Employee Login</strong> — this is you. Start your day, log company visits and submit reports.</li>
+        <li><strong>Restricted</strong> — marked <em>Authorized Personnel Only</em>. This is the admin surface (team monitoring, route history, report review). If you are not an admin, you do not use it.</li>
+      </ul>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="info"></i></span>
+        <span>Both cards use the <b>same login</b>. If you sign in on the Employee form with an admin account, the app stops you and says to use <b>Restricted</b> instead.</span>
+      </div>
+
+      <h3 class="manual-sub">Sign in</h3>
+      <ol class="manual-steps">
+        <li>Tap <strong>Employee Login</strong>.</li>
+        <li>Type your <strong>Email</strong>. The field shows a placeholder hint (<span class="ui">you@company.com</span>) — nothing is pre-filled, so type your own address in full.</li>
+        <li>Type your <strong>Password</strong>. Tap the eye icon to check it before you submit.</li>
+        <li>Tap <strong>Sign in</strong>. A wrong email or password is reported right under the button — correct it and try again.</li>
+      </ol>
+      <div class="manual-note manual-note--tip">
+        <span class="manual-note__icon"><i data-lucide="key-round"></i></span>
+        <span>Forgot your password? There is a <b>Forgot password?</b> link, but passwords cannot be looked up — ask your admin to reset it for you.</span>
+      </div>
+
+      <div class="manual-media-row">
+        <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/role-select.png">
+          <div class="manual-media__frame">
+            <div class="mk mk--role">
+              <div class="mk__status"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+              <div class="mk__body" style="gap:14px;padding-top:28px">
+                <div class="mk-logo"><i data-lucide="route"></i></div>
+                <div>
+                  <div class="mk-h1">Field Tracker</div>
+                  <div class="mk-muted" style="margin-top:3px">Choose how you want to sign in.</div>
+                </div>
+                <div class="mk-role mk-role--primary">
+                  <div class="mk-role__ic"><i data-lucide="id-card"></i></div>
+                  <div>
+                    <div class="mk-role__t">Employee Login</div>
+                    <div class="mk-role__s">Start your day, log company visits and submit reports.</div>
+                  </div>
+                  <i data-lucide="chevron-right" class="mk-role__chev"></i>
+                </div>
+                <div class="mk-role mk-role--danger">
+                  <div class="mk-role__ic"><i data-lucide="shield"></i></div>
+                  <div>
+                    <div class="mk-role__t">Restricted</div>
+                    <span class="mk-role__pill"><i data-lucide="lock"></i> Authorized Personnel Only</span>
+                    <div class="mk-role__s">Team monitoring, route history and report review.</div>
+                  </div>
+                  <i data-lucide="chevron-right" class="mk-role__chev"></i>
+                </div>
+              </div>
+              <div class="mk__foot">Hazra EV · Field Tracker v0.1.2</div>
+            </div>
+            <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+          </div>
+          <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Role select screen <span class="manual-media__exmp">· example mockup</span></figcaption>
+        </figure>
+        <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/login.png">
+          <div class="manual-media__frame">
+            <div class="mk mk--login">
+              <div class="mk__status"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+              <div class="mk__appbar"><i data-lucide="arrow-left"></i><h4>Employee access</h4></div>
+              <div class="mk__body" style="gap:12px">
+                <div class="mk-logo"><i data-lucide="route"></i></div>
+                <div class="mk-h1">Field Tracker</div>
+                <div>
+                  <div class="mk-label">Email</div>
+                  <div class="mk-field"><i data-lucide="at-sign"></i> you@company.com</div>
+                </div>
+                <div>
+                  <div class="mk-label">Password</div>
+                  <div class="mk-field"><i data-lucide="lock"></i> Your password <i data-lucide="eye" style="margin-left:auto"></i></div>
+                </div>
+                <div class="mk-link">Forgot password?</div>
+                <button class="mk-btn mk-btn--primary"><i data-lucide="log-in"></i> Sign in</button>
+              </div>
+            </div>
+            <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+          </div>
+          <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Employee sign-in <span class="manual-media__exmp">· example mockup</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 2 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s2">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">02</span>
+        <span class="manual-section__eyebrow">Before you set off</span>
+      </div>
+      <h2 class="manual-section__title">Permissions &amp; Start Day</h2>
+      <p class="manual-section__lead">
+        The app tracks your route only while your day is open, and only if it has
+        location permission. Grant it once, then starting the day is a single tap.
+      </p>
+
+      <h3 class="manual-sub">Grant location</h3>
+      <ol class="manual-steps">
+        <li>When prompted, allow <strong>location</strong> access. Choose <strong>Allow all the time</strong> (background) so the route keeps recording when your screen is off or you are in another app.</li>
+        <li>Keep your phone's GPS / location switch on. If it is off, the app cannot start your day and will offer to open settings for you.</li>
+        <li>On Android 13 and newer you may also be asked to allow <strong>notifications</strong> — allow it so work reminders and (soon) the live session notification can reach you.</li>
+      </ol>
+      <div class="manual-note manual-note--warn">
+        <span class="manual-note__icon"><i data-lucide="map-pin-off"></i></span>
+        <span>If location is blocked or set to "only while using the app", the <b>Start Day</b> button is held back and a banner on Home explains exactly what to fix. Tap <b>Details</b> to open the tracking status and <b>Fix now</b>.</span>
+      </div>
+
+      <h3 class="manual-sub">Start your day</h3>
+      <ol class="manual-steps">
+        <li>On <strong>Home</strong>, find the big coloured <strong>session card</strong> at the top. Before you start it reads <span class="ui">Ready</span>.</li>
+        <li>Tap <strong>Start Day</strong>. The card turns live, a timer begins counting, and you see <em>“Day started at HH:MM · tracking is on”</em>.</li>
+        <li>From now on your joining time, working time, distance and sessions fill in automatically under <strong>Today's summary</strong>.</li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="info"></i></span>
+        <span>Start Day can be held back for three honest reasons: <b>location is off</b> (enable it), <b>you are offline</b> (the day must open against the server), or <b>today is already closed</b> by an admin. Each shows its own short dialog.</span>
+      </div>
+
+      <div class="manual-media-row">
+        <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/permission-location.png">
+          <div class="manual-media__frame">
+            <div class="mk mk--dialog">
+              <div class="mk-map"><i></i><i></i><i></i><i class="mk-route"></i></div>
+              <div class="mk__status" style="color:#fff;position:relative;z-index:4"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+              <div class="mk-dialog">
+                <div class="mk-dialog__ic"><i data-lucide="map-pin"></i></div>
+                <div class="mk-dialog__t">Allow <b>Field Tracker</b> to access this device's location?</div>
+                <div class="mk-dialog__acc">
+                  <span><span class="mk-dialog__accdot mk-dialog__accdot--on"><i data-lucide="locate-fixed"></i></span>Precise</span>
+                  <span><span class="mk-dialog__accdot"><i data-lucide="circle"></i></span>Approximate</span>
+                </div>
+                <div class="mk-dialog__opts">
+                  <div class="mk-dialog__opt">While using the app</div>
+                  <div class="mk-dialog__opt">Only this time</div>
+                  <div class="mk-dialog__opt mk-dialog__opt--muted">Don't allow</div>
+                </div>
+              </div>
+            </div>
+            <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+          </div>
+          <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Location permission <span class="manual-media__exmp">· example mockup</span></figcaption>
+        </figure>
+        <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/start-day-ready.png">
+          <div class="manual-media__frame">
+            <div class="mk mk--home">
+              <div class="mk__status"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+              <div class="mk__appbar"><h4>Hi, Arindam</h4><i data-lucide="bell" class="mk__spacer"></i></div>
+              <div class="mk__body">
+                <div class="mk-hero mk-hero--ready">
+                  <div class="mk-hero__top"><span class="mk-hero__dot"></span> Ready</div>
+                  <div class="mk-hero__time">Ready</div>
+                  <div class="mk-hero__sub">Start your day to begin tracking</div>
+                  <div class="mk-hero__stats">
+                    <div class="mk-hero__stat"><b>--:--</b><span>Started</span></div>
+                    <div class="mk-hero__stat"><b>--:--</b><span>Joining</span></div>
+                    <div class="mk-hero__stat"><b>0</b><span>Sessions</span></div>
+                    <div class="mk-hero__stat"><b>0.0 km</b><span>Travel</span></div>
+                  </div>
+                  <div class="mk-hero__loc"><i data-lucide="locate-off"></i> No location recorded yet <i data-lucide="chevron-right" class="mk-hero__chev"></i></div>
+                  <button class="mk-btn mk-btn--white"><i data-lucide="play"></i> Start Day</button>
+                </div>
+                <div class="mk-card">
+                  <div class="mk-card__head"><i data-lucide="zap"></i><b>Quick actions</b></div>
+                  <div class="mk-chips">
+                    <span class="mk-chip mk-chip--on">New report</span>
+                    <span class="mk-chip">Visits</span>
+                    <span class="mk-chip">Route map</span>
+                  </div>
+                </div>
+              </div>
+              <div class="mk-nav">
+                <div class="mk-nav__i mk-nav__i--on"><span class="mk-nav__ic"><i data-lucide="house"></i></span>Home</div>
+                <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="file-text"></i></span>Reports</div>
+                <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="map-pin"></i></span>Visits</div>
+                <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="settings"></i></span>Settings</div>
+              </div>
+            </div>
+            <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+          </div>
+          <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Start Day button <span class="manual-media__exmp">· example mockup</span></figcaption>
+        </figure>
+      </div>
+      <figure class="manual-media manual-media--video manual-media--mock" data-media="video/start-day.mp4">
+        <div class="manual-media__frame mk-stage mk-stage--3">
+          <div class="mk-stage__phone">
+            <div class="mk-stage__screens">
+              <!-- step 1: grant location -->
+              <div class="mk mk--dialog">
+                <div class="mk-map"><i></i><i></i><i></i><i class="mk-route"></i></div>
+                <div class="mk-dialog" style="padding:12px 12px 8px">
+                  <div class="mk-dialog__ic"><i data-lucide="map-pin"></i></div>
+                  <div class="mk-dialog__t">Allow <b>Field Tracker</b> to access location?</div>
+                  <div class="mk-dialog__opts">
+                    <div class="mk-dialog__opt">While using the app</div>
+                    <div class="mk-dialog__opt mk-dialog__opt--muted">Don't allow</div>
+                  </div>
+                </div>
+              </div>
+              <!-- step 2: tap Start Day -->
+              <div class="mk mk--home">
+                <div class="mk__status"><span>9:41</span><span class="mk__sigs"><i data-lucide="battery-full"></i></span></div>
+                <div class="mk__body">
+                  <div class="mk-hero mk-hero--ready">
+                    <div class="mk-hero__top"><span class="mk-hero__dot"></span> Ready</div>
+                    <div class="mk-hero__time">Ready</div>
+                    <div class="mk-hero__sub">Start your day to begin tracking</div>
+                    <div class="mk-hero__loc"><i data-lucide="locate-off"></i> No location yet</div>
+                    <button class="mk-btn mk-btn--white"><i data-lucide="play"></i> Start Day</button>
+                  </div>
+                </div>
+              </div>
+              <!-- step 3: working -->
+              <div class="mk mk--home">
+                <div class="mk__status"><span>9:42</span><span class="mk__sigs"><i data-lucide="battery-full"></i></span></div>
+                <div class="mk__body">
+                  <div class="mk-hero mk-hero--working">
+                    <div class="mk-hero__top"><span class="mk-hero__dot"></span> Working <span class="mk-hero__badge"><i data-lucide="navigation"></i> Moving</span></div>
+                    <div class="mk-hero__time">00:00:12</div>
+                    <div class="mk-hero__sub">Session 1 running</div>
+                    <div class="mk-hero__loc"><i data-lucide="locate-fixed"></i> Last update now · ±6 m</div>
+                    <div class="mk-actions">
+                      <button class="mk-btn mk-btn--ghost"><i data-lucide="pause"></i> Break</button>
+                      <button class="mk-btn mk-btn--white mk-btn--grow"><i data-lucide="square"></i> End Day</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mk-stage__hud">
+            <div class="mk-stage__caps">
+              <div class="mk-stage__cap"><i data-lucide="map-pin"></i> Allow location access</div>
+              <div class="mk-stage__cap"><i data-lucide="play"></i> Tap Start Day</div>
+              <div class="mk-stage__cap"><i data-lucide="activity"></i> Tracking is live</div>
+            </div>
+            <div class="mk-stage__dots"><i></i><i></i><i></i></div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="clapperboard"></i> Example walkthrough</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="video"></i> Walkthrough: starting the day <span class="manual-media__exmp">· animated example</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 3 ───────────────────────────────────────── -->
+    <section class="manual-section manual-section--soon" id="s3">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">03</span>
+        <span class="manual-section__eyebrow">From the status bar</span>
+        <span class="manual-badge manual-badge--soon"><i data-lucide="sparkles"></i> Coming soon</span>
+      </div>
+      <h2 class="manual-section__title">The work-session notification</h2>
+      <p class="manual-section__lead">
+        This feature is <strong>not built yet</strong>. It is planned for the Android
+        app and this section describes how it will work once it ships — so you know
+        what to expect. Nothing here is on your phone today.
+      </p>
+
+      <div class="manual-soon-panel">
+        <h3 class="manual-sub">What it will do</h3>
+        <p>
+          From the moment you <strong>Start Day</strong> until you <strong>End Day</strong>, a single
+          notification will sit in your status bar showing your live work status. It will survive
+          switching apps, locking the screen and even swiping it away, so you can run Break, Resume
+          and End Day without opening the app first.
+        </p>
+
+        <h3 class="manual-sub">The three states</h3>
+        <ul class="manual-list">
+          <li><strong>Working</strong> — shows the time elapsed since Start Day. Buttons: <span class="ui">Break</span> and <span class="ui">End Day</span>.</li>
+          <li><strong>On break</strong> — shows how long you have been paused. Buttons: <span class="ui">Resume</span> and <span class="ui">End Day</span>.</li>
+          <li><strong>Offline — fixes queued</strong> — shown when there is no signal; your points are still being saved. Resume / Break and End Day stay available.</li>
+        </ul>
+
+        <h3 class="manual-sub">What the buttons will do</h3>
+        <ul class="manual-list">
+          <li><strong>Break</strong> pauses the current session.</li>
+          <li><strong>Resume</strong> starts a fresh session and resumes tracking.</li>
+          <li><strong>End Day</strong> opens the normal end-of-day closeout — it is <em>never</em> a one-tap finish, because ending a day is a reviewed step (see section 6).</li>
+        </ul>
+
+        <div class="manual-note">
+          <span class="manual-note__icon"><i data-lucide="battery-charging"></i></span>
+          <span>It is designed to add <b>no extra battery drain</b> — it rides the tracking that is already running and updates only when your status changes. <b>Android only</b> for now.</span>
+        </div>
+
+        <div class="manual-media-row">
+          <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/session-notification.png">
+            <div class="manual-media__frame">
+              <div class="mk mk--lock">
+                <div class="mk__status" style="color:#fff;position:relative;z-index:4"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+                <div class="mk-lock">
+                  <div class="mk-lock__clock">11:42</div>
+                  <div class="mk-lock__date">Tue, 18 Aug</div>
+                </div>
+                <div class="mk-notif">
+                  <div class="mk-notif__head"><span class="mk-notif__ic"><i data-lucide="route"></i></span> Field Tracker · Work session</div>
+                  <div class="mk-notif__body">
+                    <div class="mk-notif__time">02:14:30</div>
+                    <span class="mk-notif__status"><span class="mk-dot"></span> Working</span>
+                  </div>
+                  <div class="mk-notif__acts">
+                    <div class="mk-notif__act">Break</div>
+                    <div class="mk-notif__act">End Day</div>
+                  </div>
+                </div>
+                <div class="mk-planned"><i data-lucide="sparkles"></i> Not built yet — planned design</div>
+              </div>
+              <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+            </div>
+            <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Session notification (when built) <span class="manual-media__exmp">· example mockup of a planned feature</span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s4">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">04</span>
+        <span class="manual-section__eyebrow">Your main job</span>
+      </div>
+      <h2 class="manual-section__title">Logging visits &amp; submitting reports</h2>
+      <p class="manual-section__lead">
+        As you travel, the app detects stops at customer locations and lists them under
+        <strong>Company visits</strong>. A report is how you record what happened at a visit —
+        with photos, the models you sold and the payment collected.
+      </p>
+
+      <h3 class="manual-sub">Start a report</h3>
+      <ol class="manual-steps">
+        <li>From <strong>Home</strong>, tap <span class="ui">New report</span> in the quick-actions row, <em>or</em> open a detected visit and tap <strong>Add report</strong> to pre-fill the shop.</li>
+        <li>Under <strong>Where you visited</strong>, type the company / shop name. It does <em>not</em> have to be on any list — just type it. You can also tap a detected visit chip to link the report to the route map.</li>
+        <li>Under <strong>Report</strong>, add a short <strong>title</strong> and <strong>details</strong> (what was discussed, what was ordered, what needs follow-up).</li>
+        <li>Under <strong>Products &amp; sale</strong> (optional), pick a category, select the models you sold, set units, and enter the payment received.</li>
+        <li><strong>Deal value &amp; follow-up</strong> are optional — add a deal figure or a follow-up date if there is one.</li>
+      </ol>
+
+      <h3 class="manual-sub">Attach photos</h3>
+      <ol class="manual-steps">
+        <li>In the <strong>Report</strong> section tap <span class="ui">Add photo</span>.</li>
+        <li>Choose <strong>Take a photo</strong> (camera) or <strong>Choose from gallery</strong> (you can pick several at once).</li>
+        <li>Photos are <strong>JPEG, PNG or WebP, up to 8&nbsp;MB each</strong>. Anything too large is flagged right in the picker, before you submit.</li>
+        <li>Tap <strong>Submit report</strong>. The report is filed first, then the photos upload. If any photo fails, the report is still safely filed and a <strong>Retry photos</strong> button sends just the missing ones.</li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="link"></i></span>
+        <span>Your <b>session</b>, <b>current GPS location</b> and <b>timestamp</b> are attached automatically — you never type them. When a report is linked to a detected visit it also appears on your route map.</span>
+      </div>
+      <div class="manual-note manual-note--tip">
+        <span class="manual-note__icon"><i data-lucide="wifi-off"></i></span>
+        <span><b>Offline safe.</b> With no signal, the report is stored as a draft on your phone and uploaded automatically when the connection returns — see section 7.</span>
+      </div>
+
+      <div class="manual-media-row">
+        <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/create-report.png">
+          <div class="manual-media__frame">
+            <div class="mk mk--report">
+              <div class="mk__status"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+              <div class="mk__appbar"><i data-lucide="arrow-left"></i><h4>New report</h4></div>
+              <div class="mk__body" style="gap:9px">
+                <div class="mk-card">
+                  <div class="mk-card__head"><i data-lucide="store"></i><b>Where you visited</b></div>
+                  <div class="mk-field mk-field--filled">Mohakhali EV Point</div>
+                  <div class="mk-linked" style="margin-top:6px"><i data-lucide="link"></i> Linked to a detected visit — shows on route map</div>
+                </div>
+                <div class="mk-card">
+                  <div class="mk-card__head"><i data-lucide="pencil-line"></i><b>Report</b><small>2 photos</small></div>
+                  <div class="mk-field mk-field--filled" style="margin-bottom:7px">Walk-in dealer — first order</div>
+                  <div class="mk-field mk-field--area mk-field--filled">Met owner, demoed NJA-7. Ordered 3 units, follow-up next week.</div>
+                  <div class="mk-label" style="margin-top:8px">Photos</div>
+                  <div class="mk-tiles">
+                    <span class="mk-tile"><i data-lucide="image"></i></span>
+                    <span class="mk-tile mk-tile--2"><i data-lucide="image"></i></span>
+                    <span class="mk-tile mk-tile--add"><i data-lucide="camera"></i> Add photo</span>
+                  </div>
+                </div>
+              </div>
+              <div style="flex:0 0 auto;padding:8px 14px 10px;border-top:1px solid var(--mk-border);background:var(--mk-surface)">
+                <button class="mk-btn mk-btn--primary"><i data-lucide="send"></i> Submit report</button>
+              </div>
+            </div>
+            <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+          </div>
+          <figcaption class="manual-media__cap"><i data-lucide="camera"></i> New report form <span class="manual-media__exmp">· example mockup</span></figcaption>
+        </figure>
+        <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/report-photos.png">
+          <div class="manual-media__frame">
+            <div class="mk mk--sheet">
+              <div class="mk-sheet__scrim"></div>
+              <div class="mk__status" style="color:#fff;position:relative;z-index:4"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+              <div class="mk-sheet">
+                <div class="mk-sheet__grip"></div>
+                <div class="mk-sheet__title">Add photo</div>
+                <div class="mk-picker__item">
+                  <i data-lucide="camera"></i>
+                  <div><div class="mk-tt">Take a photo</div><div class="mk-ts">Camera</div></div>
+                </div>
+                <div class="mk-picker__item">
+                  <i data-lucide="images"></i>
+                  <div><div class="mk-tt">Choose from gallery</div><div class="mk-ts">Multiple selection supported</div></div>
+                </div>
+                <div class="mk-helper" style="margin-top:2px">JPEG, PNG or WebP, up to 8&nbsp;MB each.</div>
+              </div>
+            </div>
+            <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+          </div>
+          <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Attaching photos <span class="manual-media__exmp">· example mockup</span></figcaption>
+        </figure>
+      </div>
+      <figure class="manual-media manual-media--video manual-media--mock" data-media="video/submit-report.mp4">
+        <div class="manual-media__frame mk-stage mk-stage--3">
+          <div class="mk-stage__phone">
+            <div class="mk-stage__screens">
+              <!-- step 1: write report -->
+              <div class="mk mk--report">
+                <div class="mk__appbar" style="padding-top:18px"><i data-lucide="arrow-left"></i><h4>New report</h4></div>
+                <div class="mk__body" style="gap:9px">
+                  <div class="mk-card">
+                    <div class="mk-card__head"><i data-lucide="store"></i><b>Where you visited</b></div>
+                    <div class="mk-field mk-field--filled">Mohakhali EV Point<span class="mk-caret"></span></div>
+                  </div>
+                  <div class="mk-card">
+                    <div class="mk-card__head"><i data-lucide="pencil-line"></i><b>Report</b></div>
+                    <div class="mk-field mk-field--filled">Walk-in dealer — first order</div>
+                  </div>
+                </div>
+              </div>
+              <!-- step 2: attach photos -->
+              <div class="mk mk--report">
+                <div class="mk__appbar" style="padding-top:18px"><i data-lucide="arrow-left"></i><h4>New report</h4></div>
+                <div class="mk__body">
+                  <div class="mk-card">
+                    <div class="mk-card__head"><i data-lucide="image"></i><b>Photos</b><small>2 added</small></div>
+                    <div class="mk-tiles">
+                      <span class="mk-tile"><i data-lucide="image"></i></span>
+                      <span class="mk-tile mk-tile--2"><i data-lucide="image"></i></span>
+                      <span class="mk-tile mk-tile--add"><i data-lucide="camera"></i> Add</span>
+                    </div>
+                  </div>
+                  <button class="mk-btn mk-btn--primary"><i data-lucide="send"></i> Submit report</button>
+                </div>
+              </div>
+              <!-- step 3: submitted -->
+              <div class="mk mk--report">
+                <div class="mk__body" style="justify-content:center;align-items:center;gap:12px;text-align:center;padding-top:40px">
+                  <div style="width:62px;height:62px;border-radius:50%;background:var(--mk-success-soft);display:grid;place-items:center"><i data-lucide="check" style="width:30px;height:30px;color:var(--mk-success)"></i></div>
+                  <div style="font-size:15px;font-weight:700">Report submitted</div>
+                  <div class="mk-muted" style="max-width:150px">Linked to your session and location. Your manager can see it right away.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mk-stage__hud">
+            <div class="mk-stage__caps">
+              <div class="mk-stage__cap"><i data-lucide="pencil-line"></i> Write the report</div>
+              <div class="mk-stage__cap"><i data-lucide="camera"></i> Attach photos</div>
+              <div class="mk-stage__cap"><i data-lucide="check"></i> Submitted — photos upload</div>
+            </div>
+            <div class="mk-stage__dots"><i></i><i></i><i></i></div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="clapperboard"></i> Example walkthrough</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="video"></i> Walkthrough: submitting a report <span class="manual-media__exmp">· animated example</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 5 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s5">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">05</span>
+        <span class="manual-section__eyebrow">Stepping away</span>
+      </div>
+      <h2 class="manual-section__title">Breaks &amp; pauses</h2>
+      <p class="manual-section__lead">
+        Taking a break pauses tracking without ending your day. Lunch, a long wait,
+        anything — pause it rather than letting it record you sitting still.
+      </p>
+      <ol class="manual-steps">
+        <li>On the live session card, tap <strong>Break</strong>.</li>
+        <li>The current session closes and the card shows <em>“On break · tracking paused”</em>. You will see <em>“Session closed · start a new one when you resume”</em>.</li>
+        <li>When you are moving again, tap <strong>Resume session</strong>. A fresh session starts and tracking continues.</li>
+      </ol>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="layers"></i></span>
+        <span>Your day stays open across breaks. Each resume adds to the <b>Sessions</b> count on Home, and break time does not count as working time.</span>
+      </div>
+      <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/on-break.png">
+        <div class="manual-media__frame">
+          <div class="mk mk--home">
+            <div class="mk__status"><span>13:05</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+            <div class="mk__appbar"><h4>Hi, Arindam</h4><i data-lucide="bell" class="mk__spacer"></i></div>
+            <div class="mk__body">
+              <div class="mk-hero mk-hero--break">
+                <div class="mk-hero__top"><span class="mk-hero__dot"></span> On break</div>
+                <div class="mk-hero__time">02:45:10</div>
+                <div class="mk-hero__sub">On break · tracking paused</div>
+                <div class="mk-hero__stats">
+                  <div class="mk-hero__stat"><b>09:12</b><span>Started</span></div>
+                  <div class="mk-hero__stat"><b>09:12</b><span>Joining</span></div>
+                  <div class="mk-hero__stat"><b>2</b><span>Sessions</span></div>
+                  <div class="mk-hero__stat"><b>18.4 km</b><span>Travel</span></div>
+                </div>
+                <div class="mk-hero__loc"><i data-lucide="locate-fixed"></i> Session closed · resume when ready</div>
+                <button class="mk-btn mk-btn--white"><i data-lucide="play"></i> Resume session</button>
+              </div>
+              <div class="mk-banner mk-banner--warn"><i data-lucide="pause"></i><div><b>Break running</b>Break time does not count as working time.</div></div>
+            </div>
+            <div class="mk-nav">
+              <div class="mk-nav__i mk-nav__i--on"><span class="mk-nav__ic"><i data-lucide="house"></i></span>Home</div>
+              <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="file-text"></i></span>Reports</div>
+              <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="map-pin"></i></span>Visits</div>
+              <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="settings"></i></span>Settings</div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> On break <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 6 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s6">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">06</span>
+        <span class="manual-section__eyebrow">Wrapping up</span>
+      </div>
+      <h2 class="manual-section__title">End of day / closeout</h2>
+      <p class="manual-section__lead">
+        Ending the day is a short, reviewed step. The app shows what it measured, you
+        declare what the day was, and then today is closed.
+      </p>
+      <ol class="manual-steps">
+        <li>On the session card, tap <strong>End Day</strong>.</li>
+        <li>The app checks you are <strong>online</strong> and have a <strong>valid GPS fix</strong> — a day cannot be closed offline or without location.</li>
+        <li>The <strong>closeout sheet</strong> opens. The top block, <em>“What was tracked”</em>, shows your GPS distance, detected visits, worked time and sessions.</li>
+        <li>Enter the <strong>total distance you travelled</strong> and the <strong>total visits you made</strong> (your own figures), give the day a <strong>star rating</strong>, and optionally tag anything that got in the way or leave feedback.</li>
+        <li>Tap <strong>Close the day</strong>. A recap card then appears on Home showing what you reported next to what GPS tracked.</li>
+      </ol>
+      <div class="manual-note manual-note--warn">
+        <span class="manual-note__icon"><i data-lucide="lock"></i></span>
+        <span><b>Closing is final.</b> Submitting closes today for good — only your admin can reopen it. If your declared numbers are far from the GPS figures you'll get a gentle heads-up, but you can still submit: it is your declaration.</span>
+      </div>
+      <div class="manual-note">
+        <span class="manual-note__icon"><i data-lucide="timer-off"></i></span>
+        <span>If GPS <em>and</em> internet both go dark, the app may <b>auto-close your current session</b> to save battery. Your <b>day stays open</b> — just start a new session when you are ready.</span>
+      </div>
+      <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/closeout-sheet.png">
+        <div class="manual-media__frame">
+          <div class="mk mk--sheet">
+            <div class="mk-sheet__scrim"></div>
+            <div class="mk__status" style="color:#fff;position:relative;z-index:4"><span>18:30</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+            <div class="mk-sheet">
+              <div class="mk-sheet__grip"></div>
+              <div class="mk-sheet__title">End your day</div>
+              <div class="mk-sheet__lead">Tell us how the day went. Once you submit, today is closed.</div>
+              <div class="mk-measured">
+                <div class="mk-measured__h">What was tracked</div>
+                <div class="mk-kv"><span>Worked today</span><b>8h 12m</b></div>
+                <div class="mk-kv"><span>Distance (GPS)</span><b>42.6 km</b></div>
+                <div class="mk-kv"><span>Visits detected</span><b>6</b></div>
+                <div class="mk-kv"><span>Reports submitted</span><b>5</b></div>
+              </div>
+              <div>
+                <div class="mk-label">Total distance you travelled<span class="mk-hint">GPS recorded 42.6 km</span></div>
+                <div class="mk-field mk-field--filled">45 <span class="mk-suffix">km</span></div>
+              </div>
+              <div>
+                <div class="mk-label">How was your day?</div>
+                <div class="mk-stars">
+                  <i data-lucide="star" class="on"></i><i data-lucide="star" class="on"></i><i data-lucide="star" class="on"></i><i data-lucide="star" class="on"></i><i data-lucide="star"></i>
+                </div>
+              </div>
+              <div class="mk-sheet__footnote"><i data-lucide="lock"></i> Submitting closes today for good. Only your admin can reopen it.</div>
+              <div class="mk-actions">
+                <button class="mk-btn mk-btn--outline">Keep working</button>
+                <button class="mk-btn mk-btn--danger mk-btn--grow"><i data-lucide="check"></i> Close the day</button>
+              </div>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Closeout sheet <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 7 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s7">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">07</span>
+        <span class="manual-section__eyebrow">When the bars drop</span>
+      </div>
+      <h2 class="manual-section__title">Weak signal &amp; offline</h2>
+      <p class="manual-section__lead">
+        Field work means dead zones. The app is built for them — your route and reports
+        are safe on the phone until signal returns.
+      </p>
+      <ul class="manual-list">
+        <li><strong>Nothing is lost.</strong> Location fixes are queued on the device and upload automatically the moment you are back online.</li>
+        <li><strong>Low-accuracy points are still kept.</strong> A weak fix is better than a gap, so they are recorded rather than dropped.</li>
+        <li><strong>Reports wait too.</strong> A report filed offline is stored as a draft and sent when the connection returns.</li>
+        <li><strong>Ending the day needs signal.</strong> Closeout checks for a connection and a GPS fix first — so you can only close out when you are back online.</li>
+      </ul>
+
+      <h3 class="manual-sub">Check the tracking status</h3>
+      <ol class="manual-steps">
+        <li>Tap the location line on the session card, or go to <strong>Settings → Location status</strong>.</li>
+        <li>The <strong>Tracking status</strong> sheet shows your last fix and accuracy, plus the <strong>sync queue</strong>: connection, queued locations, failed uploads and when it last synced.</li>
+        <li>If you want to push the queue immediately once you have signal, tap <strong>Sync now</strong>.</li>
+      </ol>
+      <div class="manual-note manual-note--tip">
+        <span class="manual-note__icon"><i data-lucide="gauge"></i></span>
+        <span>In <b>Settings → Tracking</b> you can turn on <b>High accuracy mode</b> (rejects very poor fixes) and <b>Sync on mobile data</b> (off means image uploads wait for Wi-Fi).</span>
+      </div>
+      <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/tracking-status.png">
+        <div class="manual-media__frame">
+          <div class="mk mk--sheet">
+            <div class="mk-sheet__scrim"></div>
+            <div class="mk__status" style="color:#fff;position:relative;z-index:4"><span>14:20</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+            <div class="mk-sheet">
+              <div class="mk-sheet__grip"></div>
+              <div class="mk-sheet__title">Tracking status</div>
+              <div class="mk-banner mk-banner--warn"><i data-lucide="wifi-off"></i><div><b>Offline — fixes queued</b>No signal right now. Nothing is lost; it uploads when you reconnect.</div></div>
+              <div class="mk-measured">
+                <div class="mk-measured__h">Last fix</div>
+                <div class="mk-kv"><span>Recorded</span><b>2 min ago</b></div>
+                <div class="mk-kv"><span>Accuracy</span><b>±8 m</b></div>
+              </div>
+              <div class="mk-measured">
+                <div class="mk-measured__h">Sync queue</div>
+                <div class="mk-kv"><span>Connection</span><b style="color:var(--mk-warning)">Offline</b></div>
+                <div class="mk-kv"><span>Queued locations</span><b>34</b></div>
+                <div class="mk-kv"><span>Failed uploads</span><b>0</b></div>
+                <div class="mk-kv"><span>Last synced</span><b>12 min ago</b></div>
+              </div>
+              <button class="mk-btn mk-btn--primary"><i data-lucide="refresh-cw"></i> Sync now</button>
+            </div>
+          </div>
+          <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+        </div>
+        <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Tracking status &amp; sync queue <span class="manual-media__exmp">· example mockup</span></figcaption>
+      </figure>
+    </section>
+
+    <!-- 8 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s8">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">08</span>
+        <span class="manual-section__eyebrow">Your account</span>
+      </div>
+      <h2 class="manual-section__title">Profile, settings &amp; changing your password</h2>
+      <p class="manual-section__lead">
+        The <strong>Settings</strong> tab holds everything about your account, tracking
+        preferences, notifications and the app's look.
+      </p>
+
+      <h3 class="manual-sub">What you can change</h3>
+      <ul class="manual-list">
+        <li><strong>Account</strong> — edit your <em>phone and photo</em>. Your ID, designation and reporting line are shown under <em>Account information</em> but are managed by your admin.</li>
+        <li><strong>Tracking</strong> — location status, high-accuracy mode, sync on mobile data, battery saver.</li>
+        <li><strong>Notifications</strong> — turn report reminders, work &amp; session reminders and system notifications on or off.</li>
+        <li><strong>App</strong> — switch <em>theme</em> (light / dark / follow system) and <em>language</em>.</li>
+      </ul>
+
+      <h3 class="manual-sub">Change your password</h3>
+      <ol class="manual-steps">
+        <li>Go to <strong>Settings → Security → Change password</strong>.</li>
+        <li>Enter your <strong>current password</strong> (this is what authorises the change), then a <strong>new password</strong> of at least <strong>8 characters</strong> that differs from the old one, and confirm it.</li>
+        <li>Tap <strong>Change password</strong>. On success, <em>every other device</em> is signed out and this one stays signed in.</li>
+      </ol>
+      <div class="manual-note manual-note--warn">
+        <span class="manual-note__icon"><i data-lucide="shield-alert"></i></span>
+        <span>Passwords <b>cannot be looked up</b>. If you have forgotten yours, ask your admin to reset it — then sign in and change it to something only you know.</span>
+      </div>
+
+      <div class="manual-media-row">
+        <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/settings.png">
+          <div class="manual-media__frame">
+            <div class="mk mk--settings">
+              <div class="mk__status"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+              <div class="mk__appbar"><h4>Settings</h4></div>
+              <div class="mk__body" style="gap:10px">
+                <div class="mk-group">Account</div>
+                <div class="mk-list">
+                  <div class="mk-tilerow"><i data-lucide="user"></i><div><div class="mk-tt">Arindam Das</div><div class="mk-ts">Field Sales · EMP-2041</div></div><i data-lucide="chevron-right" class="mk-chev"></i></div>
+                </div>
+                <div class="mk-group">Tracking &amp; notifications</div>
+                <div class="mk-list">
+                  <div class="mk-tilerow"><i data-lucide="navigation"></i><div class="mk-tt">Location status</div><i data-lucide="chevron-right" class="mk-chev"></i></div>
+                  <div class="mk-tilerow"><i data-lucide="bell"></i><div class="mk-tt">Notifications</div><i data-lucide="chevron-right" class="mk-chev"></i></div>
+                </div>
+                <div class="mk-group">App</div>
+                <div class="mk-list">
+                  <div class="mk-tilerow"><i data-lucide="palette"></i><div class="mk-tt">Theme</div><div class="mk-seg"><span>Light</span><span class="on">Dark</span><span>Auto</span></div></div>
+                  <div class="mk-tilerow"><i data-lucide="shield"></i><div class="mk-tt">Change password</div><i data-lucide="chevron-right" class="mk-chev"></i></div>
+                </div>
+              </div>
+              <div class="mk-nav">
+                <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="house"></i></span>Home</div>
+                <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="file-text"></i></span>Reports</div>
+                <div class="mk-nav__i"><span class="mk-nav__ic"><i data-lucide="map-pin"></i></span>Visits</div>
+                <div class="mk-nav__i mk-nav__i--on"><span class="mk-nav__ic"><i data-lucide="settings"></i></span>Settings</div>
+              </div>
+            </div>
+            <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+          </div>
+          <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Settings <span class="manual-media__exmp">· example mockup</span></figcaption>
+        </figure>
+        <figure class="manual-media manual-media--phone manual-media--mock" data-media="img/change-password.png">
+          <div class="manual-media__frame">
+            <div class="mk mk--pw">
+              <div class="mk__status"><span>9:41</span><span class="mk__sigs"><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></span></div>
+              <div class="mk__appbar"><i data-lucide="arrow-left"></i><h4>Change password</h4></div>
+              <div class="mk__body" style="gap:12px">
+                <div>
+                  <div class="mk-label">Current password</div>
+                  <div class="mk-field mk-field--filled"><i data-lucide="lock"></i> ••••••••• <i data-lucide="eye" style="margin-left:auto"></i></div>
+                </div>
+                <div>
+                  <div class="mk-label">New password<span class="mk-hint">At least 8 characters, different from the old one</span></div>
+                  <div class="mk-field mk-field--filled"><i data-lucide="key-round"></i> •••••••••••</div>
+                </div>
+                <div>
+                  <div class="mk-label">Confirm new password</div>
+                  <div class="mk-field mk-field--filled"><i data-lucide="key-round"></i> •••••••••••</div>
+                </div>
+                <div class="mk-banner mk-banner--warn"><i data-lucide="shield-alert"></i><div><b>Signs out other devices</b>On success, every other device is signed out; this one stays in.</div></div>
+                <button class="mk-btn mk-btn--primary"><i data-lucide="check"></i> Change password</button>
+              </div>
+            </div>
+            <span class="manual-media__tag"><i data-lucide="pencil-ruler"></i> Mockup</span>
+          </div>
+          <figcaption class="manual-media__cap"><i data-lucide="camera"></i> Change password <span class="manual-media__exmp">· example mockup</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 9 ───────────────────────────────────────── -->
+    <section class="manual-section" id="s9">
+      <div class="manual-section__kicker">
+        <span class="manual-section__num">09</span>
+        <span class="manual-section__eyebrow">When something's off</span>
+      </div>
+      <h2 class="manual-section__title">Troubleshooting &amp; FAQ</h2>
+      <p class="manual-section__lead">
+        Quick answers to the things that come up most. Still stuck? Use
+        <strong>Settings → Support → Contact support</strong>.
+      </p>
+
+      <div class="manual-faq">
+        <details>
+          <summary>Start Day won't work</summary>
+          <div class="manual-faq__a">
+            It is held back for one of three reasons: location is off or set to "only while using the app" (enable it — <em>Allow all the time</em>), you are offline (the day opens against the server, so you need signal), or today is already closed by an admin. The banner on Home names the exact cause and offers a fix.
+          </div>
+        </details>
+        <details>
+          <summary>I can't end my day</summary>
+          <div class="manual-faq__a">
+            Closeout needs both an internet connection and a valid GPS fix. Move somewhere with signal and location, then tap End Day again. Your day stays open in the meantime — nothing is lost.
+          </div>
+        </details>
+        <details>
+          <summary>My photos didn't upload</summary>
+          <div class="manual-faq__a">
+            The report itself is always filed first, so it is safe. If photos fail, the success screen shows a <strong>Retry photos</strong> button that re-sends only the pictures that didn't make it — it never files the report twice.
+          </div>
+        </details>
+        <details>
+          <summary>My session closed by itself</summary>
+          <div class="manual-faq__a">
+            If GPS and internet are both off, the app auto-closes the current session to save battery and shows a notice with the time. Your day is still open — just start a new session when you are ready.
+          </div>
+        </details>
+        <details>
+          <summary>The app says my day is locked</summary>
+          <div class="manual-faq__a">
+            Once a day is closed (by you at closeout, or by an admin) it is locked. Only an admin can reopen it. If that's wrong, contact your admin.
+          </div>
+        </details>
+        <details>
+          <summary>I forgot my password</summary>
+          <div class="manual-faq__a">
+            Passwords can't be recovered. Ask your admin to reset yours, sign in with the temporary one, then set a new password under Settings → Security → Change password.
+          </div>
+        </details>
+        <details>
+          <summary>Does tracking drain my battery?</summary>
+          <div class="manual-faq__a">
+            Tracking only runs while your day is open. Turn on <strong>Battery saver</strong> in Settings → Tracking to sample your location less often, and take a <strong>Break</strong> whenever you'll be stationary for a while.
+          </div>
+        </details>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── FOOT ─────────────────────────────────────── -->
+<section class="manual-foot">
+  <p>That's the whole working day. Keep this page handy — it updates as the app does.</p>
+  <a class="footer__link" href="index.html">
+    <span>Back to home</span>
+    <i data-lucide="arrow-right"></i>
+  </a>
+</section>
+
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<script>
+  lucide.createIcons();
+</script>
+<script src="script.js"></script>
+<script>
+/* Highlight the section the reader is in, and keep the active chip in view
+   on the mobile strip. Pure class toggling — no motion, so nothing to gate
+   behind prefers-reduced-motion here. */
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('.manual-toc__link'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+
+  var sections = Array.prototype.slice.call(document.querySelectorAll('.manual-section'));
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      var link = map[e.target.id];
+      if(!link) return;
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('is-active'); });
+        link.classList.add('is-active');
+        link.setAttribute('aria-current','true');
+        links.forEach(function(l){ if(l!==link) l.removeAttribute('aria-current'); });
+        if(window.matchMedia('(max-width:960px)').matches){
+          link.scrollIntoView({block:'nearest',inline:'center'});
+        }
+      }
+    });
+  },{rootMargin:'-45% 0px -50% 0px'});
+  sections.forEach(function(s){ io.observe(s); });
+
+  /* Gentle reveal for each section as it enters. */
+  if(window.matchMedia('(prefers-reduced-motion:no-preference)').matches){
+    var reveal = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('is-in'); reveal.unobserve(e.target); }
+      });
+    },{threshold:0.08});
+    sections.forEach(function(s){ reveal.observe(s); });
+  } else {
+    sections.forEach(function(s){ s.classList.add('is-in'); });
+  }
+})();
+</script>
+</body>
+</html>

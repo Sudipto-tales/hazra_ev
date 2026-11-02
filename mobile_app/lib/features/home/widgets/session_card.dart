@@ -9,6 +9,15 @@ import '../../../data/models/models.dart';
 import '../../../state/tracking_controller.dart';
 import '../../../widgets/status_badge.dart';
 
+const TextStyle _headlineStyle = TextStyle(
+  color: Colors.white,
+  fontSize: 40,
+  height: 1.05,
+  fontWeight: FontWeight.w700,
+  letterSpacing: -1.4,
+  fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
+);
+
 /// Hero card on Home: live timer, today's session facts and the primary
 /// Start Day / End Day action.
 class SessionCard extends StatelessWidget {
@@ -93,17 +102,18 @@ class SessionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: Insets.lg),
-          Text(
-            live ? Fmt.clock(controller.sessionElapsed) : _idleHeadline(controller),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 40,
-              height: 1.05,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -1.4,
-              fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
-            ),
-          ),
+          if (live)
+            // Subscribes to the controller's per-second clock alone, so only
+            // this timer repaints each second — not the whole card/Home subtree.
+            ValueListenableBuilder<DateTime>(
+              valueListenable: controller.clock,
+              builder: (BuildContext context, DateTime now, _) => Text(
+                Fmt.clock(controller.sessionElapsedAt(now)),
+                style: _headlineStyle,
+              ),
+            )
+          else
+            Text(_idleHeadline(controller), style: _headlineStyle),
           const SizedBox(height: 2),
           Text(
             live
