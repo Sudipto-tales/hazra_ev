@@ -13,6 +13,7 @@ import '../../widgets/stat_tile.dart';
 import '../../widgets/states.dart';
 import '../auth/role_select_page.dart';
 import '../home/widgets/tracking_sheet.dart';
+import 'app_info.dart';
 import 'change_password_page.dart';
 import 'info_pages.dart';
 import 'personal_info_page.dart';
@@ -133,10 +134,15 @@ class _ProfilePageState extends State<ProfilePage> {
                             value: Fmt.time(scope.tracking.joiningTime),
                             icon: Icons.login_rounded,
                           ),
-                          KeyValueRow(
-                            label: 'Worked today',
-                            value: Fmt.duration(scope.tracking.workedToday),
-                            icon: Icons.timer_outlined,
+                          ValueListenableBuilder<DateTime>(
+                            valueListenable: scope.tracking.clock,
+                            builder: (BuildContext context, DateTime now, _) =>
+                                KeyValueRow(
+                              label: 'Worked today',
+                              value:
+                                  Fmt.duration(scope.tracking.workedTodayAt(now)),
+                              icon: Icons.timer_outlined,
+                            ),
                           ),
                           KeyValueRow(
                             label: 'Distance today',
@@ -245,7 +251,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     SettingsTile(
                       icon: Icons.info_outline_rounded,
                       title: 'About',
-                      subtitle: 'Version 0.1.0',
+                      subtitle: AppInfo.label,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => const AboutPage(),

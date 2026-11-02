@@ -45,6 +45,12 @@ class Wire {
 
   static int integer(Object? raw) => (raw as num?)?.toInt() ?? 0;
 
+  /// Like [integer] but falls back to [fallback] when the field is absent or
+  /// null. Used for config knobs a server on an older `version` may not send,
+  /// so a missing field resolves to the local default rather than `0`.
+  static int integerOr(Object? raw, int fallback) =>
+      (raw as num?)?.toInt() ?? fallback;
+
   static bool boolean(Object? raw) => raw == true;
 
   static String str(Object? raw) => raw as String? ?? '';
@@ -104,6 +110,11 @@ class Wire {
 
   static TrackingConfig config(Map<String, dynamic> j) => TrackingConfig(
         locationIntervalSeconds: integer(j['locationIntervalSeconds']),
+        // version 8: server-driven; a v7 server omits it → local default (20).
+        distanceFilterMetres: integerOr(
+          j['distanceFilterMetres'],
+          TrackingConfig.defaults.distanceFilterMetres,
+        ),
         minAccuracyMetres: dbl(j['minAccuracyMetres']),
         stopRadiusMetres: dbl(j['stopRadiusMetres']),
         stopThresholdMinutes: integer(j['stopThresholdMinutes']),
@@ -114,11 +125,17 @@ class Wire {
         locationUnavailableThresholdMinutes:
             integer(j['locationUnavailableThresholdMinutes']),
         syncBatchSize: integer(j['syncBatchSize']),
+        // version 8: server-driven; a v7 server omits it → local default (300).
+        syncIntervalSeconds: integerOr(
+          j['syncIntervalSeconds'],
+          TrackingConfig.defaults.syncIntervalSeconds,
+        ),
       );
 
   static Map<String, dynamic> configToJson(TrackingConfig c) =>
       <String, dynamic>{
         'locationIntervalSeconds': c.locationIntervalSeconds,
+        'distanceFilterMetres': c.distanceFilterMetres,
         'minAccuracyMetres': c.minAccuracyMetres,
         'stopRadiusMetres': c.stopRadiusMetres,
         'stopThresholdMinutes': c.stopThresholdMinutes,
@@ -129,6 +146,7 @@ class Wire {
         'locationUnavailableThresholdMinutes':
             c.locationUnavailableThresholdMinutes,
         'syncBatchSize': c.syncBatchSize,
+        'syncIntervalSeconds': c.syncIntervalSeconds,
       };
 
   // -------------------------------------------------------------- aggregates

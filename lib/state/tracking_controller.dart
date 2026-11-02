@@ -67,7 +67,13 @@ class TrackingController extends ChangeNotifier {
   /// The write path. Every call through it is retried until it lands, because
   /// a session the server never heard about is a day that did not happen.
   final TrackingRepository _sync;
-  final TrackingConfig config;
+
+  /// Tracking thresholds. Starts at [TrackingConfig.defaults] and is replaced
+  /// by the server's values once [_refreshConfig] lands — at login, at resume,
+  /// and at each session start (API plan §3.12). Mutable because the controller
+  /// is built in `main.dart` before sign-in, so the real config is not known
+  /// yet. A fetch failure leaves this at the last good value, never clears it.
+  TrackingConfig config;
 
   /// How often the outbox retries what the server has not accepted yet. Long
   /// enough not to hammer a dead network, short enough that a session opened
@@ -120,6 +126,18 @@ class TrackingController extends ChangeNotifier {
   DateTime _now = DateTime.now();
   bool _busy = false;
 
+  /// Ticks once per second while a session is open, carrying the current wall
+  /// clock. This is the ONLY per-second signal the UI gets: the live elapsed
+  /// timer widgets subscribe to it through a [ValueListenableBuilder] so just
+  /// they repaint each second, while the controller itself notifies its general
+  /// listeners only when something observable actually changes. Before this the
+  /// ticker called [notifyListeners] every second and rebuilt the whole Home
+  /// subtree all day — a constant CPU/redraw drain and a real heat/battery cost.
+  final ValueNotifier<DateTime> _clock = ValueNotifier<DateTime>(DateTime.now());
+
+  /// Subscribe to this from elapsed-time widgets only. See [_clock].
+  ValueListenable<DateTime> get clock => _clock;
+
   bool get isLoading => _loading;
   Object? get error => _error;
   HomeSnapshot? get snapshot => _snapshot;
@@ -152,24 +170,58 @@ class TrackingController extends ChangeNotifier {
 
   bool get _isOnline => _snapshot?.sync.isOnline ?? true;
 
-  /// Live duration of the open session; zero when nothing is running.
-  Duration get sessionElapsed {
+  /// Live duration of the open session as of the controller's last tick; zero
+  /// when nothing is running.
+  Duration get sessionElapsed => sessionElapsedAt(_now);
+
+  /// Live duration of the open session as of [at]. Elapsed-time widgets pass
+  /// the per-second value from [clock] so they tick without the whole subtree
+  /// rebuilding.
+  Duration sessionElapsedAt(DateTime at) {
     final WorkSession? s = activeSession;
     if (s == null) return Duration.zero;
-    return _now.difference(s.startTime);
+    return at.difference(s.startTime);
   }
 
-  /// Worked time across the day, including the running session.
-  Duration get workedToday {
+  /// Worked time across the day, including the running session, as of the
+  /// controller's last tick.
+  Duration get workedToday => workedTodayAt(_now);
+
+  /// Worked time across the day as of [at]. See [sessionElapsedAt].
+  Duration workedTodayAt(DateTime at) {
     Duration total = Duration.zero;
     for (final WorkSession s in sessions) {
-      total += s.durationAt(_now);
+      total += s.durationAt(at);
     }
     return total;
   }
 
   DateTime? get joiningTime =>
       sessions.isEmpty ? null : sessions.first.startTime;
+
+  /// Pull the server's [TrackingConfig] and hand it to the live tracking
+  /// stack. Best-effort by contract (§3.12): a failure (offline, first launch,
+  /// a timeout) keeps whatever config is already in force — the last good one,
+  /// or [TrackingConfig.defaults] — so tracking never waits on the network for
+  /// its thresholds and Start Day is never blocked.
+  Future<void> _refreshConfig() async {
+    try {
+      final TrackingConfig fetched = await _repo.config();
+      if (_disposed) return;
+      applyConfig(fetched);
+    } catch (e) {
+      debugPrint('[tracking] config fetch failed; keeping current config: $e');
+    }
+  }
+
+  /// Adopt [next] for both this controller (movement/watchdog thresholds) and
+  /// the location service (interval/accuracy/batch). Visible for the tests and
+  /// for the composition root; day-to-day it is driven by [_refreshConfig].
+  @visibleForTesting
+  void applyConfig(TrackingConfig next) {
+    config = next;
+    _location.updateConfig(next);
+  }
 
   Future<void> load() async {
     _loading = true;
@@ -180,6 +232,11 @@ class TrackingController extends ChangeNotifier {
       if (_disposed) return;
       _snapshot = fresh;
       _error = null;
+      // Fresh thresholds at login/resume (§3.12). Best-effort — see
+      // [_refreshConfig]. For a resumed session it is awaited below so the
+      // position stream subscribes under the server's config; with no session
+      // open it rides along unawaited so a later Start Day starts from current
+      // values even before its own re-read lands.
       // A locked day never resumes tracking, whatever the device thinks.
       if (status.isSessionOpen && !isDayLocked) {
         final WorkSession open = activeSession!;
@@ -190,9 +247,13 @@ class TrackingController extends ChangeNotifier {
           open.id,
           () => _SessionOutbox(clientId: open.id)..serverId = open.id,
         );
+        await _refreshConfig();
+        if (_disposed) return;
         await _location.startTracking(sessionId: open.id);
         _listenToLocation();
         _startTicker();
+      } else {
+        unawaited(_refreshConfig());
       }
     } catch (e) {
       _error = e;
@@ -239,6 +300,13 @@ class TrackingController extends ChangeNotifier {
 
     _busy = true;
     notifyListeners();
+    // Re-read the server's thresholds for this session (§3.12). Kicked off here
+    // so it runs alongside the home() check below and adds no latency to the
+    // tap; awaited only just before the position stream subscribes, where
+    // _settings() reads interval/accuracy — so the fresh config governs this
+    // session. Best-effort: _refreshConfig swallows failures and the stack
+    // keeps its last good config, so a config fetch never blocks Start Day.
+    final Future<void> configReady = _refreshConfig();
     try {
       // Ask the server before anything else. This one call does double duty:
       // it proves there is a connection, and it settles whether today is still
@@ -307,6 +375,15 @@ class TrackingController extends ChangeNotifier {
       _outbox[sessionId] = _SessionOutbox(clientId: sessionId, openFix: fix);
       unawaited(syncPendingWork());
 
+      // Let the (concurrent) config re-read settle before the stream
+      // subscribes, so this session records at the server's cadence. The
+      // local session is already open above, so the tap has already returned
+      // its result to the UI — this only gates the background stream.
+      await configReady;
+      if (_disposed) {
+        return const StartDayResult(
+            StartDayOutcome.alreadyRunning, LocationHealth.ok);
+      }
       await _location.startTracking(sessionId: sessionId);
       _listenToLocation();
       _startTicker();
@@ -730,20 +807,27 @@ class TrackingController extends ChangeNotifier {
     _ticker?.cancel();
     if (_disposed) return;
     _tick = 0;
+    _now = DateTime.now();
+    _clock.value = _now;
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       _now = DateTime.now();
       _tick++;
       // GPS being switched off mid-session is silent — nothing pushes an event
       // for it — so it has to be looked for. The watchdog below is blind
-      // without this.
+      // without this. Notifies on a real change only, from inside _pollHealth.
       if (_tick % 15 == 0) unawaited(_pollHealth());
       // Anything the server has not been told yet. Cheap when there is
       // nothing owed — the drain returns on the first check — and it is what
       // turns a session opened on a dead network into a real one the moment
       // the network comes back.
       if (_tick % 30 == 0) unawaited(syncPendingWork());
+      // Compares against _now; may auto-close (which notifies) on its own.
       _evaluateWatchdog();
-      notifyListeners();
+      // Drive ONLY the live elapsed-time widgets. Deliberately no
+      // notifyListeners() here: the general listeners rebuild on real state
+      // change (health, status, snapshot, sync, session open/close), not every
+      // second. This is the whole point of P1.1.
+      _clock.value = _now;
     });
   }
 
@@ -824,6 +908,7 @@ class TrackingController extends ChangeNotifier {
     _outboxRetry?.cancel();
     _syncSub?.cancel();
     _fixSub?.cancel();
+    _clock.dispose();
     super.dispose();
   }
 }

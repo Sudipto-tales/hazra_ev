@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart' hide ActivityType;
 
 import '../core/config/tracking_config.dart';
 import '../data/models/models.dart';
+import 'location_queue_store.dart';
 
 /// Device-side location collection, kept fully independent of the UI.
 ///
@@ -17,6 +18,14 @@ import '../data/models/models.dart';
 /// background service. Nothing above this interface should ever touch the
 /// plugin directly, so the platform layer can be replaced in one file.
 abstract class LocationService {
+  /// Adopt a new [TrackingConfig] at runtime. The composition root builds the
+  /// service before sign-in — and therefore before the server's config is
+  /// known — so the controller pushes the fetched config down here once it has
+  /// it. Interval and accuracy are re-read by the position stream each time it
+  /// (re)subscribes, so a config applied just before [startTracking] governs
+  /// that session.
+  void updateConfig(TrackingConfig config);
+
   /// Device location service + permission + accuracy health.
   Future<LocationHealth> health();
 
@@ -51,8 +60,11 @@ class MockLocationService implements LocationService {
     this.emitInterval = const Duration(seconds: 5),
   });
 
-  final TrackingConfig config;
+  TrackingConfig config;
   final Duration emitInterval;
+
+  @override
+  void updateConfig(TrackingConfig next) => config = next;
 
   /// Flip from the Settings screen to exercise the blocked-start dialogs.
   LocationHealth simulatedHealth = LocationHealth.ok;
@@ -211,9 +223,14 @@ typedef LocationUploader = Future<Set<String>> Function(
 ///   `TrackingRepository`). With no uploader attached — the `USE_MOCKS` build,
 ///   or a test — [flushQueue] reports the queue as it truly is instead of
 ///   pretending it drained.
-/// * The queue is in memory only. A dropped network loses nothing; the process
-///   being killed does. Persisting it is the next step, and it belongs here
-///   rather than in the controller.
+/// * The queue is **durable**. It is mirrored to disk through a
+///   [LocationQueueStore] (`shared_preferences` in production) and reloaded on
+///   construction, so a dropped network loses nothing and a killed process
+///   resumes draining after a cold start. Writes are debounced
+///   ([_persistDebounce]) so a burst of fixes or a batch drain collapses into
+///   one encode + one write rather than one per fix — the JSON encode of a full
+///   5000-fix queue is the only part of this that could jank, and the debounce
+///   keeps it off the hot path.
 ///
 /// Platform declarations: Android is done (see
 /// `android/app/src/main/AndroidManifest.xml`). This repo has no `ios/` folder
@@ -227,9 +244,18 @@ typedef LocationUploader = Future<Set<String>> Function(
 ///   background or the screen is off. Nothing is recorded once you end the
 ///   session."
 class GeoLocationService implements LocationService {
-  /// Deleted accounts must not upload queued positions or collect new ones.
+  /// Deleted accounts must not upload queued positions or collect new ones, and
+  /// nothing they captured may be left behind on disk.
   void discardDeletedAccountQueue() {
     _queue.clear();
+    _failed = 0;
+    // Cancel any debounced write still owing the old (now-discarded) queue,
+    // then wipe the durable copy. Order matters: if the timer fired after the
+    // clear it would re-persist an empty queue, which is harmless, but clearing
+    // the store outright is the honest erasure a deleted account requires.
+    _persistTimer?.cancel();
+    _persistTimer = null;
+    unawaited(_store.clear());
     _emitSync();
   }
 
@@ -237,9 +263,28 @@ class GeoLocationService implements LocationService {
     this.config = TrackingConfig.defaults,
     LocationUploader? uploader,
     this.queueCapacity = 5000,
-  }) : _uploader = uploader;
+    LocationQueueStore? queueStore,
+    this.persistDebounce = const Duration(seconds: 2),
+  })  : _uploader = uploader,
+        _store = queueStore ?? SharedPrefsLocationQueueStore() {
+    unawaited(_restore());
+  }
 
-  final TrackingConfig config;
+  /// Mutable so the controller can push the server's [TrackingConfig] down once
+  /// it is fetched. A running stream keeps the config it subscribed under;
+  /// [_settings] reads the new values the next time it (re)subscribes — which is
+  /// what makes "re-read config at each session start" take effect.
+  TrackingConfig config;
+
+  @override
+  void updateConfig(TrackingConfig next) => config = next;
+
+  /// Durable backing for the offline queue. Reloaded on construction; written
+  /// on a debounce as the queue changes.
+  final LocationQueueStore _store;
+
+  /// How long writes coalesce before hitting disk. See [_schedulePersist].
+  final Duration persistDebounce;
 
   /// Hard ceiling on the in-memory queue so a long offline stretch cannot grow
   /// without bound. At the default 30 s interval this is ~41 hours of fixes.
@@ -258,6 +303,40 @@ class GeoLocationService implements LocationService {
   StreamSubscription<Position>? _positions;
   Timer? _retry;
   Timer? _drain;
+  Timer? _persistTimer;
+
+  /// Forced-fix guardrail. The distance filter and the stretched stationary
+  /// interval can both leave a genuinely-present employee with no streamed fix
+  /// for minutes, which the server would read as Offline (>10 min) or Location
+  /// Unavailable (>15 min). The heartbeat tops the queue up with one current
+  /// position if nothing has been emitted for [_heartbeatInterval]; it is reset
+  /// every time a real fix lands, so it only ever fires during a quiet stretch.
+  /// This is not a new server call — the existing 5-min batch carries it.
+  Timer? _heartbeat;
+
+  /// Debounces moving↔stationary so a fix or two at the speed boundary does not
+  /// thrash the stream between accuracy modes. The candidate state must survive
+  /// [_transitionHoldWindow] before [_resubscribe] swaps the settings.
+  Timer? _transitionTimer;
+
+  /// Current effective cadence mode. Moving: high accuracy, 60s. Stationary:
+  /// balanced accuracy, ~3 min. Starts moving each session.
+  bool _stationary = false;
+
+  /// Target of the in-flight debounce, or null when no transition is pending.
+  bool? _pendingStationary;
+
+  static const Duration _heartbeatInterval = Duration(minutes: 5);
+  static const Duration _transitionHoldWindow = Duration(seconds: 90);
+
+  /// Stationary stretches the streamed interval by this factor (60s → ~3 min).
+  static const int _stationaryIntervalFactor = 3;
+
+  /// Until the on-disk queue has been read back, no write is allowed: a save
+  /// off the still-empty in-memory queue would overwrite the very fixes
+  /// [_restore] is about to load. Flipped true the moment restore finishes
+  /// (success or failure).
+  bool _restored = false;
 
   String? _sessionId;
   int _seq = 0;
@@ -416,15 +495,29 @@ class GeoLocationService implements LocationService {
   Future<void> startTracking({required String sessionId}) async {
     await stopTracking();
     _sessionId = sessionId;
+    _stationary = false;
+    _pendingStationary = null;
     _emitSync();
     _subscribe();
+    // Arm the guardrail immediately: a session that opens somewhere with a weak
+    // first fix should still be topped up within the offline window.
+    _armHeartbeat();
 
-    // A steady drain matters more than a big one: the admin's live map is only
-    // as current as the last batch that landed, and a session that uploads
-    // every half minute survives a mid-day crash with almost nothing lost.
-    // Batches also go up on their own once the queue reaches syncBatchSize.
+    // Batching beats dribbling: waking the radio every half minute for a single
+    // fix pays the cellular tail-energy cost over and over. The drain cadence is
+    // server-tunable (config `syncIntervalSeconds`, default 300s) so an admin can
+    // trade latency for battery without an app release; at the 300s default it
+    // rolls roughly five fixes (at a 60s cadence) into one request, cutting
+    // server calls ~10x with no loss of fidelity on the admin's live map.
+    // Nothing is stranded: the queue still flushes early the moment it reaches
+    // syncBatchSize, and stopTracking() force-flushes on session end. The server
+    // clamps syncIntervalSeconds below the offline window, so no client-side
+    // ceiling is needed — and the ~5-min heartbeat keeps the device inside that
+    // window even on a quiet, distance-filtered stretch.
+    final Duration drainInterval =
+        Duration(seconds: config.syncIntervalSeconds);
     _drain = Timer.periodic(
-      Duration(seconds: max(30, config.locationIntervalSeconds)),
+      drainInterval,
       (_) => unawaited(flushQueue()),
     );
   }
@@ -438,6 +531,12 @@ class GeoLocationService implements LocationService {
     _retry = null;
     _drain?.cancel();
     _drain = null;
+    _heartbeat?.cancel();
+    _heartbeat = null;
+    _transitionTimer?.cancel();
+    _transitionTimer = null;
+    _pendingStationary = null;
+    _stationary = false;
     await _positions?.cancel();
     _positions = null;
     _sessionId = null;
@@ -448,7 +547,7 @@ class GeoLocationService implements LocationService {
     if (_sessionId == null) return;
     try {
       _positions = Geolocator.getPositionStream(
-        locationSettings: _settings(stream: true),
+        locationSettings: _settings(stream: true, stationary: _stationary),
       ).listen(
         _onPosition,
         onError: _onStreamError,
@@ -457,6 +556,17 @@ class GeoLocationService implements LocationService {
     } catch (e) {
       _onStreamError(e);
     }
+  }
+
+  /// Swap the live stream onto the current [_stationary] mode's settings. Only
+  /// the subscription is recycled — the queue, drain, heartbeat and persistence
+  /// timers are untouched, so a mode change never strands a fix or leaks a
+  /// timer. A single old subscription is cancelled before the new one opens.
+  void _resubscribe() {
+    if (_sessionId == null) return;
+    _positions?.cancel();
+    _positions = null;
+    _subscribe();
   }
 
   void _onStreamError(Object error) {
@@ -481,14 +591,16 @@ class GeoLocationService implements LocationService {
     final String? sessionId = _sessionId;
     if (sessionId == null) return;
 
-    if (position.accuracy > config.minAccuracyMetres) {
-      // TrackingConfig says fixes worse than this are dropped. Dropped means
-      // dropped: not queued, not emitted, not counted as a location point.
-      _lastAccuracyReject = DateTime.now();
-      return;
-    }
+    // A fix worse than minAccuracyMetres used to be dropped outright, which
+    // left weak-GPS stretches with no trail at all. It is now kept and queued,
+    // flagged low-accuracy so the server (and the UI) can tell it apart from a
+    // confident fix — a rough point is still roughly where the employee was,
+    // and that is the whole record of the day. The poorAccuracy health signal
+    // still fires off it, so the "weak GPS" warning is unchanged.
+    final bool lowAccuracy = position.accuracy > config.minAccuracyMetres;
+    if (lowAccuracy) _lastAccuracyReject = DateTime.now();
 
-    final LocationLog fix = _toLog(position, sessionId);
+    final LocationLog fix = _toLog(position, sessionId, lowAccuracy: lowAccuracy);
 
     final LocationLog? previous = _lastAccepted;
     if (previous != null && _isImplausibleJump(previous, fix)) {
@@ -496,14 +608,100 @@ class GeoLocationService implements LocationService {
       return;
     }
 
-    _lastAccuracyReject = null;
+    // A good fix clears the warning; a low-accuracy one leaves it standing.
+    if (!lowAccuracy) _lastAccuracyReject = null;
     _lastAccepted = fix;
     _enqueue(fix);
     if (!_fixes.isClosed) _fixes.add(fix);
     _emitSync();
 
+    // A real fix just reached the queue, so the offline window is fresh: push
+    // the forced heartbeat back out to the full interval.
+    _armHeartbeat();
+    // Let this fix nudge the moving↔stationary cadence (debounced).
+    _evaluateMovement(fix);
+
     if (_uploader != null && _queue.length >= config.syncBatchSize) {
       unawaited(flushQueue());
+    }
+  }
+
+  /// Decide whether this fix argues for a cadence change and, if so, arm (or
+  /// let ride) the debounce toward it. A fix that agrees with the current mode
+  /// cancels any pending flip — that is the "state reverted before it held"
+  /// case, and is what keeps the boundary from thrashing.
+  void _evaluateMovement(LocationLog fix) {
+    if (_sessionId == null) return;
+    final bool candidate = fix.speedKmh < config.movementSpeedThresholdKmh;
+
+    if (candidate == _stationary) {
+      _pendingStationary = null;
+      _transitionTimer?.cancel();
+      _transitionTimer = null;
+      return;
+    }
+
+    // Already waiting on exactly this transition — let the armed timer run so
+    // the hold window is measured from the first qualifying fix.
+    if (_pendingStationary == candidate &&
+        (_transitionTimer?.isActive ?? false)) {
+      return;
+    }
+
+    _pendingStationary = candidate;
+    _transitionTimer?.cancel();
+    _transitionTimer = Timer(_transitionHoldWindow, () {
+      _transitionTimer = null;
+      final bool? target = _pendingStationary;
+      _pendingStationary = null;
+      // The session may have closed, or the mode already matches, while the
+      // window ran — either way there is nothing to swap.
+      if (_sessionId == null || target == null || target == _stationary) return;
+      _stationary = target;
+      _resubscribe();
+    });
+  }
+
+  /// (Re)start the forced-fix guardrail. Cancelling first means the timer only
+  /// ever fires after a genuine [_heartbeatInterval] of silence.
+  void _armHeartbeat() {
+    if (_sessionId == null) return;
+    _heartbeat?.cancel();
+    _heartbeat = Timer(_heartbeatInterval, () => unawaited(_onHeartbeat()));
+  }
+
+  /// No fix has been emitted for [_heartbeatInterval]. Capture one current
+  /// position — a one-shot read ignores the distance filter — and inject it
+  /// into the queue so the next 5-min batch keeps the employee inside the
+  /// server's offline window. Re-arms itself so a quiet stretch keeps ticking.
+  Future<void> _onHeartbeat() async {
+    final String? sessionId = _sessionId;
+    if (sessionId == null) return;
+    try {
+      final Position position = await Geolocator.getCurrentPosition(
+        locationSettings: _settings(
+          timeLimit: const Duration(seconds: 25),
+          stream: false,
+        ),
+      );
+      if (_sessionId != sessionId) return; // session closed mid-read.
+      final bool lowAccuracy = position.accuracy > config.minAccuracyMetres;
+      if (lowAccuracy) _lastAccuracyReject = DateTime.now();
+      final LocationLog fix =
+          _toLog(position, sessionId, lowAccuracy: lowAccuracy);
+      // Deliberately bypasses the jump filter: this is a forced top-up, not a
+      // movement sample, and after minutes of silence the implied speed is low
+      // anyway. It does not drive _evaluateMovement for the same reason.
+      _lastAccepted = fix;
+      _enqueue(fix);
+      if (!_fixes.isClosed) _fixes.add(fix);
+      _emitSync();
+    } catch (e) {
+      debugPrint('[location] heartbeat fix failed: $e');
+    } finally {
+      // Re-arm whether or not the read succeeded, so a transient failure just
+      // retries at the next window instead of silently disarming the guard.
+      _armHeartbeat();
     }
   }
 
@@ -520,7 +718,11 @@ class GeoLocationService implements LocationService {
     return metres / seconds * 3.6 > config.maxJumpKmh;
   }
 
-  LocationLog _toLog(Position position, String sessionId) {
+  LocationLog _toLog(
+    Position position,
+    String sessionId, {
+    bool? lowAccuracy,
+  }) {
     return LocationLog(
       // Device-local id. The server assigns the real one when the fix syncs.
       id: 'loc_local_${position.timestamp.millisecondsSinceEpoch}_${_seq++}',
@@ -533,6 +735,10 @@ class GeoLocationService implements LocationService {
       // Nothing is synced until an uploader confirms it, so this is the only
       // truthful state for a fresh fix.
       syncState: SyncState.queued,
+      // Derive from the threshold when the caller does not already know it (the
+      // session start/end fix path), so the flag is always set off the same
+      // rule the stream uses.
+      lowAccuracy: lowAccuracy ?? position.accuracy > config.minAccuracyMetres,
     );
   }
 
@@ -560,12 +766,30 @@ class GeoLocationService implements LocationService {
 
   /// Accuracy and cadence come from [TrackingConfig], the same source the mock
   /// reads, so changing the rule changes both implementations.
-  LocationSettings _settings({Duration? timeLimit, required bool stream}) {
-    const LocationAccuracy accuracy = LocationAccuracy.high;
+  ///
+  /// [stationary] selects the low-power variant: balanced-power accuracy and an
+  /// interval stretched by [_stationaryIntervalFactor] (60s → ~3 min). Moving
+  /// stays on high accuracy at the configured interval. The distance filter is
+  /// applied in both modes so a parked employee's radio can idle; on iOS, which
+  /// has no explicit interval, accuracy + distance filter are the only levers.
+  ///
+  /// `LocationAccuracy.medium` is geolocator's balanced-power tier — it maps to
+  /// Android's `PRIORITY_BALANCED_POWER_ACCURACY` and the matching iOS accuracy.
+  LocationSettings _settings({
+    Duration? timeLimit,
+    required bool stream,
+    bool stationary = false,
+  }) {
+    final LocationAccuracy accuracy =
+        stationary ? LocationAccuracy.medium : LocationAccuracy.high;
+    final int intervalSeconds = stationary
+        ? config.locationIntervalSeconds * _stationaryIntervalFactor
+        : config.locationIntervalSeconds;
     if (defaultTargetPlatform == TargetPlatform.android) {
       return AndroidSettings(
         accuracy: accuracy,
-        intervalDuration: Duration(seconds: config.locationIntervalSeconds),
+        distanceFilter: config.distanceFilterMetres,
+        intervalDuration: Duration(seconds: intervalSeconds),
         timeLimit: timeLimit,
         // Only the session stream runs as a foreground service — a one-shot
         // fix has no business posting a persistent notification.
@@ -585,6 +809,7 @@ class GeoLocationService implements LocationService {
         defaultTargetPlatform == TargetPlatform.macOS) {
       return AppleSettings(
         accuracy: accuracy,
+        distanceFilter: config.distanceFilterMetres,
         timeLimit: timeLimit,
         pauseLocationUpdatesAutomatically: false,
         // No always-on permission is requested, so this stays false: it would
@@ -592,7 +817,11 @@ class GeoLocationService implements LocationService {
         showBackgroundLocationIndicator: false,
       );
     }
-    return LocationSettings(accuracy: accuracy, timeLimit: timeLimit);
+    return LocationSettings(
+      accuracy: accuracy,
+      distanceFilter: config.distanceFilterMetres,
+      timeLimit: timeLimit,
+    );
   }
 
   // ----------------------------------------------------------- offline queue
@@ -604,6 +833,70 @@ class GeoLocationService implements LocationService {
       _failed++;
     }
     _queue.add(fix);
+    _schedulePersist();
+  }
+
+  // ------------------------------------------------------------ persistence
+
+  /// Reload the durable queue, merge it ahead of anything captured since
+  /// construction, and resume draining. Runs once, from the constructor.
+  Future<void> _restore() async {
+    try {
+      final LocationQueueData data = await _store.load();
+      if (data.fixes.isNotEmpty) {
+        // Persisted fixes are strictly older than anything the live stream has
+        // enqueued during the async gap, so they go to the front. Re-apply the
+        // capacity cap against the merged total, dropping oldest-as-failed
+        // exactly as [_enqueue] would have.
+        final List<LocationLog> live = List<LocationLog>.of(_queue);
+        _queue
+          ..clear()
+          ..addAll(data.fixes)
+          ..addAll(live);
+        while (_queue.length > queueCapacity) {
+          _queue.removeFirst();
+          _failed++;
+        }
+      }
+      // Only adopt the persisted counters if this instance has not already
+      // moved them on its own during the gap.
+      if (_failed == 0) _failed += data.failed;
+      _lastSyncedAt ??= data.lastSyncedAt;
+    } catch (e) {
+      debugPrint('[location] queue restore failed: $e');
+    } finally {
+      _restored = true;
+      _emitSync();
+      // Persist the merged state and resume draining if the wire is already up.
+      _schedulePersist();
+      if (_uploader != null && _queue.isNotEmpty) unawaited(flushQueue());
+    }
+  }
+
+  /// Coalesce writes: the first change arms a short timer, later changes inside
+  /// the window ride the same write. Cheap, and keeps the JSON encode of a big
+  /// queue off every single fix.
+  void _schedulePersist() {
+    if (!_restored) return; // guarded: never write before the load lands.
+    if (_persistTimer?.isActive ?? false) return;
+    _persistTimer = Timer(persistDebounce, () => unawaited(_persistNow()));
+  }
+
+  Future<void> _persistNow() async {
+    _persistTimer?.cancel();
+    _persistTimer = null;
+    if (!_restored) return;
+    try {
+      await _store.save(
+        LocationQueueData(
+          fixes: List<LocationLog>.of(_queue),
+          failed: _failed,
+          lastSyncedAt: _lastSyncedAt,
+        ),
+      );
+    } catch (e) {
+      debugPrint('[location] queue persist failed: $e');
+    }
   }
 
   @override
@@ -672,6 +965,10 @@ class GeoLocationService implements LocationService {
 
         _queue.removeWhere((LocationLog fix) => settled.contains(fix.id));
         _lastSyncedAt = DateTime.now();
+        // The queue shrank; mirror it so a cold start does not re-queue fixes
+        // the server has already settled. A dropped write here only costs a
+        // replay, which the server answers DUPLICATE, so the debounce is safe.
+        _schedulePersist();
         _emitSync();
       }
     } finally {
@@ -710,6 +1007,9 @@ class GeoLocationService implements LocationService {
 
   Future<void> dispose() async {
     await stopTracking();
+    // Flush any debounced write still owing before the instance goes away, so
+    // a graceful teardown never loses the last few fixes.
+    await _persistNow();
     await _fixes.close();
     await _sync.close();
   }

@@ -192,7 +192,26 @@ class LocationLog {
     required this.speedKmh,
     required this.recordedAt,
     required this.syncState,
+    this.lowAccuracy = false,
   });
+
+  /// Rebuild a fix from the on-disk offline queue. Only the device writes this
+  /// shape (via [toJson]); it never crosses the wire, so it stays private to
+  /// the persistence layer rather than living in `Wire`.
+  factory LocationLog.fromJson(Map<String, dynamic> json) => LocationLog(
+        id: json['id'] as String,
+        sessionId: json['sessionId'] as String,
+        latitude: (json['latitude'] as num).toDouble(),
+        longitude: (json['longitude'] as num).toDouble(),
+        accuracy: (json['accuracy'] as num).toDouble(),
+        speedKmh: (json['speedKmh'] as num).toDouble(),
+        recordedAt: DateTime.parse(json['recordedAt'] as String),
+        syncState: SyncState.values.firstWhere(
+          (SyncState s) => s.name == json['syncState'],
+          orElse: () => SyncState.queued,
+        ),
+        lowAccuracy: json['lowAccuracy'] as bool? ?? false,
+      );
 
   final String id;
   final String sessionId;
@@ -202,6 +221,27 @@ class LocationLog {
   final double speedKmh;
   final DateTime recordedAt;
   final SyncState syncState;
+
+  /// This fix was captured with horizontal accuracy worse than
+  /// `TrackingConfig.minAccuracyMetres`. It is kept and uploaded anyway — a
+  /// weak-signal point is still roughly where the employee was, and dropping it
+  /// left weak-GPS stretches with no trail at all — but it is flagged so the
+  /// server (and later the UI) can tell a confident fix from a rough one.
+  final bool lowAccuracy;
+
+  /// On-disk shape for the offline queue. Not a wire payload — see
+  /// [LocationLog.fromJson].
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'sessionId': sessionId,
+        'latitude': latitude,
+        'longitude': longitude,
+        'accuracy': accuracy,
+        'speedKmh': speedKmh,
+        'recordedAt': recordedAt.toUtc().toIso8601String(),
+        'syncState': syncState.name,
+        'lowAccuracy': lowAccuracy,
+      };
 }
 
 enum SyncState { synced, queued, failed }

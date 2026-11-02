@@ -529,11 +529,16 @@ class _SummaryGrid extends StatelessWidget {
           label: 'Joining time',
           tone: AppColors.success,
         ),
-        StatTile(
-          icon: Icons.timer_outlined,
-          value: Fmt.duration(controller.workedToday),
-          label: 'Working time',
-          tone: AppColors.primary,
+        // Ticks live while a session is open; bound to the controller's clock
+        // alone so only this tile repaints each second.
+        ValueListenableBuilder<DateTime>(
+          valueListenable: controller.clock,
+          builder: (BuildContext context, DateTime now, _) => StatTile(
+            icon: Icons.timer_outlined,
+            value: Fmt.duration(controller.workedTodayAt(now)),
+            label: 'Working time',
+            tone: AppColors.primary,
+          ),
         ),
         StatTile(
           icon: Icons.layers_outlined,

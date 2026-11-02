@@ -1,3 +1,4 @@
+import '../../core/config/tracking_config.dart';
 import '../models/models.dart';
 
 /// Contract the UI talks to. Swap the implementation (mock → HTTP) without
@@ -32,6 +33,15 @@ abstract class EmployeeRepository {
   Future<Employee> updateProfile({String? phone, String? avatarUrl});
 
   Future<HomeSnapshot> home();
+
+  /// `GET /config` — the server's live [TrackingConfig]. Read-only for an
+  /// employee (the device never PUTs it); the admin owns the write path. Per
+  /// API plan §3.12 the device re-reads this at login and at each session
+  /// start, so interval/accuracy/batch can be tuned without an app release.
+  ///
+  /// Best-effort by design: callers must fall back to the last good config (or
+  /// [TrackingConfig.defaults]) if this fails, and never block Start Day on it.
+  Future<TrackingConfig> config();
 
   Future<List<ActivityEvent>> activity({DateTime? date});
 

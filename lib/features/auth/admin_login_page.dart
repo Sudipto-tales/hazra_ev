@@ -9,6 +9,7 @@ import '../../data/api/api_exception.dart';
 import '../../state/app_scope.dart';
 import '../../widgets/states.dart';
 import '../admin/shell/admin_shell.dart';
+import '../profile/app_info.dart';
 
 /// Admin sign-in. Deliberately styled apart from the employee form so the
 /// restricted framing is obvious.
@@ -24,11 +25,9 @@ class AdminLoginPage extends StatefulWidget {
 }
 
 class _AdminLoginPageState extends State<AdminLoginPage> {
-  // Pre-filled with the seeded development account from database/seed.php.
-  final TextEditingController _email =
-      TextEditingController(text: 'admin@hazra-ev.test');
-  final TextEditingController _password =
-      TextEditingController(text: 'password123');
+  // Start empty — the fields show only their placeholder hints.
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _password = TextEditingController();
   bool _obscure = true;
   bool _busy = false;
   String? _error;
@@ -55,7 +54,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           password: _password.text,
           device: <String, dynamic>{
             'platform': defaultTargetPlatform.name,
-            'appVersion': '0.1.0',
+            'appVersion': AppInfo.version,
           },
         );
 
@@ -232,7 +231,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: Insets.xl),
                           child: Text(
-                            'Version 0.1.0 · ${ApiConfig.describe()}',
+                            '${AppInfo.label} · ${ApiConfig.describe()}',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall,
                           ),
