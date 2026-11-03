@@ -791,18 +791,14 @@ class GeoLocationService implements LocationService {
         distanceFilter: config.distanceFilterMetres,
         intervalDuration: Duration(seconds: intervalSeconds),
         timeLimit: timeLimit,
-        // Only the session stream runs as a foreground service — a one-shot
-        // fix has no business posting a persistent notification.
-        foregroundNotificationConfig: stream
-            ? const ForegroundNotificationConfig(
-                notificationTitle: 'Work session running',
-                notificationText:
-                    'Your route is being recorded until you end the session.',
-                notificationChannelName: 'Work session tracking',
-                enableWakeLock: true,
-                setOngoing: true,
-              )
-            : null,
+        // No geolocator foreground notification: the location foreground
+        // service is owned by SessionNotificationService (flutter_foreground_
+        // task), which posts the one ongoing notification with the live timer
+        // and the Pause / End Day buttons. Letting geolocator post its own too
+        // would mean two services and two notifications. That foreground
+        // service keeps this process alive, so the stream below keeps
+        // delivering with the screen off exactly as before.
+        foregroundNotificationConfig: null,
       );
     }
     if (defaultTargetPlatform == TargetPlatform.iOS ||

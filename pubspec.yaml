@@ -1,7 +1,7 @@
 name: employeetracking_mobile_app
 description: Salesman / Employee tracking mobile app — UI layer with static data.
 publish_to: "none"
-version: 0.1.3+4
+version: 0.1.4+5
 
 # Requires Flutter 3.27+ (uses Color.withValues and TextScaler.clamp).
 environment:
@@ -44,6 +44,7 @@ dependencies:
   # Settings, on the login screens and in the login device payload always
   # matches pubspec `version:` without a hand-maintained constant.
   package_info_plus: ^10.2.2
+  flutter_foreground_task: ^11.0.3
 
 dev_dependencies:
   flutter_test:
