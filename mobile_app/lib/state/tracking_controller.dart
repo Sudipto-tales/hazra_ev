@@ -8,6 +8,7 @@ import '../data/models/models.dart';
 import '../data/repositories/employee_repository.dart';
 import '../data/repositories/tracking_repository.dart';
 import '../services/location_service.dart';
+import '../services/session_notification_service.dart';
 
 enum StartDayOutcome {
   started,
@@ -52,10 +53,12 @@ class TrackingController extends ChangeNotifier {
     required EmployeeRepository repository,
     required LocationService locationService,
     TrackingRepository? trackingRepository,
+    SessionNotificationService? sessionNotifications,
     this.config = TrackingConfig.defaults,
     this.outboxRetryInterval = const Duration(seconds: 30),
   })  : _repo = repository,
         _location = locationService,
+        _sessionNotif = sessionNotifications,
         // The no-op is the mock/no-server path, and the safe default for a
         // caller that has not been updated: it keeps the day working locally
         // and never claims anything reached a server.
@@ -63,6 +66,22 @@ class TrackingController extends ChangeNotifier {
 
   final EmployeeRepository _repo;
   final LocationService _location;
+
+  /// Posts the ongoing session notification (live timer + Pause / End Day).
+  /// Null on platforms/builds without it; every call site null-checks, so the
+  /// whole feature is one optional dependency.
+  final SessionNotificationService? _sessionNotif;
+
+  /// Bumped when the employee taps **End Day** on the session notification.
+  /// Home watches this and opens the closeout flow — ending a day needs the
+  /// in-app form, so the button can only bring the app forward to it.
+  final ValueNotifier<int> _endDayRequests = ValueNotifier<int>(0);
+
+  /// Watch this to drive the End Day closeout from a notification tap.
+  ValueListenable<int> get endDayRequests => _endDayRequests;
+
+  /// Called from `main.dart` when the notification's End Day button is tapped.
+  void requestEndDay() => _endDayRequests.value++;
 
   /// The write path. Every call through it is retried until it lands, because
   /// a session the server never heard about is a day that did not happen.
@@ -579,13 +598,27 @@ class TrackingController extends ChangeNotifier {
   void _applyHealth(LocationHealth health) {
     _snapshot = (_snapshot ?? _emptySnapshot()).copyWith(
       locationHealth: health,
-      status: status.isSessionOpen
-          ? (health == LocationHealth.noInternet
-              ? WorkStatus.offline
-              : WorkStatus.locationUnavailable)
-          : status,
+      status: status.isSessionOpen ? _statusForHealth(health) : status,
     );
   }
+
+  /// Maps device-location health to the workday status shown on the hero card.
+  ///
+  /// A fix we actually have — even an approximate one worse than
+  /// [TrackingConfig.minAccuracyMetres] ([LocationHealth.poorAccuracy]) — is
+  /// still a live, working session. "Location Unavailable" is reserved for the
+  /// states where there is genuinely no position to record (service off,
+  /// permission denied/revoked, background location refused). A dropped network
+  /// is "Offline", not unavailable, because fixes keep queuing locally.
+  WorkStatus _statusForHealth(LocationHealth health) => switch (health) {
+        LocationHealth.ok || LocationHealth.poorAccuracy => WorkStatus.working,
+        LocationHealth.noInternet => WorkStatus.offline,
+        LocationHealth.serviceDisabled ||
+        LocationHealth.permissionDenied ||
+        LocationHealth.permissionDeniedForever ||
+        LocationHealth.backgroundDenied =>
+          WorkStatus.locationUnavailable,
+      };
 
   void _listenToLocation() {
     _syncSub?.cancel();
@@ -809,9 +842,14 @@ class TrackingController extends ChangeNotifier {
     _tick = 0;
     _now = DateTime.now();
     _clock.value = _now;
+    // Raise the ongoing notification (and its location foreground service) for
+    // the open session, seeded with the current elapsed time.
+    unawaited(_sessionNotif?.start(sessionElapsedAt(_now)));
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       _now = DateTime.now();
       _tick++;
+      // Keep the notification's timer in step with the in-app one.
+      unawaited(_sessionNotif?.update(sessionElapsedAt(_now)));
       // GPS being switched off mid-session is silent — nothing pushes an event
       // for it — so it has to be looked for. The watchdog below is blind
       // without this. Notifies on a real change only, from inside _pollHealth.
@@ -873,6 +911,9 @@ class TrackingController extends ChangeNotifier {
     _ticker = null;
     _fixSub?.cancel();
     _fixSub = null;
+    // The session is no longer open — take the ongoing notification and its
+    // foreground service down with it.
+    unawaited(_sessionNotif?.stop());
   }
 
   HomeSnapshot _emptySnapshot() => HomeSnapshot(
@@ -908,6 +949,8 @@ class TrackingController extends ChangeNotifier {
     _outboxRetry?.cancel();
     _syncSub?.cancel();
     _fixSub?.cancel();
+    unawaited(_sessionNotif?.stop());
+    _endDayRequests.dispose();
     _clock.dispose();
     super.dispose();
   }

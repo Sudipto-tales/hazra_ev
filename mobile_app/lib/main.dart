@@ -20,6 +20,7 @@ import 'data/repositories/mock_employee_repository.dart';
 import 'data/repositories/tracking_repository.dart';
 import 'features/profile/app_info.dart';
 import 'services/location_service.dart';
+import 'services/session_notification_service.dart';
 import 'state/app_scope.dart';
 import 'state/notification_center.dart';
 import 'state/settings_controller.dart';
@@ -104,11 +105,34 @@ Future<void> main() async {
   // silently invent the whole record of the day.
   final LocationService locationService =
       ApiConfig.useMocks ? MockLocationService() : GeoLocationService();
+
+  // The ongoing Android notification: live session timer + Pause / End Day.
+  // Also owns the location foreground service that keeps the GPS stream alive
+  // with the screen off (no-op on iOS). Mocks never post a real notification.
+  final SessionNotificationService sessionNotifications =
+      SessionNotificationService();
+  if (!ApiConfig.useMocks) {
+    await sessionNotifications.init();
+  }
+
   final TrackingController tracking = TrackingController(
     repository: repository,
     locationService: locationService,
     trackingRepository: trackingRepository,
+    sessionNotifications: ApiConfig.useMocks ? null : sessionNotifications,
   );
+
+  // Notification buttons come back here on the main isolate: Pause stops the
+  // current session headless; End Day brings the app forward (done in the
+  // service isolate) and asks Home to open the closeout form.
+  sessionNotifications.actions.listen((SessionNotificationAction action) {
+    switch (action) {
+      case SessionNotificationAction.pause:
+        unawaited(tracking.pauseSession());
+      case SessionNotificationAction.endDay:
+        tracking.requestEndDay();
+    }
+  });
 
   if (api != null) {
     api.onAccountDeleted = () {

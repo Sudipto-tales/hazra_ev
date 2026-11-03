@@ -21,11 +21,15 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
-    <!-- The position stream runs as a location foreground service so an open
-         session keeps recording with the screen off. FOREGROUND_SERVICE_LOCATION
-         is required from API 34; the service itself is declared by the
-         geolocator_android plugin. WAKE_LOCK backs enableWakeLock on that
-         service so fixes arrive on time instead of in a burst on wake. -->
+    <!-- An open session runs a location foreground service so tracking keeps
+         recording with the screen off, and so the ongoing notification can show
+         a live timer with Pause / End Day buttons. That service is owned by the
+         flutter_foreground_task plugin (declared below); geolocator streams
+         while-in-use inside it. FOREGROUND_SERVICE_LOCATION is required from
+         API 34; WAKE_LOCK backs the service's wake lock so fixes arrive on time
+         instead of in a burst on wake. FOREGROUND_SERVICE, WAKE_LOCK,
+         POST_NOTIFICATIONS and the restart receivers are contributed by the
+         plugin's own manifest and merged in. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -65,6 +69,15 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- The ongoing work-session foreground service (live timer + Pause /
+             End Day buttons). The service class name is fixed by the
+             flutter_foreground_task plugin and must not be changed. Typed as a
+             location service because it keeps the GPS stream alive. -->
+        <service
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -164,9 +164,19 @@ class ApiClient {
 
       await _tokens.save(AuthSession.fromLogin(result.map));
       return true;
-    } on ApiException {
-      await _tokens.clear();
-      return false;
+    } on ApiException catch (e) {
+      // Only a definitive rejection from the server means this device has to
+      // sign in again: the refresh token was revoked or has aged past its
+      // 30-day life (401), or the account was deactivated (403). A transient
+      // failure — no network, a timeout, a 5xx — leaves the refresh token
+      // perfectly valid, so keep it and let the caller surface the error and
+      // retry later. Clearing it on every flaky-network relaunch is exactly
+      // what used to drop an active employee back onto the login screen.
+      if (e.isUnauthenticated || e.isForbidden) {
+        await _tokens.clear();
+        return false;
+      }
+      rethrow;
     }
   }
 

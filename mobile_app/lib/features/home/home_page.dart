@@ -35,10 +35,43 @@ class _HomePageState extends State<HomePage> {
   Employee? _me;
   Map<String, String> _reportTitles = const <String, String>{};
 
+  /// The controller we are subscribed to for End Day requests coming from the
+  /// session notification, and the last request count we have already handled.
+  TrackingController? _tracking;
+  int _handledEndDayRequests = 0;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final TrackingController t = AppScope.of(context).tracking;
+    if (!identical(t, _tracking)) {
+      _tracking?.endDayRequests.removeListener(_onEndDayRequested);
+      _tracking = t;
+      _handledEndDayRequests = t.endDayRequests.value;
+      t.endDayRequests.addListener(_onEndDayRequested);
+    }
+  }
+
+  /// The employee tapped **End Day** on the ongoing notification. Open the same
+  /// closeout flow the in-app button uses; it does its own gating.
+  void _onEndDayRequested() {
+    final TrackingController? t = _tracking;
+    if (t == null || !mounted) return;
+    if (t.endDayRequests.value == _handledEndDayRequests) return;
+    _handledEndDayRequests = t.endDayRequests.value;
+    _endDay(context, t);
+  }
+
+  @override
+  void dispose() {
+    _tracking?.endDayRequests.removeListener(_onEndDayRequested);
+    super.dispose();
   }
 
   /// Everything on this screen that [TrackingController] does not already
@@ -135,7 +168,12 @@ class _HomePageState extends State<HomePage> {
                     onRetry: _load,
                   ),
                   const SizedBox(height: Insets.lg),
-                  if (c.locationHealth != LocationHealth.ok ||
+                  // An approximate fix (poorAccuracy) is a live, working
+                  // session — GPS is on and recording — so it does not raise a
+                  // banner. Only states with no usable position (service off,
+                  // permission denied, offline) or a degraded status do.
+                  if ((c.locationHealth != LocationHealth.ok &&
+                          c.locationHealth != LocationHealth.poorAccuracy) ||
                       c.status.isDegraded) ...<Widget>[
                     AlertBanner(
                       icon: Icons.warning_amber_rounded,
