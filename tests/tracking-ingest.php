@@ -18,7 +18,11 @@ function db_execute($sql, $params = []) { return db_query($sql, $params)->rowCou
 function check($condition, $message) { if (!$condition) throw new RuntimeException($message); }
 $pdo = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $pdo->exec('PRAGMA foreign_keys = ON');
-foreach (glob(__DIR__ . '/../database/migrations/00*.php') as $file) {
+// Every migration, not just 00*: 031 adds location_fixes.heading_deg, which
+// Engine::ingest writes on every fix. Dialect has to be booted for the ALTERs
+// to expand their type tokens.
+Dialect::boot($pdo, 'sqlite');
+foreach (glob(__DIR__ . '/../database/migrations/0*.php') as $file) {
     $before = get_declared_classes(); require_once $file;
     foreach (array_diff(get_declared_classes(), $before) as $class) if (is_subclass_of($class, Migration::class)) (new $class($pdo))->up();
 }

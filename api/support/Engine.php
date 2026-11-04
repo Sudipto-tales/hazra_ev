@@ -65,6 +65,7 @@ final class Engine
             $lng        = (float) $fix['longitude'];
             $accuracy   = (float) ($fix['accuracy'] ?? 0);
             $speed      = (float) ($fix['speedKmh'] ?? 0);
+            $heading    = self::heading($fix['headingDeg'] ?? $fix['heading'] ?? null);
             $recordedAt = Wire::ts($fix['recordedAt'] ?? null) ?? $now;
 
             // Accuracy is no longer a rejection reason — a low-accuracy fix is
@@ -82,9 +83,9 @@ final class Engine
             try {
                 db_execute(
                     "INSERT INTO location_fixes
-                        (session_id, employee_id, client_id, recorded_at, received_at, lat, lng, accuracy_m, speed_kmh)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    [$session['id'], $session['employee_id'], $clientId, $recordedAt, $now, $lat, $lng, $accuracy, $speed],
+                        (session_id, employee_id, client_id, recorded_at, received_at, lat, lng, accuracy_m, speed_kmh, heading_deg)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    [$session['id'], $session['employee_id'], $clientId, $recordedAt, $now, $lat, $lng, $accuracy, $speed, $heading],
                 );
             } catch (PDOException) {
                 // The unique (employee_id, client_id) index is the idempotency
@@ -103,6 +104,32 @@ final class Engine
         }
 
         return ['accepted' => $accepted, 'rejected' => $rejected];
+    }
+
+    /**
+     * Normalises a device bearing to `0 <= heading < 360` or NULL.
+     *
+     * **NULL is not 0** — 0 is due north (`03` §5, `02` §3.11). A stationary
+     * device has no bearing and platforms say so differently: Android reports
+     * `-1`, iOS can report `NaN`, a synthetic heartbeat fix carries nothing at
+     * all, and a JSON encoder that cannot express NaN sends the string "NaN".
+     * Every one of those is *unknown* and every one of them stores NULL, so the
+     * map draws an unrotated marker instead of swinging it north on every
+     * parked fix. Nothing here ever substitutes a default.
+     */
+    private static function heading(mixed $value): ?float
+    {
+        if ($value === null || $value === '' || is_bool($value) || !is_numeric($value)) {
+            return null;           // absent, null, "NaN", or anything non-numeric
+        }
+
+        $heading = (float) $value;
+
+        if (is_nan($heading) || is_infinite($heading) || $heading < 0 || $heading >= 360) {
+            return null;           // -1, NaN, out of range — all unknown
+        }
+
+        return $heading;
     }
 
     /** Recomputes a session's distance and point count from its fix chain. */
@@ -462,7 +489,7 @@ final class Engine
     public static function buildDayRoute(string $employeeId, string $workDate): void
     {
         $rows = db_fetch_all(
-            "SELECT f.lat, f.lng, f.recorded_at, f.accuracy_m, f.speed_kmh, s.seq
+            "SELECT f.lat, f.lng, f.recorded_at, f.accuracy_m, f.speed_kmh, f.heading_deg, s.seq
                FROM location_fixes f
                JOIN work_sessions s ON s.id = f.session_id
               WHERE s.employee_id = ? AND s.work_date = ?
@@ -500,6 +527,10 @@ final class Engine
                 round((float) $row['accuracy_m'], 1),
                 round((float) $row['speed_kmh'], 1),
                 (int) $row['seq'],
+                // Slot 6 — heading (02 §3.7), additive and nullable. A route
+                // cached before v9 simply has no slot 6, which a consumer must
+                // read as the same thing as a present null.
+                ($row['heading_deg'] ?? null) === null ? null : round((float) $row['heading_deg'], 1),
             ];
         }
 
@@ -730,12 +761,25 @@ final class Engine
 
     // ----------------------------------------------------------- live status
 
+    /** Health values that mean the device cannot produce a fix at all. */
+    private const BLIND_HEALTH = [
+        'service_disabled', 'permission_denied', 'permission_denied_forever', 'background_denied',
+    ];
+
+    /** How many fixes back the dead band may walk looking for a decisive one. */
+    private const MOVEMENT_LOOKBACK = 20;
+
     /**
-     * WorkStatus, MovementStatus and LocationHealth for one employee right now.
+     * WorkStatus, MovementStatus, LocationHealth and `activity` for one
+     * employee right now.
      *
      * Offline is measured on upload recency (received_at); Location Unavailable
      * on valid-fix recency (recorded_at). They are different failures and the
      * dashboard needs to tell them apart.
+     *
+     * `activity` (02 §3.14) is derived here and nowhere else: one enum the map
+     * maps 1:1 to an icon, sitting beside the three existing ones rather than
+     * replacing any of them. Read-time only — no column, nothing written.
      */
     public static function liveStatus(string $employeeId, string $workDate): array
     {
@@ -757,20 +801,23 @@ final class Engine
             }
         }
 
-        $lastFix = db_fetch_one(
+        // Newest first. This is the same query and the same index as the old
+        // single-row read, widened from LIMIT 1 to MOVEMENT_LOOKBACK because
+        // the dead band needs the *previous* movement state and nothing stores
+        // one — see movement() for why walking the chain is the read-time
+        // answer rather than a stored column.
+        $recent = db_fetch_all(
             "SELECT f.* FROM location_fixes f
                JOIN work_sessions s ON s.id = f.session_id
               WHERE s.employee_id = ? AND s.work_date = ?
-              ORDER BY f.recorded_at DESC LIMIT 1",
+              ORDER BY f.recorded_at DESC LIMIT " . self::MOVEMENT_LOOKBACK,
             [$employeeId, $workDate],
-        ) ?: null;
+        );
 
-        $movement = 'unknown';
-        if ($lastFix !== null) {
-            $movement = (float) $lastFix['speed_kmh'] >= (float) $config['movement_speed_threshold_kmh']
-                ? 'moving'
-                : 'stationary';
-        }
+        $lastFix = $recent[0] ?? null;
+        $movement = $lastFix === null ? 'unknown' : self::movement($recent, $config);
+
+        $activity = self::activity($employeeId, $workDate, $config, $sessions, $open, $locationHealth, $lastFix, $movement);
 
         if ($open === null) {
             $status = $sessions ? 'ended' : 'not_started';
@@ -779,6 +826,7 @@ final class Engine
                 'status'         => Wire::enum($status),
                 'movement'       => Wire::enum($sessions ? $movement : 'unknown'),
                 'locationHealth' => Wire::enum($locationHealth),
+                'activity'       => Wire::enum($activity),
                 'lastFix'        => $lastFix,
                 'activeSince'    => null,
             ];
@@ -787,7 +835,7 @@ final class Engine
         $now = Wire::now();
         $status = 'working';
 
-        if (in_array($locationHealth, ['service_disabled', 'permission_denied', 'permission_denied_forever', 'background_denied'], true)) {
+        if (in_array($locationHealth, self::BLIND_HEALTH, true)) {
             $status = 'location_unavailable';
         } elseif ($lastFix === null) {
             $status = Wire::seconds($open['started_at'], $now) >= (int) $config['location_unavailable_threshold_minutes'] * 60
@@ -805,9 +853,141 @@ final class Engine
             'status'         => Wire::enum($status),
             'movement'       => Wire::enum($movement),
             'locationHealth' => Wire::enum($locationHealth),
+            'activity'       => Wire::enum($activity),
             'lastFix'        => $lastFix,
             'activeSince'    => Wire::ts($open['started_at']),
         ];
+    }
+
+    /**
+     * Movement under the §3.12 dead band, derived read-time from the fix chain.
+     *
+     *   speed >= movementExitSpeedKmh      (3) -> moving
+     *   speed <  movementSpeedThresholdKmh (2) -> stationary
+     *   in between                             -> hold the previous state
+     *
+     * The dead band is defined "over the previous state", but liveStatus is
+     * computed fresh on every request and **nothing stores a movement state** —
+     * deliberately: a stored column would be a second source of truth and would
+     * break the read-time semantics board rule 2 and `03` §4 both insist on.
+     *
+     * So the previous state is *re-derived* instead of remembered: walk back
+     * through the recent chain (newest first) until a fix is decisive — at or
+     * above the exit threshold, or below the entry threshold — and take that as
+     * the state being held. A fix inside the band carries no information about
+     * which state it is in, which is exactly why it is skipped. When nothing in
+     * the window is decisive the documented cold-start default applies:
+     * `stationary`. Deterministic, bounded (MOVEMENT_LOOKBACK fixes), identical
+     * for every caller, and it rewrites nothing.
+     *
+     * @param array<int, array> $recent fixes for the day, newest first
+     */
+    private static function movement(array $recent, array $config): string
+    {
+        $enter = (float) $config['movement_speed_threshold_kmh'];
+
+        // max() so a pre-v9 row (or a hand-edited one) that lacks the upper
+        // edge degrades to today's single-threshold behaviour instead of
+        // inverting the band and making the hold case unreachable.
+        $exit = max($enter, (float) ($config['movement_exit_speed_kmh'] ?? $enter));
+
+        foreach ($recent as $fix) {
+            $speed = (float) $fix['speed_kmh'];
+
+            if ($speed >= $exit) {
+                return 'moving';
+            }
+
+            if ($speed < $enter) {
+                return 'stationary';
+            }
+        }
+
+        return 'stationary';
+    }
+
+    /**
+     * `activity` — the one derived enum the live map maps 1:1 to an icon.
+     *
+     * 02 §3.14's precedence table, in its order, which is the specification and
+     * not a hint. First match wins:
+     *
+     *   1  no session today                                  -> not_started
+     *   2  open + blind locationHealth                        -> location_unavailable
+     *   3  open + last received_at older than offline         -> offline
+     *   4  open + last recorded_at older than unavailable     -> location_unavailable
+     *   5  open + an open stop_records row                    -> stopped
+     *   6  open + moving under the dead band                  -> moving
+     *   7  open + stationary, no open stop                    -> idle
+     *   8  no open session, sessions exist, dayState open     -> paused
+     *   8b no open session, sessions exist, dayState closed   -> ended
+     *
+     * Rule 5 reads the existing `open_stops` partial index, so it inherits stop
+     * hysteresis for free — a traffic light never opens a stop row, a ten-minute
+     * halt does. No parallel dwell tracking, no new timer, no new state.
+     *
+     * The two lookups it needs beyond liveStatus's own reads are both lazy and
+     * both indexed: the open stop only when rules 1–4 did not match, and
+     * dayLock only when there is no open session.
+     */
+    private static function activity(
+        string $employeeId,
+        string $workDate,
+        array $config,
+        array $sessions,
+        ?array $open,
+        string $locationHealth,
+        ?array $lastFix,
+        string $movement,
+    ): string {
+        if (!$sessions) {
+            return 'not_started';                                           // 1
+        }
+
+        if ($open === null) {
+            // 8 / 8b. The day is paused between sessions and ended once it has
+            // been closed out; a reopened day reads paused again. dayState
+            // already draws that line, so activity must not invent a third.
+            return Engine::dayLock($employeeId, $workDate)['state'] === 'open' ? 'paused' : 'ended';
+        }
+
+        if (in_array($locationHealth, self::BLIND_HEALTH, true)) {
+            return 'location_unavailable';                                  // 2
+        }
+
+        $now = Wire::now();
+
+        if ($lastFix === null) {
+            // Not a row in §3.14's table: an open session that has never
+            // produced a fix. Mirrors the `status` branch directly above for
+            // the same case rather than inventing a different reading — once
+            // the session has been open longer than the unavailable threshold
+            // with nothing recorded, the GPS is the thing that is missing.
+            return Wire::seconds($open['started_at'], $now) >= (int) $config['location_unavailable_threshold_minutes'] * 60
+                ? 'location_unavailable'
+                : 'idle';
+        }
+
+        if (Wire::seconds($lastFix['received_at'], $now) >= (int) $config['offline_threshold_minutes'] * 60) {
+            return 'offline';                                               // 3
+        }
+
+        if (Wire::seconds($lastFix['recorded_at'], $now) >= (int) $config['location_unavailable_threshold_minutes'] * 60) {
+            return 'location_unavailable';                                  // 4
+        }
+
+        $openStop = db_fetch_one(
+            "SELECT 1 FROM stop_records
+              WHERE employee_id = ? AND work_date = ? AND departure IS NULL
+              LIMIT 1",
+            [$employeeId, $workDate],
+        );
+
+        if ($openStop) {
+            return 'stopped';                                               // 5
+        }
+
+        return $movement === 'moving' ? 'moving' : 'idle';                  // 6 / 7
     }
 
     // ------------------------------------------------------------ fan-out

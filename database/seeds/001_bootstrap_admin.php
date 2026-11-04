@@ -67,7 +67,7 @@ return function (PDO $pdo): void {
 
     $hasConfig = db_fetch_one("SELECT org_id FROM tracking_configs WHERE org_id = ?", [$orgId]);
     if ($hasConfig === false || $hasConfig === null) {
-        db_execute("INSERT INTO tracking_configs (org_id, version, updated_at) VALUES (?, 8, ?)", [$orgId, $now]);
+        db_execute("INSERT INTO tracking_configs (org_id, version, updated_at) VALUES (?, 9, ?)", [$orgId, $now]);
     }
 
     $existing = db_fetch_one("SELECT id FROM users WHERE email = ?", [$email]);
