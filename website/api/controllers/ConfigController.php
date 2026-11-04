@@ -28,6 +28,16 @@ final class ConfigController extends V1Controller
         'syncBatchSize'                       => 'sync_batch_size',
         'syncIntervalSeconds'                 => 'sync_interval_seconds',
         'distanceFilterMetres'                => 'distance_filter_metres',
+        'movementExitSpeedKmh'                => 'movement_exit_speed_kmh',
+        'liveSyncIntervalSeconds'             => 'live_sync_interval_seconds',
+    ];
+
+    /** Documented defaults, used when a column predates the v9 migration. */
+    private const DEFAULTS = [
+        'syncIntervalSeconds'     => 300,
+        'distanceFilterMetres'    => 20,
+        'movementExitSpeedKmh'    => 3,
+        'liveSyncIntervalSeconds' => 15,
     ];
 
     /** `version` backs the ETag, so an unchanged config is a 304. */
@@ -46,8 +56,9 @@ final class ConfigController extends V1Controller
         $before = Ctx::config();
         $body = ApiRequest::body();
 
-        $sets = [];
-        $params = [];
+        // Non-numeric input on any field is a 422 before anything else happens:
+        // clamping applies to numbers out of range, never to garbage (02 §3.12).
+        $values = [];
 
         foreach (self::FIELDS as $wire => $column) {
             if (!array_key_exists($wire, $body)) {
@@ -58,24 +69,65 @@ final class ConfigController extends V1Controller
                 Envelope::invalid("{$wire} must be numeric", $wire);
             }
 
-            $sets[] = "{$column} = ?";
-            $params[] = $body[$wire] + 0;
+            $values[$wire] = $body[$wire] + 0;
         }
 
-        if (!$sets) {
+        if (!$values) {
             Envelope::invalid('No writable configuration fields in the body');
         }
 
-        // v8 cross-field rule: the device must post at least twice inside the
+        // Every cross-field rule below is checked against POST-WRITE values:
+        // the body wins where it sets a field, the stored row answers where it
+        // does not, so a PUT that moves both sides of a pair is judged on what
+        // it is about to become rather than on half of it (02 §3.12, 03 §4).
+        // By reference: a clamp below rewrites $values, and the 422 rules that
+        // follow must judge the clamped number, not the one that was typed.
+        $effective = function (string $wire) use (&$values, $before): float|int {
+            if (array_key_exists($wire, $values)) {
+                return $values[$wire];
+            }
+
+            $column = self::FIELDS[$wire];
+
+            return isset($before[$column])
+                ? $before[$column] + 0
+                : (self::DEFAULTS[$wire] ?? 0);
+        };
+
+        // --- the two clamped rules -------------------------------------------
+        //
+        // Out of range here is a typo or a slider, not an intent, and an admin's
+        // save must not fail over it. The response is the acknowledgement: it
+        // carries back the value that was actually stored.
+        if (array_key_exists('movementExitSpeedKmh', $values)) {
+            $values['movementExitSpeedKmh'] = max(0, min(50, $values['movementExitSpeedKmh']));
+        }
+
+        // A live interval at or above the normal one makes "live" meaningless
+        // but breaks nothing, so it clamps to syncIntervalSeconds - 1. Clamped
+        // even when only syncIntervalSeconds moved: lowering the normal interval
+        // under the stored live one would otherwise fail the whole save on the
+        // DB CHECK, which is the one thing these rules clamp to avoid.
+        $liveSyncAsked = $effective('liveSyncIntervalSeconds');
+        $syncInterval = $effective('syncIntervalSeconds');
+
+        $liveSync = max(5, min(120, $liveSyncAsked));
+
+        if ($liveSync >= $syncInterval) {
+            $liveSync = $syncInterval - 1;
+        }
+
+        if ($liveSync != $liveSyncAsked) {
+            $values['liveSyncIntervalSeconds'] = $liveSync;
+        }
+
+        // --- the two 422 rules -----------------------------------------------
+        //
+        // Carried over from v8: the device must post at least twice inside the
         // offline window, or it would be flagged offline between its own
-        // uploads. Validate the effective pair — a write may move either side,
-        // so fall back to the stored value for whichever is absent from the
-        // body. This mirrors the long_stop >= stop discipline, enforced here as
-        // a 422 before the write and backed by a DB CHECK (migration 031).
-        $syncInterval = array_key_exists('syncIntervalSeconds', $body)
-            ? $body['syncIntervalSeconds'] + 0
-            : (int) ($before['sync_interval_seconds'] ?? 300);
-        $offlineMinutes = array_key_exists('offlineThresholdMinutes', $body)
+        // uploads. A 422 rather than a clamp because an admin who typed a
+        // number has to be told it cannot hold, not quietly given another one.
+        $offlineMinutes = array_key_exists('offlineThresholdMinutes', $body) && is_numeric($body['offlineThresholdMinutes'])
             ? $body['offlineThresholdMinutes'] + 0
             : (int) $before['offline_threshold_minutes'];
 
@@ -85,6 +137,31 @@ final class ConfigController extends V1Controller
                     . "(≤ {$offlineMinutes} × 30 = " . ($offlineMinutes * 30) . 's)',
                 'syncIntervalSeconds',
             );
+        }
+
+        // An inverted dead band is not a band: both predicates would be true at
+        // once and the "hold" case unreachable. Equality is legal and simply
+        // means no dead band, i.e. the pre-v9 behaviour. Mirrors the existing
+        // long_stop >= stop discipline, and the DB CHECK is the backstop.
+        $exitSpeed = $effective('movementExitSpeedKmh');
+        $enterSpeed = array_key_exists('movementSpeedThresholdKmh', $body) && is_numeric($body['movementSpeedThresholdKmh'])
+            ? $body['movementSpeedThresholdKmh'] + 0
+            : (float) $before['movement_speed_threshold_kmh'];
+
+        if ($exitSpeed < $enterSpeed) {
+            Envelope::invalid(
+                "movementExitSpeedKmh must be at least movementSpeedThresholdKmh ({$enterSpeed}) — "
+                    . 'the movement dead band cannot invert',
+                'movementExitSpeedKmh',
+            );
+        }
+
+        $sets = [];
+        $params = [];
+
+        foreach ($values as $wire => $value) {
+            $sets[] = self::FIELDS[$wire] . ' = ?';
+            $params[] = $value;
         }
 
         $params[] = Wire::now();
@@ -99,18 +176,26 @@ final class ConfigController extends V1Controller
                 $params,
             );
         } catch (PDOException) {
-            Envelope::invalid('longStopThresholdMinutes must be at least stopThresholdMinutes, locationIntervalSeconds must be 5-600, and syncIntervalSeconds must be at most offlineThresholdMinutes × 60 / 2');
+            Envelope::invalid(
+                'longStopThresholdMinutes must be at least stopThresholdMinutes, '
+                    . 'locationIntervalSeconds must be 5-600, '
+                    . 'syncIntervalSeconds must be at most offlineThresholdMinutes × 60 / 2 '
+                    . 'and greater than liveSyncIntervalSeconds (which holds at 5-120s), '
+                    . 'and movementExitSpeedKmh must be at least movementSpeedThresholdKmh'
+            );
         }
 
         $after = db_fetch_one("SELECT * FROM tracking_configs WHERE org_id = ?", [Ctx::orgId()]);
 
         db_execute(
             "INSERT INTO tracking_config_history
-                 (id, org_id, version, payload, sync_interval_seconds, distance_filter_metres, changed_at, changed_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                 (id, org_id, version, payload, sync_interval_seconds, distance_filter_metres,
+                  movement_exit_speed_kmh, live_sync_interval_seconds, changed_at, changed_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 Uuid::v4(), Ctx::orgId(), $after['version'], json_encode($after),
                 $after['sync_interval_seconds'] ?? null, $after['distance_filter_metres'] ?? null,
+                $after['movement_exit_speed_kmh'] ?? null, $after['live_sync_interval_seconds'] ?? null,
                 Wire::now(), Ctx::id(),
             ],
         );

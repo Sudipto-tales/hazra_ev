@@ -48,6 +48,9 @@ final class DaysController extends V1Controller
             'status'         => $live['status'],
             'movement'       => $live['movement'],
             'locationHealth' => $live['locationHealth'],
+            // Unconditional like the three above, and the same derived enum
+            // liveStatus/teamMember carry (02 §3.14).
+            'activity'       => $live['activity'],
             // Unconditional, not an include. Wire.homeSnapshot defaults a
             // missing dayState to `open`, so omitting it would read a locked
             // day as workable — the one thing the lock exists to prevent.

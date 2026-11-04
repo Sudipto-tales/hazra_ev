@@ -45,6 +45,29 @@ abstract class LocationService {
   /// Offline queue state for the tracking status sheet.
   Stream<SyncSnapshot> syncState();
 
+  /// The device's **single** moving/stationary truth, pushed as it changes.
+  ///
+  /// This state is computed here and nowhere else. The implementation already
+  /// has to decide moving-vs-stationary to pick a GPS cadence, and that
+  /// decision is debounced against the speed threshold so a fix or two at the
+  /// boundary cannot thrash it. Publishing the same value is what keeps the
+  /// employee's activity chip and the radio's duty cycle from disagreeing — a
+  /// second calculation in the controller would inevitably drift from this one.
+  ///
+  /// Emits the current value on subscribe (so a late listener is never blank),
+  /// then every change. [MovementStatus.unknown] means no session is open, or
+  /// no fix has arrived yet to decide with.
+  ///
+  /// Deliberately **not** derived from the server: the batch upload runs on
+  /// `syncIntervalSeconds` (300 s by default), so the server's idea of what the
+  /// employee is doing is up to five minutes old. The phone holds the newer
+  /// truth about its own movement.
+  Stream<MovementStatus> movementState();
+
+  /// Latest value of [movementState], for callers that want it without
+  /// listening.
+  MovementStatus get movement;
+
   /// Force-flush the queued fixes.
   Future<void> flushQueue();
 }
@@ -72,6 +95,10 @@ class MockLocationService implements LocationService {
   final Random _rnd = Random(99);
   final StreamController<SyncSnapshot> _sync =
       StreamController<SyncSnapshot>.broadcast();
+  final StreamController<MovementStatus> _movementState =
+      StreamController<MovementStatus>.broadcast();
+
+  MovementStatus _movement = MovementStatus.unknown;
 
   Timer? _timer;
   int _seq = 0;
@@ -115,6 +142,7 @@ class MockLocationService implements LocationService {
   @override
   Future<void> startTracking({required String sessionId}) async {
     _timer?.cancel();
+    _setMovement(MovementStatus.unknown);
     _timer = Timer.periodic(emitInterval, (_) {
       // Simulate an occasional offline window so the queue is visible.
       _online = _rnd.nextInt(10) != 0;
@@ -139,10 +167,30 @@ class MockLocationService implements LocationService {
   Future<void> stopTracking() async {
     _timer?.cancel();
     _timer = null;
+    _setMovement(MovementStatus.unknown);
   }
 
   @override
   Stream<SyncSnapshot> syncState() => _sync.stream;
+
+  @override
+  MovementStatus get movement => _movement;
+
+  /// The mock has no cadence machinery to debounce, so it reports the plain
+  /// threshold comparison off the fix it just invented. Same threshold, same
+  /// vocabulary as [GeoLocationService] — the design build just gets a jumpier
+  /// chip, which is what a simulated trace deserves.
+  @override
+  Stream<MovementStatus> movementState() async* {
+    yield _movement;
+    yield* _movementState.stream;
+  }
+
+  void _setMovement(MovementStatus next) {
+    if (next == _movement) return;
+    _movement = next;
+    if (!_movementState.isClosed) _movementState.add(next);
+  }
 
   @override
   Future<void> flushQueue() async {
@@ -162,13 +210,17 @@ class MockLocationService implements LocationService {
   LocationLog _makeFix(String sessionId) {
     _lat += (_rnd.nextDouble() - 0.5) * 0.004;
     _lng += (_rnd.nextDouble() - 0.5) * 0.004;
+    final double speedKmh = _rnd.nextDouble() * 42;
+    _setMovement(speedKmh < config.movementSpeedThresholdKmh
+        ? MovementStatus.stationary
+        : MovementStatus.moving);
     return LocationLog(
       id: 'loc_${_seq++}',
       sessionId: sessionId,
       latitude: _lat,
       longitude: _lng,
       accuracy: 6 + _rnd.nextDouble() * 18,
-      speedKmh: _rnd.nextDouble() * 42,
+      speedKmh: speedKmh,
       recordedAt: DateTime.now(),
       syncState: _online ? SyncState.synced : SyncState.queued,
     );
@@ -177,6 +229,7 @@ class MockLocationService implements LocationService {
   void dispose() {
     _timer?.cancel();
     _sync.close();
+    _movementState.close();
   }
 }
 
@@ -199,10 +252,35 @@ class MockLocationService implements LocationService {
 /// The real implementation is `POST /tracking/locations` via
 /// `TrackingRepository` — it belongs in the repository layer, not here,
 /// because nothing under `lib/services/` is allowed to talk HTTP.
-typedef LocationUploader = Future<Set<String>> Function(
+typedef LocationUploader = Future<UploadOutcome> Function(
   String sessionId,
   List<LocationLog> batch,
 );
+
+/// What one batch upload came back with.
+///
+/// Two separate statements that happen to share a response: [settled] is about
+/// the *batch* (which fixes may leave the queue), [liveUntil] is about the
+/// *device* (how often it should be talking). The wire keeps them apart for
+/// the same reason — `data` carries the verdict, `meta` carries the deadline
+/// (API plan §3.11) — and conflating them here would be the first step to a
+/// drain cadence that depends on what was in the last batch.
+class UploadOutcome {
+  const UploadOutcome(this.settled, {this.liveUntil});
+
+  /// Nothing could be settled, and nothing is claimed about watching. Not an
+  /// error: typically the session has not landed server-side yet.
+  static const UploadOutcome nothing = UploadOutcome(<String>{});
+
+  /// Ids the server has ruled on — accepted or permanently rejected.
+  final Set<String> settled;
+
+  /// Absolute deadline for live mode, or null when nobody is watching **and**
+  /// when the server is too old to say. Absent and null are the same thing:
+  /// the device is not live. A stale deadline in the past is equally harmless
+  /// — it is compared against the clock, never trusted as a flag.
+  final DateTime? liveUntil;
+}
 
 /// Real device GPS, backed by the `geolocator` plugin.
 ///
@@ -300,10 +378,33 @@ class GeoLocationService implements LocationService {
   final StreamController<SyncSnapshot> _sync =
       StreamController<SyncSnapshot>.broadcast();
 
+  /// Publishes [_stationary] — the debounced cadence mode — as the app-wide
+  /// movement truth. See [LocationService.movementState].
+  final StreamController<MovementStatus> _movementState =
+      StreamController<MovementStatus>.broadcast();
+
+  MovementStatus _movement = MovementStatus.unknown;
+
   StreamSubscription<Position>? _positions;
   Timer? _retry;
   Timer? _drain;
   Timer? _persistTimer;
+
+  /// Deadline an admin's watch is live until, as last reported in the `meta`
+  /// of a `POST /tracking/locations` response (§3.11). Null means nobody is
+  /// watching — which is also what a server too old to send the key means, so
+  /// absent and null are handled by the same branch.
+  DateTime? _liveUntil;
+
+  /// Cadence the armed [_drain] timer is actually running at. Kept as a field
+  /// because a `Timer` does not report its own period, and the whole point of
+  /// live mode is being able to say which of the two intervals is in force.
+  Duration _drainInterval = Duration.zero;
+
+  /// How many times [_drain] has been armed this process. Only a test reads
+  /// it; it is the cheapest proof that entering live mode **re-armed** the
+  /// timer rather than just recording a number.
+  int _drainArmCount = 0;
 
   /// Forced-fix guardrail. The distance filter and the stretched stationary
   /// interval can both leave a genuinely-present employee with no streamed fix
@@ -325,6 +426,13 @@ class GeoLocationService implements LocationService {
 
   /// Target of the in-flight debounce, or null when no transition is pending.
   bool? _pendingStationary;
+
+  /// Whether a fix has established [_stationary] for the current session yet.
+  /// Until it has, the published movement state is
+  /// [MovementStatus.unknown] — `_stationary = false` at session start is a
+  /// cadence default (start on high accuracy), not a claim that the employee
+  /// is moving, and reporting it as one is how the chip came to lie.
+  bool _movementSeeded = false;
 
   static const Duration _heartbeatInterval = Duration(minutes: 5);
   static const Duration _transitionHoldWindow = Duration(seconds: 90);
@@ -363,6 +471,77 @@ class GeoLocationService implements LocationService {
   /// Real backlog size, for callers that want it without listening to
   /// [syncState].
   int get queuedCount => _queue.length;
+
+  // ------------------------------------------------------------ live mode
+
+  /// Whether an admin is watching this device right now — i.e. whether the
+  /// drain timer is on the short interval. Compared against the clock on every
+  /// read, so a deadline that has quietly passed reads as false without anyone
+  /// having to clear it.
+  bool get isLive {
+    final DateTime? until = _liveUntil;
+    return until != null && DateTime.now().isBefore(until);
+  }
+
+  /// Interval the armed drain timer is running at. [Duration.zero] when no
+  /// session is open and the timer is therefore down.
+  @visibleForTesting
+  Duration get drainInterval => _drainInterval;
+
+  /// Times the drain timer has been armed. Test seam — see [_drainArmCount].
+  @visibleForTesting
+  int get drainArmCount => _drainArmCount;
+
+  /// The production path for a `liveUntil` off a batch response, exposed so a
+  /// test can drive the cadence switch without a server and without waiting
+  /// out a 300-second timer.
+  @visibleForTesting
+  void applyLiveWindow(DateTime? liveUntil) => _applyLiveUntil(liveUntil);
+
+  /// The cadence a drain should be running at right now.
+  ///
+  /// `liveSyncIntervalSeconds` is floored at 5 s and never allowed to exceed
+  /// the normal interval: the server already clamps both (§3.12), but this is
+  /// the timer that would spin, so it defends itself.
+  Duration get _targetDrainInterval {
+    if (!isLive) return Duration(seconds: config.syncIntervalSeconds);
+    final int live = config.liveSyncIntervalSeconds
+        .clamp(5, config.syncIntervalSeconds);
+    return Duration(seconds: live);
+  }
+
+  /// Adopt the deadline the server just reported, and move the timer if that
+  /// changed which interval applies.
+  ///
+  /// No ramp and no hysteresis — the TTL *is* the hysteresis. Absent, null and
+  /// already-expired all land on the same branch, which is why the only thing
+  /// stored is the deadline itself.
+  void _applyLiveUntil(DateTime? liveUntil) {
+    _liveUntil = liveUntil;
+    _reconcileDrain();
+  }
+
+  /// Re-arm the drain timer if the interval in force is no longer the right
+  /// one. Called when a response moves the deadline and again on every drain
+  /// tick, so live mode lapsing restores the slow cadence within one live
+  /// interval even if the server never mentions it again.
+  void _reconcileDrain() {
+    if (_sessionId == null || _drain == null) return;
+    if (_targetDrainInterval == _drainInterval) return;
+    _armDrain();
+  }
+
+  void _armDrain() {
+    _drain?.cancel();
+    _drainInterval = _targetDrainInterval;
+    _drainArmCount++;
+    _drain = Timer.periodic(_drainInterval, (_) {
+      // Order matters: a lapsed deadline must put the timer back on the slow
+      // interval even when the queue is empty and flushQueue returns early.
+      _reconcileDrain();
+      unawaited(flushQueue());
+    });
+  }
 
   // ------------------------------------------------------------------ health
 
@@ -497,6 +676,8 @@ class GeoLocationService implements LocationService {
     _sessionId = sessionId;
     _stationary = false;
     _pendingStationary = null;
+    _movementSeeded = false;
+    _setMovement(MovementStatus.unknown);
     _emitSync();
     _subscribe();
     // Arm the guardrail immediately: a session that opens somewhere with a weak
@@ -514,12 +695,14 @@ class GeoLocationService implements LocationService {
     // clamps syncIntervalSeconds below the offline window, so no client-side
     // ceiling is needed — and the ~5-min heartbeat keeps the device inside that
     // window even on a quiet, distance-filtered stretch.
-    final Duration drainInterval =
-        Duration(seconds: config.syncIntervalSeconds);
-    _drain = Timer.periodic(
-      drainInterval,
-      (_) => unawaited(flushQueue()),
-    );
+    //
+    // While an admin is watching (`now < liveUntil`) the same timer runs at
+    // `liveSyncIntervalSeconds` (15s) instead. That is the *only* thing a
+    // watch changes: GPS capture cadence, the distance filter, the adaptive
+    // moving/stationary state machine and the heartbeat above are all
+    // untouched, because a watch costs radio time, not GPS time.
+    _liveUntil = null;
+    _armDrain();
   }
 
   /// Stops collecting. The queue is deliberately **not** cleared: fixes from a
@@ -531,12 +714,16 @@ class GeoLocationService implements LocationService {
     _retry = null;
     _drain?.cancel();
     _drain = null;
+    _drainInterval = Duration.zero;
+    _liveUntil = null;
     _heartbeat?.cancel();
     _heartbeat = null;
     _transitionTimer?.cancel();
     _transitionTimer = null;
     _pendingStationary = null;
     _stationary = false;
+    _movementSeeded = false;
+    _setMovement(MovementStatus.unknown);
     await _positions?.cancel();
     _positions = null;
     _sessionId = null;
@@ -634,10 +821,34 @@ class GeoLocationService implements LocationService {
     if (_sessionId == null) return;
     final bool candidate = fix.speedKmh < config.movementSpeedThresholdKmh;
 
+    // The first fix of a session publishes its own verdict instead of waiting
+    // out the hold window. That window exists to stop an *established* state
+    // thrashing at the speed boundary; at session start there is no
+    // established state, only `_stationary = false`, which is a cadence
+    // default ("begin on high accuracy") and not a measurement. Reporting
+    // that default as fact is what made the activity chip wrong rather than
+    // merely late.
+    //
+    // Only the *published* state is seeded. `_stationary` — the GPS cadence —
+    // is still left entirely to the debounce below: swapping the position
+    // stream on the very first fix would cancel and re-open the subscription
+    // at the moment fixes matter most, and a broadcast stream drops whatever
+    // arrives in that gap. The two converge within one hold window, and every
+    // publication after the seed is `_stationary` itself.
+    if (!_movementSeeded) {
+      _movementSeeded = true;
+      _setMovement(
+          candidate ? MovementStatus.stationary : MovementStatus.moving);
+    }
+
     if (candidate == _stationary) {
       _pendingStationary = null;
       _transitionTimer?.cancel();
       _transitionTimer = null;
+      // A fix that agrees with the current mode is also what settles a seed
+      // that guessed the other way: published state re-joins the cadence.
+      _setMovement(
+          _stationary ? MovementStatus.stationary : MovementStatus.moving);
       return;
     }
 
@@ -658,8 +869,27 @@ class GeoLocationService implements LocationService {
       // window ran — either way there is nothing to swap.
       if (_sessionId == null || target == null || target == _stationary) return;
       _stationary = target;
+      // One state change, published once: the cadence swap and the employee's
+      // activity chip are the same decision.
+      _setMovement(
+          _stationary ? MovementStatus.stationary : MovementStatus.moving);
       _resubscribe();
     });
+  }
+
+  @override
+  MovementStatus get movement => _movement;
+
+  @override
+  Stream<MovementStatus> movementState() async* {
+    yield _movement;
+    yield* _movementState.stream;
+  }
+
+  void _setMovement(MovementStatus next) {
+    if (next == _movement) return;
+    _movement = next;
+    if (!_movementState.isClosed) _movementState.add(next);
   }
 
   /// (Re)start the forced-fix guardrail. Cancelling first means the timer only
@@ -936,10 +1166,10 @@ class GeoLocationService implements LocationService {
         if (batch.isEmpty) break;
 
         final String sessionId = batch.first.sessionId;
-        final Set<String> settled;
+        final UploadOutcome outcome;
 
         try {
-          settled = await uploader(sessionId, batch);
+          outcome = await uploader(sessionId, batch);
         } catch (e) {
           // The one thing a failed upload proves: this device cannot reach the
           // server right now. Everything stays queued.
@@ -952,6 +1182,14 @@ class GeoLocationService implements LocationService {
         // Reaching the server at all is what "online" means here, whether or
         // not it had anything to settle.
         _online = true;
+
+        // The device learns it is being watched in the reply to a batch it was
+        // going to send anyway — there is no push channel, by design. Applied
+        // before the queue bookkeeping so a response that settles nothing
+        // still moves the cadence.
+        _applyLiveUntil(outcome.liveUntil);
+
+        final Set<String> settled = outcome.settled;
 
         if (settled.isEmpty) {
           parked.add(sessionId);
@@ -1008,5 +1246,6 @@ class GeoLocationService implements LocationService {
     await _persistNow();
     await _fixes.close();
     await _sync.close();
+    await _movementState.close();
   }
 }

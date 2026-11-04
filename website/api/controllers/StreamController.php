@@ -44,7 +44,12 @@ final class StreamController extends V1Controller
             foreach (Ctx::teamIds() as $employeeId) {
                 $live = Engine::liveStatus($employeeId, $date);
 
-                $signature = $live['status'] . '|' . $live['movement'] . '|' . $live['locationHealth'];
+                // activity is part of the signature, not just the payload: a
+                // change the other three do not show (stopped -> idle when a
+                // stop closes) has to emit, or the enum would go stale on the
+                // stream while the polling endpoints disagreed with it.
+                $signature = $live['status'] . '|' . $live['movement'] . '|' . $live['locationHealth']
+                    . '|' . $live['activity'];
 
                 if (($seen[$employeeId]['status'] ?? null) !== $signature) {
                     $seen[$employeeId]['status'] = $signature;
@@ -54,6 +59,7 @@ final class StreamController extends V1Controller
                         'status'         => $live['status'],
                         'movement'       => $live['movement'],
                         'locationHealth' => $live['locationHealth'],
+                        'activity'       => $live['activity'],
                         'activeSince'    => $live['activeSince'],
                     ]);
                 }

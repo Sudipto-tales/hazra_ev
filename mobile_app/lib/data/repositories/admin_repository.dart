@@ -36,6 +36,7 @@ import '../models/models.dart';
 ///   resetEmployeePassword() → POST /employees/{id}/password
 ///   setEmployeeActive()  → PATCH /api/admin/employees/{id}
 ///   config()/saveConfig()→ GET/PUT /api/admin/config
+///   watchLive()          → POST  /tracking/watch
 abstract class AdminRepository {
   /// The signed-in admin.
   Future<AdminUser> profile();
@@ -162,6 +163,26 @@ abstract class AdminRepository {
     required String employeeId,
     required DateTime date,
     required String reason,
+  });
+
+  /// `POST /tracking/watch` — asks the server to put [employeeIds] into live
+  /// mode for a while (API plan §3.11).
+  ///
+  /// One call for the whole visible map, never one per employee: the endpoint
+  /// takes a list precisely so opening a map of eight is one request. The
+  /// caller must re-post at roughly `ttlSeconds / 2`
+  /// ([LiveWatch.renewInterval]) while the map is open, and simply stop when
+  /// it closes — there is **no unwatch call**, by design.
+  ///
+  /// Unknown or inactive ids come back in [LiveWatch.rejected] rather than
+  /// failing the call, so one stale id cannot stop a map of eight going live.
+  ///
+  /// Throws like any other call. A server that predates the watch endpoint
+  /// answers 404, and the map must still work — a watch is a request for
+  /// freshness, not a precondition for drawing.
+  Future<LiveWatch> watchLive({
+    required List<String> employeeIds,
+    int? ttlSeconds,
   });
 
   Future<TrackingConfig> config();

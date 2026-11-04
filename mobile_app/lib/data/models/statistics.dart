@@ -24,6 +24,32 @@ class DaySummary {
   final Duration stopDuration;
   final Duration longestStop;
 
+  /// Only ever used to overlay a locally-derived value on a server payload —
+  /// today that is `distanceKm`, which the device can measure sooner than the
+  /// five-minute fix batch lets the server recompute it.
+  DaySummary copyWith({
+    DateTime? joiningTime,
+    DateTime? endTime,
+    Duration? workedDuration,
+    int? sessionCount,
+    double? distanceKm,
+    int? companiesVisited,
+    int? reportsSubmitted,
+    Duration? stopDuration,
+    Duration? longestStop,
+  }) =>
+      DaySummary(
+        joiningTime: joiningTime ?? this.joiningTime,
+        endTime: endTime ?? this.endTime,
+        workedDuration: workedDuration ?? this.workedDuration,
+        sessionCount: sessionCount ?? this.sessionCount,
+        distanceKm: distanceKm ?? this.distanceKm,
+        companiesVisited: companiesVisited ?? this.companiesVisited,
+        reportsSubmitted: reportsSubmitted ?? this.reportsSubmitted,
+        stopDuration: stopDuration ?? this.stopDuration,
+        longestStop: longestStop ?? this.longestStop,
+      );
+
   static const DaySummary empty = DaySummary(
     joiningTime: null,
     endTime: null,

@@ -95,7 +95,11 @@ class RejectedFix {
 
 /// What `POST /tracking/locations` answers with.
 class LocationSyncResult {
-  const LocationSyncResult({required this.accepted, required this.rejected});
+  const LocationSyncResult({
+    required this.accepted,
+    required this.rejected,
+    this.liveUntil,
+  });
 
   /// Client ids the server stored.
   final List<String> accepted;
@@ -103,6 +107,17 @@ class LocationSyncResult {
   /// Client ids the server refused. A rejection is final — the same fix
   /// re-sent gets the same answer — so these leave the queue too.
   final List<RejectedFix> rejected;
+
+  /// Absolute deadline, from the response **`meta`** (§3.11) — not from
+  /// `data`, which stays byte-identical to the per-batch `{accepted, rejected}`
+  /// verdict it has always been. It is a statement about the *device*, not
+  /// about the batch: while `now < liveUntil` an admin is watching and the
+  /// drain timer runs at `liveSyncIntervalSeconds`.
+  ///
+  /// Null when nobody is watching, and null when the server is old enough to
+  /// omit the key entirely. **Absent and null are the same thing** — the
+  /// device treats both as "not live".
+  final DateTime? liveUntil;
 
   static const LocationSyncResult empty =
       LocationSyncResult(accepted: <String>[], rejected: <RejectedFix>[]);
@@ -197,6 +212,8 @@ class HttpTrackingRepository implements TrackingRepository {
                 reason: Wire.str(j['reason']),
               ))
           .toList(growable: false),
+      // meta, never data — a sibling of the sessionId that already lives here.
+      liveUntil: Wire.dateOrNull(result.meta['liveUntil']),
     );
   }
 

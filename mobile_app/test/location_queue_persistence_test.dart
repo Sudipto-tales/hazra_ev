@@ -137,9 +137,12 @@ void main() {
       );
 
       final List<LocationLog> uploaded = <LocationLog>[];
-      Future<Set<String>> uploader(String sessionId, List<LocationLog> batch) async {
+      Future<UploadOutcome> uploader(
+        String sessionId,
+        List<LocationLog> batch,
+      ) async {
         uploaded.addAll(batch);
-        return batch.map((LocationLog f) => f.id).toSet();
+        return UploadOutcome(batch.map((LocationLog f) => f.id).toSet());
       }
 
       final GeoLocationService service = GeoLocationService(
@@ -199,7 +202,7 @@ void main() {
         queueStore: store,
         uploader: (String s, List<LocationLog> b) async {
           uploaded.addAll(b);
-          return b.map((LocationLog f) => f.id).toSet();
+          return UploadOutcome(b.map((LocationLog f) => f.id).toSet());
         },
         persistDebounce: debounce,
       );

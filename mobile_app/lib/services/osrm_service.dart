@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
 import '../core/config/map_config.dart';
+import '../core/utils/geo.dart';
 import '../data/models/models.dart';
 
 /// Snaps a raw GPS trace onto the road network with OSRM's map-matching
@@ -211,16 +212,9 @@ class OsrmService {
 }
 
 /// Great-circle distance in metres.
-double _metresBetween(LatLng a, LatLng b) {
-  const double r = 6371008.8;
-  final double dLat = _rad(b.latitude - a.latitude);
-  final double dLng = _rad(b.longitude - a.longitude);
-  final double h = math.sin(dLat / 2) * math.sin(dLat / 2) +
-      math.cos(_rad(a.latitude)) *
-          math.cos(_rad(b.latitude)) *
-          math.sin(dLng / 2) *
-          math.sin(dLng / 2);
-  return 2 * r * math.asin(math.min(1, math.sqrt(h)));
-}
-
-double _rad(double deg) => deg * math.pi / 180;
+///
+/// Delegates to the shared `core/utils/geo.dart` helper so the map side and
+/// the device side measure distance with one implementation (and one Earth
+/// radius) rather than two that can drift.
+double _metresBetween(LatLng a, LatLng b) =>
+    metresBetween(a.latitude, a.longitude, b.latitude, b.longitude);

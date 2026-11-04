@@ -104,12 +104,19 @@ class _TrackingSheet extends StatelessWidget {
                       : '${fix.speedKmh.toStringAsFixed(1)} km/h',
                   icon: Icons.speed_rounded,
                 ),
-                KeyValueRow(
-                  label: 'Recorded',
-                  value: fix == null
-                      ? '—'
-                      : '${Fmt.time(fix.recordedAt)} · ${Fmt.relative(fix.recordedAt, now: c.now)}',
-                  icon: Icons.schedule_rounded,
+                // Both freshness stamps ride the controller's per-second
+                // clock rather than its notify cycle, so an open sheet counts
+                // up instead of freezing on the value it opened with.
+                ValueListenableBuilder<DateTime>(
+                  valueListenable: c.clock,
+                  builder: (BuildContext context, DateTime now, _) =>
+                      KeyValueRow(
+                    label: 'Recorded',
+                    value: fix == null
+                        ? '—'
+                        : '${Fmt.time(fix.recordedAt)} · ${Fmt.freshness(fix.recordedAt, now: now)}',
+                    icon: Icons.schedule_rounded,
+                  ),
                 ),
                 const Divider(height: Insets.xxl),
                 Text('Sync queue', style: theme.textTheme.titleMedium),
@@ -133,12 +140,16 @@ class _TrackingSheet extends StatelessWidget {
                   valueColor:
                       (sync?.failed ?? 0) > 0 ? AppColors.danger : null,
                 ),
-                KeyValueRow(
-                  label: 'Last synced',
-                  value: sync?.lastSyncedAt == null
-                      ? 'Never'
-                      : Fmt.relative(sync!.lastSyncedAt!, now: c.now),
-                  icon: Icons.cloud_done_outlined,
+                ValueListenableBuilder<DateTime>(
+                  valueListenable: c.clock,
+                  builder: (BuildContext context, DateTime now, _) =>
+                      KeyValueRow(
+                    label: 'Last synced',
+                    value: sync?.lastSyncedAt == null
+                        ? 'Never'
+                        : Fmt.freshness(sync!.lastSyncedAt!, now: now),
+                    icon: Icons.cloud_done_outlined,
+                  ),
                 ),
                 const SizedBox(height: Insets.md),
                 Text(

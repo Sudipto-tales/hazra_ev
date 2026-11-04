@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
+import '../core/theme/app_colors.dart';
+
 /// An action the employee triggers from the ongoing session notification.
 enum SessionNotificationAction { pause, endDay }
 
@@ -10,6 +12,18 @@ const String _kPauseButtonId = 'pause';
 const String _kEndDayButtonId = 'end_day';
 const String _kChannelId = 'work_session';
 const int _kServiceId = 42;
+
+/// Name of the `<meta-data>` entry in `AndroidManifest.xml` that points at the
+/// status-bar icon. The plugin resolves the drawable by this name at runtime
+/// (`ForegroundService.getIconResId`), so the two strings must match exactly.
+///
+/// It has to be passed on **every** call that builds the notification. With no
+/// icon the plugin falls back to `appInfo.icon` — the launcher icon — and
+/// `setSmallIcon()` on API 21+ keeps only the alpha channel of what it is
+/// given. The launcher PNG is fully opaque, so that fallback renders as a
+/// solid white block, not as the logo.
+const String _kNotificationIconMetaData =
+    'com.hazra.employeetracking.NOTIFICATION_ICON';
 
 /// Owns the persistent Android notification that shows a **live session timer**
 /// and **Pause / End Day** buttons while a work session is open.
@@ -118,6 +132,7 @@ class SessionNotificationService {
         ],
         notificationTitle: 'Work session running',
         notificationText: _timerLine(elapsed),
+        notificationIcon: _icon(),
         notificationButtons: _buttons(),
         callback: startSessionNotificationCallback,
       );
@@ -140,6 +155,11 @@ class SessionNotificationService {
       await FlutterForegroundTask.updateService(
         notificationTitle: 'Work session running',
         notificationText: _timerLine(elapsed),
+        // Not optional here. updateService rebuilds the whole notification,
+        // and this runs once a second from the controller's clock — omit the
+        // icon and the correct one would be replaced by the launcher-icon
+        // fallback (a white block) on the very next tick.
+        notificationIcon: _icon(),
         notificationButtons: _buttons(),
       );
     } catch (e) {
@@ -159,6 +179,14 @@ class SessionNotificationService {
       debugPrint('[session-notif] stop error: $e');
     }
   }
+
+  /// [AppColors.primary] is the accent Android paints behind the silhouette
+  /// in the expanded notification. The silhouette itself is always white —
+  /// the alpha mask is all `setSmallIcon` keeps.
+  NotificationIcon _icon() => const NotificationIcon(
+        metaDataName: _kNotificationIconMetaData,
+        backgroundColor: AppColors.primary,
+      );
 
   List<NotificationButton> _buttons() => const <NotificationButton>[
         NotificationButton(id: _kPauseButtonId, text: 'Pause'),

@@ -60,6 +60,14 @@ CREATE TYPE activity_type      AS ENUM ('day_started','session_started','travell
                                         'report_submitted','left','session_ended','day_ended','tracking_issue');
 ```
 
+**`activity` (`02-API-PLAN.md` §3.14) is deliberately NOT in this list and must never become
+a column.** It is derived at read time from `work_status`, `movement_status`,
+`location_health`, the open-stop row and the fix timestamps — a presentation collapse of
+state this schema already holds, computed per request. Storing it would create a second
+source of truth that goes stale the moment a threshold is re-tuned, which is exactly what
+read-time semantics (§4) exist to prevent. `activity_type` above is an unrelated thing: the
+timeline event log.
+
 Dart enum → PostgreSQL type:
 
 | Dart | PostgreSQL |
@@ -191,32 +199,55 @@ CREATE TABLE tracking_configs (
   offline_threshold_minutes              integer NOT NULL DEFAULT 10,
   location_unavailable_threshold_minutes integer NOT NULL DEFAULT 15,
   sync_batch_size                        integer NOT NULL DEFAULT 50,
-  sync_interval_seconds                  integer NOT NULL DEFAULT 300,  -- config v8, PENDING web-agent
-  distance_filter_metres                 integer NOT NULL DEFAULT 20,   -- config v8, PENDING web-agent
+  sync_interval_seconds                  integer NOT NULL DEFAULT 300,  -- config v9, PENDING web-agent
+  distance_filter_metres                 integer NOT NULL DEFAULT 20,   -- config v9, PENDING web-agent
+  movement_exit_speed_kmh                double precision NOT NULL DEFAULT 3,  -- config v9, PENDING
+  live_sync_interval_seconds             integer NOT NULL DEFAULT 15,   -- config v9, PENDING
   updated_at                             timestamptz NOT NULL DEFAULT now(),
   updated_by                             uuid REFERENCES users(id),
   CHECK (location_interval_seconds BETWEEN 5 AND 600),
   CHECK (long_stop_threshold_minutes >= stop_threshold_minutes),
-  CHECK (sync_interval_seconds <= offline_threshold_minutes * 30)  -- v8: ≤ offlineThreshold×60/2
+  CHECK (sync_interval_seconds <= offline_threshold_minutes * 30),  -- v9: ≤ offlineThreshold×60/2
+  CHECK (movement_exit_speed_kmh >= movement_speed_threshold_kmh),  -- v9: the dead band must not invert
+  CHECK (live_sync_interval_seconds BETWEEN 5 AND 120),
+  CHECK (live_sync_interval_seconds < sync_interval_seconds)
 );
 ```
 
-**Config version 8 — PENDING web-agent implementation (not yet migrated).** The two rows
-flagged above back the new `TrackingConfig.syncIntervalSeconds` / `distanceFilterMetres`
-fields (see `02-API-PLAN.md` §3.12). They are documented here as the authoritative plan so
-the admin "tracking rules" screen can set them; **no migration has been written and the
-columns do not exist in the deployed MySQL schema yet.** Open points left to web-agent when
-implementing:
+**Config version 9 — PENDING web-agent implementation (not yet migrated).** The four rows
+flagged above back `TrackingConfig.syncIntervalSeconds`, `distanceFilterMetres`,
+`movementExitSpeedKmh` and `liveSyncIntervalSeconds` (see `02-API-PLAN.md` §3.12, which is
+authoritative for the wire shape and the validation rules). **No migration has been written
+and none of the four columns exist in the deployed MySQL schema yet.**
 
-- Whether the validation ceiling (`sync_interval_seconds ≤ offline_threshold_minutes × 60 /
-  2`) lands as the `CHECK` shown above or as an app-level clamp in the update path. A `CHECK`
-  is the stricter, self-documenting choice and matches the existing cross-field
-  `long_stop_threshold_minutes >= stop_threshold_minutes` discipline, but a clamp lets a
-  violating `PUT` succeed with a corrected value rather than a `422` — product call.
-- `tracking_config_history` (§4, below) mirrors these columns automatically since it is
-  "same columns + `changed_at`, `changed_by`"; the history migration must add them too.
-- Bump the seeded/default `version` to 8 on the migration that adds the columns, so a device
-  that was on 7 sees the `ETag` change and re-pulls.
+**Why 9 and not 8.** The first two columns were specced for v8 and migration 031 was written
+but **never deployed**, so production (MariaDB 11.8.8) still serves **version 7** and no
+client has ever seen an 8. Rather than deploy 8 and immediately deploy 9, v8 is folded in:
+the two carried-over columns keep their shape, the two new ones land beside them, and
+production goes **7 → 9 in one bump without ever serving 8**. Do **not** deploy 031 as-is
+first — retarget it. Everything in this section lands together or not at all.
+
+Decisions, no longer open:
+
+- The `sync_interval_seconds` ceiling is **both**: a `422` in the update path (so an admin
+  gets told, rather than silently getting a different number than they typed) **and** the
+  `CHECK` above as the backstop. §3.12 of `02` is the authority on which rules `422` and
+  which clamp — `movement_exit_speed_kmh >= movement_speed_threshold_kmh` is a `422`;
+  `live_sync_interval_seconds` clamps on both of its rules. The `CHECK`s here mirror only
+  the invariants that must never be violated by any path, including a hand-run `UPDATE`.
+- Cross-field rules (`sync_interval_seconds` vs `offline_threshold_minutes`,
+  `movement_exit_speed_kmh` vs `movement_speed_threshold_kmh`) must be validated against the
+  **post-write** values when both sides move in one `PUT`.
+- `tracking_config_history` (below) is "same columns + `changed_at`, `changed_by`", so the
+  history migration must add all four there too.
+- Bump the seeded/default `version` to **9** at all three insert sites that seed it today
+  (`api/support/Ctx.php`, `database/seeds/001_bootstrap_admin.php`,
+  `database/demo/seed.php`) plus the migration-time bump, so a device holding a 7 (or an 8)
+  `ETag` re-pulls.
+
+**MySQL port note.** `double precision` is `double` and `timestamptz` is `datetime(6)` under
+`config/dialect.php` as elsewhere in this document; MariaDB 11.8.8 enforces `CHECK`
+constraints, so the four above carry over rather than becoming app-only rules.
 
 One row per organisation — **not** per employee, not per device. `version` bumps on every
 write and backs the `ETag`, so a device that already has the current config gets a `304`.
@@ -230,6 +261,50 @@ counted as a visit three weeks ago would make the calendar disagree with itself.
 
 Keep a `tracking_config_history` table (same columns + `changed_at`, `changed_by`) so a
 dispute about "what the rule was on the 3rd" has an answer.
+
+---
+
+## 4a. Live watch — who an admin is currently looking at
+
+```sql
+CREATE TABLE tracking_watches (
+  employee_id    uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  watching_until timestamptz NOT NULL,
+  updated_at     timestamptz NOT NULL DEFAULT now(),
+  updated_by     uuid REFERENCES users(id)
+);
+CREATE INDEX ON tracking_watches (watching_until);
+```
+
+Backs `POST /tracking/watch` and the `liveUntil` field on the `POST /tracking/locations`
+response (`02-API-PLAN.md` §3.11, authoritative). **PENDING web-agent — this table does not
+exist yet.**
+
+**One row per employee, not per admin — and that is a decision, not a simplification.** Two
+admins watching the same person share one deadline; `POST /tracking/watch` upserts and the
+deadline only ever moves **forward** inside an active window, so whoever is still watching
+keeps the device live and neither admin can cut the other off. Keying by `(admin, employee)`
+would mean reading the `MAX()` across rows on the hottest write path in the system to answer
+one boolean, and would need a cleanup job to stop the table growing per admin per session.
+
+**Why its own table rather than a column on `device_health`.** `device_health` is written by
+the employee's device; this is written by an admin's. Separate writers, separate lifetimes,
+and no contention between an ingest batch and a map that is polling. They are read together
+and both are keyed by `employee_id`, so the join is trivial when it is wanted.
+
+Read path — this is on the ingest hot path, so it has to be cheap: `POST /tracking/locations`
+does exactly **one primary-key lookup** per batch (`watching_until > now()`), which is
+index-only. Nothing else reads it; no fan-out, no scan.
+
+Expiry is **passive**. A row is dead once `watching_until` is in the past; nothing has to
+delete it for correctness, and a stale row is simply never true again until re-watched. The
+`watching_until` index exists so an optional housekeeping `DELETE` stays cheap — not because
+any read needs it. There is deliberately **no unwatch**: closing the map stops re-posting and
+the TTL lapses, because an explicit unwatch would have to be delivered to the device, which
+is precisely the capability this design does not have.
+
+A watch changes **how often a device talks and nothing else** — not what is stored, not what
+is derived, not what any endpoint returns about a fix. Board rule 2 is untouched by it.
 
 ---
 
@@ -272,6 +347,7 @@ CREATE TABLE location_fixes (
                  GENERATED ALWAYS AS (ST_MakePoint(lng, lat)::geography) STORED,
   accuracy_m   real NOT NULL,
   speed_kmh    real NOT NULL,
+  heading_deg  real,                                 -- NULL = unknown. NOT 0: 0 is due north
   PRIMARY KEY (recorded_at, id)
 ) PARTITION BY RANGE (recorded_at);
 
@@ -287,8 +363,16 @@ CREATE UNIQUE INDEX ON location_fixes (employee_id, client_id);   -- dedupe repl
 
 Notes that matter:
 
-- `real` not `double precision` for accuracy and speed — 4 bytes each, and neither value is
-  meaningful past one decimal. Over 70 M rows that is 560 MB saved for nothing given up.
+- `real` not `double precision` for accuracy, speed and heading — 4 bytes each, and none of
+  the three is meaningful past one decimal. Over 70 M rows that is 560 MB saved for nothing
+  given up.
+- **`heading_deg` is nullable, and `NULL` is not `0`.** 0 means due north; "unknown" is a
+  genuinely different thing and has to stay distinguishable, because the admin map rotates a
+  vehicle marker by this value. A stationary device reports no bearing at all, and platforms
+  signal that as `-1` or `NaN` — both normalise to `NULL` at ingest, never to `0`. A client
+  that sees `NULL` must draw an unrotated marker, not one pointing north. Degrees clockwise
+  from true north, `0 <= heading_deg < 360`; `heading_deg` is new in config v9's companion
+  migration (`02` §3.11) and every row written before it is legitimately `NULL`.
 - The generated `geog` column exists **only** for stop clustering (`ST_DWithin`). Route
   rendering reads `lat`/`lng` directly. Add the GiST index only if stop detection runs in
   SQL rather than in the ingest worker.
@@ -718,6 +802,7 @@ be asked to justify. Cheap to write, impossible to reconstruct after the fact.
 | Roster search | `pg_trgm` GIN over name + code + department + region |
 | Catalogue by category | `products (org_id, category) WHERE active` |
 | Fix ingest dedupe | `location_fixes (employee_id, client_id)` unique |
+| Live-watch check, per ingest batch | `tracking_watches (employee_id)` primary key (§4a) |
 
 Every screen in both apps resolves through an index above. No screen scans `location_fixes`
 except the live map for the current day.
@@ -779,3 +864,16 @@ catalogue/session/report/rollup/notification tables, **008** `route_geometry`, *
 `day_closeouts` + `day_reopen_audit`, **010** `users.must_change_password`, 011+ the website
 admin / content / catalogue / warranty / app-release / dealer-locations / account-deletion /
 messaging tables (website side, no inbox note — not described above).
+
+**Config v9 — unshipped, one migration, one deploy (PENDING web-agent).** Migration **031**
+was written for config v8 and **never deployed**, so it must be *retargeted* rather than
+deployed as-is (§4). The v9 migration carries, together and atomically: the four
+`tracking_configs` columns + their `CHECK`s, the same four mirrored into
+`tracking_config_history`, `location_fixes.heading_deg` (§5), the new `tracking_watches`
+table (§4a), and the `version` bump to **9** so every device's `ETag` misses and re-pulls.
+Ordering inside it: `tracking_configs` and `tracking_config_history` before the `version`
+bump (a device must never re-pull a config whose columns do not exist yet);
+`tracking_watches` after `users`. `location_fixes.heading_deg` is independent of the rest
+and can go first. Adding a nullable column to the partitioned `location_fixes` is metadata
+only on every partition — no rewrite, no backfill, and every pre-existing row is
+legitimately `NULL`.

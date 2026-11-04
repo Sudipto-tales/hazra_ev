@@ -174,6 +174,11 @@ final class Present
             'longitude'  => Wire::float($r['lng']),
             'accuracy'   => Wire::float($r['accuracy_m']),
             'speedKmh'   => Wire::float($r['speed_kmh']),
+            // Degrees clockwise from true north, 0 <= headingDeg < 360, and
+            // null when the device had no bearing. null is NOT 0 — 0 is due
+            // north, so coalescing unknown to 0 would point a parked marker
+            // north and the client could not tell that from a real heading.
+            'headingDeg' => ($r['heading_deg'] ?? null) === null ? null : Wire::float($r['heading_deg']),
             'recordedAt' => Wire::ts($r['recorded_at']),
             'syncState'  => 'synced',
         ];
@@ -401,6 +406,12 @@ final class Present
             'syncBatchSize'                        => Wire::int($r['sync_batch_size']),
             'syncIntervalSeconds'                  => Wire::int($r['sync_interval_seconds'] ?? 300),
             'distanceFilterMetres'                 => Wire::int($r['distance_filter_metres'] ?? 20),
+            // The upper edge of the movement dead band, and the drain cadence
+            // used only while an admin is watching (02 §3.12). The ?? defaults
+            // match the documented ones so a read taken before the v9 migration
+            // lands serves the shipped behaviour rather than a 0.
+            'movementExitSpeedKmh'                 => Wire::float($r['movement_exit_speed_kmh'] ?? 3),
+            'liveSyncIntervalSeconds'              => Wire::int($r['live_sync_interval_seconds'] ?? 15),
             'version'                              => Wire::int($r['version']),
             'updatedAt'                            => Wire::ts($r['updated_at']),
             'updatedBy'                            => $r['updated_by'] ?? null,
@@ -416,6 +427,9 @@ final class Present
             'status'             => $m['status'],
             'movement'           => $m['movement'],
             'locationHealth'     => $m['locationHealth'],
+            // One derived enum the map maps 1:1 to an icon (02 §3.14). It sits
+            // beside status/movement/locationHealth and never replaces them.
+            'activity'           => $m['activity'] ?? null,
             'summary'            => $m['summary'],
             'attendanceStatus'   => $m['attendanceStatus'],
             'active'             => $m['active'],

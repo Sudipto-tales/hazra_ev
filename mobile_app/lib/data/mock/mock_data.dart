@@ -415,6 +415,11 @@ class MockData {
     speedKmh: 24.6,
     recordedAt: _ago(m: 1),
     syncState: SyncState.synced,
+    // Moving at 24.6 km/h, so a heading is physically meaningful. Every other
+    // mock fix is stationary (`speedKmh: 0`) and deliberately leaves this
+    // null: a parked device has no heading, and the live map must draw that
+    // case unrotated rather than pointing north.
+    headingDeg: 118,
   );
 
   static final DaySummary todaySummary = DaySummary(

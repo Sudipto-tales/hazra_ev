@@ -94,6 +94,8 @@ class ApiGatewayProvider extends RouteProvider
             'PATCH:api/v1/tracking/sessions/{id}' => ['TrackingController', 'closeSession', 'auth'],
             'POST:api/v1/tracking/locations'      => ['TrackingController', 'locations',    'auth'],
             'POST:api/v1/tracking/health'         => ['TrackingController', 'health',       'auth'],
+            // Admin only, takes a LIST — one map of eight people is one call.
+            'POST:api/v1/tracking/watch'          => ['TrackingController', 'watch',        'auth'],
 
             // --- Configuration -------------------------------------------------- §3.12
             'GET:api/v1/config'            => ['ConfigController', 'show',   'auth'],

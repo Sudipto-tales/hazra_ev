@@ -202,6 +202,21 @@ class _TrackingRulesPageState extends State<TrackingRulesPage> {
                         dense: true,
                       ),
                       KeyValueRow(
+                        label: 'Moving at or above',
+                        value: '${_config.movementExitSpeedKmh} km/h',
+                        dense: true,
+                      ),
+                      KeyValueRow(
+                        label: 'Upload cadence',
+                        value: '${_config.syncIntervalSeconds} s',
+                        dense: true,
+                      ),
+                      KeyValueRow(
+                        label: 'Upload cadence while watched',
+                        value: '${_config.liveSyncIntervalSeconds} s',
+                        dense: true,
+                      ),
+                      KeyValueRow(
                         label: 'Sync batch size',
                         value: '${_config.syncBatchSize} fixes',
                         dense: true,

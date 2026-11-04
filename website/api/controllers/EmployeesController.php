@@ -336,6 +336,8 @@ final class EmployeesController extends V1Controller
             'status'            => $live['status'],
             'movement'          => $live['movement'],
             'locationHealth'    => $live['locationHealth'],
+            // 02 §3.14 — the one enum the live map turns into an icon.
+            'activity'          => $live['activity'],
             'summary'           => Present::daySummary($day ?: null),
             'attendanceStatus'  => Wire::enum($day['status'] ?? 'no_data'),
             'active'            => (bool) $employee['active'],

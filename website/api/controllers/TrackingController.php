@@ -13,6 +13,13 @@ require_once __DIR__ . '/../support/V1Controller.php';
  */
 final class TrackingController extends V1Controller
 {
+    /** POST /tracking/watch — §3.11. A list, deliberately: one map, one call. */
+    private const WATCH_MAX_IDS = 200;
+    private const WATCH_TTL_DEFAULT = 120;
+    private const WATCH_TTL_MIN = 30;
+    private const WATCH_TTL_MAX = 600;
+
+
     /** POST /tracking/sessions — startTime comes from the first fix, not the tap. */
     public function openSession(): never
     {
@@ -155,7 +162,153 @@ final class TrackingController extends V1Controller
 
         $result = Engine::ingest($session, array_map([$this, 'normaliseFix'], $fixes));
 
-        Envelope::ok($result, ['sessionId' => $session['id']]);
+        // `data` stays byte-identical — {accepted, rejected}, the two lists the
+        // device walks to clear its queue. `liveUntil` is a statement about the
+        // DEVICE, not about this batch, so it rides in `meta` beside sessionId,
+        // which is a statement exactly like it (§3.11). Absent and null mean
+        // the same thing: nobody is watching.
+        Envelope::ok($result, [
+            'sessionId' => $session['id'],
+            'liveUntil' => $this->liveUntil(Ctx::id()),
+        ]);
+    }
+
+    /**
+     * POST /tracking/watch — admin only. Makes watched devices drain faster.
+     *
+     * `employeeIds` is a list because opening a map of eight people is one call,
+     * not eight. Unknown ids come back in `rejected` rather than failing the
+     * call: one stale id must not stop a map of eight from going live. There is
+     * no unwatch — closing the map stops re-posting and the TTL lapses, because
+     * an explicit unwatch would have to be delivered to the device, which is
+     * precisely the capability this design does not have.
+     *
+     * A watch changes how often a device talks and nothing else: not what is
+     * stored, not what is derived, not what any endpoint returns about a fix.
+     */
+    public function watch(): never
+    {
+        $this->requireAdmin();
+
+        $ids = $this->input('employeeIds');
+
+        if (!is_array($ids) || !array_is_list($ids) || !$ids) {
+            Envelope::invalid('employeeIds must be a non-empty list of employee ids', 'employeeIds');
+        }
+
+        if (count($ids) > self::WATCH_MAX_IDS) {
+            Envelope::invalid(
+                'At most ' . self::WATCH_MAX_IDS . ' employeeIds per request — the roster cap',
+                'employeeIds',
+            );
+        }
+
+        $ttl = $this->watchTtl();
+        $now = Wire::now();
+
+        // Absolute ISO-8601 UTC, never a duration: the device compares it to its
+        // own clock minutes after it was issued, and a relative value would be
+        // wrong by exactly the latency this mechanism exists to fix.
+        $until = gmdate(Wire::TS, time() + $ttl);
+
+        $wanted = [];
+        $rejected = [];
+
+        foreach ($ids as $raw) {
+            $id = is_string($raw) || is_int($raw) ? (string) $raw : '';
+
+            if ($id === '') {
+                $rejected[] = ['employeeId' => '', 'reason' => 'NOT_FOUND'];
+                continue;
+            }
+
+            $wanted[$id] = true;         // keys dedupe a repeated id
+        }
+
+        $users = [];
+        $existing = [];
+
+        if ($wanted) {
+            [$userClause, $userParams] = $this->inClause('id', array_keys($wanted));
+
+            foreach (db_fetch_all(
+                "SELECT id, org_id, role, active, account_status FROM users WHERE {$userClause}",
+                $userParams,
+            ) as $row) {
+                $users[$row['id']] = $row;
+            }
+
+            [$watchClause, $watchParams] = $this->inClause('employee_id', array_keys($wanted));
+
+            foreach (db_fetch_all(
+                "SELECT employee_id, watching_until FROM tracking_watches WHERE {$watchClause}",
+                $watchParams,
+            ) as $row) {
+                $existing[$row['employee_id']] = (string) $row['watching_until'];
+            }
+        }
+
+        $watching = [];
+
+        foreach (array_keys($wanted) as $id) {
+            $user = $users[$id] ?? null;
+            $reason = match (true) {
+                $user === null                        => 'NOT_FOUND',
+                $user['org_id'] !== Ctx::orgId()      => 'NOT_IN_ORG',
+                $user['role'] !== 'employee'          => 'NOT_FOUND',   // an admin is not a device
+                !(int) $user['active']                => 'INACTIVE',
+                ($user['account_status'] ?? 'active') !== 'active' => 'INACTIVE',
+                default                               => null,
+            };
+
+            if ($reason !== null) {
+                $rejected[] = ['employeeId' => $id, 'reason' => $reason];
+                continue;
+            }
+
+            $previous = $existing[$id] ?? null;
+
+            // One row per EMPLOYEE, not per admin (03 §4a), so two admins
+            // watching the same person share one deadline. It moves forward
+            // only: whoever is still watching keeps the device live and neither
+            // admin can cut the other off. The CASE is in SQL so two concurrent
+            // watch calls cannot lose one another's deadline.
+            db_execute(
+                "INSERT INTO tracking_watches (employee_id, watching_until, updated_at, updated_by)
+                 VALUES (?, ?, ?, ?)
+                 ON CONFLICT (employee_id) DO UPDATE SET
+                    watching_until = CASE
+                        WHEN excluded.watching_until > tracking_watches.watching_until
+                        THEN excluded.watching_until ELSE tracking_watches.watching_until END,
+                    updated_at = excluded.updated_at,
+                    updated_by = excluded.updated_by",
+                [$id, $until, $now, Ctx::id()],
+            );
+
+            // What the device will actually see — the forward-only deadline, not
+            // necessarily this call's. `extended` says this call moved an
+            // already-active watch later.
+            $effective = $previous !== null && strcmp($previous, $until) > 0 ? $previous : $until;
+            $extended = $previous !== null
+                && strcmp($previous, $now) > 0
+                && strcmp($until, $previous) > 0;
+
+            $watching[] = [
+                'employeeId'    => $id,
+                'watchingUntil' => Wire::ts($effective),
+                'extended'      => $extended,
+            ];
+        }
+
+        Envelope::ok(
+            [
+                'ttlSeconds'   => $ttl,
+                'watchedUntil' => Wire::ts($until),
+                'watching'     => $watching,
+                'rejected'     => $rejected,
+            ],
+            ['requestedCount' => count($ids), 'watchingCount' => count($watching)],
+        );
     }
 
     /**
@@ -210,6 +363,56 @@ final class TrackingController extends V1Controller
         }
     }
 
+    /**
+     * ttlSeconds defaults to 120 and CLAMPS to 30..600 — an admin's map must
+     * never fail to open over a slider value. Only a malformed (non-integer)
+     * ttlSeconds is a 422; an out-of-range integer is silently clamped and the
+     * response's ttlSeconds tells the caller what it actually got (§3.11).
+     */
+    private function watchTtl(): int
+    {
+        $raw = $this->input('ttlSeconds');
+
+        if ($raw === null || $raw === '') {
+            return self::WATCH_TTL_DEFAULT;
+        }
+
+        // A fractional value is not an integer number of seconds; 120.0 is.
+        if (!is_numeric($raw) || (float) $raw !== (float) (int) (float) $raw) {
+            Envelope::invalid('ttlSeconds must be an integer number of seconds', 'ttlSeconds');
+        }
+
+        return max(self::WATCH_TTL_MIN, min(self::WATCH_TTL_MAX, (int) (float) $raw));
+    }
+
+    /**
+     * The live-watch deadline for this device, or null when nobody is watching.
+     *
+     * Exactly one primary-key lookup per batch — this is the ingest hot path
+     * (03 §4a). A watch is an optimisation, never a reason to fail an upload,
+     * so a missing table on a half-applied deploy reads as "not watched"
+     * instead of turning every POST /tracking/locations into a 500.
+     */
+    private function liveUntil(string $employeeId): ?string
+    {
+        try {
+            $row = db_fetch_one(
+                "SELECT watching_until FROM tracking_watches WHERE employee_id = ?",
+                [$employeeId],
+            );
+        } catch (PDOException) {
+            return null;
+        }
+
+        if (!$row) {
+            return null;
+        }
+
+        return strcmp((string) $row['watching_until'], Wire::now()) > 0
+            ? Wire::ts($row['watching_until'])
+            : null;
+    }
+
     private function normaliseFix(mixed $fix): array
     {
         if (!is_array($fix)) {
@@ -224,11 +427,20 @@ final class TrackingController extends V1Controller
                 'longitude'  => $fix['longitude'] ?? $fix['lng'],
                 'accuracy'   => $fix['accuracy'] ?? 0,
                 'speedKmh'   => $fix['speedKmh'] ?? 0,
+                // Optional and nullable. Engine::ingest normalises -1/NaN/out
+                // of range to NULL — never to 0, which is due north.
+                'headingDeg' => $fix['headingDeg'] ?? $fix['heading'] ?? null,
                 'recordedAt' => $fix['recordedAt'] ?? null,
             ];
         }
 
-        // Tuple form: [lat, lng, t, acc, spd, clientId].
+        // Tuple form: [lat, lng, t, acc, spd, clientId, heading].
+        //            0    1   2   3    4      5           6  <- 6 is new in v9
+        //
+        // Slot 6 is a widening this parser tolerates by construction: the
+        // count >= 3 gate and the ?? defaults mean a SIX-slot tuple from an
+        // older client is still a complete, valid fix meaning exactly what it
+        // meant before. No version negotiation, and slot 6 is never required.
         if (array_is_list($fix) && count($fix) >= 3) {
             return [
                 'id'         => (string) ($fix[5] ?? ''),
@@ -236,6 +448,7 @@ final class TrackingController extends V1Controller
                 'longitude'  => $fix[1],
                 'accuracy'   => $fix[3] ?? 0,
                 'speedKmh'   => $fix[4] ?? 0,
+                'headingDeg' => $fix[6] ?? $fix['headingDeg'] ?? null,
                 'recordedAt' => is_numeric($fix[2]) ? gmdate(Wire::TS, (int) $fix[2]) : $fix[2],
             ];
         }
