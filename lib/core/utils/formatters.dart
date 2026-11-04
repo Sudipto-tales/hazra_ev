@@ -103,6 +103,21 @@ class Fmt {
     return '${diff.inDays} d ago';
   }
 
+  /// `8s ago` / `3 min ago` — a *freshness* stamp, not a casual one.
+  ///
+  /// [relative] rounds everything under 45 s to "just now", which is exactly
+  /// the window a live screen needs to be precise about: "just now" frozen on
+  /// screen is indistinguishable from a screen that stopped updating. This
+  /// counts the seconds instead, so a stalled feed is visible.
+  static String freshness(DateTime t, {DateTime? now}) {
+    final Duration diff = (now ?? DateTime.now()).difference(t);
+    if (diff.isNegative) return 'just now';
+    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    if (diff.inHours < 24) return '${diff.inHours} hr ago';
+    return '${diff.inDays} d ago';
+  }
+
   static String percent(double v) => '${v.toStringAsFixed(0)}%';
 
   /// `—` for a field the employee never filled in. Optional text fields

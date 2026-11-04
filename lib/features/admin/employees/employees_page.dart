@@ -7,6 +7,7 @@ import '../../../state/app_scope.dart';
 import '../../../widgets/select_field.dart';
 import '../../../widgets/states.dart';
 import '../manage/employee_form_page.dart';
+import '../map/live_team_map_page.dart';
 import '../widgets/team_status_tile.dart';
 import 'employee_detail_page.dart';
 
@@ -71,6 +72,15 @@ class _EmployeesPageState extends State<EmployeesPage> {
       appBar: AppBar(
         title: const Text('Team'),
         actions: <Widget>[
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const LiveTeamMapPage(),
+              ),
+            ),
+            icon: const Icon(Icons.map_rounded),
+            tooltip: 'Live team map',
+          ),
           IconButton(
             onPressed: _load,
             icon: const Icon(Icons.refresh_rounded),

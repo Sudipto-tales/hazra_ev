@@ -40,6 +40,48 @@ extension WorkStatusX on WorkStatus {
       };
 }
 
+/// What an employee is doing right now, as **one** value — API plan §3.14.
+///
+/// Derived entirely server-side from `status` + `movement` + `locationHealth` +
+/// the open-stop row + the two fix timestamps, and sent *beside* those fields
+/// rather than instead of them. It exists so the live map picks one glyph from
+/// one value: recombining three enums and two timestamps on the client is the
+/// exact duplication `activity` was specced to remove, so nothing in this app
+/// may rebuild it locally.
+///
+/// Absent on a server below config `version` 9 (today's production serves 7).
+/// That is why every holder of this type is nullable — see
+/// `LiveMarker.activity`, which degrades to a neutral glyph rather than
+/// guessing.
+enum ActivityState {
+  moving,
+  stopped,
+  idle,
+  locationUnavailable,
+  offline,
+  paused,
+  ended,
+
+  /// No session today at all. §3.14's mapping note: *not on the map*.
+  notStarted,
+}
+
+extension ActivityStateX on ActivityState {
+  String get label => switch (this) {
+        ActivityState.moving => 'Moving',
+        ActivityState.stopped => 'Stopped',
+        ActivityState.idle => 'Idle',
+        ActivityState.locationUnavailable => 'No GPS',
+        ActivityState.offline => 'Offline',
+        ActivityState.paused => 'On break',
+        ActivityState.ended => 'Day ended',
+        ActivityState.notStarted => 'Not started',
+      };
+
+  /// `not_started` is the one value with no marker: there is nowhere to put it.
+  bool get isMappable => this != ActivityState.notStarted;
+}
+
 /// Movement state derived from the last few GPS fixes.
 enum MovementStatus { moving, stationary, unknown }
 
@@ -193,6 +235,7 @@ class LocationLog {
     required this.recordedAt,
     required this.syncState,
     this.lowAccuracy = false,
+    this.headingDeg,
   });
 
   /// Rebuild a fix from the on-disk offline queue. Only the device writes this
@@ -211,6 +254,7 @@ class LocationLog {
           orElse: () => SyncState.queued,
         ),
         lowAccuracy: json['lowAccuracy'] as bool? ?? false,
+        headingDeg: (json['headingDeg'] as num?)?.toDouble(),
       );
 
   final String id;
@@ -229,6 +273,17 @@ class LocationLog {
   /// server (and later the UI) can tell a confident fix from a rough one.
   final bool lowAccuracy;
 
+  /// Degrees clockwise from true north, `0`–`359.9`, or **null when unknown**
+  /// (API plan §3.11). `null` is not `0`: `0` means due north, and a parked
+  /// device, a synthetic heartbeat fix, Android's `-1` and iOS's `NaN` all mean
+  /// *no heading*. Coalescing unknown to `0` would swing a direction-of-travel
+  /// marker north on every parked fix, which renders missing data as data — so
+  /// the live map never rotates anything on a null.
+  ///
+  /// Absent from every server below the §3.11 `heading` work (tuple slot 6 /
+  /// object `headingDeg`); absent and present-but-null are the same thing.
+  final double? headingDeg;
+
   /// On-disk shape for the offline queue. Not a wire payload — see
   /// [LocationLog.fromJson].
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -241,6 +296,7 @@ class LocationLog {
         'recordedAt': recordedAt.toUtc().toIso8601String(),
         'syncState': syncState.name,
         'lowAccuracy': lowAccuracy,
+        if (headingDeg != null) 'headingDeg': headingDeg,
       };
 }
 
@@ -269,4 +325,85 @@ class SyncSnapshot {
   final bool isOnline;
 
   bool get isClean => queued == 0 && failed == 0;
+}
+
+/// What `POST /tracking/watch` answers with — API plan §3.11.
+///
+/// A watch is a request for freshness, not a claim of it. It makes a device
+/// drain faster (`liveSyncIntervalSeconds` instead of `syncIntervalSeconds`)
+/// for [ttlSeconds], and nothing else: it never changes what is stored,
+/// derived or returned about any fix, and the device only learns about it when
+/// it next posts a batch. Entering live mode therefore costs up to one full
+/// drain interval — which is exactly why the map must show each marker's real
+/// fix age rather than assume a watch worked.
+///
+/// There is deliberately **no unwatch call**. Closing the map stops
+/// re-posting and the TTL expires on its own.
+class LiveWatch {
+  const LiveWatch({
+    required this.ttlSeconds,
+    required this.watchedUntil,
+    required this.watching,
+    required this.rejected,
+  });
+
+  /// Nobody is being watched — what a server that has never heard of
+  /// `/tracking/watch` effectively means. [isLive] is false, so the map keeps
+  /// working and simply says so.
+  static const LiveWatch none = LiveWatch(
+    ttlSeconds: 0,
+    watchedUntil: null,
+    watching: <WatchedEmployee>[],
+    rejected: <RejectedWatch>[],
+  );
+
+  /// What the server actually granted after clamping (`30..600`). The response
+  /// is the acknowledgement, so the re-watch cadence is computed from this and
+  /// never from what was asked for.
+  final int ttlSeconds;
+
+  /// Absolute UTC deadline, parsed to local. Never a duration: the device
+  /// compares it to its own clock minutes after it was issued.
+  final DateTime? watchedUntil;
+
+  final List<WatchedEmployee> watching;
+
+  /// Ids the server would not watch — `NOT_FOUND` / `NOT_IN_ORG` / `INACTIVE`.
+  /// One stale id must not stop a map of eight from going live, so these are
+  /// reported rather than thrown.
+  final List<RejectedWatch> rejected;
+
+  bool get isLive => watching.isNotEmpty;
+
+  /// Half the granted TTL, so a single dropped call does not fall out of live
+  /// mode. Floored at 15 s so a pathologically small TTL cannot turn the
+  /// re-watch into a hot loop.
+  Duration get renewInterval => Duration(
+        seconds: ttlSeconds <= 0 ? 60 : (ttlSeconds ~/ 2).clamp(15, 300),
+      );
+}
+
+class WatchedEmployee {
+  const WatchedEmployee({
+    required this.employeeId,
+    required this.watchingUntil,
+    required this.extended,
+  });
+
+  final String employeeId;
+  final DateTime? watchingUntil;
+
+  /// This employee was already being watched and the shared deadline moved
+  /// later. The watch row is per employee, not per admin.
+  final bool extended;
+}
+
+class RejectedWatch {
+  const RejectedWatch({required this.employeeId, required this.reason});
+
+  final String employeeId;
+
+  /// Kept as a raw string: a new server-side reason must not crash an older
+  /// device, and nothing in the UI branches on it.
+  final String reason;
 }

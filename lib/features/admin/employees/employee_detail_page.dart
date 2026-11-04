@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/config/tracking_config.dart';
@@ -7,6 +9,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../data/models/models.dart';
 import '../../../state/app_scope.dart';
 import '../../../widgets/app_card.dart';
+import '../../../widgets/auto_refresh.dart';
 import '../../../widgets/avatar.dart';
 import '../../../widgets/stat_tile.dart';
 import '../../../widgets/states.dart';
@@ -30,7 +33,8 @@ class EmployeeDetailPage extends StatefulWidget {
   State<EmployeeDetailPage> createState() => _EmployeeDetailPageState();
 }
 
-class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
+class _EmployeeDetailPageState extends State<EmployeeDetailPage>
+    with WidgetsBindingObserver, AutoRefresh<EmployeeDetailPage> {
   bool _loading = true;
   Object? _error;
   EmployeeDay? _day;
@@ -38,17 +42,32 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
   TrackingConfig _config = TrackingConfig.defaults;
   DateTime _date = DateTime.now();
 
+  /// Only today can still change. Scrubbing back to a past date stops the
+  /// poll — refreshing a settled day is pure load — while the toolbar and
+  /// pull-to-refresh keep working.
+  @override
+  bool get autoRefreshEnabled => Fmt.isSameDay(_date, DateTime.now());
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => runRefresh(manual: true));
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  Future<bool> onAutoRefresh() => _load();
+
+  /// [silent] keeps a background poll from blanking a screen that already has
+  /// data; only the first load of a date (or an explicit retry) shows
+  /// skeletons. See the same note on the dashboard.
+  Future<bool> _load({bool silent = true}) async {
+    if (!silent || _day == null) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final AppScope scope = AppScope.of(context);
 
@@ -65,25 +84,35 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
       final TeamMember member =
           await scope.adminRepository.memberById(widget.employeeId);
       final TrackingConfig config = await scope.adminRepository.config();
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _day = day;
         _member = member;
         _config = config;
+        _error = null;
         _loading = false;
       });
+      return true;
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
-        _error = e;
+        // A failed poll keeps the day already on screen; the error state is
+        // for a screen with nothing to show.
+        if (_day == null) _error = e;
         _loading = false;
       });
+      return false;
     }
   }
 
   void _setDate(DateTime d) {
-    setState(() => _date = d);
-    _load();
+    setState(() {
+      _date = d;
+      // A different date is different data, so this is a first load, not a
+      // refresh of what is on screen.
+      _day = null;
+    });
+    unawaited(runRefresh(manual: true));
   }
 
   Future<void> _openReport(String reportId) async {
@@ -92,7 +121,7 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
         builder: (_) => AdminReportDetailPage(reportId: reportId),
       ),
     );
-    if (mounted) _load();
+    if (mounted) unawaited(runRefresh(manual: true));
   }
 
   @override
@@ -103,6 +132,11 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
       appBar: AppBar(
         title: Text(employee?.isDeleted == true ? 'Unknown · Deleted' : employee?.firstName ?? 'Employee'),
         actions: <Widget>[
+          IconButton(
+            onPressed: () => unawaited(runRefresh(manual: true)),
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh',
+          ),
           if (employee != null && !employee.isDeleted)
             PopupMenuButton<String>(
               onSelected: (String value) async {
@@ -113,7 +147,9 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
                         builder: (_) => EmployeeFormPage(employee: employee),
                       ),
                     );
-                    if (saved == true && mounted) _load();
+                    if (saved == true && mounted) {
+                      unawaited(runRefresh(manual: true));
+                    }
                   case 'password':
                     await _resetPassword(employee);
                 }
@@ -148,11 +184,17 @@ class _EmployeeDetailPageState extends State<EmployeeDetailPage> {
             firstDate: DateTime.now().subtract(const Duration(days: 120)),
             onChanged: _setDate,
           ),
+          const SizedBox(height: Insets.sm),
+          if (autoRefreshEnabled)
+            AutoRefreshStamp(
+              clock: autoRefreshClock,
+              lastRefreshedAt: () => lastRefreshedAt,
+            ),
           const SizedBox(height: Insets.lg),
           if (_loading)
             const LoadingCards(count: 3)
           else if (_error != null)
-            ErrorState(onRetry: _load)
+            ErrorState(onRetry: () => unawaited(_load(silent: false)))
           else
             ..._content(_day!),
         ],

@@ -383,6 +383,31 @@ class HttpAdminRepository implements AdminRepository {
       });
 
   @override
+  Future<LiveWatch> watchLive({
+    required List<String> employeeIds,
+    int? ttlSeconds,
+  }) async {
+    if (employeeIds.isEmpty) {
+      // The server answers 422 on an empty list. Nothing was asked for, so
+      // nothing is being watched — saying so beats a round trip.
+      return LiveWatch.none;
+    }
+
+    final ApiResult result = await _api.post(
+      '/tracking/watch',
+      body: <String, dynamic>{
+        // The roster cap. A longer list is a 422, so it is trimmed here where
+        // the reason is visible rather than surfacing as a validation error on
+        // a map that was merely opened.
+        'employeeIds': employeeIds.take(200).toList(growable: false),
+        if (ttlSeconds != null) 'ttlSeconds': ttlSeconds,
+      },
+    );
+
+    return Wire.liveWatch(result.map);
+  }
+
+  @override
   Future<TrackingConfig> config() async {
     final ApiResult result = await _api.get('/config');
     return Wire.config(result.map);

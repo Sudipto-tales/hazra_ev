@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Status-bar / notification small icon for the ongoing work-session
+  notification.
+
+  This is NOT the launcher icon and must never be replaced by it.
+  `Notification.Builder.setSmallIcon()` on API 21+ uses **only the alpha
+  channel** of whatever it is given: every coloured pixel is discarded and the
+  shape is re-tinted by the system. Hand it an opaque launcher PNG — which is
+  what the plugin falls back to when no NOTIFICATION_ICON meta-data is declared
+  (ForegroundService.kt `if (icon == null) return appInfo.icon`) — and the
+  whole square is opaque, so the status bar renders a solid white blob. It was
+  the wrong *kind* of asset, not a missing one.
+
+  So: pure white on full transparency, no gradients, no colour, 24dp viewport.
+
+  The mark is the lightning bolt from the brand logo
+  (website/assets/hazraevLogo.jpg), alone. The logo's "H" monogram was tried
+  first and rejected after rendering it at status-bar size: at 18-24px the
+  stems and the bolt merge into a dense block that reads as a scratched "H",
+  and a thinner-stemmed variant lost the letterform entirely. The bolt alone
+  stays legible at 18px, which is the whole brief for this icon — a launcher
+  mark and a status-bar mark are different jobs, and Android convention for
+  the latter is one simple glyph. Brand specificity is unattainable at this
+  size; recognisability is not.
+
+  The notification's accent colour comes from `NotificationIcon.backgroundColor`
+  (AppColors.primary) passed in session_notification_service.dart, not from
+  here.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Lightning bolt. Uniform-width strokes, flat facets, no taper: a
+         tapering "realistic" bolt collapses into a solid slab below ~32dp. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M13.5,1.5 L4,13.5 L10.5,13.5 L9.5,22.5 L19.5,10 L13,10 Z" />
+</vector>

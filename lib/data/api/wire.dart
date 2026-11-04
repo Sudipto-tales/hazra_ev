@@ -27,6 +27,21 @@ class Wire {
     return fallback;
   }
 
+  /// Enum lookup that accepts both the camelCase the envelope convention
+  /// (§1) promises and the snake_case the `activity` enum is written in
+  /// (§3.14) — `location_unavailable` and `locationUnavailable` resolve to the
+  /// same value. Cheaper than finding out in the field which of the two the
+  /// server's `Present` layer actually emits for a field nobody has served
+  /// yet.
+  static T? _enumLoose<T extends Enum>(List<T> values, Object? raw) {
+    if (raw is! String || raw.isEmpty) return null;
+    final String key = raw.replaceAll('_', '').toLowerCase();
+    for (final T value in values) {
+      if (value.name.toLowerCase() == key) return value;
+    }
+    return null;
+  }
+
   static DateTime? dateOrNull(Object? raw) {
     if (raw is! String || raw.isEmpty) return null;
     return DateTime.tryParse(raw)?.toLocal();
@@ -50,6 +65,23 @@ class Wire {
   /// so a missing field resolves to the local default rather than `0`.
   static int integerOr(Object? raw, int fallback) =>
       (raw as num?)?.toInt() ?? fallback;
+
+  /// [dbl]'s fallback form, for the v9 config knobs a v7 server omits. A
+  /// missing key must resolve to the local default, never to `0` — a `0`
+  /// movement threshold or a `0`-second timer is a behaviour change dressed up
+  /// as a parse.
+  static double dblOr(Object? raw, double fallback) =>
+      (raw as num?)?.toDouble() ?? fallback;
+
+  /// `null` preserved as `null`. Used for `headingDeg`, where `0` means due
+  /// north and absent means unknown (§3.11) — and for out-of-range garbage,
+  /// which is also unknown rather than clamped.
+  static double? dblOrNull(Object? raw) {
+    if (raw is! num) return null;
+    final double value = raw.toDouble();
+    if (value.isNaN || value < 0 || value >= 360) return null;
+    return value;
+  }
 
   static bool boolean(Object? raw) => raw == true;
 
@@ -120,6 +152,12 @@ class Wire {
         stopThresholdMinutes: integer(j['stopThresholdMinutes']),
         longStopThresholdMinutes: integer(j['longStopThresholdMinutes']),
         movementSpeedThresholdKmh: dbl(j['movementSpeedThresholdKmh']),
+        // version 9: server-driven; a v7/v8 server omits it → local default
+        // (3 km/h). The lower edge keeps its own name and meaning.
+        movementExitSpeedKmh: dblOr(
+          j['movementExitSpeedKmh'],
+          TrackingConfig.defaults.movementExitSpeedKmh,
+        ),
         maxJumpKmh: dbl(j['maxJumpKmh']),
         offlineThresholdMinutes: integer(j['offlineThresholdMinutes']),
         locationUnavailableThresholdMinutes:
@@ -129,6 +167,11 @@ class Wire {
         syncIntervalSeconds: integerOr(
           j['syncIntervalSeconds'],
           TrackingConfig.defaults.syncIntervalSeconds,
+        ),
+        // version 9: server-driven; a v7 server omits it → local default (15).
+        liveSyncIntervalSeconds: integerOr(
+          j['liveSyncIntervalSeconds'],
+          TrackingConfig.defaults.liveSyncIntervalSeconds,
         ),
       );
 
@@ -141,12 +184,14 @@ class Wire {
         'stopThresholdMinutes': c.stopThresholdMinutes,
         'longStopThresholdMinutes': c.longStopThresholdMinutes,
         'movementSpeedThresholdKmh': c.movementSpeedThresholdKmh,
+        'movementExitSpeedKmh': c.movementExitSpeedKmh,
         'maxJumpKmh': c.maxJumpKmh,
         'offlineThresholdMinutes': c.offlineThresholdMinutes,
         'locationUnavailableThresholdMinutes':
             c.locationUnavailableThresholdMinutes,
         'syncBatchSize': c.syncBatchSize,
         'syncIntervalSeconds': c.syncIntervalSeconds,
+        'liveSyncIntervalSeconds': c.liveSyncIntervalSeconds,
       };
 
   // -------------------------------------------------------------- aggregates
@@ -224,6 +269,9 @@ class Wire {
         recordedAt: date(j['recordedAt']),
         // The server only ever reports synced; queued/failed are device state.
         syncState: _enum(SyncState.values, j['syncState'], SyncState.synced),
+        // Absent on every server below the §3.11 heading work, and absent is
+        // the same as null: unknown, not north.
+        headingDeg: dblOrNull(j['headingDeg']),
       );
 
   static StopRecord stop(Map<String, dynamic> j) => StopRecord(
@@ -621,6 +669,9 @@ class Wire {
           AttendanceStatus.noData,
         ),
         active: j['active'] as bool? ?? true,
+        // §3.14. Null on a server below config version 9 — the map degrades to
+        // a neutral glyph rather than deriving its own.
+        activity: _enumLoose(ActivityState.values, j['activity']),
         lastFix: fixOrNull(j['lastFix']),
         activeSince: dateOrNull(j['activeSince']),
         openStopDuration: durationOrNull(j['openStopDuration']),
@@ -652,6 +703,26 @@ class Wire {
       longStopCount: integer(t['longStopCount']),
     );
   }
+
+  /// `POST /tracking/watch` (§3.11). Admin only, and absent from every server
+  /// below the watch work — a 404 is handled by the caller, not here.
+  static LiveWatch liveWatch(Map<String, dynamic> j) => LiveWatch(
+        ttlSeconds: integerOr(j['ttlSeconds'], 120),
+        watchedUntil: dateOrNull(j['watchedUntil']),
+        watching: maps(j['watching'])
+            .map((Map<String, dynamic> w) => WatchedEmployee(
+                  employeeId: str(w['employeeId']),
+                  watchingUntil: dateOrNull(w['watchingUntil']),
+                  extended: boolean(w['extended']),
+                ))
+            .toList(growable: false),
+        rejected: maps(j['rejected'])
+            .map((Map<String, dynamic> r) => RejectedWatch(
+                  employeeId: str(r['employeeId']),
+                  reason: str(r['reason']),
+                ))
+            .toList(growable: false),
+      );
 
   /// `points` arrive as flat `[lat, lng, t, acc, spd, sessionIdx]` tuples —
   /// roughly a 4x saving over objects on the largest payload in the system.
@@ -690,6 +761,10 @@ class Wire {
             isUtc: true,
           ).toLocal(),
           syncState: SyncState.synced,
+          // Slot 6, additive and nullable (§3.7/§3.11). A 6-element tuple is
+          // still a complete fix and still means what it always meant, so
+          // "absent" and "present but null" resolve the same way: unknown.
+          headingDeg: tuple.length > 6 ? dblOrNull(tuple[6]) : null,
         ),
       );
     }

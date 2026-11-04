@@ -163,16 +163,23 @@ class SessionCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(
-                      controller.lastFix == null
-                          ? 'No location recorded yet'
-                          : 'Last update ${Fmt.relative(controller.lastFix!.recordedAt, now: controller.now)}'
-                              ' · ±${Fmt.metres(controller.lastFix!.accuracy)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 12.5,
+                    // Freshness is a per-second fact, so it rides the same
+                    // clock the timer does. Rebuilt off controller.now it
+                    // froze at whatever the last real state change left
+                    // behind, which made a stalled feed look healthy.
+                    child: ValueListenableBuilder<DateTime>(
+                      valueListenable: controller.clock,
+                      builder: (BuildContext context, DateTime now, _) => Text(
+                        controller.lastFix == null
+                            ? 'No location recorded yet'
+                            : 'Last update ${Fmt.freshness(controller.lastFix!.recordedAt, now: now)}'
+                                ' · ±${Fmt.metres(controller.lastFix!.accuracy)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 12.5,
+                        ),
                       ),
                     ),
                   ),

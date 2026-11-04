@@ -204,6 +204,7 @@ class MockAdminRepository implements AdminRepository {
       summary: day.summary,
       attendanceStatus: day.attendance?.status ?? AttendanceStatus.noData,
       active: !_inactive.contains(employee.id),
+      activity: _activity(day, dwell: dwell, isToday: isToday),
       lastFix: day.lastFix,
       activeSince: open?.startTime ?? day.summary.joiningTime,
       openStopDuration: dwell,
@@ -211,6 +212,37 @@ class MockAdminRepository implements AdminRepository {
           ? null
           : day.visits.last.companyId,
     );
+  }
+
+  /// Stands in for the server's §3.14 derivation, which is deliberately a
+  /// *server* function — `Engine::liveStatus()` owns the thresholds and the
+  /// open-stop row. This is a fixture, not a second implementation: it exists
+  /// so the offline build has glyphs on the live map, and nothing outside
+  /// `lib/data/mock` + this repository may compute an [ActivityState].
+  ///
+  /// Note it is deliberately *not* exhaustive about `offline` versus
+  /// `location_unavailable` — the mock has no two-clock fix chain to tell a
+  /// dead network from a dead GPS with.
+  ActivityState? _activity(
+    EmployeeDay day, {
+    required Duration? dwell,
+    required bool isToday,
+  }) {
+    if (day.sessions.isEmpty) return ActivityState.notStarted;
+    final bool open = day.sessions.any((WorkSession s) => s.isOpen);
+    if (!open) {
+      return day.dayState == DayState.open
+          ? ActivityState.paused
+          : ActivityState.ended;
+    }
+    if (day.status == WorkStatus.locationUnavailable) {
+      return ActivityState.locationUnavailable;
+    }
+    if (day.status == WorkStatus.offline) return ActivityState.offline;
+    if (isToday && dwell != null) return ActivityState.stopped;
+    return day.movement == MovementStatus.moving
+        ? ActivityState.moving
+        : ActivityState.idle;
   }
 
   // ------------------------------------------------------------------- team
@@ -784,6 +816,34 @@ class MockAdminRepository implements AdminRepository {
       _inactive.add(employeeId);
     }
     return _delayed(null);
+  }
+
+  @override
+  Future<LiveWatch> watchLive({
+    required List<String> employeeIds,
+    int? ttlSeconds,
+  }) async {
+    // The offline build has no server to put into live mode. Granting the
+    // watch is still the honest answer *for this build*: the mock location
+    // service emits fixes on its own cadence, so the map is genuinely as fresh
+    // as it will ever be.
+    final int ttl = (ttlSeconds ?? 120).clamp(30, 600);
+    final DateTime until = DateTime.now().add(Duration(seconds: ttl));
+
+    return _delayed(
+      LiveWatch(
+        ttlSeconds: ttl,
+        watchedUntil: until,
+        watching: employeeIds
+            .map((String id) => WatchedEmployee(
+                  employeeId: id,
+                  watchingUntil: until,
+                  extended: false,
+                ))
+            .toList(growable: false),
+        rejected: const <RejectedWatch>[],
+      ),
+    );
   }
 
   @override

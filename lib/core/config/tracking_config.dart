@@ -9,11 +9,13 @@ class TrackingConfig {
     this.stopThresholdMinutes = 10,
     this.longStopThresholdMinutes = 45,
     this.movementSpeedThresholdKmh = 2,
+    this.movementExitSpeedKmh = 3,
     this.maxJumpKmh = 180,
     this.offlineThresholdMinutes = 10,
     this.locationUnavailableThresholdMinutes = 15,
     this.syncBatchSize = 50,
     this.syncIntervalSeconds = 300,
+    this.liveSyncIntervalSeconds = 15,
     this.autoCloseAfterMinutes = 30,
   });
 
@@ -39,8 +41,22 @@ class TrackingConfig {
   /// Dwell time after which the admin sees a red "long stop".
   final int longStopThresholdMinutes;
 
-  /// Below this speed the employee is considered stationary.
+  /// Below this speed the employee is considered stationary — the **lower**
+  /// edge of the movement dead band. Unchanged in meaning by v9.
   final double movementSpeedThresholdKmh;
+
+  /// Upper edge of the movement dead band (§3.12): enter `moving` at or above
+  /// this, enter `stationary` below [movementSpeedThresholdKmh], and hold the
+  /// current state in between so one noisy fix cannot flip the marker.
+  /// Server-driven from config `version` 9; a v7/v8 server omits it and the
+  /// local default (3 km/h) stands. Equality with the lower edge means "no
+  /// dead band", i.e. the pre-v9 behaviour.
+  ///
+  /// Consumed by the **server's** `Engine::liveStatus()`, which is what the
+  /// live map's `activity` is derived from. The device's own cadence state
+  /// machine keeps its 90 s debounce (`_evaluateMovement`) — see the note in
+  /// `docs/.inbox/` on why that was deliberately left alone.
+  final double movementExitSpeedKmh;
 
   /// Implied speed above this marks the point as an invalid GPS jump.
   final double maxJumpKmh;
@@ -62,6 +78,18 @@ class TrackingConfig {
   /// always posts at least twice before it could be flagged offline.
   final int syncIntervalSeconds;
 
+  /// Drain cadence used **only** while an admin is actively watching this
+  /// device — `now < liveUntil`, where `liveUntil` rides in the `meta` of the
+  /// `POST /tracking/locations` response (§3.11). [syncIntervalSeconds]
+  /// applies otherwise. Server-driven from config `version` 9; a v7 server
+  /// omits it and the local default (15s) stands.
+  ///
+  /// This is *upload* cadence and nothing else: a watch costs radio time, not
+  /// GPS time, so [locationIntervalSeconds], [distanceFilterMetres], the
+  /// adaptive moving/stationary state machine and the ~5 min heartbeat are all
+  /// untouched by it.
+  final int liveSyncIntervalSeconds;
+
   /// GPS off *and* no network for this long with a session open → the session
   /// closes itself. The day stays open: an automatic close is not a
   /// declaration, so no closeout form is shown for it. The server enforces the
@@ -79,11 +107,13 @@ class TrackingConfig {
     int? stopThresholdMinutes,
     int? longStopThresholdMinutes,
     double? movementSpeedThresholdKmh,
+    double? movementExitSpeedKmh,
     double? maxJumpKmh,
     int? offlineThresholdMinutes,
     int? locationUnavailableThresholdMinutes,
     int? syncBatchSize,
     int? syncIntervalSeconds,
+    int? liveSyncIntervalSeconds,
     int? autoCloseAfterMinutes,
   }) {
     return TrackingConfig(
@@ -97,6 +127,7 @@ class TrackingConfig {
           longStopThresholdMinutes ?? this.longStopThresholdMinutes,
       movementSpeedThresholdKmh:
           movementSpeedThresholdKmh ?? this.movementSpeedThresholdKmh,
+      movementExitSpeedKmh: movementExitSpeedKmh ?? this.movementExitSpeedKmh,
       maxJumpKmh: maxJumpKmh ?? this.maxJumpKmh,
       offlineThresholdMinutes:
           offlineThresholdMinutes ?? this.offlineThresholdMinutes,
@@ -105,6 +136,8 @@ class TrackingConfig {
               this.locationUnavailableThresholdMinutes,
       syncBatchSize: syncBatchSize ?? this.syncBatchSize,
       syncIntervalSeconds: syncIntervalSeconds ?? this.syncIntervalSeconds,
+      liveSyncIntervalSeconds:
+          liveSyncIntervalSeconds ?? this.liveSyncIntervalSeconds,
       autoCloseAfterMinutes:
           autoCloseAfterMinutes ?? this.autoCloseAfterMinutes,
     );

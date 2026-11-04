@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -10,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../data/models/models.dart' hide LatLngBounds;
 import '../../../services/osrm_service.dart';
+import 'map_chrome.dart';
 import 'route_painter.dart' show RouteMapColors;
 
 /// The route drawn on a real OpenStreetMap basemap, with the GPS trace snapped
@@ -256,6 +255,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
   @override
   Widget build(BuildContext context) {
     final RouteMapColors colors = RouteMapColors.of(context);
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
       height: widget.fullScreen ? double.infinity : widget.height,
@@ -294,7 +294,9 @@ class _RouteTileMapState extends State<RouteTileMap> {
             ),
             children: <Widget>[
               TileLayer(
-                urlTemplate: MapConfig.tileUrlTemplate,
+                // CARTO Positron / Dark Matter, matched to the app theme —
+                // see MapConfig for why this is no longer raw OSM.
+                urlTemplate: MapConfig.tileUrlFor(dark: dark),
                 userAgentPackageName: MapConfig.userAgentPackageName,
                 maxNativeZoom: MapConfig.maxNativeZoom,
                 maxZoom: MapConfig.maxZoom,
@@ -335,7 +337,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
             right: Insets.sm,
             child: Column(
               children: <Widget>[
-                _MapButton(
+                MapIconButton(
                   tooltip: widget.fullScreen ? 'Close' : 'Full screen',
                   icon: widget.fullScreen
                       ? Icons.close_fullscreen_rounded
@@ -346,14 +348,14 @@ class _RouteTileMapState extends State<RouteTileMap> {
                       : _openFullScreen(),
                 ),
                 const SizedBox(height: Insets.xs),
-                _MapButton(
+                MapIconButton(
                   tooltip: 'Fit route',
                   icon: Icons.fit_screen_outlined,
                   color: colors.plate,
                   onPressed: _fit,
                 ),
                 const SizedBox(height: Insets.xs),
-                _MapButton(
+                MapIconButton(
                   tooltip: 'Painted view (offline)',
                   icon: Icons.grid_on_outlined,
                   color: colors.plate,
@@ -366,7 +368,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
             Positioned(
               top: Insets.sm,
               left: Insets.sm,
-              child: _Pill(
+              child: MapPill(
                 background: colors.plate,
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
@@ -386,7 +388,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
             Positioned(
               top: Insets.sm,
               left: Insets.sm,
-              child: _Pill(
+              child: MapPill(
                 background: colors.plate,
                 child: Text(_snapNotice!),
               ),
@@ -589,175 +591,13 @@ class _RouteTileMapState extends State<RouteTileMap> {
       alignment: Alignment.topCenter,
       child: GestureDetector(
         onTap: id == null ? null : () => widget.onSelect(selected ? null : id),
-        child: _MapPin(
+        child: MapPin(
           color: color,
           icon: icon,
           width: width,
           height: height,
           borderColor: selected ? colors.selection : Colors.white,
           borderWidth: selected ? 3 : 2,
-        ),
-      ),
-    );
-  }
-}
-
-/// The classic map teardrop: a balloon whose tip is the coordinate.
-///
-/// Drawn rather than composed from an icon font so the tip lands on an exact
-/// pixel and the white casing survives over busy tiles.
-class _MapPin extends StatelessWidget {
-  const _MapPin({
-    required this.color,
-    required this.icon,
-    required this.width,
-    required this.height,
-    required this.borderColor,
-    required this.borderWidth,
-  });
-
-  final Color color;
-  final IconData icon;
-  final double width;
-  final double height;
-  final Color borderColor;
-  final double borderWidth;
-
-  @override
-  Widget build(BuildContext context) {
-    final double head = width / 2;
-    final double disc = width * 0.46;
-    return SizedBox(
-      width: width,
-      height: height,
-      child: Stack(
-        children: <Widget>[
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _PinPainter(
-                color: color,
-                borderColor: borderColor,
-                borderWidth: borderWidth,
-              ),
-            ),
-          ),
-          Positioned(
-            left: head - disc / 2,
-            top: head - disc / 2,
-            width: disc,
-            height: disc,
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: disc * 0.68, color: color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PinPainter extends CustomPainter {
-  const _PinPainter({
-    required this.color,
-    required this.borderColor,
-    required this.borderWidth,
-  });
-
-  final Color color;
-  final Color borderColor;
-  final double borderWidth;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-    final double r = w / 2 - borderWidth / 2;
-    final Offset centre = Offset(w / 2, w / 2);
-
-    // Round head, then two curves drawn back down to the tip.
-    // latlong2 exports its own `Path`, so the canvas one is named explicitly.
-    final ui.Path path = ui.Path()
-      ..moveTo(w / 2, h)
-      ..cubicTo(w * 0.06, h * 0.66, centre.dx - r, w * 0.86, centre.dx - r,
-          centre.dy)
-      ..arcToPoint(
-        Offset(centre.dx + r, centre.dy),
-        radius: Radius.circular(r),
-        clockwise: true,
-      )
-      ..cubicTo(centre.dx + r, w * 0.86, w * 0.94, h * 0.66, w / 2, h)
-      ..close();
-
-    canvas.drawShadow(path, Colors.black, 2, false);
-    canvas.drawPath(path, Paint()..color = color);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = borderWidth
-        ..color = borderColor,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_PinPainter old) =>
-      old.color != color ||
-      old.borderColor != borderColor ||
-      old.borderWidth != borderWidth;
-}
-
-class _MapButton extends StatelessWidget {
-  const _MapButton({
-    required this.tooltip,
-    required this.icon,
-    required this.color,
-    required this.onPressed,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: color,
-      shape: const CircleBorder(),
-      elevation: 1,
-      child: IconButton(
-        tooltip: tooltip,
-        icon: Icon(icon, size: 20),
-        onPressed: onPressed,
-      ),
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({required this.child, required this.background});
-
-  final Widget child;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(Radii.pill),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: Insets.md,
-          vertical: Insets.xs,
-        ),
-        child: DefaultTextStyle.merge(
-          style: Theme.of(context).textTheme.bodySmall ?? const TextStyle(),
-          child: child,
         ),
       ),
     );

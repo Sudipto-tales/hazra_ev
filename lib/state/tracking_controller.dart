@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import '../core/config/tracking_config.dart';
+import '../core/utils/geo.dart';
 import '../data/models/models.dart';
 import '../data/repositories/employee_repository.dart';
 import '../data/repositories/tracking_repository.dart';
@@ -112,6 +113,42 @@ class TrackingController extends ChangeNotifier {
 
   StreamSubscription<SyncSnapshot>? _syncSub;
   StreamSubscription<LocationLog>? _fixSub;
+
+  /// The app's one movement truth, straight off [LocationService]. The
+  /// controller subscribes and republishes; it does not compute. See
+  /// [LocationService.movementState].
+  StreamSubscription<MovementStatus>? _movementSub;
+
+  // ------------------------------------------------------------- distance
+  //
+  // The server owns the day's distance — `Engine::refreshSession` recomputes
+  // it — but it can only recompute on a fix batch, which lands every
+  // `syncIntervalSeconds` (300 s by default). So the server is up to five
+  // minutes behind the phone, and polling it harder cannot fix that. The
+  // device measures its own travel from the fixes it already has (zero
+  // network, zero extra battery) and hands the server the baseline role.
+
+  /// Day distance as the server last reported it.
+  double _serverDistanceKm = 0;
+
+  /// Locally measured legs, stamped with when they were measured, so a server
+  /// snapshot retires exactly the ones it already accounts for and no more.
+  final List<_DistanceLeg> _legs = <_DistanceLeg>[];
+
+  /// Fix the next leg is measured from.
+  LocationLog? _distanceAnchor;
+
+  /// What has already been shown. Distance within a day only goes up, so a
+  /// reconcile may raise this and never lower it — a travel figure that ticks
+  /// backwards on a refresh reads as a bug, not as precision.
+  double _displayedDistanceKm = 0;
+
+  /// Distance the open session already had when this device picked it up: the
+  /// server's value for a resumed session, zero for one started here.
+  double _openSessionBaselineKm = 0;
+
+  /// Distance measured on this device since that baseline.
+  double _openSessionLocalKm = 0;
 
   /// Device session id → what the server still owes an answer on.
   ///
@@ -249,7 +286,12 @@ class TrackingController extends ChangeNotifier {
     try {
       final HomeSnapshot fresh = await _repo.home();
       if (_disposed) return;
+      // A full load is a clean slate: whatever was measured locally belonged
+      // to the state being replaced, and the server's number is the baseline
+      // for everything measured from here.
+      _resetDistance();
       _snapshot = fresh;
+      _reconcileDistance(fresh.summary.distanceKm, syncedAt: null);
       _error = null;
       // Fresh thresholds at login/resume (§3.12). Best-effort — see
       // [_refreshConfig]. For a resumed session it is awaited below so the
@@ -266,6 +308,11 @@ class TrackingController extends ChangeNotifier {
           open.id,
           () => _SessionOutbox(clientId: open.id)..serverId = open.id,
         );
+        // Resumed, so the server's figure for this session is what the device
+        // adds to; the first fix after resume opens a fresh measuring chain.
+        _openSessionBaselineKm = open.distanceKm;
+        _openSessionLocalKm = 0;
+        _distanceAnchor = null;
         await _refreshConfig();
         if (_disposed) return;
         await _location.startTracking(sessionId: open.id);
@@ -290,10 +337,17 @@ class TrackingController extends ChangeNotifier {
       // wins outright. The lock is the one piece of state the device does not
       // get an opinion on.
       final bool locked = fresh.dayState.isLocked;
+      // The device's own last successful upload is the line between what the
+      // server could already have counted and what is still ours alone.
+      final DateTime? syncedAt = _snapshot?.sync.lastSyncedAt;
       _snapshot = fresh.copyWith(
         sessions: locked ? null : _snapshot?.sessions,
         status: locked ? null : _snapshot?.status,
+        movement: locked ? null : _snapshot?.movement,
       );
+      // Server wins as the baseline; legs measured after [syncedAt] ride on
+      // top, and _applyDistance's floor keeps the figure from stepping back.
+      _reconcileDistance(fresh.summary.distanceKm, syncedAt: syncedAt);
       if (locked) {
         await _location.stopTracking();
         _stopTicker();
@@ -382,11 +436,20 @@ class TrackingController extends ChangeNotifier {
 
       _snapshot = (_snapshot ?? _emptySnapshot()).copyWith(
         status: WorkStatus.working,
-        movement: MovementStatus.stationary,
+        // Unknown, not "stationary". No fix has argued either way yet, and
+        // claiming one is what made the chip wrong rather than merely late —
+        // LocationService publishes the real value on the first fix.
+        movement: _location.movement,
         locationHealth: health,
         sessions: <WorkSession>[...sessions, session],
         lastFix: fix,
       );
+
+      // This session starts at zero on this device, and the opening fix is the
+      // first anchor every later leg is measured from.
+      _openSessionBaselineKm = 0;
+      _openSessionLocalKm = 0;
+      _distanceAnchor = fix;
 
       // Open server-side, but do not make the button wait for it. The day is
       // already running as far as the device is concerned; the outbox owns
@@ -544,6 +607,7 @@ class TrackingController extends ChangeNotifier {
     await _location.stopTracking();
     _stopTicker();
     _snapshot = _emptySnapshot();
+    _resetDistance();
     _degradedSince = null;
     _autoClosedAt = null;
     _outbox.clear();
@@ -571,6 +635,14 @@ class TrackingController extends ChangeNotifier {
     DateTime? endedAt,
   }) {
     final DateTime end = endedAt ?? finalFix?.recordedAt ?? DateTime.now();
+
+    // The closing fix is still travel; measure it before the chain ends with
+    // the session.
+    if (finalFix != null) _accumulateDistance(finalFix);
+    _distanceAnchor = null;
+    final double closedKm =
+        max(_openSessionBaselineKm + _openSessionLocalKm, open.distanceKm);
+
     final List<WorkSession> updated = sessions
         .map((WorkSession s) => s.id == open.id
             ? WorkSession(
@@ -578,7 +650,7 @@ class TrackingController extends ChangeNotifier {
                 index: s.index,
                 startTime: s.startTime,
                 endTime: end,
-                distanceKm: s.distanceKm,
+                distanceKm: closedKm,
                 locationPoints: s.locationPoints,
                 startLatitude: s.startLatitude,
                 startLongitude: s.startLongitude,
@@ -589,10 +661,16 @@ class TrackingController extends ChangeNotifier {
 
     _snapshot = _snapshot?.copyWith(
       status: next,
-      movement: MovementStatus.stationary,
+      // Nothing is being tracked any more, so nothing is known about movement.
+      // "Stationary" here was a guess dressed as a measurement.
+      movement: MovementStatus.unknown,
       sessions: updated,
       lastFix: finalFix,
     );
+
+    _openSessionBaselineKm = 0;
+    _openSessionLocalKm = 0;
+    _applyDistance();
   }
 
   void _applyHealth(LocationHealth health) {
@@ -620,6 +698,106 @@ class TrackingController extends ChangeNotifier {
           WorkStatus.locationUnavailable,
       };
 
+  // --------------------------------------------------------------- distance
+
+  /// Day distance as it stands right now: the server's baseline plus every
+  /// leg this device has measured since the server could have seen it, floored
+  /// at whatever has already been displayed.
+  double get liveDistanceKm => _displayedDistanceKm;
+
+  double get _measuredDistanceKm {
+    double tail = 0;
+    for (final _DistanceLeg leg in _legs) {
+      tail += leg.km;
+    }
+    return _serverDistanceKm + tail;
+  }
+
+  /// Measure the leg from the previous accepted fix to [fix].
+  void _accumulateDistance(LocationLog fix) {
+    final LocationLog? previous = _distanceAnchor;
+    _distanceAnchor = fix;
+    if (previous == null) return;
+
+    final double km = kmBetween(
+      previous.latitude,
+      previous.longitude,
+      fix.latitude,
+      fix.longitude,
+    );
+
+    // Anything under the OS distance filter is GPS jitter, not travel. A phone
+    // on a table wanders a few metres per fix; summed over a day that is
+    // kilometres of work nobody did. (Heartbeat top-ups bypass the filter, so
+    // this has to be checked here and not assumed.)
+    if (km * 1000 < config.distanceFilterMetres) return;
+
+    _legs.add(_DistanceLeg(fix.recordedAt, km));
+    _openSessionLocalKm += km;
+  }
+
+  /// Fold [server] in as the new baseline and drop the legs it already covers.
+  ///
+  /// A leg is covered when it was recorded at or before the last upload this
+  /// device completed — that is precisely the set of fixes the server could
+  /// have run `refreshSession` over. Legs newer than that are still the
+  /// device's alone and stay on top.
+  void _reconcileDistance(double server, {required DateTime? syncedAt}) {
+    _serverDistanceKm = server;
+    if (syncedAt == null) {
+      // Nothing has ever reached the server from this device, so nothing it
+      // reports can include our legs. Keep them all.
+      _legs.clear();
+    } else {
+      _legs.removeWhere((_DistanceLeg leg) => !leg.at.isAfter(syncedAt));
+    }
+    _applyDistance();
+  }
+
+  /// Push the reconciled number into the snapshot so every consumer — hero
+  /// card, Home summary, Profile, the closeout sheet's "GPS recorded" line —
+  /// reads one value.
+  void _applyDistance() {
+    final HomeSnapshot? snap = _snapshot;
+    if (snap == null) return;
+
+    _displayedDistanceKm = max(_displayedDistanceKm, _measuredDistanceKm);
+
+    final WorkSession? open = snap.activeSession;
+    final double openKm = _openSessionBaselineKm + _openSessionLocalKm;
+
+    _snapshot = snap.copyWith(
+      summary: snap.summary.copyWith(distanceKm: _displayedDistanceKm),
+      sessions: open == null || openKm <= open.distanceKm
+          ? null
+          : snap.sessions
+              .map((WorkSession s) => s.id == open.id
+                  ? WorkSession(
+                      id: s.id,
+                      index: s.index,
+                      startTime: s.startTime,
+                      endTime: s.endTime,
+                      distanceKm: openKm,
+                      locationPoints: s.locationPoints,
+                      startLatitude: s.startLatitude,
+                      startLongitude: s.startLongitude,
+                      endReason: s.endReason,
+                    )
+                  : s)
+              .toList(growable: false),
+    );
+  }
+
+  /// Forget everything measured locally — a new day, or a reset.
+  void _resetDistance() {
+    _legs.clear();
+    _distanceAnchor = null;
+    _serverDistanceKm = 0;
+    _displayedDistanceKm = 0;
+    _openSessionBaselineKm = 0;
+    _openSessionLocalKm = 0;
+  }
+
   void _listenToLocation() {
     _syncSub?.cancel();
     _syncSub = _location.syncState().listen((SyncSnapshot s) {
@@ -632,16 +810,25 @@ class TrackingController extends ChangeNotifier {
       notifyListeners();
     });
 
+    // One movement truth, computed in LocationService (debounced, and the same
+    // decision that picks the GPS cadence) and only mirrored here. The
+    // controller deliberately does not derive it from fix.speedKmh a second
+    // time: a raw per-fix comparison flickers at the threshold and would
+    // disagree with the cadence the radio is actually running at.
+    _movementSub?.cancel();
+    _movementSub = _location.movementState().listen((MovementStatus m) {
+      if (movement == m) return;
+      _snapshot = _snapshot?.copyWith(movement: m);
+      notifyListeners();
+    });
+
     final WorkSession? open = activeSession;
     if (open == null) return;
     _fixSub?.cancel();
     _fixSub = _location.track(sessionId: open.id).listen((LocationLog fix) {
-      _snapshot = _snapshot?.copyWith(
-        lastFix: fix,
-        movement: fix.speedKmh >= config.movementSpeedThresholdKmh
-            ? MovementStatus.moving
-            : MovementStatus.stationary,
-      );
+      _accumulateDistance(fix);
+      _snapshot = _snapshot?.copyWith(lastFix: fix);
+      _applyDistance();
       notifyListeners();
     });
   }
@@ -785,10 +972,11 @@ class TrackingController extends ChangeNotifier {
   ///
   /// [sessionId] is the device-side id the fixes were recorded under; this is
   /// the only place that knows what the server calls that session. Returns the
-  /// ids the server settled, so the queue can drop exactly those. Throws
-  /// through on a network failure — the queue reads that as "offline" and
-  /// keeps everything.
-  Future<Set<String>> uploadQueuedFixes(
+  /// ids the server settled, so the queue can drop exactly those, plus the
+  /// `liveUntil` deadline from the response **`meta`** (§3.11) — the one way
+  /// this device ever finds out an admin is watching it. Throws through on a
+  /// network failure — the queue reads that as "offline" and keeps everything.
+  Future<UploadOutcome> uploadQueuedFixes(
     String sessionId,
     List<LocationLog> batch,
   ) async {
@@ -799,7 +987,7 @@ class TrackingController extends ChangeNotifier {
       // settled and nothing is thrown: the device is not offline, it just
       // cannot address these.
       debugPrint('[tracking] queued fixes for unknown session $sessionId');
-      return const <String>{};
+      return UploadOutcome.nothing;
     }
 
     final String? serverId = entry.serverId;
@@ -808,7 +996,7 @@ class TrackingController extends ChangeNotifier {
       // The session itself has not landed yet. Getting that done is what
       // unblocks the fixes; they stay queued until it does.
       unawaited(syncPendingWork());
-      return const <String>{};
+      return UploadOutcome.nothing;
     }
 
     final LocationSyncResult result = await _sync.pushLocations(
@@ -816,7 +1004,7 @@ class TrackingController extends ChangeNotifier {
       fixes: batch,
     );
 
-    return result.settled;
+    return UploadOutcome(result.settled, liveUntil: result.liveUntil);
   }
 
   /// `POST /tracking/health` — on a change only, which is the point of it: the
@@ -911,6 +1099,9 @@ class TrackingController extends ChangeNotifier {
     _ticker = null;
     _fixSub?.cancel();
     _fixSub = null;
+    _movementSub?.cancel();
+    _movementSub = null;
+    _distanceAnchor = null;
     // The session is no longer open — take the ongoing notification and its
     // foreground service down with it.
     unawaited(_sessionNotif?.stop());
@@ -949,6 +1140,7 @@ class TrackingController extends ChangeNotifier {
     _outboxRetry?.cancel();
     _syncSub?.cancel();
     _fixSub?.cancel();
+    _movementSub?.cancel();
     unawaited(_sessionNotif?.stop());
     _endDayRequests.dispose();
     _clock.dispose();
@@ -962,6 +1154,15 @@ class TrackingController extends ChangeNotifier {
 /// started and stopped, while the server is the source of truth for everything
 /// derived from it — and on this app's network the two are frequently not
 /// reconciled at the moment the employee taps the button.
+/// One measured hop between two consecutive accepted fixes, stamped with when
+/// it happened so a server reconcile can retire exactly the hops it covers.
+class _DistanceLeg {
+  const _DistanceLeg(this.at, this.km);
+
+  final DateTime at;
+  final double km;
+}
+
 class _SessionOutbox {
   _SessionOutbox({required this.clientId, this.openFix});
 

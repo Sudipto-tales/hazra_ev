@@ -159,12 +159,12 @@ void main() {
 
     // And the queue can now address the session by whatever the server calls
     // it, not by the device's own id.
-    final Set<String> settled =
+    final UploadOutcome outcome =
         await tracking.uploadQueuedFixes(open.id, <LocationLog>[
       _fix(open.id, 'loc_1'),
     ]);
 
-    expect(settled, <String>{'loc_1'});
+    expect(outcome.settled, <String>{'loc_1'});
     expect(server.pushedSessionIds.single, startsWith('srv_'));
   });
 
@@ -184,9 +184,10 @@ void main() {
     // Nothing is settled and nothing is thrown — the fixes stay queued rather
     // than being reported as delivered.
     expect(
-      await tracking.uploadQueuedFixes(sessionId, <LocationLog>[
+      (await tracking.uploadQueuedFixes(sessionId, <LocationLog>[
         _fix(sessionId, 'loc_1'),
-      ]),
+      ]))
+          .settled,
       isEmpty,
     );
     expect(server.pushedFixIds, isEmpty);
@@ -197,9 +198,10 @@ void main() {
 
     expect(server.opened, <String>[sessionId]);
     expect(
-      await tracking.uploadQueuedFixes(sessionId, <LocationLog>[
+      (await tracking.uploadQueuedFixes(sessionId, <LocationLog>[
         _fix(sessionId, 'loc_1'),
-      ]),
+      ]))
+          .settled,
       <String>{'loc_1'},
     );
   });
@@ -258,8 +260,9 @@ void main() {
   test('fixes for a session the controller never saw settle nothing',
       () async {
     expect(
-      await tracking.uploadQueuedFixes('ses_from_a_previous_run',
-          <LocationLog>[_fix('ses_from_a_previous_run', 'loc_1')]),
+      (await tracking.uploadQueuedFixes('ses_from_a_previous_run',
+              <LocationLog>[_fix('ses_from_a_previous_run', 'loc_1')]))
+          .settled,
       isEmpty,
     );
   });

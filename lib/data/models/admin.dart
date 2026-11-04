@@ -65,6 +65,7 @@ class TeamMember {
     required this.summary,
     required this.attendanceStatus,
     required this.active,
+    this.activity,
     this.lastFix,
     this.activeSince,
     this.openStopDuration,
@@ -77,6 +78,16 @@ class TeamMember {
   final LocationHealth locationHealth;
   final DaySummary summary;
   final AttendanceStatus attendanceStatus;
+
+  /// The one derived value the live map maps 1:1 to a glyph — API plan §3.14.
+  ///
+  /// **Null on a server below config `version` 9**, which is today's
+  /// production. Null means "this server does not compute activity", not
+  /// "nothing is happening": the map draws a neutral glyph and keeps every
+  /// other channel (colour, fix age, dwell ring) working, rather than
+  /// recombining [status] / [movement] / [locationHealth] into a local copy of
+  /// the server's rules.
+  final ActivityState? activity;
 
   /// Deactivated employees stay in the roster but are excluded from alerts.
   final bool active;
