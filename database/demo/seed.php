@@ -29,7 +29,7 @@ return function (PDO $pdo): void {
         [$orgId, 'Hazra EV', 'Asia/Kolkata', '[7]', $now],
     );
 
-    db_execute("INSERT INTO tracking_configs (org_id, version, updated_at) VALUES (?, 8, ?)", [$orgId, $now]);
+    db_execute("INSERT INTO tracking_configs (org_id, version, updated_at) VALUES (?, 9, ?)", [$orgId, $now]);
 
     // ------------------------------------------------------------- identity
 

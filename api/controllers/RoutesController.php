@@ -166,7 +166,7 @@ final class RoutesController extends V1Controller
     private function livePoints(string $employeeId, string $date, float $simplify): array
     {
         $rows = db_fetch_all(
-            "SELECT f.lat, f.lng, f.recorded_at, f.accuracy_m, f.speed_kmh, s.seq
+            "SELECT f.lat, f.lng, f.recorded_at, f.accuracy_m, f.speed_kmh, f.heading_deg, s.seq
                FROM location_fixes f
                JOIN work_sessions s ON s.id = f.session_id
               WHERE s.employee_id = ? AND s.work_date = ?
@@ -192,6 +192,9 @@ final class RoutesController extends V1Controller
                 round((float) $row['accuracy_m'], 1),
                 round((float) $row['speed_kmh'], 1),
                 (int) $row['seq'],
+                // Slot 6 — heading (02 §3.7). Additive: a six-element tuple is
+                // still valid, and null means unknown, never due north.
+                ($row['heading_deg'] ?? null) === null ? null : round((float) $row['heading_deg'], 1),
             ];
         }
 

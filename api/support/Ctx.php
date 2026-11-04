@@ -159,7 +159,7 @@ final class Ctx
 
         if (!$row) {
             db_execute(
-                "INSERT INTO tracking_configs (org_id, version, updated_at) VALUES (?, 8, ?)",
+                "INSERT INTO tracking_configs (org_id, version, updated_at) VALUES (?, 9, ?)",
                 [self::orgId(), Wire::now()],
             );
             $row = db_fetch_one("SELECT * FROM tracking_configs WHERE org_id = ?", [self::orgId()]);
