@@ -299,6 +299,9 @@ class _LiveTeamMapState extends State<LiveTeamMap>
           ),
           children: <Widget>[
             TileLayer(
+              // Esri Light/Dark Gray Base by default, CARTO Positron / Dark
+              // Matter when a key is defined — see MapConfig for why, and for
+              // why maxNativeZoom is a getter rather than a constant.
               urlTemplate: MapConfig.tileUrlFor(dark: dark),
               userAgentPackageName: MapConfig.userAgentPackageName,
               maxNativeZoom: MapConfig.maxNativeZoom,
@@ -338,9 +341,9 @@ class _LiveTeamMapState extends State<LiveTeamMap>
               padding: EdgeInsets.fromLTRB(Insets.sm, 0, 0, Insets.sm),
             ),
             SimpleAttributionWidget(
-              // Both parties: CARTO serve the tiles, OSM contributors made the
-              // data they are built from.
-              source: const Text(MapConfig.attributionText),
+              // Both parties, whichever provider is active: someone serves the
+              // tiles, OSM contributors made the data they are built from.
+              source: Text(MapConfig.attributionText),
               backgroundColor: plate.withValues(alpha: 0.8),
             ),
           ],

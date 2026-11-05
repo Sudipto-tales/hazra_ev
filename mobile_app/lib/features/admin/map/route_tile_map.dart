@@ -294,8 +294,9 @@ class _RouteTileMapState extends State<RouteTileMap> {
             ),
             children: <Widget>[
               TileLayer(
-                // CARTO Positron / Dark Matter, matched to the app theme —
-                // see MapConfig for why this is no longer raw OSM.
+                // Esri Light/Dark Gray Base, matched to the app theme,
+                // or CARTO Positron / Dark Matter when a key is defined — see
+                // MapConfig for why neither is raw OSM.
                 urlTemplate: MapConfig.tileUrlFor(dark: dark),
                 userAgentPackageName: MapConfig.userAgentPackageName,
                 maxNativeZoom: MapConfig.maxNativeZoom,
@@ -327,7 +328,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
                 ),
               ),
               SimpleAttributionWidget(
-                source: const Text(MapConfig.attributionText),
+                source: Text(MapConfig.attributionText),
                 backgroundColor: colors.plate.withValues(alpha: 0.8),
               ),
             ],
