@@ -5,17 +5,18 @@
 ///
 /// | Service | Default | Why it is only a default |
 /// | --- | --- | --- |
-/// | Tiles | CARTO Positron / Dark Matter | free + no key, but attribution is required |
+/// | Tiles | Esri World Light/Dark Gray Base | free + no key, but native tiles stop at z16 |
 /// | Snapping | `router.project-osrm.org` | demo server, no SLA, rate limited |
 ///
 /// ```sh
 /// flutter run --dart-define=MAP_TILE_URL=https://tiles.internal/{z}/{x}/{y}.png
+/// flutter run --dart-define=CARTO_KEY=…             # Positron / Dark Matter at z19
 /// flutter run --dart-define=OSRM_BASE_URL=https://osrm.internal
 /// flutter run --dart-define=SNAP_TO_ROADS=false   # raw GPS trace only
 /// flutter run --dart-define=OFFLINE_MAP=true      # force the painted fallback
 /// ```
 ///
-/// ## Why not `tile.openstreetmap.org` (changed 2026-11-04)
+/// ## Why not `tile.openstreetmap.org`
 ///
 /// It was the default until the live team map landed, and it was the wrong
 /// default twice over. OSM's tile usage policy explicitly rules out
@@ -24,54 +25,133 @@
 /// borrowing someone's donated bandwidth for a commercial product. Second, the
 /// standard OSM style is *designed to be read*: saturated road casings, green
 /// parks, brown buildings. On a tracking map that colour competes with the
-/// markers and the trails, which are the only thing anyone is looking at.
+/// markers and the trails, which are the only thing anyone is looking at. That
+/// reasoning has not changed, so raw OSM is still not the default.
 ///
-/// CARTO Positron (light) and Dark Matter (dark) fix both: free, **no API
-/// key**, attribution only, and near-grey by design so a green "moving" disc
-/// and a red long-stop ring are the loudest things on screen. The painted
-/// canvas fallback (`RoutePainter`) is unchanged and still the answer when
-/// tiles cannot be reached at all.
+/// ## Why not CARTO any more, unless you have a key (changed 2026-11-05)
+///
+/// CARTO Positron and Dark Matter were the default because they were free,
+/// keyless and near-grey by design, so a green "moving" disc and a red
+/// long-stop ring stayed the loudest things on screen. On 2026-09-25 CARTO
+/// stopped serving their raster basemaps to keyless clients: the tile still
+/// returns HTTP 200, but what comes back is a grey plate stamped
+/// "API KEY REQUIRED", which is how the watermark got onto the admin maps.
+///
+/// So the keyless default is now Esri's World Light Gray Base (and World Dark
+/// Gray Base in the dark theme), which renders the same intent — pale plate,
+/// thin white roads, grey labels, markers loudest. Two things about it differ
+/// from CARTO and are worth knowing before touching this file. Esri orders its
+/// path `{z}/{y}/{x}`, y before x, and serves JPEG with no extension at all.
+/// And its native tiles stop at z16: ask for z17 and you get a
+/// "Map data not yet available" placeholder at HTTP 200, so it fails silently
+/// rather than 404ing. [maxNativeZoom] is therefore 16 for Esri, and the map
+/// over-zooms the z16 tile past that instead of going blank.
+///
+/// A CARTO key brings the original styling back at full z19 detail. Keys are
+/// free from <https://carto.com/basemaps/apikey> — no account, no card, it
+/// arrives by email — and the commercial free tier is a million tile requests
+/// a month, which a fleet of this size does not come close to. Pass it as
+/// `--dart-define=CARTO_KEY=…`; the query parameter is `key=`, appended after
+/// the file extension. A native app sends no `Referer`, so the key has to be
+/// left unrestricted or restricted by Android package name + signing cert.
 class MapConfig {
   const MapConfig._();
 
-  /// `--dart-define=MAP_TILE_URL=…`. Empty means "use the CARTO defaults";
-  /// set, it wins for both themes, because a customer who points this at their
-  /// own tile host means it.
+  /// `--dart-define=MAP_TILE_URL=…`. Empty means "use the built-in defaults";
+  /// set, it wins for both themes and over [cartoKey], because a customer who
+  /// points this at their own tile host means it.
   static const String tileUrlOverride = String.fromEnvironment('MAP_TILE_URL');
 
-  /// CARTO Positron. `{r}` is flutter_map's retina placeholder and resolves to
-  /// `''` unless `retinaMode` is on. `{s}` subdomains are deliberately absent
-  /// — `basemaps.cartocdn.com` serves every tile without them.
-  static const String lightTileUrl =
-      'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  /// `--dart-define=CARTO_KEY=…`. Empty means "no key", which is the only
+  /// reason the Esri basemap is the default rather than CARTO.
+  static const String cartoKey = String.fromEnvironment('CARTO_KEY');
 
-  /// CARTO Dark Matter — the same geometry on a dark plate, so switching the
-  /// app theme does not switch map styles underneath the admin.
-  static const String darkTileUrl =
-      'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+  /// Which of the three basemaps this build resolved to. Everything
+  /// provider-dependent below — URL, native zoom, attribution — reads this, so
+  /// the precedence is stated once.
+  static _Basemap get _basemap => tileUrlOverride.isNotEmpty
+      ? _Basemap.custom
+      : (cartoKey.isNotEmpty ? _Basemap.carto : _Basemap.esri);
 
-  /// The template to hand [TileLayer], honouring the `--dart-define` override.
-  static String tileUrlFor({required bool dark}) => tileUrlOverride.isNotEmpty
-      ? tileUrlOverride
-      : (dark ? darkTileUrl : lightTileUrl);
+  /// Esri World Light Gray Base. Note `{z}/{y}/{x}` — Esri puts y before x —
+  /// and no file extension: the service answers with JPEG regardless.
+  static const String esriLightTileUrl =
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/'
+      'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
-  /// Light-theme template. Kept as a constant for callers that have no theme
-  /// to hand; prefer [tileUrlFor].
+  /// Esri World Dark Gray Base — the same geometry on a dark plate, so
+  /// switching the app theme does not switch map styles underneath the admin.
+  static const String esriDarkTileUrl =
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/'
+      'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+
+  /// CARTO Positron, key-only since 2026-09-25. `{r}` is flutter_map's retina
+  /// placeholder and resolves to `''` unless `retinaMode` is on, so the query
+  /// string goes after the `.png`, not between the tile path and it. `{s}`
+  /// subdomains are deliberately absent — `basemaps.cartocdn.com` serves every
+  /// tile without them.
+  static const String cartoLightTileUrl =
+      'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=$cartoKey';
+
+  /// CARTO Dark Matter, the dark counterpart to Positron.
+  static const String cartoDarkTileUrl =
+      'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=$cartoKey';
+
+  /// The template to hand [TileLayer], honouring the `--dart-define` override
+  /// first and a CARTO key second.
+  static String tileUrlFor({required bool dark}) {
+    switch (_basemap) {
+      case _Basemap.custom:
+        return tileUrlOverride;
+      case _Basemap.carto:
+        return dark ? cartoDarkTileUrl : cartoLightTileUrl;
+      case _Basemap.esri:
+        return dark ? esriDarkTileUrl : esriLightTileUrl;
+    }
+  }
+
+  /// Light-theme template. Kept for callers that have no theme to hand;
+  /// prefer [tileUrlFor].
   static String get tileUrlTemplate => tileUrlFor(dark: false);
 
   /// Sent as `User-Agent: flutter_map (…)`. Tile hosts block anonymous bulk
   /// clients, so this has to identify the app, not the library.
   static const String userAgentPackageName = 'com.hazra.employeetracking';
 
-  /// Both parties, because both are required: CARTO's basemaps are built from
-  /// OSM data, so crediting one without the other is wrong.
-  static const String attributionText = '© OpenStreetMap contributors © CARTO';
-  static const String attributionUrl = 'https://openstreetmap.org/copyright';
-  static const String tileProviderUrl = 'https://carto.com/attributions';
+  /// Both parties in both cases, because both are required: these basemaps are
+  /// built from OSM data, so crediting the server without the data — or the
+  /// other way round — is wrong.
+  static const String esriAttribution = '© Esri, © OpenStreetMap contributors';
+  static const String cartoAttribution = '© OpenStreetMap contributors © CARTO';
 
-  /// 19 is the deepest zoom these raster styles publish. Asking for 20 returns
-  /// 404s, so the map over-zooms the z19 tile instead.
-  static const int maxNativeZoom = 19;
+  /// Whatever the active provider requires. An operator-supplied tile host is
+  /// almost always OSM-derived and we cannot know who serves it, so the custom
+  /// case credits the data and leaves the host to them.
+  static String get attributionText {
+    switch (_basemap) {
+      case _Basemap.custom:
+        return '© OpenStreetMap contributors';
+      case _Basemap.carto:
+        return cartoAttribution;
+      case _Basemap.esri:
+        return esriAttribution;
+    }
+  }
+
+  static const String attributionUrl = 'https://openstreetmap.org/copyright';
+
+  /// Where the active provider's own attribution terms live.
+  static String get tileProviderUrl => _basemap == _Basemap.carto
+      ? 'https://carto.com/attributions'
+      : 'https://www.esri.com/en-us/legal/terms/full-master-agreement';
+
+  /// The deepest zoom the active style actually publishes. Esri's Light/Dark
+  /// Gray Base stops at 16 and answers z17 with a placeholder image at HTTP
+  /// 200; CARTO's raster styles go to 19. A custom host gets 19 because the
+  /// operator who set it knows their own coverage. [maxZoom] stays above both
+  /// so the map over-zooms the deepest real tile instead of going blank.
+  static int get maxNativeZoom => _basemap == _Basemap.esri ? 16 : 19;
+
   static const double maxZoom = 20;
   static const double minZoom = 3;
 
@@ -134,3 +214,7 @@ class MapConfig {
   static String get osrmMatchBase =>
       '${osrmBaseUrl.replaceAll(RegExp(r'/+$'), '')}/match/v1/$osrmProfile';
 }
+
+/// Which basemap a build resolved to. Private because the choice is made here
+/// from `--dart-define`s and nothing outside should be branching on it.
+enum _Basemap { custom, carto, esri }
