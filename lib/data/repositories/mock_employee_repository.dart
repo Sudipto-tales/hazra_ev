@@ -281,7 +281,7 @@ class MockEmployeeRepository implements EmployeeRepository {
           id: 'img_local_${_imageSeq++}',
           reportId: reportId,
           url: a.path,
-          byteSize: a.byteSize,
+          bytes: a.byteSize,
         ),
       );
     }

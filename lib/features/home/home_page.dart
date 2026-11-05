@@ -30,7 +30,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   bool _loading = true;
   Employee? _me;
   Map<String, String> _reportTitles = const <String, String>{};
@@ -43,7 +43,19 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Coming back from the Android settings app is the moment a permission or
+    // the GPS toggle may have changed, and the one state change this process
+    // gets no event for. `getServiceStatusStream` covers the toggle; a
+    // runtime permission has no equivalent stream, so resume is the signal.
+    if (state == AppLifecycleState.resumed) {
+      _tracking?.refreshLocationHealth();
+    }
   }
 
   @override
@@ -58,6 +70,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Perform whatever [LocationHealthX.actionLabel] just promised.
+  ///
+  /// `requestPermission` owns the branching — it re-requests in-app where that
+  /// can still work and opens the location settings or the app's own settings
+  /// page where it cannot — so this does not re-decide it. The re-read
+  /// afterwards is what turns the banner off without waiting for a poll.
+  Future<void> _fixLocation(BuildContext context, TrackingController c) async {
+    final LocationHealth before = c.effectiveLocationHealth;
+    await AppScope.of(context).locationService.requestPermission(
+          background: before == LocationHealth.backgroundDenied,
+        );
+    if (!context.mounted) return;
+    await c.refreshLocationHealth();
+  }
+
   /// The employee tapped **End Day** on the ongoing notification. Open the same
   /// closeout flow the in-app button uses; it does its own gating.
   void _onEndDayRequested() {
@@ -70,6 +97,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tracking?.endDayRequests.removeListener(_onEndDayRequested);
     super.dispose();
   }
@@ -172,18 +200,32 @@ class _HomePageState extends State<HomePage> {
                   // session — GPS is on and recording — so it does not raise a
                   // banner. Only states with no usable position (service off,
                   // permission denied, offline) or a degraded status do.
-                  if ((c.locationHealth != LocationHealth.ok &&
-                          c.locationHealth != LocationHealth.poorAccuracy) ||
+                  //
+                  // Reads `effectiveLocationHealth`, not the snapshot's value:
+                  // with no session open the snapshot is stale (or the `ok` an
+                  // empty one starts with), which is why GPS switched off
+                  // before Start Day used to say nothing at all.
+                  if ((c.effectiveLocationHealth != LocationHealth.ok &&
+                          c.effectiveLocationHealth !=
+                              LocationHealth.poorAccuracy) ||
                       c.status.isDegraded) ...<Widget>[
                     AlertBanner(
                       icon: Icons.warning_amber_rounded,
-                      tone: c.locationHealth.blocksStart
+                      tone: c.effectiveLocationHealth.blocksStart
                           ? AppColors.danger
                           : AppColors.warning,
-                      title: c.locationHealth.title,
-                      message: c.locationHealth.message,
-                      actionLabel: 'Details',
-                      onAction: () => showTrackingSheet(context),
+                      title: c.effectiveLocationHealth.title,
+                      message: c.effectiveLocationHealth.message,
+                      // The button now names the remedy and performs it. It
+                      // used to say "Details" and open a read-only sheet,
+                      // which told the employee what was wrong and left them
+                      // to find Android settings themselves.
+                      actionLabel: c.effectiveLocationHealth.actionLabel ??
+                          'Details',
+                      onAction: () => c.effectiveLocationHealth.actionLabel ==
+                              null
+                          ? showTrackingSheet(context)
+                          : _fixLocation(context, c),
                     ),
                     const SizedBox(height: Insets.lg),
                   ],

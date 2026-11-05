@@ -21,9 +21,22 @@ class Fmt {
 
   static String _two(int v) => v.toString().padLeft(2, '0');
 
+  /// Every formatter below reads wall-clock components (`.hour`, `.day`,
+  /// `.weekday`), which are relative to the DateTime's own UTC flag. A
+  /// UTC-flagged value therefore renders the UTC wall clock — which is how a
+  /// session started at 08:35 IST came out as "03:05".
+  ///
+  /// The producers are fixed at source (`LocationService._toLog`,
+  /// `LocationLog.fromJson`, `Wire.dateOrNull`), so this is the backstop, not
+  /// the fix: it is a no-op on an already-local value and costs nothing. It
+  /// lives here because every future caller gets it for free, and a display
+  /// formatter has no business caring which flag its input carries.
+  static DateTime _local(DateTime t) => t.isUtc ? t.toLocal() : t;
+
   /// `09:12 AM`
   static String time(DateTime? t) {
     if (t == null) return '--:--';
+    t = _local(t);
     final int h24 = t.hour;
     final int h = h24 % 12 == 0 ? 12 : h24 % 12;
     final String suffix = h24 < 12 ? 'AM' : 'PM';
@@ -37,27 +50,38 @@ class Fmt {
   }
 
   /// `Saturday, 16 August 2026`
-  static String longDate(DateTime d) =>
-      '${weekdayLong(d)}, ${d.day} ${_months[d.month - 1]} ${d.year}';
+  static String longDate(DateTime d) {
+    d = _local(d);
+    return '${weekdayLong(d)}, ${d.day} ${_months[d.month - 1]} ${d.year}';
+  }
 
   /// `16 Aug 2026`
-  static String mediumDate(DateTime d) =>
-      '${d.day} ${_monthsShort[d.month - 1]} ${d.year}';
+  static String mediumDate(DateTime d) {
+    d = _local(d);
+    return '${d.day} ${_monthsShort[d.month - 1]} ${d.year}';
+  }
 
   /// `August 16`
-  static String monthDay(DateTime d) => '${_months[d.month - 1]} ${d.day}';
+  static String monthDay(DateTime d) {
+    d = _local(d);
+    return '${_months[d.month - 1]} ${d.day}';
+  }
 
   /// `August 2026`
-  static String monthYear(DateTime d) => '${_months[d.month - 1]} ${d.year}';
+  static String monthYear(DateTime d) {
+    d = _local(d);
+    return '${_months[d.month - 1]} ${d.year}';
+  }
 
   static String monthShort(int month) => _monthsShort[month - 1];
 
-  static String weekdayShort(DateTime d) => _weekdaysShort[d.weekday - 1];
+  static String weekdayShort(DateTime d) =>
+      _weekdaysShort[_local(d).weekday - 1];
 
   static String weekdayLong(DateTime d) => const <String>[
         'Monday', 'Tuesday', 'Wednesday', 'Thursday',
         'Friday', 'Saturday', 'Sunday',
-      ][d.weekday - 1];
+      ][_local(d).weekday - 1];
 
   /// `04:32:18` — used by the live session timer.
   static String clock(Duration d) {

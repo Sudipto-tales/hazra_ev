@@ -236,7 +236,10 @@ class HttpAdminRepository implements AdminRepository {
   Future<ReportInboxItem> inboxItem(String reportId) async {
     final ApiResult result =
         await _api.get('/reports/$reportId', query: <String, dynamic>{
-      'include': 'employee,review',
+      // `images` joins the two that were already here: the admin's review
+      // screen is the one place the attachments actually matter, and it was
+      // rendering empty slots because nothing ever asked for them.
+      'include': 'employee,review,images',
     });
 
     return Wire.inboxItem(result.map);

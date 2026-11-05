@@ -42,7 +42,7 @@ class StatusBadge extends StatelessWidget {
   factory StatusBadge.work(WorkStatus status, {bool dense = false}) {
     final BadgeTone tone = switch (status) {
       WorkStatus.working => BadgeTone.positive,
-      WorkStatus.idle => BadgeTone.warning,
+      WorkStatus.idle || WorkStatus.paused => BadgeTone.warning,
       WorkStatus.locationUnavailable => BadgeTone.danger,
       WorkStatus.offline => BadgeTone.neutral,
       WorkStatus.ended => BadgeTone.info,

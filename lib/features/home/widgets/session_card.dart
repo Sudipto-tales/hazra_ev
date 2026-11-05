@@ -43,7 +43,8 @@ class SessionCard extends StatelessWidget {
 
     final List<Color> gradient = switch (status) {
       WorkStatus.working => <Color>[AppColors.primary, AppColors.primaryDark],
-      WorkStatus.idle => <Color>[const Color(0xFFF59E0B), const Color(0xFFD97706)],
+      WorkStatus.idle || WorkStatus.paused =>
+        <Color>[const Color(0xFFF59E0B), const Color(0xFFD97706)],
       WorkStatus.locationUnavailable =>
         <Color>[const Color(0xFFEF4444), const Color(0xFFB91C1C)],
       WorkStatus.offline =>
@@ -217,7 +218,10 @@ class SessionCard extends StatelessWidget {
   String _idleSubtitle(WorkStatus status) => switch (status) {
         WorkStatus.notStarted => 'Start your day to begin tracking',
         WorkStatus.ended => 'Total worked today · day closed',
-        WorkStatus.idle => 'On break · tracking paused',
+        // Was keyed to `idle`, where it was unreachable: `idle` is
+        // session-open, so this branch never ran for it. It belongs to
+        // `paused`, which is the state that actually means "on break".
+        WorkStatus.paused => 'On break · tracking paused',
         _ => '',
       };
 }
@@ -245,7 +249,7 @@ class _Actions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (locked || status == WorkStatus.ended) {
-      return _WhiteButton(
+      return const _WhiteButton(
         label: 'Day completed',
         icon: Icons.check_circle_rounded,
         onPressed: null,
@@ -253,9 +257,12 @@ class _Actions extends StatelessWidget {
     }
 
     if (!status.isSessionOpen) {
+      final bool resuming = status == WorkStatus.paused;
       return _WhiteButton(
-        label: status == WorkStatus.idle ? 'Resume session' : 'Start Day',
-        icon: Icons.play_arrow_rounded,
+        label: resuming ? 'Resume session' : 'Start Day',
+        icon: resuming
+            ? Icons.play_circle_fill_rounded
+            : Icons.play_arrow_rounded,
         busy: busy,
         onPressed: onStartDay,
       );

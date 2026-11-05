@@ -255,29 +255,12 @@ class ReportAttachment {
 /// `GET /reports/{id}` carry `imageCount` and nothing else: no urls, no
 /// `include=images`. So a report read back from the server cannot be shown
 /// with its pictures, and nothing in the app should pretend otherwise.
-class ReportImage {
-  const ReportImage({
-    required this.id,
-    required this.reportId,
-    required this.url,
-    this.thumbnailUrl,
-    this.width,
-    this.height,
-    this.byteSize,
-  });
-
-  final String id;
-  final String reportId;
-
-  /// Server-relative, e.g. `storage/uploads/reports/{reportId}/{uuid}.jpg`.
-  /// Deliberately not resolved against a host here — nothing renders it yet,
-  /// and guessing the public origin is how you ship a broken image.
-  final String url;
-  final String? thumbnailUrl;
-  final int? width;
-  final int? height;
-  final int? byteSize;
-}
+// `ReportImage` used to be declared here, as the upload response only, with a
+// docblock saying "nothing renders it yet". Both halves of that are now false:
+// the read path serves the same shape under `?include=images` and the detail
+// screens render it. It therefore lives in `models/report.dart` with the rest
+// of the report model, and is re-exported through `models.dart`, which this
+// file already imports — so every existing reference still resolves.
 
 /// `GET /me/preferences` — the nine fields `SettingsController` owns, exactly.
 ///

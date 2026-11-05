@@ -289,6 +289,7 @@ class ProductSaleLine {
     required this.colorName,
     required this.colorArgb,
     required this.units,
+    this.imageUrl,
   });
 
   final String productId;
@@ -300,6 +301,16 @@ class ProductSaleLine {
   final int colorArgb;
   final int units;
 
+  /// The catalogue photograph for this product + colour, relative to the API
+  /// origin. Resolved server-side at read time rather than stored on the line,
+  /// so it is the *current* picture of what was sold — unlike [productName],
+  /// [colorName] and [colorArgb], which are frozen at sale time so a renamed
+  /// product cannot rewrite history.
+  ///
+  /// Null when the catalogue has no photo for it, or on a server older than
+  /// this field. Render sites fall back to the painted [ProductArtwork].
+  final String? imageUrl;
+
   ProductSaleLine copyWith({String? colorName, int? colorArgb, int? units}) =>
       ProductSaleLine(
         productId: productId,
@@ -308,5 +319,6 @@ class ProductSaleLine {
         colorName: colorName ?? this.colorName,
         colorArgb: colorArgb ?? this.colorArgb,
         units: units ?? this.units,
+        imageUrl: imageUrl,
       );
 }

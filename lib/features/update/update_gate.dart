@@ -5,11 +5,53 @@ import 'package:flutter/material.dart';
 import '../../data/api/api_client.dart';
 import 'update_controller.dart';
 
+/// Exposes the gate's [UpdateController] to the pages below it.
+///
+/// The controller is owned by [UpdateGate]'s state and lives above the app
+/// Navigator, so every pushed route is a descendant and can reach it. This is
+/// how Settings offers a manual "check for updates" without constructing a
+/// second controller (which would mean a second `start()`, a second cache read
+/// and two sources of truth for `requiredUpdate`).
+///
+/// [maybeOf] is nullable on purpose: `app.dart` only installs the gate on a
+/// live Android build, so on web, iOS, or a `--dart-define=USE_MOCKS=true`
+/// build there is genuinely nothing to ask. Callers render an explanation
+/// instead of a dead button.
+class UpdateScope extends InheritedNotifier<UpdateController> {
+  const UpdateScope({
+    super.key,
+    required UpdateController super.notifier,
+    required super.child,
+  });
+
+  static UpdateController? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<UpdateScope>()?.notifier;
+}
+
 /// Above the app Navigator: login/session navigation cannot dismiss this gate.
 class UpdateGate extends StatefulWidget {
-  const UpdateGate({super.key, required this.api, required this.child});
+  const UpdateGate({
+    super.key,
+    required this.api,
+    required this.child,
+    this.enforce = true,
+  });
+
   final ApiClient api;
   final Widget child;
+
+  /// Whether a required update actually **blocks** the app.
+  ///
+  /// The policy lives at the composition root (`app.dart` passes
+  /// `!kDebugMode`), not in here, for two reasons: a widget that reads
+  /// `kDebugMode` itself cannot be tested in both states — `flutter test`
+  /// always runs in debug, so the blocking path would become unreachable from
+  /// the suite that exists to cover it — and "who may be force-updated" is a
+  /// release-channel decision, not a property of this widget.
+  ///
+  /// False only skips the overlay. The controller still runs, so
+  /// [UpdateScope] stays live and the version screen's "Check now" works.
+  final bool enforce;
 
   @override
   State<UpdateGate> createState() => _UpdateGateState();
@@ -54,12 +96,19 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: updates,
         builder: (context, _) {
-          final blocked =
-              updates.signedIn && (updates.checking || updates.requiredUpdate);
+          final blocked = widget.enforce &&
+              updates.signedIn &&
+              (updates.checking || updates.requiredUpdate);
           return Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              Offstage(offstage: blocked, child: widget.child),
+              Offstage(
+                offstage: blocked,
+                // Inside the Offstage, so the scope wraps the app's own
+                // subtree (and therefore every route pushed from it) rather
+                // than only the blocking overlay.
+                child: UpdateScope(notifier: updates, child: widget.child),
+              ),
               if (blocked)
                 Scaffold(
                   body: SafeArea(

@@ -115,7 +115,12 @@ class HttpEmployeeRepository implements EmployeeRepository {
 
   @override
   Future<VisitReport> reportById(String id) async {
-    final ApiResult result = await _api.get('/reports/$id');
+    // A detail screen renders the photographs, so it asks for them. The list
+    // call above deliberately does not: `imageCount` is all a card needs, and
+    // the URL array on every row is the payload this include exists to avoid.
+    final ApiResult result = await _api.get('/reports/$id', query: <String, dynamic>{
+      'include': 'images',
+    });
     return Wire.report(result.map);
   }
 
@@ -280,15 +285,9 @@ class HttpEmployeeRepository implements EmployeeRepository {
   /// Decoded here rather than in `lib/data/api/wire.dart` because this shape
   /// has exactly one producer — the upload response. No report payload carries
   /// images, so there is nothing for a shared decoder to be shared with.
-  static ReportImage _image(Map<String, dynamic> j) => ReportImage(
-        id: '${j['id']}',
-        reportId: '${j['reportId']}',
-        url: '${j['url']}',
-        thumbnailUrl: j['thumbnailUrl'] as String?,
-        width: (j['width'] as num?)?.toInt(),
-        height: (j['height'] as num?)?.toInt(),
-        byteSize: (j['bytes'] as num?)?.toInt(),
-      );
+  /// The upload response and the `?include=images` read response are the same
+  /// `Present::image` shape, so they share one decoder instead of drifting.
+  static ReportImage _image(Map<String, dynamic> j) => Wire.reportImage(j);
 
   @override
   Future<DevicePreferences> preferences() async {

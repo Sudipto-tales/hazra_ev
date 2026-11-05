@@ -156,6 +156,7 @@ class MockAdminRepository implements AdminRepository {
         case WorkStatus.locationUnavailable:
           offline++;
         case WorkStatus.notStarted:
+        case WorkStatus.paused:
         case WorkStatus.ended:
           break;
       }

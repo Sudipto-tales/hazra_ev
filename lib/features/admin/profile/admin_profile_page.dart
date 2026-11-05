@@ -259,8 +259,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                 const SizedBox(height: Insets.xl),
                 Center(
                   child: Text(
-                    'Admin console · '
-                    '${AppInfo.labelFor(live: AppScope.of(context).isLive)}',
+                    'Admin console · ${AppInfo.label}',
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
