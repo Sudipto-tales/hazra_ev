@@ -600,7 +600,7 @@ $iconUrl = base_url('assets/hazraev.png');
         <article class="release-card" id="release-<?= e($log['id']) ?>">
           <div class="release-card__top"><span class="release-badge">PREVIOUS RELEASE</span><time><?= date('M j, Y', strtotime($log['published_at'] ?? $log['created_at'])) ?></time></div>
           <h3>v<?= e($log['version_name']) ?></h3>
-          <div class="release-card__meta"><span><?= round($log['file_size'] / 1048576, 1) ?> MB</span><span><?= e(AppReleaseAccess::androidRequirement(isset($log['min_android_sdk']) ? (int) $log['min_android_sdk'] : null)) ?></span><span>Build <?= e($log['version_code']) ?></span><span><?= e(ucfirst($log['channel'])) ?></span></div>
+          <div class="release-card__meta"><span><?= round($log['file_size'] / 1048576, 1) ?> MB</span><span><?= e(AppReleaseAccess::androidRequirement(isset($log['min_android_sdk']) ? (int) $log['min_android_sdk'] : null)) ?></span><span><?= e(ucfirst($log['channel'])) ?></span></div>
           <details><summary>Release notes</summary><p><?= nl2br(e($log['release_notes'] ?: 'No release notes were provided for this version.')) ?></p></details>
           <button type="button" class="release-download" data-release-id="<?= e($log['id']) ?>" data-version-name="<?= e($log['version_name']) ?>" <?= $available ? '' : 'disabled' ?>><?= $available ? 'Download this version &darr;' : 'APK unavailable' ?></button>
         </article>

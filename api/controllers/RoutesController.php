@@ -175,16 +175,14 @@ final class RoutesController extends V1Controller
         );
 
         $tuples = [];
-        $distance = 0.0;
 
-        foreach ($rows as $i => $row) {
-            if ($i > 0) {
-                $distance += Geo::distanceKm(
-                    (float) $rows[$i - 1]['lat'], (float) $rows[$i - 1]['lng'],
-                    (float) $row['lat'], (float) $row['lng'],
-                );
-            }
+        // The same accuracy / minimum-step gates Engine::buildDayRoute applies
+        // to the cached row. Measuring today's live route with a raw sum would
+        // have the map report more kilometres than the identical day does once
+        // it is cached, which reads as a bug in whichever number is on screen.
+        $distance = Engine::chainDistanceKm($rows);
 
+        foreach ($rows as $row) {
             $tuples[] = [
                 (float) $row['lat'],
                 (float) $row['lng'],

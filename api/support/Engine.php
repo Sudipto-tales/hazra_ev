@@ -99,7 +99,8 @@ final class Engine
         }
 
         if ($accepted) {
-            self::refreshSession($session['id']);
+            // recompute() refreshes every session in the day, this one included,
+            // so there is no separate refreshSession() call to make here.
             self::recompute($session['employee_id'], $session['work_date']);
         }
 
@@ -132,26 +133,95 @@ final class Engine
         return $heading;
     }
 
-    /** Recomputes a session's distance and point count from its fix chain. */
+    /**
+     * Recomputes a session's distance and point count from its fix chain.
+     *
+     * `point_count` is deliberately the **raw** stored fix count: it answers
+     * "how many fixes does this session have" — which is what the route and the
+     * trail draw — not "how many of them moved the odometer". The two gates
+     * below shape `distance_km` only.
+     */
     public static function refreshSession(string $sessionId): void
     {
         $fixes = db_fetch_all(
-            "SELECT lat, lng FROM location_fixes WHERE session_id = ? ORDER BY recorded_at, id",
+            "SELECT lat, lng, accuracy_m FROM location_fixes WHERE session_id = ? ORDER BY recorded_at, id",
             [$sessionId],
         );
 
-        $distance = 0.0;
-        for ($i = 1, $n = count($fixes); $i < $n; $i++) {
-            $distance += Geo::distanceKm(
-                (float) $fixes[$i - 1]['lat'], (float) $fixes[$i - 1]['lng'],
-                (float) $fixes[$i]['lat'],     (float) $fixes[$i]['lng'],
-            );
-        }
-
         db_execute(
             "UPDATE work_sessions SET distance_km = ?, point_count = ? WHERE id = ?",
-            [round($distance, 4), count($fixes), $sessionId],
+            [round(self::chainDistanceKm($fixes), 4), count($fixes), $sessionId],
         );
+    }
+
+    /**
+     * Travelled distance over an ordered fix chain, in kilometres.
+     *
+     * Two gates stand between the stored fixes and the number, because a parked
+     * device still produces fixes and summing every consecutive pair turns GPS
+     * jitter into kilometres nobody walked:
+     *
+     *   - **accuracy** — a fix worse than `min_accuracy_metres` does not get to
+     *     measure a leg. It stays stored and it stays on the drawn route
+     *     (accuracy is read-time semantics, never a reason to drop data — see
+     *     ingest() above), it is only skipped here. Skipping carries the last
+     *     *accepted* fix forward as the anchor, so a weak-GPS stretch measures
+     *     one honest leg across it instead of a false detour out to the bad fix
+     *     and back.
+     *   - **minimum step** — a hop shorter than `distance_filter_metres` is
+     *     noise rather than travel: the OS was asked to suppress fixes under
+     *     that distance in the first place, so anything closer is jitter or the
+     *     client's 5-minute heartbeat. It contributes 0 **and leaves the anchor
+     *     where it is** — moving the anchor on a rejected hop is exactly what
+     *     lets jitter accumulate in sub-threshold increments. Because the anchor
+     *     holds, a genuinely slow walk is still measured in full: displacement
+     *     from the anchor keeps growing until it clears the gate.
+     *
+     * Both thresholds are read from the org's tracking_config — the same row
+     * deriveStops() and liveStatus() read, resolved through Ctx so a per-tenant
+     * value always wins over the documented default. Nothing is stored about
+     * the decision, so retuning either threshold re-derives distance on the next
+     * refresh instead of rewriting a fix. A non-positive threshold disables its
+     * own gate rather than swallowing the whole session.
+     *
+     * Public because RoutesController measures today's not-yet-cached route off
+     * the raw fixes and has to arrive at the same kilometres the cached
+     * day_routes row carries — one rule, not two implementations of it.
+     *
+     * @param array<int, array{lat: mixed, lng: mixed, accuracy_m?: mixed}> $fixes ordered oldest first
+     */
+    public static function chainDistanceKm(array $fixes): float
+    {
+        $minAccuracyM = (float) Ctx::configValue('min_accuracy_metres', 50);
+        $minStepM     = (float) Ctx::configValue('distance_filter_metres', 20);
+
+        $distance = 0.0;
+        $anchor   = null;
+
+        foreach ($fixes as $fix) {
+            if ($minAccuracyM > 0 && (float) ($fix['accuracy_m'] ?? 0) > $minAccuracyM) {
+                continue;                       // stored and drawn, just not measured
+            }
+
+            $lat = (float) $fix['lat'];
+            $lng = (float) $fix['lng'];
+
+            if ($anchor === null) {
+                $anchor = [$lat, $lng];
+                continue;
+            }
+
+            $km = Geo::distanceKm($anchor[0], $anchor[1], $lat, $lng);
+
+            if ($km * 1000 < $minStepM) {
+                continue;                       // jitter: no distance, anchor unmoved
+            }
+
+            $distance += $km;
+            $anchor = [$lat, $lng];
+        }
+
+        return $distance;
     }
 
     // -------------------------------------------------------------- derivation
@@ -159,14 +229,35 @@ final class Engine
     /**
      * Re-derives everything downstream of the fixes for one employee-day, then
      * rebuilds the rollup, the route and the timeline.
+     *
+     * Session distance leads, because rollupDay() sums work_sessions.distance_km
+     * and the drawn route is measured with the same gates: if the odometer were
+     * not re-derived here, a threshold change would regate the route while
+     * leaving the day summary on the old number, and ConfigController's promise
+     * that same-day sessions are re-derived would only be half true. It also
+     * makes recompute() the one entry point a distance backfill needs.
      */
     public static function recompute(string $employeeId, string $workDate): void
     {
+        self::refreshSessions($employeeId, $workDate);
         self::deriveStops($employeeId, $workDate);
         self::promoteVisits($employeeId, $workDate);
         self::rebuildActivity($employeeId, $workDate);
         self::buildDayRoute($employeeId, $workDate);
         self::rollupDay($employeeId, $workDate);
+    }
+
+    /** Re-derives distance_km and point_count for every session in one day. */
+    private static function refreshSessions(string $employeeId, string $workDate): void
+    {
+        $sessions = db_fetch_all(
+            "SELECT id FROM work_sessions WHERE employee_id = ? AND work_date = ?",
+            [$employeeId, $workDate],
+        );
+
+        foreach ($sessions as $session) {
+            self::refreshSession($session['id']);
+        }
     }
 
     /**
@@ -506,9 +597,13 @@ final class Engine
         $tuples = [];
         $minLat = $maxLat = (float) $rows[0]['lat'];
         $minLng = $maxLng = (float) $rows[0]['lng'];
-        $distance = 0.0;
 
-        foreach ($rows as $i => $row) {
+        // Same gated sum as refreshSession(), so the route card and the day
+        // summary cannot disagree about how far the employee went. The polyline
+        // below still draws every fix — the gates shape the number, not the line.
+        $distance = self::chainDistanceKm($rows);
+
+        foreach ($rows as $row) {
             $lat = (float) $row['lat'];
             $lng = (float) $row['lng'];
 
@@ -516,10 +611,6 @@ final class Engine
             $maxLat = max($maxLat, $lat);
             $minLng = min($minLng, $lng);
             $maxLng = max($maxLng, $lng);
-
-            if ($i > 0) {
-                $distance += Geo::distanceKm((float) $rows[$i - 1]['lat'], (float) $rows[$i - 1]['lng'], $lat, $lng);
-            }
 
             $tuples[] = [
                 $lat, $lng,
