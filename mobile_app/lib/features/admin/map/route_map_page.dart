@@ -11,8 +11,10 @@ import '../../../state/app_scope.dart';
 import '../../../widgets/app_card.dart';
 import '../../../widgets/stat_tile.dart';
 import '../../../widgets/states.dart';
+import '../../../widgets/status_badge.dart';
 import '../../home/widgets/visit_tile.dart';
 import '../widgets/date_scrubber.dart';
+import 'route_accuracy.dart';
 import 'route_painter.dart';
 import 'route_projection.dart';
 import 'route_tile_map.dart';
@@ -147,6 +149,14 @@ class _RouteMapPageState extends State<RouteMapPage> {
 
     final DateTime now = DateTime.now();
 
+    // Derived once per build, against the config this screen loaded — never
+    // against a hard-coded metre value and never per widget. Both renderers,
+    // the legend, the stats and the rows below read this same verdict.
+    final RouteAccuracy accuracy = RouteAccuracy.of(
+      track: track,
+      config: _config,
+    );
+
     return <Widget>[
       AppCard(
         padding: EdgeInsets.zero,
@@ -156,6 +166,7 @@ class _RouteMapPageState extends State<RouteMapPage> {
               ? RouteTileMap(
                   track: track,
                   config: _config,
+                  accuracy: accuracy,
                   selectedId: _selectedId,
                   onSelect: (String? id) =>
                       setState(() => _selectedId = id),
@@ -165,6 +176,7 @@ class _RouteMapPageState extends State<RouteMapPage> {
               : _RouteCanvas(
                   track: track,
                   config: _config,
+                  accuracy: accuracy,
                   selectedId: _selectedId,
                   onSelect: (String? id) =>
                       setState(() => _selectedId = id),
@@ -175,10 +187,15 @@ class _RouteMapPageState extends State<RouteMapPage> {
         ),
       ),
       const SizedBox(height: Insets.md),
-      const _Legend(),
+      _Legend(accuracy: accuracy),
       if (_selectedId != null) ...<Widget>[
         const SizedBox(height: Insets.md),
-        _SelectionCard(track: track, id: _selectedId!, config: _config),
+        _SelectionCard(
+          track: track,
+          id: _selectedId!,
+          config: _config,
+          accuracy: accuracy,
+        ),
       ],
 
       const SizedBox(height: Insets.xl),
@@ -218,6 +235,14 @@ class _RouteMapPageState extends State<RouteMapPage> {
             label: 'Not yet synced',
             tone: AppColors.textTertiary,
           ),
+          // Shown even at zero: "0 rough fixes" is the reassurance that makes
+          // the non-zero case mean something.
+          StatTile(
+            icon: Icons.blur_on_rounded,
+            value: '${accuracy.roughCount}',
+            label: 'Rough fixes',
+            tone: AppColors.textTertiary,
+          ),
         ],
       ),
 
@@ -229,9 +254,28 @@ class _RouteMapPageState extends State<RouteMapPage> {
       ...track.visits.map(
         (CompanyVisit v) => Padding(
           padding: const EdgeInsets.only(bottom: Insets.md),
-          child: VisitTile(visit: v, now: now),
+          child: VisitTile(
+            visit: v,
+            now: now,
+            roughGps: accuracy.visit(v).isRough,
+          ),
         ),
       ),
+      // Unlinked stops had no row here at all, which is the one place a
+      // jitter-derived dwell could hide: it was only reachable by tapping its
+      // pin. A reader going down the list now sees it, and sees that it is
+      // rough.
+      ...track.stops.where((StopRecord s) => !s.isLinked).map(
+            (StopRecord s) => Padding(
+              padding: const EdgeInsets.only(bottom: Insets.md),
+              child: _StopTile(
+                stop: s,
+                now: now,
+                config: _config,
+                quality: accuracy.stop(s),
+              ),
+            ),
+          ),
     ];
   }
 }
@@ -241,6 +285,7 @@ class _RouteCanvas extends StatefulWidget {
   const _RouteCanvas({
     required this.track,
     required this.config,
+    required this.accuracy,
     required this.selectedId,
     required this.onSelect,
     this.onUseTiles,
@@ -248,6 +293,7 @@ class _RouteCanvas extends StatefulWidget {
 
   final RouteTrack track;
   final TrackingConfig config;
+  final RouteAccuracy accuracy;
   final String? selectedId;
   final ValueChanged<String?> onSelect;
 
@@ -356,6 +402,7 @@ class _RouteCanvasState extends State<_RouteCanvas> {
                       projection: projection,
                       colors: colors,
                       markers: markers,
+                      accuracy: widget.accuracy,
                       longStopThresholdMinutes:
                           widget.config.longStopThresholdMinutes,
                       stopRadiusMetres: widget.config.stopRadiusMetres,
@@ -426,7 +473,9 @@ class _CanvasButton extends StatelessWidget {
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend();
+  const _Legend({required this.accuracy});
+
+  final RouteAccuracy accuracy;
 
   @override
   Widget build(BuildContext context) {
@@ -445,12 +494,20 @@ class _Legend extends StatelessWidget {
               _LegendItem(color: AppColors.danger, label: 'Long stop'),
               _LegendItem(color: AppColors.textTertiary, label: 'Not synced'),
               _LegendItem(color: AppColors.statusOffline, label: 'End'),
+              _LegendItem(
+                color: AppColors.primary,
+                label: 'Rough GPS',
+                dotted: true,
+              ),
             ],
           ),
           const SizedBox(height: Insets.sm),
           Text(
             'The route line changes colour per work session. A faint dashed '
-            'line is the raw GPS trace under the road-matched route.',
+            'line is the raw GPS trace under the road-matched route. '
+            'Dotted stretches and soft halos are fixes weaker than '
+            '${accuracy.thresholdLabel} — the trail is still right about where '
+            'the employee was, just not about exactly where.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
@@ -460,21 +517,47 @@ class _Legend extends StatelessWidget {
 }
 
 class _LegendItem extends StatelessWidget {
-  const _LegendItem({required this.color, required this.label});
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    this.dotted = false,
+  });
 
   final Color color;
   final String label;
+
+  /// Draws a broken bar instead of a dot — the swatch for a treatment that is
+  /// about the stroke, not about a new colour.
+  final bool dotted;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
+        if (dotted)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (int i = 0; i < 3; i++) ...<Widget>[
+                if (i > 0) const SizedBox(width: 2.5),
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.55),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ],
+          )
+        else
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
         const SizedBox(width: Insets.xs),
         Text(label, style: Theme.of(context).textTheme.bodySmall),
       ],
@@ -488,11 +571,13 @@ class _SelectionCard extends StatelessWidget {
     required this.track,
     required this.id,
     required this.config,
+    required this.accuracy,
   });
 
   final RouteTrack track;
   final String id;
   final TrackingConfig config;
+  final RouteAccuracy accuracy;
 
   @override
   Widget build(BuildContext context) {
@@ -559,6 +644,7 @@ class _SelectionCard extends StatelessWidget {
               value: '${visit.reportIds.length}',
               dense: true,
             ),
+            ..._accuracyRows(context, accuracy.visit(visit)),
           ],
         ),
       );
@@ -566,11 +652,28 @@ class _SelectionCard extends StatelessWidget {
 
     if (stop != null) {
       final Duration dwell = stop.durationAt(DateTime.now());
+      final StopAccuracy quality = accuracy.stop(stop);
       return AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('Unlinked stop', style: theme.textTheme.titleMedium),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    'Unlinked stop',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                if (quality.isRough)
+                  const StatusBadge(
+                    label: 'Rough GPS',
+                    tone: BadgeTone.neutral,
+                    icon: Icons.blur_on_rounded,
+                    dense: true,
+                  ),
+              ],
+            ),
             const SizedBox(height: 2),
             Text(
               'No company was matched to this stop.',
@@ -592,11 +695,156 @@ class _SelectionCard extends StatelessWidget {
               value: Fmt.latLng(stop.latitude, stop.longitude),
               dense: true,
             ),
+            ..._accuracyRows(context, quality),
           ],
         ),
       );
     }
 
     return const SizedBox.shrink();
+  }
+
+  /// The GPS-quality tail of a detail card.
+  ///
+  /// Always states the measurement when there is one — an admin reading a
+  /// coordinate deserves to know how wide it is — and only adds the sentence
+  /// when the dwell was *predominantly* weak, which is the case where the stop
+  /// itself might be jitter rather than a visit.
+  List<Widget> _accuracyRows(BuildContext context, StopAccuracy quality) {
+    if (!quality.isKnown) return const <Widget>[];
+
+    final double? average = quality.averageMetres;
+    return <Widget>[
+      if (average != null)
+        KeyValueRow(
+          label: 'GPS accuracy',
+          value: '±${average.round()} m average',
+          dense: true,
+        ),
+      if (quality.isRough) ...<Widget>[
+        const SizedBox(height: Insets.sm),
+        _RoughGpsNote(threshold: accuracy.thresholdLabel),
+      ],
+    ];
+  }
+}
+
+/// The one sentence that turns a dotted line into information.
+///
+/// Neutral tone on purpose: a weak fix is a property of the sky and the
+/// buildings, not a fault of the employee or the app, and colouring it amber
+/// would put a question mark over the person.
+class _RoughGpsNote extends StatelessWidget {
+  const _RoughGpsNote({required this.threshold});
+
+  final String threshold;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color tone =
+        theme.textTheme.bodySmall?.color ?? AppColors.textSecondary;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Icon(Icons.blur_on_rounded, size: 15, color: tone),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            'Most fixes here were weaker than $threshold, so treat this '
+            'position as approximate.',
+            style: theme.textTheme.bodySmall,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A derived stop that was never matched to a company.
+///
+/// Deliberately plainer than [VisitTile]: it is a candidate, not a business
+/// event, and the GPS-quality line is the thing that tells a reader whether it
+/// is worth chasing.
+class _StopTile extends StatelessWidget {
+  const _StopTile({
+    required this.stop,
+    required this.now,
+    required this.config,
+    required this.quality,
+  });
+
+  final StopRecord stop;
+  final DateTime now;
+  final TrackingConfig config;
+  final StopAccuracy quality;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Duration dwell = stop.durationAt(now);
+    final bool long = dwell.inMinutes >= config.longStopThresholdMinutes;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.warningSoft,
+                  borderRadius: BorderRadius.circular(Radii.md),
+                ),
+                child: const Icon(
+                  Icons.pause_rounded,
+                  size: 19,
+                  color: AppColors.warning,
+                ),
+              ),
+              const SizedBox(width: Insets.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('Unlinked stop', style: theme.textTheme.titleMedium),
+                    Text(
+                      '${Fmt.time(stop.arrival)} · '
+                      '${Fmt.duration(dwell)} · '
+                      '${Fmt.latLng(stop.latitude, stop.longitude)}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              if (quality.isRough)
+                const StatusBadge(
+                  label: 'Rough GPS',
+                  tone: BadgeTone.neutral,
+                  icon: Icons.blur_on_rounded,
+                  dense: true,
+                )
+              else if (long)
+                StatusBadge(
+                  label: Fmt.duration(dwell),
+                  tone: BadgeTone.danger,
+                  icon: Icons.timelapse_rounded,
+                  dense: true,
+                ),
+            ],
+          ),
+          if (quality.isRough) ...<Widget>[
+            const SizedBox(height: Insets.md),
+            _RoughGpsNote(
+              threshold: '±${config.minAccuracyMetres.round()} m',
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }

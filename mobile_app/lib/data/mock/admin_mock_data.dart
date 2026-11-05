@@ -818,7 +818,14 @@ class AdminMockData {
     double fromLng = home.lng;
     int id = 0;
 
-    for (final CompanyVisit visit in day.visits) {
+    // One weak-signal window per day, so the route screen's rough-GPS
+    // treatment is reviewable without a handset under a flyover. Only the
+    // reported `accuracy` changes — the coordinates, the timestamps and the
+    // random stream are untouched, so no distance or layout shifts.
+    final int roughVisit = day.visits.isEmpty ? -1 : seed.abs() % day.visits.length;
+
+    for (int v = 0; v < day.visits.length; v++) {
+      final CompanyVisit visit = day.visits[v];
       final DateTime arrival = visit.arrival;
       final DateTime departure = visit.departure ?? arrival;
       final String sessionId = visit.sessionId;
@@ -844,6 +851,9 @@ class AdminMockData {
       for (int k = 0; k <= steps; k++) {
         final double t = k / steps;
         final double bend = bow * sin(pi * t);
+        // Signal degrades over the back half of the approach and does not
+        // recover until the employee leaves — a built-up street, basically.
+        final bool weak = v == roughVisit && t >= 0.5;
         out.add(
           LocationLog(
             id: 'loc_${employeeId}_${id++}',
@@ -852,7 +862,11 @@ class AdminMockData {
                 (rnd.nextDouble() - 0.5) * 0.00035,
             longitude: fromLng + dLng * t + nLng * bend +
                 (rnd.nextDouble() - 0.5) * 0.00035,
-            accuracy: 6 + rnd.nextDouble() * 18,
+            // Same single draw either way: scaling it rather than drawing
+            // again keeps the sequence — and so every coordinate — identical.
+            accuracy: weak
+                ? 62 + rnd.nextDouble() * 70
+                : 6 + rnd.nextDouble() * 18,
             speedKmh: speed * (0.85 + rnd.nextDouble() * 0.3),
             recordedAt: legStart.add(
               Duration(seconds: (legMinutes * 60 * t).round()),
@@ -866,6 +880,9 @@ class AdminMockData {
       // Dwell cluster — a stop should read as a dense blob, not a single dot.
       final int dwellMinutes = departure.difference(arrival).inMinutes;
       final int cluster = (dwellMinutes ~/ 6).clamp(3, 12);
+      // The dwell inherits the weak window, which is what makes this stop read
+      // as "predominantly low-accuracy" rather than a confirmed visit.
+      final bool weakDwell = v == roughVisit;
       for (int k = 0; k < cluster; k++) {
         out.add(
           LocationLog(
@@ -873,7 +890,9 @@ class AdminMockData {
             sessionId: sessionId,
             latitude: visit.latitude + (rnd.nextDouble() - 0.5) * 0.00045,
             longitude: visit.longitude + (rnd.nextDouble() - 0.5) * 0.00045,
-            accuracy: 5 + rnd.nextDouble() * 12,
+            accuracy: weakDwell
+                ? 70 + rnd.nextDouble() * 80
+                : 5 + rnd.nextDouble() * 12,
             speedKmh: rnd.nextDouble() * 1.4,
             recordedAt: arrival.add(
               Duration(minutes: (dwellMinutes * k / cluster).round()),

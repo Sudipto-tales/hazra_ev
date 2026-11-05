@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/theme_ext.dart';
 import '../../../data/models/models.dart';
+import 'route_accuracy.dart';
 import 'route_projection.dart';
 
 /// Colours resolved from the theme *outside* `paint()`. A painter must never
@@ -16,6 +17,7 @@ class RouteMapColors {
     required this.gridMajor,
     required this.stroke,
     required this.glow,
+    required this.rough,
     required this.queued,
     required this.stop,
     required this.longStop,
@@ -35,6 +37,11 @@ class RouteMapColors {
       gridMajor: context.lineColor,
       stroke: AppColors.primary,
       glow: AppColors.primary.withValues(alpha: dark ? 0.26 : 0.18),
+      // The route's own hue, held back. A rough stretch is still the route —
+      // giving it a colour of its own would read as a different kind of event,
+      // and a red or amber would read as a fault. Dashed-and-faint says
+      // "approximate" without saying "wrong".
+      rough: AppColors.primary.withValues(alpha: dark ? 0.62 : 0.5),
       queued: AppColors.textTertiary,
       stop: AppColors.warning,
       longStop: AppColors.danger,
@@ -52,6 +59,9 @@ class RouteMapColors {
   final Color gridMajor;
   final Color stroke;
   final Color glow;
+
+  /// Low-emphasis treatment for stretches the GPS was not confident about.
+  final Color rough;
   final Color queued;
   final Color stop;
   final Color longStop;
@@ -84,6 +94,47 @@ class RouteMarker {
 
 enum RouteMarkerKind { start, end, visit, stop }
 
+/// Cuts a polyline into `dash`-long pieces separated by `gap`-long holes,
+/// measured along the line rather than per vertex — so the dashes stay even
+/// through a dense cluster of fixes and a long straight leg alike.
+///
+/// Top-level and pure so the dash machinery is testable without a `Canvas`.
+/// Returns an empty list for a degenerate pattern rather than looping forever.
+List<(Offset, Offset)> dashSegments(
+  List<Offset> points, {
+  required double dash,
+  required double gap,
+}) {
+  final List<(Offset, Offset)> out = <(Offset, Offset)>[];
+  if (points.length < 2 || !(dash > 0) || !(gap > 0)) return out;
+
+  bool on = true;
+  double used = 0;
+
+  for (int i = 1; i < points.length; i++) {
+    Offset a = points[i - 1];
+    final Offset b = points[i];
+    double remaining = (b - a).distance;
+    if (!remaining.isFinite || remaining <= 0) continue;
+    final Offset unit = (b - a) / remaining;
+
+    while (remaining > 1e-9) {
+      final double span = on ? dash : gap;
+      final double take = min(span - used, remaining);
+      final Offset next = a + unit * take;
+      if (on) out.add((a, next));
+      a = next;
+      remaining -= take;
+      used += take;
+      if (used >= span - 1e-9) {
+        on = !on;
+        used = 0;
+      }
+    }
+  }
+  return out;
+}
+
 /// Draws the day's route: plate, grid, scale bar, polyline per session,
 /// direction chevrons, stop circles, numbered visit pins and start/end caps.
 ///
@@ -95,6 +146,7 @@ class RoutePainter extends CustomPainter {
     required this.projection,
     required this.colors,
     required this.markers,
+    required this.accuracy,
     required this.longStopThresholdMinutes,
     required this.stopRadiusMetres,
     required this.zoom,
@@ -105,6 +157,10 @@ class RoutePainter extends CustomPainter {
   final RouteProjection projection;
   final RouteMapColors colors;
   final List<RouteMarker> markers;
+
+  /// Which fixes, stretches and stops read as rough. Derived once by the
+  /// screen and handed down — the painter never re-derives a threshold.
+  final RouteAccuracy accuracy;
   final int longStopThresholdMinutes;
   final double stopRadiusMetres;
 
@@ -169,17 +225,31 @@ class RoutePainter extends CustomPainter {
     for (final List<LocationLog> segment in track.segments) {
       if (segment.length < 2) continue;
 
+      // Confident stretches only. Rough ones are stroked separately below, so
+      // they skip the glow and the full-weight line.
       final Path path = Path();
+      final List<List<Offset>> rough = <List<Offset>>[];
+
+      for (final AccuracyRun run in accuracy.runs(segment)) {
+        final List<Offset> o = run.points
+            .map(projection.projectPoint)
+            .toList(growable: false);
+        if (o.length < 2) continue;
+        if (run.rough) {
+          rough.add(o);
+          continue;
+        }
+        path.moveTo(o.first.dx, o.first.dy);
+        for (int k = 1; k < o.length; k++) {
+          path.lineTo(o[k].dx, o[k].dy);
+        }
+      }
+
       final Path queued = Path();
       bool queuedStarted = false;
 
       for (int k = 0; k < segment.length; k++) {
         final Offset o = projection.projectPoint(segment[k]);
-        if (k == 0) {
-          path.moveTo(o.dx, o.dy);
-        } else {
-          path.lineTo(o.dx, o.dy);
-        }
 
         if (segment[k].syncState != SyncState.synced) {
           if (!queuedStarted) {
@@ -211,6 +281,18 @@ class RoutePainter extends CustomPainter {
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round,
       );
+      // Dashed, thin, no glow: the trail is still there, it just stops
+      // claiming to be exact. Drawn after the solid line so the dashes are not
+      // buried under a neighbouring run's round stroke cap.
+      final Paint roughPaint = Paint()
+        ..color = colors.rough
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _s(2.6)
+        ..strokeCap = StrokeCap.round;
+      for (final List<Offset> run in rough) {
+        _dashedPolyline(canvas, run, roughPaint, dash: _s(5), gap: _s(4));
+      }
+
       canvas.drawPath(
         queued,
         Paint()
@@ -219,6 +301,43 @@ class RoutePainter extends CustomPainter {
           ..strokeWidth = _s(2.2)
           ..strokeCap = StrokeCap.round,
       );
+    }
+  }
+
+  /// Strokes [points] as a dash pattern.
+  ///
+  /// `Canvas` has no dash support and the app takes no new dependency for one,
+  /// so the walk is done here: [dashSegments] cuts the polyline into pieces and
+  /// each piece is one `drawLine`.
+  void _dashedPolyline(
+    Canvas canvas,
+    List<Offset> points,
+    Paint paint, {
+    required double dash,
+    required double gap,
+  }) {
+    for (final (Offset a, Offset b) in dashSegments(
+      points,
+      dash: dash,
+      gap: gap,
+    )) {
+      canvas.drawLine(a, b, paint);
+    }
+  }
+
+  /// Draws a ring out of short arcs — the dashed equivalent of `drawCircle`.
+  void _dashedCircle(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Paint paint, {
+    int dashes = 16,
+  }) {
+    if (!(radius > 0) || !radius.isFinite) return;
+    final Rect rect = Rect.fromCircle(center: center, radius: radius);
+    final double step = 2 * pi / dashes;
+    for (int i = 0; i < dashes; i++) {
+      canvas.drawArc(rect, i * step, step * 0.55, false, paint);
     }
   }
 
@@ -235,6 +354,9 @@ class RoutePainter extends CustomPainter {
 
     for (int i = step; i < pts.length - 1; i += step) {
       if (pts[i].sessionId != pts[i - 1].sessionId) continue;
+      // Direction derived from two weak fixes is a guess. A missing chevron is
+      // honest; a confident arrow pointing the wrong way is not.
+      if (accuracy.isRough(pts[i]) || accuracy.isRough(pts[i - 1])) continue;
       final Offset a = projection.projectPoint(pts[i - 1]);
       final Offset b = projection.projectPoint(pts[i]);
       final double angle = atan2(b.dy - a.dy, b.dx - a.dx);
@@ -265,20 +387,25 @@ class RoutePainter extends CustomPainter {
           (stop.departure ?? stop.arrival).difference(stop.arrival);
       final bool long = dwell.inMinutes >= longStopThresholdMinutes;
       final Color tone = long ? colors.longStop : colors.stop;
+      final bool rough = accuracy.stop(stop).isRough;
 
       canvas.drawCircle(
         o,
         geofence,
-        Paint()..color = tone.withValues(alpha: 0.10),
+        Paint()..color = tone.withValues(alpha: rough ? 0.06 : 0.10),
       );
-      canvas.drawCircle(
-        o,
-        geofence,
-        Paint()
-          ..color = tone.withValues(alpha: 0.45)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = _s(1.2),
-      );
+
+      final Paint ring = Paint()
+        ..color = tone.withValues(alpha: rough ? 0.35 : 0.45)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _s(1.2);
+      // A dashed geofence says the edge of this dwell is not a hard line —
+      // which is exactly what a stop derived from jittering fixes means.
+      if (rough) {
+        _dashedCircle(canvas, o, geofence, ring, dashes: 24);
+      } else {
+        canvas.drawCircle(o, geofence, ring);
+      }
 
       // Unlinked stops get their own hollow pin; linked ones are covered by
       // the numbered visit marker drawn on top.
@@ -293,7 +420,24 @@ class RoutePainter extends CustomPainter {
             ..strokeWidth = _s(2.4),
         );
       }
+
+      if (rough) _roughHalo(canvas, o, _s(stop.isLinked ? 15 : 11), tone);
     }
+  }
+
+  /// A dashed ring just outside a marker: the same "approximate" grammar the
+  /// rough stretches use, at marker scale.
+  void _roughHalo(Canvas canvas, Offset center, double radius, Color tone) {
+    _dashedCircle(
+      canvas,
+      center,
+      radius,
+      Paint()
+        ..color = tone.withValues(alpha: 0.75)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _s(1.4),
+      dashes: 12,
+    );
   }
 
   void _paintVisits(Canvas canvas) {
@@ -309,6 +453,9 @@ class RoutePainter extends CustomPainter {
       );
       canvas.drawCircle(o, r, Paint()..color = colors.visit);
       _text(canvas, '${i + 1}', o, _s(11), colors.onMarker, bold: true);
+      if (accuracy.visit(v).isRough) {
+        _roughHalo(canvas, o, r + _s(5), colors.visit);
+      }
     }
   }
 
@@ -416,5 +563,6 @@ class RoutePainter extends CustomPainter {
       old.selectedId != selectedId ||
       old.zoom != zoom ||
       old.colors != colors ||
+      old.accuracy != accuracy ||
       old.longStopThresholdMinutes != longStopThresholdMinutes;
 }

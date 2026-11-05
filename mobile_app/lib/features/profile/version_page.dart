@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../core/config/brand.dart';
 import '../../core/theme/app_colors.dart';
@@ -9,17 +9,29 @@ import '../../core/theme/dimens.dart';
 import '../../widgets/app_card.dart';
 import '../update/update_gate.dart';
 import 'app_info.dart';
+import 'version_label.dart';
 
 /// The screen behind four taps on the version card.
 ///
-/// A rider crosses the card left to right trailing exhaust; when the smoke
+/// A rider crosses the card left to right trailing exhaust; when the exhaust
 /// thins out the build identity fades up in its place, and an update check
-/// sits underneath it.
+/// sits underneath it. The narrative is the screen — it is not a centred loop.
 ///
-/// Everything is painted. There is no Lottie/Rive/SVG dependency and no asset
-/// to ship — the app already hand-paints its route trails and product
-/// fallbacks, so this follows that precedent rather than adding a package for
-/// one screen.
+/// The rider itself is a Lottie file, `assets/anim/delivery_boy.json`: the
+/// first asset this app bundles, and the only reason `lottie` is a dependency.
+/// That reverses the precedent this screen used to set, deliberately. The
+/// painted version was a stick silhouette, and a drawn delivery rider with
+/// spinning wheels and puffing exhaust is illustration work, not geometry —
+/// there is nothing to compute, so hand-painting it bought nothing but a
+/// worse picture. The route trails and product fallbacks are still painted,
+/// because their shape comes from runtime data; this frame never does.
+///
+/// Two controllers, and the split is the whole trick:
+///  * [_wheels] repeats the file's own 1.03 s cycle, so the rider stays alive
+///    while standing still in its own coordinate space — the animation does
+///    not translate.
+///  * [_c] runs the three-stage choreography and does the travelling, sliding
+///    the looping rider across the card before handing the frame over.
 class VersionPage extends StatefulWidget {
   const VersionPage({super.key});
 
@@ -28,10 +40,19 @@ class VersionPage extends StatefulWidget {
 }
 
 class _VersionPageState extends State<VersionPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
+  /// The choreography. One pass, replayable from the app bar.
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2600),
+  );
+
+  /// The rider's own cycle. 1033 ms is the file's frames 0–31 at 30 fps;
+  /// [_onComposition] replaces it with the parsed value so the two can never
+  /// drift apart if the asset is ever re-exported.
+  late final AnimationController _wheels = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1033),
   );
 
   /// The ride: left edge to right edge, eased so it leans into the exit.
@@ -40,7 +61,9 @@ class _VersionPageState extends State<VersionPage>
     curve: const Interval(0, 0.68, curve: Curves.easeInOutCubic),
   );
 
-  /// Smoke lives slightly past the ride and then clears.
+  /// The exhaust lives slightly past the ride and then clears. The puffs are
+  /// inside the Lottie now, so this fades the whole rider out — bike, smoke
+  /// and speed lines together — rather than only the trail.
   late final Animation<double> _smokeFade = CurvedAnimation(
     parent: _c,
     curve: const Interval(0.62, 0.86, curve: Curves.easeOut),
@@ -52,16 +75,59 @@ class _VersionPageState extends State<VersionPage>
     curve: const Interval(0.84, 1, curve: Curves.easeOutBack),
   );
 
+  /// Built once and held, rather than constructed inside the
+  /// [AnimatedBuilder]: a fresh `Lottie.asset` per frame would re-read and
+  /// re-decode 200 KB of JSON on every tick. The movement is applied above it
+  /// by a [Positioned], which leaves this subtree — and its own
+  /// `RepaintBoundary` — untouched for the length of the ride.
+  late final Widget _rider = Lottie.asset(
+    'assets/anim/delivery_boy.json',
+    controller: _wheels,
+    onLoaded: _onComposition,
+    // The file is authored at 30 fps. Without this, Lottie re-rasterises at
+    // display rate and draws the same frame twice on a 60 Hz panel and four
+    // times on a 120 Hz one.
+    frameRate: const FrameRate(30),
+    fit: BoxFit.contain,
+  );
+
   @override
   void initState() {
     super.initState();
+    // The rider is gone for good once the choreography ends, so a still
+    // looping file would burn a ticker on an idle screen (and would keep a
+    // widget test's pumpAndSettle from ever settling).
+    _c.addStatusListener(_onStage);
     _c.forward();
   }
 
   @override
   void dispose() {
+    _c.removeStatusListener(_onStage);
+    _wheels.dispose();
     _c.dispose();
     super.dispose();
+  }
+
+  void _onComposition(LottieComposition composition) {
+    _wheels.duration = composition.duration;
+    // Guarded because the asset can finish decoding after a short
+    // choreography has already run its course — on a cold start, or on the
+    // frame after a replay.
+    if (_c.status != AnimationStatus.completed) {
+      _wheels.repeat();
+    }
+  }
+
+  void _onStage(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      _wheels.stop();
+    }
+  }
+
+  void _replay() {
+    _wheels.repeat();
+    _c.forward(from: 0);
   }
 
   @override
@@ -75,7 +141,7 @@ class _VersionPageState extends State<VersionPage>
           IconButton(
             tooltip: 'Play again',
             icon: const Icon(Icons.replay_rounded),
-            onPressed: () => _c.forward(from: 0),
+            onPressed: _replay,
           ),
         ],
       ),
@@ -93,49 +159,90 @@ class _VersionPageState extends State<VersionPage>
               borderRadius: BorderRadius.circular(Radii.lg),
               child: SizedBox(
                 height: 190,
-                child: AnimatedBuilder(
-                  animation: _c,
-                  builder: (BuildContext context, _) => CustomPaint(
-                    painter: _RidePainter(
-                      ride: _ride.value,
-                      smoke: 1 - _smokeFade.value,
-                      isDark: theme.brightness == Brightness.dark,
-                      accent: AppColors.primary,
-                    ),
-                    child: Center(
-                      child: Opacity(
-                        // Keyed so a test can assert on *this* opacity: the
-                        // update card below also renders an "Version … build …"
-                        // string, so matching on the text is ambiguous.
-                        key: const ValueKey<String>('version-reveal'),
-                        // Clamped: easeOutBack overshoots past 1 and Opacity
-                        // asserts on anything outside 0..1.
-                        opacity: _reveal.value.clamp(0.0, 1.0),
-                        child: Transform.scale(
-                          scale: 0.92 + 0.08 * _reveal.value.clamp(0.0, 1.0),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              Text(
-                                'Version ${AppInfo.version}',
-                                style:
-                                    theme.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints box) {
+                    // Travel a full rider-width past both edges so it enters
+                    // and leaves out of frame rather than popping into
+                    // existence at the margin.
+                    const double rider = 170;
+                    final double travel = box.maxWidth + rider;
+
+                    return AnimatedBuilder(
+                      animation: _c,
+                      builder: (BuildContext context, _) => Stack(
+                        fit: StackFit.expand,
+                        children: <Widget>[
+                          Positioned(
+                            left: -rider + _ride.value * travel,
+                            // Sunk slightly below the card so the file's own
+                            // road sits on the bottom edge instead of
+                            // floating across the middle of it. The road is
+                            // a short trim-path dash that travels with the
+                            // bike, so it reads as speed lines under the
+                            // wheels, not as a fixed road the card has to
+                            // line up with — which is why no layer is
+                            // hidden.
+                            bottom: -22,
+                            width: rider,
+                            height: rider,
+                            child: Opacity(
+                              // Clamped only for safety; easeOut cannot
+                              // overshoot, but Opacity asserts outside 0..1
+                              // and this is a screen nobody tests by hand.
+                              opacity: (1 - _smokeFade.value).clamp(0.0, 1.0),
+                              child: _rider,
+                            ),
+                          ),
+                          Center(
+                            child: Opacity(
+                              // Keyed so a test can assert on *this* opacity:
+                              // the update card below also renders a
+                              // "Version …" string, so matching on the text
+                              // is ambiguous.
+                              key: const ValueKey<String>('version-reveal'),
+                              // Clamped: easeOutBack overshoots past 1 and
+                              // Opacity asserts on anything outside 0..1.
+                              opacity: _reveal.value.clamp(0.0, 1.0),
+                              child: Transform.scale(
+                                scale:
+                                    0.92 + 0.08 * _reveal.value.clamp(0.0, 1.0),
+                                child: VersionLabel(
+                                  textAlign: TextAlign.center,
+                                  // "Version" stays at title size; the number
+                                  // itself steps up and gets the weight, so
+                                  // the thing people came to this screen to
+                                  // read is the thing the eye lands on.
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  numberStyle:
+                                      theme.textTheme.headlineMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: theme.textTheme.headlineSmall?.color,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'build ${AppInfo.build}',
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
+            ),
+          ),
+          const SizedBox(height: Insets.sm),
+          // Attribution is encouraged rather than required by the Lottie
+          // Simple License, and it is owed either way. Kept to the smallest
+          // secondary text on the screen so it credits the artist without
+          // competing with the build identity it sits under.
+          Text(
+            'Animation by Animo Arts on LottieFiles',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontSize: 11,
+              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: Insets.lg),
@@ -156,154 +263,6 @@ class _VersionPageState extends State<VersionPage>
       ),
     );
   }
-}
-
-/// Rider, road and exhaust.
-///
-/// Drawn rather than composed from [Icon]s so the smoke can be anchored to the
-/// rear wheel in the same coordinate space as the bike, which is the only way
-/// the trail stays attached at every frame.
-class _RidePainter extends CustomPainter {
-  _RidePainter({
-    required this.ride,
-    required this.smoke,
-    required this.isDark,
-    required this.accent,
-  });
-
-  /// 0 → off the left edge, 1 → off the right edge.
-  final double ride;
-
-  /// 1 → full exhaust, 0 → cleared.
-  final double smoke;
-
-  final bool isDark;
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double roadY = size.height * 0.72;
-
-    final Paint road = Paint()
-      ..color = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.10)
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.06, roadY),
-      Offset(size.width * 0.94, roadY),
-      road,
-    );
-
-    // Travel past both edges so the bike enters and leaves off-screen rather
-    // than popping into existence at the margin.
-    final double x = -70 + ride * (size.width + 140);
-    // A gentle bob; it reads as road rather than as a glide.
-    final double bob = math.sin(ride * math.pi * 3) * 2.0;
-    final double baseY = roadY + bob;
-
-    _paintSmoke(canvas, Offset(x - 20, baseY - 10), size);
-
-    // The rider fades at the very end of the ride so the reveal is not
-    // competing with a bike still sliding out of frame.
-    final double bikeAlpha = ride < 0.9 ? 1.0 : (1 - (ride - 0.9) / 0.1);
-    _paintBike(canvas, Offset(x, baseY), bikeAlpha.clamp(0.0, 1.0));
-  }
-
-  void _paintSmoke(Canvas canvas, Offset tail, Size size) {
-    if (smoke <= 0.01) return;
-
-    // Deterministic puffs: index-driven, no RNG, so a repaint at the same
-    // `ride` draws the same frame. (A random trail flickers when Flutter
-    // repaints for an unrelated reason, e.g. a theme change.)
-    const int count = 9;
-    for (int i = 0; i < count; i++) {
-      final double t = i / count;
-      // Each puff drifts back from the tailpipe and rises as it ages.
-      final double dx = -t * 118;
-      final double dy = -t * 30 - math.sin(t * math.pi * 2) * 5;
-      final double radius = 3.5 + t * 15;
-      final double alpha = (1 - t) * 0.30 * smoke;
-      if (alpha <= 0.004) continue;
-
-      canvas.drawCircle(
-        tail + Offset(dx, dy),
-        radius,
-        Paint()
-          ..color = (isDark ? Colors.white : Colors.black54)
-              .withValues(alpha: alpha)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-      );
-    }
-  }
-
-  void _paintBike(Canvas canvas, Offset at, double alpha) {
-    if (alpha <= 0.01) return;
-
-    final Color ink = isDark ? Colors.white : const Color(0xFF0F172A);
-    final Paint frame = Paint()
-      ..color = ink.withValues(alpha: alpha)
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final Paint body = Paint()..color = accent.withValues(alpha: alpha);
-    final Paint tyre = Paint()
-      ..color = ink.withValues(alpha: alpha * 0.9)
-      ..strokeWidth = 2.6
-      ..style = PaintingStyle.stroke;
-
-    const double wheel = 9;
-    final Offset rear = at + const Offset(-16, 0);
-    final Offset front = at + const Offset(16, 0);
-
-    canvas.drawCircle(rear, wheel, tyre);
-    canvas.drawCircle(front, wheel, tyre);
-
-    // Deck and step-through frame — a scooter silhouette, which is what the
-    // company actually sells.
-    final Path deck = Path()
-      ..moveTo(rear.dx, rear.dy - wheel - 3)
-      ..lineTo(at.dx - 4, at.dy - wheel - 4)
-      ..lineTo(at.dx + 6, at.dy - wheel - 4)
-      ..lineTo(front.dx - 1, front.dy - wheel - 11);
-    canvas.drawPath(deck, frame);
-
-    // Body panel over the rear wheel.
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(rear.dx - 9, rear.dy - wheel - 11, 20, 9),
-        const Radius.circular(3),
-      ),
-      body,
-    );
-
-    // Handlebar.
-    canvas.drawLine(
-      front + const Offset(-1, -wheel - 11),
-      front + const Offset(5, -wheel - 15),
-      frame,
-    );
-
-    // Rider: head, torso, arm to the bar.
-    final Offset head = at + const Offset(-1, -wheel - 29);
-    canvas.drawCircle(head, 4.4, body);
-    canvas.drawLine(
-      head + const Offset(0, 4),
-      at + const Offset(-3, -wheel - 13),
-      frame,
-    );
-    canvas.drawLine(
-      head + const Offset(1, 6),
-      front + const Offset(3, -wheel - 14),
-      frame,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_RidePainter old) =>
-      old.ride != ride ||
-      old.smoke != smoke ||
-      old.isDark != isDark ||
-      old.accent != accent;
 }
 
 /// Manual "check for updates", reusing the controller the gate already owns.
@@ -463,11 +422,11 @@ class _VersionTapCardState extends State<VersionTapCard> {
               children: <Widget>[
                 Text('App version', style: theme.textTheme.bodyLarge),
                 const SizedBox(height: 2),
-                // Build identity only. The old string appended "connected to
-                // server" / the API address, which is not an employee's
-                // business and is the sort of thing that travels in a
-                // screenshot.
-                Text(AppInfo.label, style: theme.textTheme.bodySmall),
+                // Version only — no build number, no API address. The old
+                // string appended "connected to server" / the base URL, which
+                // is not an employee's business and is the sort of thing that
+                // travels in a screenshot.
+                VersionLabel(style: theme.textTheme.bodySmall),
               ],
             ),
           ),

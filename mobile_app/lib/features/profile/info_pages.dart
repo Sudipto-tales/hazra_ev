@@ -7,8 +7,8 @@ import '../../core/theme/dimens.dart';
 import '../../core/utils/website_links.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/stat_tile.dart';
-import 'app_info.dart';
 import 'support_page.dart';
+import 'version_label.dart';
 
 /// Simple content pages reached from Profile → Support / Privacy.
 
@@ -245,7 +245,7 @@ class AboutPage extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 4),
-                Text(AppInfo.label, style: theme.textTheme.bodySmall),
+                VersionLabel(style: theme.textTheme.bodySmall),
               ],
             ),
           ),

@@ -9,7 +9,74 @@ import '../../../core/theme/dimens.dart';
 import '../../../data/models/models.dart' hide LatLngBounds;
 import '../../../services/osrm_service.dart';
 import 'map_chrome.dart';
+import 'route_accuracy.dart';
 import 'route_painter.dart' show RouteMapColors;
+
+/// One colour per work session, so a day split by a lunch break reads as two
+/// legs rather than one line that mysteriously teleports. Wraps after five —
+/// nobody opens six sessions in a day, and if they do, repetition beats
+/// inventing unreadable colours.
+const List<Color> kSessionPalette = <Color>[
+  AppColors.primary,
+  AppColors.warning,
+  AppColors.danger,
+  AppColors.success,
+  AppColors.info,
+];
+
+Color sessionColor(int index) =>
+    kSessionPalette[index % kSessionPalette.length];
+
+/// The raw GPS trace, cut into runs of equal confidence.
+///
+/// Pure so the rendering *decision* — which stretch gets the rough treatment —
+/// can be asserted on without a map, tiles or a network.
+///
+/// A rough run keeps the session's colour and loses everything that made the
+/// line look authoritative: the white casing, most of the weight, and the solid
+/// stroke. It is dotted rather than dashed so it never reads as the dashed
+/// "raw trace under the road match" line, which is a different statement.
+///
+/// [underSnap] is true when a road-matched line is drawn on top, in which case
+/// the whole raw trace is already a reference rather than the route.
+@visibleForTesting
+List<Polyline> rawTracePolylines({
+  required List<List<LocationLog>> segments,
+  required RouteAccuracy accuracy,
+  required bool underSnap,
+}) {
+  final List<Polyline> out = <Polyline>[];
+
+  for (int i = 0; i < segments.length; i++) {
+    final Color c = sessionColor(i);
+    for (final AccuracyRun run in accuracy.runs(segments[i])) {
+      if (run.points.length < 2) continue;
+      final List<LatLng> points = run.points
+          .map((LocationLog p) => LatLng(p.latitude, p.longitude))
+          .toList(growable: false);
+
+      out.add(
+        Polyline(
+          points: points,
+          color: run.rough
+              ? c.withValues(alpha: underSnap ? 0.22 : 0.5)
+              : (underSnap ? c.withValues(alpha: 0.35) : c),
+          strokeWidth: run.rough
+              ? (underSnap ? 2 : 3)
+              : (underSnap ? 2 : 5),
+          borderColor: run.rough || underSnap ? Colors.transparent : Colors.white,
+          borderStrokeWidth: run.rough || underSnap ? 0 : 2,
+          pattern: run.rough
+              ? const StrokePattern.dotted(spacingFactor: 2.2)
+              : (underSnap
+                  ? StrokePattern.dashed(segments: const <double>[6, 5])
+                  : const StrokePattern.solid()),
+        ),
+      );
+    }
+  }
+  return out;
+}
 
 /// The route drawn on a real OpenStreetMap basemap, with the GPS trace snapped
 /// to the road network.
@@ -34,6 +101,7 @@ class RouteTileMap extends StatefulWidget {
     super.key,
     required this.track,
     required this.config,
+    required this.accuracy,
     required this.selectedId,
     required this.onSelect,
     required this.onTilesUnavailable,
@@ -43,6 +111,10 @@ class RouteTileMap extends StatefulWidget {
 
   final RouteTrack track;
   final TrackingConfig config;
+
+  /// Read-time GPS-quality verdict for [track], derived by the screen against
+  /// the config it loaded. See [RouteAccuracy].
+  final RouteAccuracy accuracy;
   final String? selectedId;
   final ValueChanged<String?> onSelect;
   final VoidCallback onTilesUnavailable;
@@ -224,6 +296,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
                 RouteTileMap(
               track: widget.track,
               config: widget.config,
+              accuracy: widget.accuracy,
               selectedId: selected,
               onSelect: (String? id) => setSheetState(() => selected = id),
               onTilesUnavailable: () {
@@ -311,6 +384,10 @@ class _RouteTileMapState extends State<RouteTileMap> {
                   return tile;
                 },
               ),
+              // Under the geofences and the route: a quality hint must never
+              // sit on top of the things it is a hint about.
+              if (widget.accuracy.hasRough)
+                CircleLayer(circles: _accuracyHalos(colors)),
               CircleLayer(circles: _geofences(colors)),
               if (_unsynced.isNotEmpty)
                 CircleLayer(circles: _unsyncedDots(colors)),
@@ -365,35 +442,60 @@ class _RouteTileMapState extends State<RouteTileMap> {
               ],
             ),
           ),
-          if (_snapping)
-            Positioned(
-              top: Insets.sm,
-              left: Insets.sm,
-              child: MapPill(
-                background: colors.plate,
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+          Positioned(
+            top: Insets.sm,
+            left: Insets.sm,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                if (_snapping)
+                  MapPill(
+                    background: colors.plate,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: Insets.xs),
+                        Text('Snapping to roads…'),
+                      ],
                     ),
-                    SizedBox(width: Insets.xs),
-                    Text('Snapping to roads…'),
-                  ],
-                ),
-              ),
-            )
-          else if (_snapNotice != null)
-            Positioned(
-              top: Insets.sm,
-              left: Insets.sm,
-              child: MapPill(
-                background: colors.plate,
-                child: Text(_snapNotice!),
-              ),
+                  )
+                else if (_snapNotice != null)
+                  MapPill(
+                    background: colors.plate,
+                    child: Text(_snapNotice!),
+                  ),
+                // Named, not warned about: the dotted stretches and the soft
+                // discs mean nothing unless something on screen says what
+                // they are.
+                if (widget.accuracy.hasRough) ...<Widget>[
+                  const SizedBox(height: Insets.xs),
+                  MapPill(
+                    background: colors.plate,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(
+                          Icons.blur_on_rounded,
+                          size: 13,
+                          color: colors.label,
+                        ),
+                        const SizedBox(width: Insets.xs),
+                        Text(
+                          'Dotted: GPS weaker than '
+                          '${widget.accuracy.thresholdLabel}',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -401,45 +503,15 @@ class _RouteTileMapState extends State<RouteTileMap> {
 
   // ---------------------------------------------------------------- layers
 
-  /// One colour per work session, so a day split by a lunch break reads as two
-  /// legs rather than one line that mysteriously teleports. Wraps after five —
-  /// nobody opens six sessions in a day, and if they do, repetition beats
-  /// inventing unreadable colours.
-  static const List<Color> _sessionPalette = <Color>[
-    AppColors.primary,
-    AppColors.warning,
-    AppColors.danger,
-    AppColors.success,
-    AppColors.info,
-  ];
-
-  Color _sessionColor(int index) =>
-      _sessionPalette[index % _sessionPalette.length];
+  Color _sessionColor(int index) => sessionColor(index);
 
   List<Polyline> _polylines(RouteMapColors colors) {
-    final List<Polyline> out = <Polyline>[];
-    final List<List<LatLng>> raw = _rawSegments;
     final bool snapped = _hasSnap;
-
-    for (int i = 0; i < raw.length; i++) {
-      final List<LatLng> segment = raw[i];
-      if (segment.length < 2) continue;
-      final Color c = _sessionColor(i);
-      out.add(
-        Polyline(
-          points: segment,
-          // Underneath the snapped line it is a reference, on its own it is
-          // the route — so it changes weight rather than disappearing.
-          color: snapped ? c.withValues(alpha: 0.35) : c,
-          strokeWidth: snapped ? 2 : 5,
-          borderColor: snapped ? Colors.transparent : Colors.white,
-          borderStrokeWidth: snapped ? 0 : 2,
-          pattern: snapped
-              ? StrokePattern.dashed(segments: const <double>[6, 5])
-              : const StrokePattern.solid(),
-        ),
-      );
-    }
+    final List<Polyline> out = rawTracePolylines(
+      segments: widget.track.segments,
+      accuracy: widget.accuracy,
+      underSnap: snapped,
+    );
 
     if (snapped) {
       final List<List<LatLng>> segments = _snapped!;
@@ -470,26 +542,86 @@ class _RouteTileMapState extends State<RouteTileMap> {
       final bool long = s.durationAt(DateTime.now()).inMinutes >=
           widget.config.longStopThresholdMinutes;
       final Color c = long ? colors.longStop : colors.stop;
+      final bool rough = widget.accuracy.stop(s).isRough;
+
+      // A rough dwell gets a soft outer wash and a faint edge instead of a
+      // crisp ring: the geofence is a guess here, and drawing it hard would
+      // claim a precision the fixes never had.
+      if (rough) {
+        out.add(
+          CircleMarker(
+            point: LatLng(s.latitude, s.longitude),
+            radius: radius * 1.35,
+            useRadiusInMeter: true,
+            color: c.withValues(alpha: 0.05),
+            borderStrokeWidth: 0,
+          ),
+        );
+      }
       out.add(
         CircleMarker(
           point: LatLng(s.latitude, s.longitude),
           radius: radius,
           useRadiusInMeter: true,
-          color: c.withValues(alpha: 0.12),
-          borderColor: c.withValues(alpha: 0.45),
+          color: c.withValues(alpha: rough ? 0.07 : 0.12),
+          borderColor: c.withValues(alpha: rough ? 0.2 : 0.45),
           borderStrokeWidth: 1,
         ),
       );
     }
     for (final CompanyVisit v in widget.track.visits) {
+      final bool rough = widget.accuracy.visit(v).isRough;
+      if (rough) {
+        out.add(
+          CircleMarker(
+            point: LatLng(v.latitude, v.longitude),
+            radius: radius * 1.35,
+            useRadiusInMeter: true,
+            color: colors.visit.withValues(alpha: 0.05),
+            borderStrokeWidth: 0,
+          ),
+        );
+      }
       out.add(
         CircleMarker(
           point: LatLng(v.latitude, v.longitude),
           radius: radius,
           useRadiusInMeter: true,
-          color: colors.visit.withValues(alpha: 0.12),
-          borderColor: colors.visit.withValues(alpha: 0.45),
+          color: colors.visit.withValues(alpha: rough ? 0.07 : 0.12),
+          borderColor: colors.visit.withValues(alpha: rough ? 0.2 : 0.45),
           borderStrokeWidth: 1,
+        ),
+      );
+    }
+    return out;
+  }
+
+  /// The uncertainty footprint of the rough fixes: one translucent disc per
+  /// fix, sized to the accuracy the handset actually reported.
+  ///
+  /// This is the honest version of "rough stretch" on a basemap — the admin
+  /// sees how wide the doubt is, in metres, against real streets. Subsampled
+  /// because a weak-signal hour can be hundreds of fixes and the point is the
+  /// shape of the doubt, not every disc in it.
+  List<CircleMarker> _accuracyHalos(RouteMapColors colors) {
+    final List<LocationLog> rough = widget.accuracy.roughFixes;
+    if (rough.isEmpty) return const <CircleMarker>[];
+
+    const int budget = 60;
+    final int step = rough.length <= budget ? 1 : (rough.length / budget).ceil();
+
+    final List<CircleMarker> out = <CircleMarker>[];
+    for (int i = 0; i < rough.length; i += step) {
+      final LocationLog p = rough[i];
+      out.add(
+        CircleMarker(
+          point: LatLng(p.latitude, p.longitude),
+          // Fall back to the threshold when the fix carried no metre value:
+          // the device flagged it, so the doubt is at least that wide.
+          radius: p.accuracy > 0 ? p.accuracy : widget.accuracy.thresholdMetres,
+          useRadiusInMeter: true,
+          color: colors.stroke.withValues(alpha: 0.06),
+          borderStrokeWidth: 0,
         ),
       );
     }

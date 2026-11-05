@@ -46,6 +46,14 @@ dependencies:
   package_info_plus: ^10.2.2
   flutter_foreground_task: ^11.0.3
 
+  # Vector animation player, for the one place the app ships an animation it
+  # did not draw itself: the rider on the Version easter-egg screen. Pure
+  # Dart, no native side, and it renders the one 40 KB asset we bundle.
+  # The 3.3.1 floor is deliberate: it is the last release that still builds
+  # on the Flutter 3.27 named above, so the declared floor stays true. Newer
+  # 3.x needs a newer Flutter and the lockfile takes it when one is present.
+  lottie: ^3.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -53,3 +61,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # The app's first bundled asset. Everything else on screen is either painted
+  # at runtime or fetched from the API, so this block exists for one file.
+  assets:
+    - assets/anim/delivery_boy.json

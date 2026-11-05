@@ -9,6 +9,7 @@ import '../../state/app_scope.dart';
 import '../../widgets/states.dart';
 import '../admin/shell/admin_shell.dart';
 import '../profile/app_info.dart';
+import '../profile/version_label.dart';
 
 /// Admin sign-in. Deliberately styled apart from the employee form so the
 /// restricted framing is obvious.
@@ -234,8 +235,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           // URL on the sign-in screen — the most-screenshotted
                           // page in the app. `describe()` still exists for
                           // `debugPrint`; it is not rendered anywhere now.
-                          child: Text(
-                            AppInfo.label,
+                          child: VersionLabel(
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall,
                           ),

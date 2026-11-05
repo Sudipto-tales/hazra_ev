@@ -4,7 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/theme/theme_ext.dart';
 import '../../widgets/app_card.dart';
-import '../profile/app_info.dart';
+import '../profile/version_label.dart';
 import 'admin_login_page.dart';
 import 'login_page.dart';
 
@@ -101,8 +101,7 @@ class RoleSelectPage extends StatelessWidget {
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: Insets.xl),
-                          child: Text(
-                            AppInfo.label,
+                          child: VersionLabel(
                             style: theme.textTheme.bodySmall,
                           ),
                         ),
