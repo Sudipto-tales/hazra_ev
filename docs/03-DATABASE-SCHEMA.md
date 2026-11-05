@@ -199,10 +199,10 @@ CREATE TABLE tracking_configs (
   offline_threshold_minutes              integer NOT NULL DEFAULT 10,
   location_unavailable_threshold_minutes integer NOT NULL DEFAULT 15,
   sync_batch_size                        integer NOT NULL DEFAULT 50,
-  sync_interval_seconds                  integer NOT NULL DEFAULT 300,  -- config v9, PENDING web-agent
-  distance_filter_metres                 integer NOT NULL DEFAULT 20,   -- config v9, PENDING web-agent
-  movement_exit_speed_kmh                double precision NOT NULL DEFAULT 3,  -- config v9, PENDING
-  live_sync_interval_seconds             integer NOT NULL DEFAULT 15,   -- config v9, PENDING
+  sync_interval_seconds                  integer NOT NULL DEFAULT 300,  -- config v9, SHIPPED (031)
+  distance_filter_metres                 integer NOT NULL DEFAULT 20,   -- config v9, SHIPPED (031)
+  movement_exit_speed_kmh                double precision NOT NULL DEFAULT 3,  -- config v9, SHIPPED
+  live_sync_interval_seconds             integer NOT NULL DEFAULT 15,   -- config v9, SHIPPED
   updated_at                             timestamptz NOT NULL DEFAULT now(),
   updated_by                             uuid REFERENCES users(id),
   CHECK (location_interval_seconds BETWEEN 5 AND 600),
@@ -214,18 +214,21 @@ CREATE TABLE tracking_configs (
 );
 ```
 
-**Config version 9 — PENDING web-agent implementation (not yet migrated).** The four rows
+**Config version 9 — SHIPPED and APPLIED ON PRODUCTION 2026-11-04T18:20:03Z.** The four rows
 flagged above back `TrackingConfig.syncIntervalSeconds`, `distanceFilterMetres`,
 `movementExitSpeedKmh` and `liveSyncIntervalSeconds` (see `02-API-PLAN.md` §3.12, which is
-authoritative for the wire shape and the validation rules). **No migration has been written
-and none of the four columns exist in the deployed MySQL schema yet.**
+authoritative for the wire shape and the validation rules). They exist in the deployed
+MariaDB schema: `website/database/migrations/031_tracking_config_v9.php` reported
+`migrated 031_tracking_config_v9` in deploy-server.yml run 41886059371, and every deploy
+since has reported `nothing to migrate`.
 
-**Why 9 and not 8.** The first two columns were specced for v8 and migration 031 was written
-but **never deployed**, so production (MariaDB 11.8.8) still serves **version 7** and no
-client has ever seen an 8. Rather than deploy 8 and immediately deploy 9, v8 is folded in:
-the two carried-over columns keep their shape, the two new ones land beside them, and
-production goes **7 → 9 in one bump without ever serving 8**. Do **not** deploy 031 as-is
-first — retarget it. Everything in this section lands together or not at all.
+**Why 9 and not 8.** The first two columns were specced for v8, migration 031 was written as
+`031_tracking_config_v8.php` and the deploy history said it may already have been applied —
+and the ledger keys on **filename**, so a retarget under the old name would have been
+silently skipped and the new columns would never have landed. It therefore shipped under the
+new filename `031_tracking_config_v9.php` with every step idempotent and a version floor
+(`version < 9 → 9`, else `+1`) that handles 7 → 9 and 8 → 9 identically. One migration, one
+deploy, all of it or none of it — which is how it went.
 
 Decisions, no longer open:
 
@@ -277,8 +280,8 @@ CREATE INDEX ON tracking_watches (watching_until);
 ```
 
 Backs `POST /tracking/watch` and the `liveUntil` field on the `POST /tracking/locations`
-response (`02-API-PLAN.md` §3.11, authoritative). **PENDING web-agent — this table does not
-exist yet.**
+response (`02-API-PLAN.md` §3.11, authoritative). **SHIPPED in migration 031 and live on
+production since 2026-11-04T18:20Z.**
 
 **One row per employee, not per admin — and that is a decision, not a simplification.** Two
 admins watching the same person share one deadline; `POST /tracking/watch` upserts and the
@@ -523,6 +526,16 @@ CREATE TABLE report_images (
 
 `imageCount` in the model becomes `count(report_images)` — a derived value, not a stored
 one, so it can never disagree with the actual attachments.
+
+**Read path, shipped 2026-11-05 — no schema change was needed.** The rows were always here;
+only the read was missing. `?include=images` (`02` §3.8) now returns the rows themselves,
+ordered by `position`, in one batched `report_id IN (…)` query alongside the existing
+`COUNT(*)`. `report_sales.imageUrl` is **not** a column and must not become one: it is
+resolved at read time from `product_colors` / `product_color_images` / `products.hero_image`,
+matched on `(product_id, color_name)` — which is exact, because `product_colors` carries
+`UNIQUE (product_id, name)` and `report_sales.color_name` was copied from it at sale time.
+The recorded consequence: re-shoot a colour's photo and older reports show the new photo
+(`02` §3.8 states why that is intended).
 
 ```sql
 CREATE TABLE report_reviews (
@@ -859,15 +872,16 @@ both) → `visit_reports` → `report_sales`, `report_images`, `report_reviews` 
 `attendance_days`, `day_routes`, `activity_events` → `notifications`,
 `notification_recipients` → `audit_log`.
 
-Shipped migration ledger (`website/database/migrations/`, 001–030): 001–007 core/tracking/
+Shipped migration ledger (`website/database/migrations/`, 001–031): 001–007 core/tracking/
 catalogue/session/report/rollup/notification tables, **008** `route_geometry`, **009**
 `day_closeouts` + `day_reopen_audit`, **010** `users.must_change_password`, 011+ the website
 admin / content / catalogue / warranty / app-release / dealer-locations / account-deletion /
 messaging tables (website side, no inbox note — not described above).
 
-**Config v9 — unshipped, one migration, one deploy (PENDING web-agent).** Migration **031**
-was written for config v8 and **never deployed**, so it must be *retargeted* rather than
-deployed as-is (§4). The v9 migration carries, together and atomically: the four
+**Config v9 — shipped as migration 031, applied on production 2026-11-04T18:20:03Z.** It was
+written first as `031_tracking_config_v8.php` and retargeted under the **new filename**
+`031_tracking_config_v9.php`, because the ledger keys on filename (§4). The v9 migration
+carries, together and atomically: the four
 `tracking_configs` columns + their `CHECK`s, the same four mirrored into
 `tracking_config_history`, `location_fixes.heading_deg` (§5), the new `tracking_watches`
 table (§4a), and the `version` bump to **9** so every device's `ETag` misses and re-pulls.

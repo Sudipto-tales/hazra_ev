@@ -313,8 +313,8 @@ slot on either.
 
 ```
 GET  /reports?subject=me|{id}|all&date=&from=&to=&status=&decision=&company=&query=
-             &include=employee,review,sales&limit=&cursor=
-GET  /reports/{id}?include=employee,review,sales
+             &include=employee,review,sales,images&limit=&cursor=
+GET  /reports/{id}?include=employee,review,sales,images
 POST /reports                       (Idempotency-Key)
 POST /reports/{id}/images           (multipart, or exchange for presigned PUTs)
 POST /reports/{id}/review           (admin)
@@ -334,6 +334,79 @@ because with an open text field there is no master list to enumerate.
 
 `POST /reports/{id}/review` returns the `ReportReview` and flips the report's `status` to
 `reviewed` in the same response, so the client never re-reads.
+
+#### `?include=images` — the read path, shipped and deployed 2026-11-05
+
+Built in `7c0de0b`, live on production since the 2026-11-05T06:32Z deploy (run 41981030777),
+with the client half published in mobile **0.1.7+8** at 06:40:11Z the same day. It closes
+the gap where attachments uploaded fine and could never be read back
+(`ReportsController::hydrate()` used to select only `COUNT(*)`). Additive on both consumers:
+a pre-0.1.7 app and the website are unaffected.
+
+`images` is an array of `Present::image` objects — `id`, `reportId`, `url`, `thumbnailUrl`,
+`width`, `height`, `bytes`, `capturedAt`, `latitude?`, `longitude?` — ordered by `position`,
+not by insertion. The presenter already existed for the upload response and is reused
+verbatim; there is no second shape.
+
+**Absent ≠ empty, and they must stay distinguishable:**
+
+| payload | means |
+| --- | --- |
+| `images` key **absent** | the caller did not ask |
+| `images: []` | asked, and this report has no photos |
+
+`Present::report` omits the key entirely rather than emitting `null`, and the client decodes
+with `containsKey`. Collapsing absent to `[]` would make every list row look like a report
+with no photos — the same bug in a new costume.
+
+`imageCount` is **unchanged, always sent, and keeps its meaning**, so no caller has to opt in.
+The two can disagree for a moment when an upload lands between a list read and a detail read;
+the client prefers the array where it has one (`VisitReport.visibleImageCount`) so it never
+draws more slots than it has URLs for. List calls deliberately do not ask for the include —
+a card only needs the count.
+
+Image `url`/`thumbnailUrl` are document-root relative (`storage/uploads/…`) like every other
+image URL here, and resolve against the **API origin**, not `baseUrl`. Resolving against
+`baseUrl` yields `/api/v1/storage/…` — a 404 that reads as a missing file rather than a wrong
+path. `thumbnailUrl` is plumbed end to end but **nothing generates thumbnails**, so it is
+`null` on every row today and clients load full images.
+
+**Attachment files are served unauthenticated, and that is a property of the contract, not an
+oversight to discover later.** `.htaccess:10` denies only `storage/apk`, and the
+front-controller rewrite at `:11-13` is `!-f`/`!-d` guarded, so an existing file under
+`storage/uploads/` is served by Apache and never reaches `index.php` or any token check.
+`storage/uploads/reports/<report-uuid>/<image-uuid>.<ext>` is therefore an **unguessable
+capability URL**: both segments are UUIDv4 (`ReportsController.php:167`, `:195-196`), so the
+tree is not enumerable, but anything holding a URL can fetch it without credentials. These are
+customer-site photographs and this presenter also exposes their `latitude`/`longitude`, so
+whether that stays acceptable — versus signed URLs or an authenticated streaming route — is an
+open decision on the board, not a settled one. Verified reachable 2026-11-05: docroot is
+`website/`, `/storage/` → 403 (listing off, not a subtree deny), a nonexistent upload path →
+the router's own 404. A genuinely uploaded file has not yet been fetched back over HTTP.
+
+#### `saleLine.imageUrl` — unconditional, resolved at read time
+
+`Present::saleLine` gained `imageUrl`: the catalogue photograph for that product **and**
+colour, relative to the API origin, `null` when the catalogue has no photo (the client then
+falls back to its painted `ProductArtwork`). Not behind an include — it is one batched query
+for the whole page and the admin needs it wherever a sale line is drawn.
+
+Resolution order: first image of that colour by `position` → the product's `hero_image` → null.
+Colour is matched by **name**, which is exact rather than a guess: `product_colors` carries
+`UNIQUE (product_id, name)` and `color_name` was copied from it at sale time.
+
+**This is a deliberate, recorded exception to standing rule 3** ("what the seller typed is
+what gets stored"). `productName` / `colorName` / `colorArgb` stay frozen at sale time so a
+renamed product cannot rewrite history. `imageUrl` is **not denormalised** — it is resolved at
+read time, so **re-shooting a colour's photo changes the photo shown on older reports**. That
+is intended: a product photo is not history, storing the URL at sale time would pin a report to
+a file that may later be replaced or deleted, and the employee-side sale card already read the
+live catalogue — this makes the admin's view agree with it instead of inventing a third
+behaviour.
+
+No N+1: `hydrate()` does a fixed number of queries whatever the row count, pinned by a counting
+PDO in `website/tests/report-images.php` (7 queries for 2 reports / 6 sale lines / 4
+attachments).
 
 ### 3.9 Catalogue — **one route, role decides visibility**
 
@@ -522,6 +595,14 @@ indistinguishable from a screen that has stopped updating. A watch is a request 
 freshness, not a claim of it.
 
 ### 3.12 Configuration — **breaking: `TrackingConfig` version 7 → 9, one bump (v8 folded in)**
+
+> **SHIPPED AND DEPLOYED.** `031_tracking_config_v9.php` applied on production
+> (`migrated 031_tracking_config_v9`, deploy-server.yml run **41886059371**,
+> **2026-11-04T18:20:03Z**); re-deployed clean since (`nothing to migrate` on runs
+> 41886191521, 41952699831 and 41981030777). The client half shipped in mobile **0.1.5+6**
+> and is superseded by 0.1.6/0.1.7. The archaeology below is kept because it explains the
+> filename and the single bump; the served `version` has **not** been read back off
+> production (`GET /config` needs an admin token nobody in the repo holds).
 
 ```
 GET /config          → TrackingConfig + {version, updatedAt, updatedBy}

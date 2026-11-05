@@ -192,7 +192,8 @@ Derivation: a run of fixes staying inside `stopRadiusMetres` for at least
 | `sessionId` | string | R | EMP | |
 | `title` | string | R | EMP | |
 | `body` | string | R | EMP | |
-| `imageCount` | int | R | EMP | Placeholder for the real attachment list — see §3.3 |
+| `imageCount` | int | R | EMP | Always sent. Count only — the attachments themselves come from `?include=images` (§3.3) |
+| `images` | `ReportImage[]` | O | SRV | **Key absent when not requested, `[]` when requested and empty** — the two must stay distinguishable (§3.3) |
 | `submittedAt` | datetime | R | SRV | |
 | `latitude` / `longitude` | double | R | EMP | Where the report was written |
 | `status` | enum | R | EMP | **Upload** vocabulary: `draft queued uploading submitted failed reviewed` |
@@ -209,14 +210,32 @@ Derivation: a run of fixes staying inside `stopRadiusMetres` for at least
 ### 3.2 `ProductSaleLine`
 
 `productId` R · `productName` R (**denormalised** so the report still reads correctly
-after a catalogue edit) · `category` R · `colorName` R · `colorArgb` int R · `units` int R.
+after a catalogue edit) · `category` R · `colorName` R · `colorArgb` int R · `units` int R ·
+`imageUrl` O (shipped 2026-11-05).
 
-### 3.3 Attachments — **required, not yet modelled**
+`imageUrl` is the **one field on this line that is not frozen at sale time**: it is resolved
+at read time from the live catalogue for that product + colour, and is `null` when the
+catalogue has no photo (the client falls back to painted artwork). So re-shooting a colour's
+photo changes the photo on older reports. Recorded as a deliberate exception to the
+"what the seller typed is what gets stored" rule — a product photograph is not history, and
+storing the URL would pin a report to a file that may later be replaced. `02` §3.8 is
+authoritative.
 
-`imageCount` is a design-pass stand-in. The real payload needs, per image:
-`id`, `reportId`, `url`, `thumbnailUrl`, `width`, `height`, `bytes`, `capturedAt`,
-`latitude?`, `longitude?`, `uploadState`. Upload is a separate multipart/presigned step
-so a report can submit while images are still queued.
+### 3.3 Attachments — **modelled and shipped 2026-11-05**
+
+`ReportImage`: `id`, `reportId`, `url`, `thumbnailUrl`, `width`, `height`, `bytes`,
+`capturedAt`, `latitude?`, `longitude?`. Served by `?include=images` on `GET /reports` and
+`GET /reports/{id}`, ordered by `position`; `02` §3.8 is authoritative. Upload stays a
+separate multipart step (`POST /reports/{id}/images`) so a report can submit while its images
+are still queued — the client's `uploadState` is device-local and not a wire field.
+
+`url` / `thumbnailUrl` are document-root relative and resolve against the **API origin**, not
+`baseUrl`. `thumbnailUrl` is plumbed end to end but nothing generates thumbnails yet, so it is
+`null` on every row today.
+
+The files themselves are served as **unauthenticated static assets** (unguessable UUIDv4
+capability URLs) — `02` §3.8 states the consequence and the open decision, which matters here
+because this payload also carries each photo's `latitude`/`longitude`.
 
 ### 3.4 `ReportDraft` (write payload)
 
@@ -491,7 +510,7 @@ These drive the endpoint consolidation in `02-API-PLAN.md`.
 | Gap | Needed for |
 | --- | --- |
 | **Auth**: token, refresh token, expiry, role, deviceId, push token | Both shells. Both logins currently accept anything |
-| **Report attachments** (§3.3) | `imageCount` is a placeholder |
+| ~~**Report attachments** (§3.3)~~ | **Closed 2026-11-05** — `ReportImage` + `?include=images` shipped and deployed |
 | **`clientId` on every offline-created record** (session, fix, report) | Idempotent replay — without it a retry duplicates |
 | **`received_at`** alongside `recordedAt` on a fix | Device clock skew, late-arriving offline batches |
 | **Audit trail**: who changed a config/employee/product, and when | Tracking rules and roster edits are unattributed |
