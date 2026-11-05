@@ -419,6 +419,28 @@ final class ReportsController extends V1Controller
             $images[$row['report_id']] = (int) $row['n'];
         }
 
+        // The attachment rows themselves, opt-in. `imageCount` above is always
+        // sent and is what the list views use; only a detail screen needs the
+        // URLs, and sending them on every list row would be the payload this
+        // `include` exists to avoid.
+        //
+        // This closes the gap where images uploaded fine and could never be
+        // read back: the read path selected COUNT(*) and nothing else, so
+        // `Present::image` was only ever reachable from the upload response and
+        // every report detail screen rendered empty slots.
+        $imageRows = null;
+        if ($this->wants('images')) {
+            $imageRows = array_fill_keys($ids, []);
+            foreach (db_fetch_all(
+                "SELECT * FROM report_images WHERE report_id IN ({$ph}) ORDER BY report_id, position, id",
+                $ids,
+            ) as $row) {
+                $imageRows[$row['report_id']][] = $row;
+            }
+        }
+
+        $saleImages = $this->saleImages($sales);
+
         $wantsEmployee = $this->wants('employee');
         $wantsReview = $this->wants('review');
 
@@ -439,7 +461,13 @@ final class ReportsController extends V1Controller
         $out = [];
 
         foreach ($rows as $row) {
-            $report = Present::report($row, $sales[$row['id']] ?? [], $images[$row['id']] ?? 0);
+            $report = Present::report(
+                $row,
+                $sales[$row['id']] ?? [],
+                $images[$row['id']] ?? 0,
+                $imageRows === null ? null : ($imageRows[$row['id']] ?? []),
+                $saleImages,
+            );
 
             if (!$wantsEmployee && !$wantsReview) {
                 $out[] = $report;
@@ -460,6 +488,81 @@ final class ReportsController extends V1Controller
             }
 
             $out[] = $item;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Catalogue photograph per (product, colour) for every sale line on the
+     * page, as one query rather than one per line.
+     *
+     * The colour is matched by **name**, which is exact rather than a guess:
+     * `product_colors` carries `UNIQUE (product_id, name)` and `color_name` on
+     * the sale line was copied from it at sale time. A colour that has since
+     * been renamed or deleted therefore finds nothing — and falls back to the
+     * product's hero image, so the admin sees the right model in the right
+     * category even when the exact shade is gone. Null only when the product
+     * has no hero image either.
+     *
+     * Keyed with a "\x00" separator because a colour name is free text and
+     * could otherwise collide with a delimiter a seller typed.
+     *
+     * @param array<string, array<int, array<string, mixed>>> $sales
+     * @return array<string, string>
+     */
+    private function saleImages(array $sales): array
+    {
+        $pairs = [];
+        $productIds = [];
+
+        foreach ($sales as $lines) {
+            foreach ($lines as $line) {
+                $productIds[$line['product_id']] = true;
+                $pairs[$line['product_id'] . "\x00" . ($line['color_name'] ?? '')] =
+                    $line['product_id'];
+            }
+        }
+
+        if (!$productIds) {
+            return [];
+        }
+
+        $ids = array_keys($productIds);
+        $ph = implode(',', array_fill(0, count($ids), '?'));
+
+        // First image of each colour, by position. GROUP BY would need an
+        // aggregate per driver; collecting in PHP and keeping the first row
+        // per colour is the same work and reads the same on both.
+        $byColour = [];
+        foreach (db_fetch_all(
+            "SELECT c.product_id, c.name AS color_name, i.url
+               FROM product_colors c
+               JOIN product_color_images i ON i.color_id = c.id
+              WHERE c.product_id IN ({$ph})
+              ORDER BY c.product_id, c.name, i.position, i.id",
+            $ids,
+        ) as $row) {
+            $key = $row['product_id'] . "\x00" . $row['color_name'];
+            $byColour[$key] ??= $row['url'];
+        }
+
+        $heroes = [];
+        foreach (db_fetch_all(
+            "SELECT id, hero_image FROM products WHERE id IN ({$ph})",
+            $ids,
+        ) as $row) {
+            if (($row['hero_image'] ?? '') !== '') {
+                $heroes[$row['id']] = $row['hero_image'];
+            }
+        }
+
+        $out = [];
+        foreach ($pairs as $key => $productId) {
+            $url = $byColour[$key] ?? $heroes[$productId] ?? null;
+            if ($url !== null) {
+                $out[$key] = $url;
+            }
         }
 
         return $out;
