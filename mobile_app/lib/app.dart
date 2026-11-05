@@ -47,7 +47,20 @@ class TrackingApp extends StatelessWidget {
                       !ApiConfig.useMocks &&
                       scope.api != null
                   ? UpdateGate(
-                      api: scope.api!, child: child ?? const SizedBox.shrink())
+                      api: scope.api!,
+                      // A locally built app is never force-updated. It is
+                      // signed with the debug key and carries a `.local`
+                      // applicationId, so the production APK this gate would
+                      // install cannot replace it — it would land as a second,
+                      // separate app. And the moment production publishes a
+                      // higher versionCode than the local checkout, enforcing
+                      // would block the whole app behind an install that
+                      // cannot succeed, with nothing on screen explaining why.
+                      // Forcing the field team onto a current build is what
+                      // this gate is for; a build someone compiled themselves
+                      // is not a field build.
+                      enforce: !kDebugMode,
+                      child: child ?? const SizedBox.shrink())
                   : child ?? const SizedBox.shrink(),
             );
           },

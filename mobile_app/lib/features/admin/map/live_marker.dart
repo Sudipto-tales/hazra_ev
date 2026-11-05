@@ -204,7 +204,14 @@ class LiveMarker {
           longStop ? LiveMarkerTone.alert : LiveMarkerTone.stopped,
         WorkStatus.locationUnavailable || WorkStatus.offline =>
           LiveMarkerTone.alert,
-        WorkStatus.ended || WorkStatus.notStarted => LiveMarkerTone.lastKnown,
+        // `paused` groups with these: no session is open, so the pin is a last
+        // known position and not a live one. The server never sends it as
+        // `status` today (§3.14 keeps that distinction in `activity`), so this
+        // arm is defensive — but it is the honest reading if it ever does.
+        WorkStatus.paused ||
+        WorkStatus.ended ||
+        WorkStatus.notStarted =>
+          LiveMarkerTone.lastKnown,
       };
     }
 

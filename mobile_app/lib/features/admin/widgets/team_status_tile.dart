@@ -24,7 +24,7 @@ class TeamStatusTile extends StatelessWidget {
 
   Color get _dot => switch (member.status) {
         WorkStatus.working => AppColors.statusMoving,
-        WorkStatus.idle => AppColors.statusIdle,
+        WorkStatus.idle || WorkStatus.paused => AppColors.statusIdle,
         WorkStatus.locationUnavailable => AppColors.statusLongStop,
         WorkStatus.offline => AppColors.statusOffline,
         WorkStatus.ended => AppColors.info,

@@ -1,25 +1,31 @@
 import 'package:flutter/material.dart';
 
-import '../../core/config/tracking_config.dart';
+import '../../core/config/brand.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
-import '../../data/models/models.dart';
-import '../../services/location_service.dart';
 import '../../state/app_scope.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/settings_tile.dart';
 import '../auth/role_select_page.dart';
-import '../home/widgets/tracking_sheet.dart';
-import 'app_info.dart';
 import 'account_deletion_page.dart';
 import 'change_password_page.dart';
+import 'developer_options_page.dart';
 import 'edit_profile_page.dart';
 import 'info_pages.dart';
+import 'permissions_page.dart';
 import 'personal_info_page.dart';
 import 'support_page.dart';
+import 'version_page.dart';
 
 enum SettingsSection { all, notifications }
 
+/// Settings, in six groups plus a version card.
+///
+/// The previous layout mixed organisation tracking thresholds, three device
+/// overrides and a release-visible location simulator in among Account and
+/// Notifications. All of that now lives behind **Developer options**, so this
+/// screen is only the things an employee changes about themselves. Nothing was
+/// dropped — see [DeveloperOptionsPage].
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, this.initialSection = SettingsSection.all});
 
@@ -29,16 +35,10 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppScope scope = AppScope.of(context);
     final SettingsController s = scope.settings;
-    const TrackingConfig config = TrackingConfig.defaults;
+    final bool full = initialSection == SettingsSection.all;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          initialSection == SettingsSection.notifications
-              ? 'Notifications'
-              : 'Settings',
-        ),
-      ),
+      appBar: AppBar(title: Text(full ? 'Settings' : 'Notifications')),
       body: ListenableBuilder(
         listenable: s,
         builder: (BuildContext context, _) {
@@ -50,7 +50,7 @@ class SettingsPage extends StatelessWidget {
               Insets.xxxl,
             ),
             children: <Widget>[
-              if (initialSection == SettingsSection.all) ...<Widget>[
+              if (full) ...<Widget>[
                 SettingsGroup(
                   title: 'Account',
                   tiles: <Widget>[
@@ -61,66 +61,26 @@ class SettingsPage extends StatelessWidget {
                       icon: Icons.person_outline_rounded,
                       title: 'Edit profile',
                       subtitle: 'Phone and photo',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const EditProfilePage(),
-                        ),
-                      ),
+                      onTap: () => _push(context, const EditProfilePage()),
                     ),
-                    // "Change password" lives under Security, not here —
-                    // this group is the record, that one is the credential.
                     SettingsTile(
                       icon: Icons.badge_outlined,
                       title: 'Account information',
                       subtitle: 'ID, designation and reporting line',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const PersonalInfoPage(),
-                        ),
-                      ),
+                      onTap: () => _push(context, const PersonalInfoPage()),
                     ),
                   ],
                 ),
                 const SizedBox(height: Insets.xl),
                 SettingsGroup(
-                  title: 'Tracking',
+                  title: 'Permissions',
                   tiles: <Widget>[
                     SettingsTile(
-                      icon: Icons.my_location_rounded,
-                      title: 'Location status',
-                      subtitle: 'Live permission, accuracy and queue',
+                      icon: Icons.shield_outlined,
+                      title: 'Location access',
+                      subtitle: 'Check status and fix it from here',
                       tone: AppColors.success,
-                      onTap: () => showTrackingSheet(context),
-                    ),
-                    SettingsTile(
-                      icon: Icons.tune_rounded,
-                      title: 'Simulate location state',
-                      subtitle: 'Demo only — exercise the blocked-start flows',
-                      tone: AppColors.warning,
-                      onTap: () => _simulateHealth(context, scope),
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.gps_fixed_rounded,
-                      title: 'High accuracy mode',
-                      subtitle:
-                          'Reject fixes worse than ±${config.minAccuracyMetres.toInt()} m',
-                      value: s.highAccuracyMode,
-                      onChanged: s.setHighAccuracyMode,
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.sync_rounded,
-                      title: 'Sync on mobile data',
-                      subtitle: 'Off means Wi-Fi only for image uploads',
-                      value: s.syncOnMobileData,
-                      onChanged: s.setSyncOnMobileData,
-                    ),
-                    SettingsSwitchTile(
-                      icon: Icons.battery_saver_rounded,
-                      title: 'Battery saver',
-                      subtitle:
-                          'Sample every ${config.locationIntervalSeconds * 2}s instead of ${config.locationIntervalSeconds}s',
-                      value: s.batterySaver,
-                      onChanged: s.setBatterySaver,
+                      onTap: () => _push(context, const PermissionsPage()),
                     ),
                   ],
                 ),
@@ -157,7 +117,7 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ],
               ),
-              if (initialSection == SettingsSection.all) ...<Widget>[
+              if (full) ...<Widget>[
                 const SizedBox(height: Insets.xl),
                 SettingsGroup(
                   title: 'App',
@@ -174,44 +134,27 @@ class SettingsPage extends StatelessWidget {
                       subtitle: s.language,
                       onTap: () => _pickLanguage(context, s),
                     ),
-                    // "Data preferences" used to sit here promising cache,
-                    // offline queue and image-quality controls. None of the
-                    // three exist as a setting anywhere in the app, and the
-                    // two knobs that do — mobile-data sync and accuracy — are
-                    // already in the Tracking group above.
                   ],
                 ),
                 const SizedBox(height: Insets.xl),
                 SettingsGroup(
                   title: 'Security',
                   tiles: <Widget>[
-                    SettingsTile(
-                        icon: Icons.person_off_outlined,
-                        title: 'Delete account',
-                        subtitle: 'Submit a request or view its status',
-                        destructive: true,
-                        onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                                builder: (_) => const AccountDeletionPage()))),
-                    // "Change password" is back: `POST /me/password` exists
-                    // now. It takes the current password as its authorisation
-                    // and signs out every other device.
+                    // `POST /me/password` takes the current password as its
+                    // authorisation and signs out every other device.
                     SettingsTile(
                       icon: Icons.lock_outline_rounded,
                       title: 'Change password',
                       subtitle: 'Signs out your other devices',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const ChangePasswordPage(),
-                        ),
-                      ),
+                      onTap: () => _push(context, const ChangePasswordPage()),
                     ),
-                    // "Device & sessions" is still gone, and stays gone: it
-                    // claimed a session list the API does not keep.
-                    // `PUT /me/device` only re-registers this phone's push
-                    // token, and sign-out already revokes every refresh token
-                    // the account holds. Showing "This device · signed in
-                    // today" was a guess printed as a fact.
+                    SettingsTile(
+                      icon: Icons.person_off_outlined,
+                      title: 'Delete account',
+                      subtitle: 'Submit a request or view its status',
+                      destructive: true,
+                      onTap: () => _push(context, const AccountDeletionPage()),
+                    ),
                     SettingsTile(
                       icon: Icons.logout_rounded,
                       title: 'Log out',
@@ -228,51 +171,51 @@ class SettingsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: Insets.xl),
                 SettingsGroup(
-                  title: 'Support',
+                  title: 'About & support',
                   tiles: <Widget>[
+                    SettingsTile(
+                      icon: Icons.info_outline_rounded,
+                      title: 'About ${Brand.product}',
+                      subtitle: 'Credits, website and support',
+                      onTap: () => _push(context, const AboutPage()),
+                    ),
                     SettingsTile(
                       icon: Icons.help_outline_rounded,
                       title: 'Help',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                            builder: (_) => const HelpPage()),
-                      ),
+                      onTap: () => _push(context, const HelpPage()),
                     ),
                     SettingsTile(
                       icon: Icons.support_agent_rounded,
                       title: 'Contact support',
                       subtitle: SupportContacts.email,
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const ContactSupportPage(),
-                        ),
-                      ),
+                      onTap: () => _push(context, const ContactSupportPage()),
                     ),
                     SettingsTile(
                       icon: Icons.bug_report_outlined,
                       title: 'Report a problem',
                       subtitle: 'Details support will ask for, ready to send',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const ReportProblemPage(),
-                        ),
-                      ),
-                    ),
-                    SettingsTile(
-                      icon: Icons.info_outline_rounded,
-                      title: 'App version',
-                      // Real build identity, and whether this build is
-                      // talking to a server — the old string hard-coded both
-                      // and was wrong about the second one the moment the API
-                      // came up.
-                      subtitle: AppInfo.labelFor(live: scope.isLive),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                            builder: (_) => const AboutPage()),
-                      ),
+                      onTap: () => _push(context, const ReportProblemPage()),
                     ),
                   ],
                 ),
+                const SizedBox(height: Insets.xl),
+                SettingsGroup(
+                  title: 'Advanced',
+                  tiles: <Widget>[
+                    SettingsTile(
+                      icon: Icons.science_outlined,
+                      title: 'Developer options',
+                      subtitle: 'Tracking rules and diagnostics',
+                      tone: AppColors.warning,
+                      onTap: () =>
+                          _push(context, const DeveloperOptionsPage()),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Insets.xl),
+                // Its own card, as requested — and the way into the version
+                // screen (four taps).
+                const VersionTapCard(),
               ],
             ],
           );
@@ -280,6 +223,11 @@ class SettingsPage extends StatelessWidget {
       ),
     );
   }
+
+  static void _push(BuildContext context, Widget page) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => page),
+      );
 
   static String _themeLabel(ThemeMode mode) => switch (mode) {
         ThemeMode.system => 'Follow system',
@@ -336,64 +284,5 @@ class SettingsPage extends StatelessWidget {
       ),
     );
     if (picked != null) s.setLanguage(picked);
-  }
-
-  /// Demo-only switch so the "location off / permission denied" dialogs can be
-  /// walked through without changing device settings.
-  Future<void> _simulateHealth(BuildContext context, AppScope scope) async {
-    final LocationService service = scope.locationService;
-    if (service is! MockLocationService) return;
-
-    final LocationHealth? picked = await showModalBottomSheet<LocationHealth>(
-      context: context,
-      showDragHandle: true,
-      builder: (BuildContext context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: LocationHealth.values
-              .map(
-                (LocationHealth h) => ListTile(
-                  title: Text(h.title),
-                  subtitle: Text(
-                    h.message,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: service.simulatedHealth == h
-                      ? const Icon(Icons.check_rounded,
-                          color: AppColors.primary)
-                      : null,
-                  onTap: () => Navigator.pop(context, h),
-                ),
-              )
-              .toList(growable: false),
-        ),
-      ),
-    );
-    if (picked == null || !context.mounted) return;
-    service.simulatedHealth = picked;
-
-    final bool reset = await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) => AlertDialog(
-            title: const Text('Reset today?'),
-            content: const Text(
-              'Put the day back to "Not started" so the Start Day flow can be '
-              'tested with this location state.',
-            ),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Keep day'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Reset'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-    if (reset) await scope.tracking.resetDay();
   }
 }

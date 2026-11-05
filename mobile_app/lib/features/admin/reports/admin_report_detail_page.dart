@@ -10,7 +10,8 @@ import '../../../widgets/avatar.dart';
 import '../../../widgets/stat_tile.dart';
 import '../../../widgets/states.dart';
 import '../../../widgets/status_badge.dart';
-import '../../reports/widgets/image_tile.dart';
+import '../../reports/widgets/report_gallery.dart';
+import '../../reports/widgets/sale_line_row.dart';
 
 /// Full report with the approve / send-back decision.
 class AdminReportDetailPage extends StatefulWidget {
@@ -271,21 +272,15 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
           ),
         ),
 
-        if (r.imageCount > 0) ...<Widget>[
-          const SectionHeader(
+        if (r.visibleImageCount > 0) ...<Widget>[
+          SectionHeader(
             title: 'Attachments',
-            padding: EdgeInsets.fromLTRB(0, Insets.xxl, 0, Insets.md),
+            subtitle: '${r.visibleImageCount} '
+                'photo${r.visibleImageCount == 1 ? '' : 's'}'
+                '${r.hasFetchedImages ? ' · tap to enlarge' : ''}',
+            padding: const EdgeInsets.fromLTRB(0, Insets.xxl, 0, Insets.md),
           ),
-          SizedBox(
-            height: 88,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: r.imageCount,
-              separatorBuilder: (_, __) => const SizedBox(width: Insets.sm),
-              itemBuilder: (BuildContext context, int i) =>
-                  ReportImageTile(index: i),
-            ),
-          ),
+          ReportGallery(report: r),
         ],
 
         if (r.hasSale) ...<Widget>[
@@ -298,12 +293,11 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
           AppCard(
             child: Column(
               children: <Widget>[
+                // Was a plain `KeyValueRow` of "name · colour → × n". The
+                // photograph is what an admin scans this list for, and
+                // `saleLine.imageUrl` now carries it.
                 ...r.sales.map(
-                  (ProductSaleLine l) => KeyValueRow(
-                    label: '${l.productName} · ${l.colorName}',
-                    value: '× ${l.units}',
-                    dense: true,
-                  ),
+                  (ProductSaleLine l) => SaleLineRow(line: l, dense: true),
                 ),
                 if (r.paymentReceived != null) ...<Widget>[
                   const Divider(height: Insets.lg),

@@ -219,7 +219,28 @@ final class Present
 
     // ----------------------------------------------------------------- reports
 
-    public static function saleLine(array $r): array
+    /**
+     * [$imageUrl] is the catalogue photograph for this product + colour, looked
+     * up at read time (`ReportsController::saleImages`).
+     *
+     * It is **not** denormalised onto the sale line the way `productName`,
+     * `colorName` and `colorArgb` are, and that is a deliberate difference
+     * from the standing "what the seller typed is what gets stored" rule: the
+     * rule exists so a renamed product cannot rewrite history, and a product
+     * photograph is not history — it is the current picture of the thing that
+     * was sold. Storing the URL at sale time would also pin a report to a file
+     * that may later be replaced or deleted, leaving a broken image instead of
+     * a current one.
+     *
+     * The consequence, stated plainly: re-shoot a colour's photo and older
+     * reports show the new photo. The employee-side sale card already behaves
+     * this way (it reads the live catalogue's `imageUrls`), so this makes the
+     * admin's view agree with the employee's rather than inventing a third
+     * behaviour. Relative path — resolved against the API origin by the
+     * client, like every other image URL here. Null when the colour no longer
+     * exists in the catalogue and the product has no hero image.
+     */
+    public static function saleLine(array $r, ?string $imageUrl = null): array
     {
         return [
             'productId'   => $r['product_id'],
@@ -228,11 +249,32 @@ final class Present
             'colorName'   => $r['color_name'] ?? '',
             'colorArgb'   => Wire::int($r['color_argb']),
             'units'       => Wire::int($r['units']),
+            'imageUrl'    => $imageUrl,
         ];
     }
 
-    /** `dealValue` and `paymentReceived` stay the text the seller typed. */
-    public static function report(array $r, array $sales = [], int $imageCount = 0): array
+    /**
+     * `dealValue` and `paymentReceived` stay the text the seller typed.
+     *
+     * [$images] is the attachment array, present only under
+     * `?include=images`. `imageCount` is always sent and keeps its meaning, so
+     * a client that does not ask for the array is unaffected — which is what
+     * makes this addition non-breaking for the two consumers.
+     *
+     * The distinction matters: `imageCount === 0` means "no photos", whereas
+     * `images === null` means "you did not ask". Collapsing them to an empty
+     * array would make a list response look like a report with no photos.
+     *
+     * [$saleImages] maps `product_id` + "\x00" + `color_name` to a catalogue
+     * URL — see [saleLine].
+     */
+    public static function report(
+        array $r,
+        array $sales = [],
+        int $imageCount = 0,
+        ?array $images = null,
+        array $saleImages = [],
+    ): array
     {
         return [
             'id'              => $r['id'],
@@ -251,9 +293,17 @@ final class Present
             'status'          => Wire::enum($r['status']),
             'dealValue'       => Wire::text($r['deal_value'] ?? null),
             'followUpOn'      => Wire::date($r['follow_up_on'] ?? null),
-            'sales'           => array_map([self::class, 'saleLine'], $sales),
+            'sales'           => array_map(
+                static fn(array $line): array => self::saleLine(
+                    $line,
+                    $saleImages[$line['product_id'] . "\x00" . ($line['color_name'] ?? '')] ?? null,
+                ),
+                $sales,
+            ),
             'paymentReceived' => Wire::text($r['payment_received'] ?? null),
-        ];
+        ]
+            // Absent, not null, when the caller did not ask: see the docblock.
+            + ($images === null ? [] : ['images' => array_map([self::class, 'image'], $images)]);
     }
 
     public static function review(string $reportId, ?array $r): array

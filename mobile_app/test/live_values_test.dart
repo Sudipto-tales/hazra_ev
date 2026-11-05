@@ -35,6 +35,8 @@ class _ScriptedLocationService implements LocationService {
       StreamController<SyncSnapshot>.broadcast();
   final StreamController<MovementStatus> _movement =
       StreamController<MovementStatus>.broadcast();
+  final StreamController<LocationHealth> _health =
+      StreamController<LocationHealth>.broadcast();
 
   MovementStatus _movementValue = MovementStatus.unknown;
   SyncSnapshot _syncValue = const SyncSnapshot(
@@ -51,6 +53,13 @@ class _ScriptedLocationService implements LocationService {
   void emitMovement(MovementStatus m) {
     _movementValue = m;
     _movement.add(m);
+  }
+
+  /// Push a health change the way the real service does off the OS location
+  /// toggle, so the controller's subscription can be exercised without a plugin.
+  void emitHealth(LocationHealth h) {
+    scriptedHealth = h;
+    _health.add(h);
   }
 
   void emitSync(SyncSnapshot s) {
@@ -118,10 +127,17 @@ class _ScriptedLocationService implements LocationService {
     yield* _movement.stream;
   }
 
+  @override
+  Stream<LocationHealth> healthState() async* {
+    yield scriptedHealth;
+    yield* _health.stream;
+  }
+
   Future<void> dispose() async {
     await _fixes.close();
     await _sync.close();
     await _movement.close();
+    await _health.close();
   }
 }
 

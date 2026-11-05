@@ -101,7 +101,14 @@ void main() {
       expect(back.longitude, original.longitude);
       expect(back.accuracy, original.accuracy);
       expect(back.speedKmh, original.speedKmh);
-      expect(back.recordedAt, original.recordedAt);
+      // The *instant* round-trips exactly; the UTC flag deliberately does not.
+      // `toJson` writes `.toUtc()`, and `fromJson` now brings the value back
+      // with `.toLocal()` so the UI cannot render a UTC wall clock by accident
+      // (an 08:35 IST session start displayed as "03:05"). `isAtSameMomentAs`
+      // is the right comparison here because `DateTime.==` also compares
+      // `isUtc`, so it would fail on two values that denote the same moment.
+      expect(back.recordedAt.isAtSameMomentAs(original.recordedAt), isTrue);
+      expect(back.recordedAt.isUtc, isFalse);
       expect(back.syncState, original.syncState);
       expect(back.lowAccuracy, isTrue);
     });

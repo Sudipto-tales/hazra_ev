@@ -49,7 +49,11 @@ Future<void> showLocationBlockedDialog(
             style: FilledButton.styleFrom(
               minimumSize: const Size(150, Sizes.touchTarget),
             ),
-            child: const Text('Enable location'),
+            // Was a hardcoded 'Enable location' for every cause, which is
+            // wrong for two of the three location failures: a denied runtime
+            // permission needs a re-request and a permanently-denied one can
+            // only be fixed in system settings. The enum names the remedy.
+            child: Text(health.actionLabel ?? 'Enable location'),
           ),
         ],
       );

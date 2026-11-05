@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/theme/theme_ext.dart';
-import '../../state/app_scope.dart';
 import '../../widgets/app_card.dart';
 import '../profile/app_info.dart';
 import 'admin_login_page.dart';
@@ -103,9 +102,7 @@ class RoleSelectPage extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: Insets.xl),
                           child: Text(
-                            AppInfo.labelFor(
-                              live: AppScope.of(context).isLive,
-                            ),
+                            AppInfo.label,
                             style: theme.textTheme.bodySmall,
                           ),
                         ),

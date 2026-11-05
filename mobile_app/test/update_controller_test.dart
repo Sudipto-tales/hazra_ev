@@ -214,4 +214,83 @@ void main() {
     expect(calls.where((call) => call.method == 'install').length, 2);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('enforce: false lets the app through but keeps the controller',
+      (tester) async {
+    // What a locally built app does. The same payload that blocks above must
+    // not block here — a debug build is signed with the debug key and carries
+    // a `.local` applicationId, so the production APK this gate would install
+    // cannot replace it, and enforcing would dead-end the app behind an
+    // install that cannot succeed.
+    //
+    // `app.dart` passes `enforce: !kDebugMode`. The flag is a constructor
+    // argument rather than a `kDebugMode` read inside the widget precisely so
+    // both branches stay reachable from here: `flutter test` always runs in
+    // debug, so a widget that checked `kDebugMode` itself would make the
+    // blocking path above untestable.
+    await tester.pumpWidget(MaterialApp(
+      home: const Scaffold(body: Text('Employee home')),
+      builder: (context, child) =>
+          UpdateGate(api: api, enforce: false, child: child!),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Update required'), findsNothing);
+    expect(find.text('Employee home'), findsOneWidget);
+
+    // Only the overlay is skipped. The controller still ran its check, so
+    // UpdateScope is live and the version screen's "Check now" still works.
+    expect(requests, greaterThan(0),
+        reason: 'the update check must still run, it just does not block');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('UpdateScope publishes the controller to the pages below',
+      (tester) async {
+    UpdateController? seen;
+
+    await tester.pumpWidget(MaterialApp(
+      home: const Scaffold(body: Text('home')),
+      builder: (context, child) => UpdateGate(
+        api: api,
+        enforce: false,
+        child: Builder(
+          builder: (BuildContext inner) {
+            seen = UpdateScope.maybeOf(inner);
+            return child!;
+          },
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // The version screen's "Check now" reaches the gate's controller through
+    // this, instead of constructing a second one with its own cache read and
+    // its own idea of `requiredUpdate`.
+    expect(seen, isNotNull);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('maybeOf is null with no gate above, so callers can degrade',
+      (tester) async {
+    UpdateController? seen;
+    bool built = false;
+
+    // Web, iOS and `--dart-define=USE_MOCKS=true` all run without the gate.
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (BuildContext context) {
+          seen = UpdateScope.maybeOf(context);
+          built = true;
+          return const Scaffold(body: Text('home'));
+        },
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(built, isTrue, reason: 'absence must not throw');
+    expect(seen, isNull);
+  });
 }

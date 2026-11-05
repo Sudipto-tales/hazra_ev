@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../core/config/api_config.dart';
+import '../../core/config/brand.dart';
 import '../../core/config/tracking_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
-import '../../state/app_scope.dart';
+import '../../core/utils/website_links.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/stat_tile.dart';
 import 'app_info.dart';
@@ -214,12 +214,6 @@ class AboutPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppScope scope = AppScope.of(context);
-
-    // This block is the first thing anyone reads when a bug report says
-    // "the numbers are wrong", so it has to describe the build that is
-    // actually running rather than the one it was written against.
-    final bool live = scope.isLive;
 
     return Scaffold(
       appBar: AppBar(title: const Text('About')),
@@ -247,49 +241,172 @@ class AboutPage extends StatelessWidget {
                       color: Colors.white, size: 33),
                 ),
                 const SizedBox(height: Insets.lg),
-                Text('Field Tracker', style: theme.textTheme.headlineSmall),
+                Text(Brand.appName,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 4),
                 Text(AppInfo.label, style: theme.textTheme.bodySmall),
               ],
             ),
           ),
           const SizedBox(height: Insets.xxl),
-          AppCard(
+
+          // Attribution. The two company names are italic because they are
+          // proper nouns being credited, not labels — which is also why they
+          // are a RichText span rather than a KeyValueRow: the emphasis sits
+          // on part of the sentence, not on the value of a field.
+          const AppCard(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                KeyValueRow(
-                  label: 'Data source',
-                  value: live ? 'Live server' : 'Static demo data',
-                  icon: Icons.dataset_outlined,
+                _Attribution(
+                  icon: Icons.bolt_rounded,
+                  prefix: 'Powered by ',
+                  company: Brand.product,
                 ),
-                KeyValueRow(
-                  label: 'Backend',
-                  value: live ? ApiConfig.baseUrl : 'Not connected',
-                  icon: live
-                      ? Icons.cloud_done_outlined
-                      : Icons.cloud_off_outlined,
-                ),
-                KeyValueRow(
-                  label: 'Tracking engine',
-                  value: live ? 'Device GPS' : 'Mock location service',
-                  icon: Icons.my_location_rounded,
-                ),
-                KeyValueRow(
-                  label: 'Support',
-                  value: SupportContacts.email,
-                  icon: Icons.mail_outline_rounded,
-                  valueColor: theme.colorScheme.primary,
+                Divider(height: Insets.lg),
+                _Attribution(
+                  icon: Icons.code_rounded,
+                  prefix: 'Developed by ',
+                  company: Brand.developer,
                 ),
               ],
             ),
           ),
           const SizedBox(height: Insets.lg),
+
+          // What this card deliberately no longer carries: the API base URL
+          // ("Backend") and a "Data source · Live server" row. The address of
+          // the server is not something a field employee needs, and printing
+          // it on a screen anyone can open is the kind of detail that ends up
+          // in a screenshot. `ApiConfig.describe()` still exists for
+          // `debugPrint`, which is where it belongs.
+          AppCard(
+            child: Column(
+              children: <Widget>[
+                _LinkRow(
+                  icon: Icons.language_rounded,
+                  label: 'Website',
+                  onTap: () => WebsiteLinks.open(
+                    context,
+                    Uri.parse(WebsiteLinks.baseUrl),
+                  ),
+                ),
+                const Divider(height: Insets.lg),
+                _LinkRow(
+                  icon: Icons.mail_outline_rounded,
+                  label: 'Support',
+                  trailing: SupportContacts.email,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ContactSupportPage(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: Insets.xxl),
           Text(
-            '© 2026 Company Ltd. All rights reserved.',
+            Brand.copyright,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// `Powered by `*`Hazra EV`* — one sentence, emphasis on the name only.
+class _Attribution extends StatelessWidget {
+  const _Attribution({
+    required this.icon,
+    required this.prefix,
+    required this.company,
+  });
+
+  final IconData icon;
+  final String prefix;
+  final String company;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final TextStyle base =
+        theme.textTheme.bodyLarge ?? const TextStyle(fontSize: 16);
+
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 19, color: theme.colorScheme.primary),
+        const SizedBox(width: Insets.md),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              style: base.copyWith(color: AppColors.textSecondary),
+              children: <InlineSpan>[
+                TextSpan(text: prefix),
+                TextSpan(
+                  text: company,
+                  style: base.copyWith(
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w700,
+                    color: theme.textTheme.bodyLarge?.color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A tappable row in an [AppCard]: icon, label, optional value, chevron.
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(Radii.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, size: 19, color: theme.colorScheme.primary),
+            const SizedBox(width: Insets.md),
+            Text(label, style: theme.textTheme.bodyLarge),
+            const Spacer(),
+            if (trailing != null)
+              Flexible(
+                child: Text(
+                  trailing!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            const SizedBox(width: 2),
+            const Icon(Icons.chevron_right_rounded,
+                size: 18, color: AppColors.textSecondary),
+          ],
+        ),
       ),
     );
   }

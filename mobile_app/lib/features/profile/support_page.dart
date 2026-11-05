@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../core/utils/formatters.dart';
-import '../../state/app_scope.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/stat_tile.dart';
 import 'app_info.dart';
@@ -106,13 +105,14 @@ class ReportProblemPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppScope scope = AppScope.of(context);
     final DateTime now = DateTime.now();
 
+    // No "Data source" row and no server address. Support can tell a live
+    // build from a demo one by the build number, and the API host is not
+    // something to paste into an email thread.
     final Map<String, String> details = <String, String>{
       'App version': AppInfo.label,
       'Platform': defaultTargetPlatform.name,
-      'Data source': scope.isLive ? 'Live server' : 'Demo data (no server)',
       'Prepared': '${Fmt.mediumDate(now)} ${Fmt.time(now)}',
     };
 

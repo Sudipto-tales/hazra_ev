@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 
-import '../../core/config/api_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/dimens.dart';
 import '../../data/api/api_exception.dart';
@@ -228,8 +227,13 @@ class _LoginPageState extends State<LoginPage> {
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: Insets.xl),
+                          // Build identity only. This used to append
+                          // `ApiConfig.describe()`, which printed the API base
+                          // URL on the sign-in screen — the most-screenshotted
+                          // page in the app. `describe()` still exists for
+                          // `debugPrint`; it is not rendered anywhere now.
                           child: Text(
-                            '${AppInfo.label} · ${ApiConfig.describe()}',
+                            AppInfo.label,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall,
                           ),

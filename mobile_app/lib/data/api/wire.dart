@@ -320,6 +320,10 @@ class Wire {
         colorName: str(j['colorName']),
         colorArgb: integer(j['colorArgb']),
         units: integer(j['units']),
+        // Catalogue photograph for this product + colour, resolved server-side
+        // at read time. Null on a server too old to send it, which is why
+        // every render site falls back to the painted artwork.
+        imageUrl: strOrNull(j['imageUrl']),
       );
 
   static VisitReport report(Map<String, dynamic> j) => VisitReport(
@@ -342,6 +346,26 @@ class Wire {
         followUpOn: dateOrNull(j['followUpOn']),
         sales: maps(j['sales']).map(saleLine).toList(),
         paymentReceived: strOrNull(j['paymentReceived']),
+        // `containsKey`, not a null check: the server sends the key only under
+        // `?include=images`, and absent ("you did not ask") has to stay
+        // distinguishable from `[]` ("this report has no photos"). Collapsing
+        // them is what made the detail page render empty slots forever.
+        images: j.containsKey('images')
+            ? maps(j['images']).map(reportImage).toList()
+            : null,
+      );
+
+  static ReportImage reportImage(Map<String, dynamic> j) => ReportImage(
+        id: str(j['id']),
+        reportId: str(j['reportId']),
+        url: str(j['url']),
+        thumbnailUrl: strOrNull(j['thumbnailUrl']),
+        width: j['width'] == null ? null : integer(j['width']),
+        height: j['height'] == null ? null : integer(j['height']),
+        bytes: j['bytes'] == null ? null : integer(j['bytes']),
+        capturedAt: dateOrNull(j['capturedAt']),
+        latitude: j['latitude'] == null ? null : dbl(j['latitude']),
+        longitude: j['longitude'] == null ? null : dbl(j['longitude']),
       );
 
   static ReportReview review(Map<String, dynamic> j) => ReportReview(

@@ -63,7 +63,16 @@ class TrackingController extends ChangeNotifier {
         // The no-op is the mock/no-server path, and the safe default for a
         // caller that has not been updated: it keeps the day working locally
         // and never claims anything reached a server.
-        _sync = trackingRepository ?? const NoopTrackingRepository();
+        _sync = trackingRepository ?? const NoopTrackingRepository() {
+    // Health is watched for the whole life of the controller, not just while a
+    // session is open. Switching GPS off while idle or on break used to go
+    // unnoticed until the next Start Day tap, because the only health check
+    // lived on the session ticker — which `pauseSession` stops.
+    _healthSub = _location.healthState().listen(
+      _onHealthPushed,
+      onError: (Object e) => debugPrint('[tracking] health stream failed: $e'),
+    );
+  }
 
   final EmployeeRepository _repo;
   final LocationService _location;
@@ -118,6 +127,32 @@ class TrackingController extends ChangeNotifier {
   /// controller subscribes and republishes; it does not compute. See
   /// [LocationService.movementState].
   StreamSubscription<MovementStatus>? _movementSub;
+
+  /// Device location health, pushed. Lives as long as the controller — see the
+  /// note in the constructor.
+  StreamSubscription<LocationHealth>? _healthSub;
+
+  /// Health while **no** session is open, so Home can offer "turn location on"
+  /// before the employee taps Start Day and is refused. Null until the first
+  /// reading lands.
+  ///
+  /// Kept separate from the snapshot's `locationHealth`, which is a fact about
+  /// a running session and is what the server is told about. Writing an idle
+  /// reading into the snapshot would make `_statusForHealth` degrade a day
+  /// that has not started.
+  LocationHealth? get idleLocationHealth => _idleHealth;
+  LocationHealth? _idleHealth;
+
+  /// The health reading Home should actually render.
+  ///
+  /// With a session open that is the snapshot's value — session state, and
+  /// what the server has been told. With no session open the snapshot's value
+  /// is stale (or the `ok` an empty snapshot starts life with), so the idle
+  /// reading is the honest one. Falls back to `ok` only before the first
+  /// reading has landed, which is a fraction of a second at launch.
+  LocationHealth get effectiveLocationHealth => status.isSessionOpen
+      ? locationHealth
+      : (_idleHealth ?? LocationHealth.ok);
 
   // ------------------------------------------------------------- distance
   //
@@ -279,6 +314,31 @@ class TrackingController extends ChangeNotifier {
     _location.updateConfig(next);
   }
 
+  /// Recover [WorkStatus.paused] from a server snapshot that cannot express it.
+  ///
+  /// `Engine::liveStatus` collapses "no open session" to `ended` as soon as the
+  /// day has any sessions at all (`$status = $sessions ? 'ended' : 'not_started'`),
+  /// whether the day is locked or not. Adopted verbatim that reads as a
+  /// finished day, and `_Actions` renders a **disabled** "Day completed" — so
+  /// an employee who tapped Break and then relaunched the app was locked out
+  /// of their own open day until they cleared app data.
+  ///
+  /// `dayState` is the field that still carries the truth, and it is served
+  /// unconditionally (`DaysController`: "Unconditional, not an include"). An
+  /// unlocked day with sessions but none open is a break, not an ending.
+  ///
+  /// This is a decode-time repair of one lossy enum, not a local
+  /// re-derivation of §3.14's `activity` — that stays the server's job. When
+  /// the `activity` key collision is fixed server-side, `activity == paused`
+  /// becomes the direct source and this can read it instead.
+  HomeSnapshot _reconcileStatus(HomeSnapshot fresh) {
+    if (fresh.status != WorkStatus.ended) return fresh;
+    if (fresh.dayState.isLocked) return fresh;
+    if (fresh.sessions.isEmpty) return fresh;
+    if (fresh.sessions.any((WorkSession s) => s.endTime == null)) return fresh;
+    return fresh.copyWith(status: WorkStatus.paused);
+  }
+
   Future<void> load() async {
     _loading = true;
     _error = null;
@@ -290,7 +350,7 @@ class TrackingController extends ChangeNotifier {
       // to the state being replaced, and the server's number is the baseline
       // for everything measured from here.
       _resetDistance();
-      _snapshot = fresh;
+      _snapshot = _reconcileStatus(fresh);
       _reconcileDistance(fresh.summary.distanceKm, syncedAt: null);
       _error = null;
       // Fresh thresholds at login/resume (§3.12). Best-effort — see
@@ -482,7 +542,10 @@ class TrackingController extends ChangeNotifier {
   Future<void> pauseSession() async {
     final WorkSession? open = activeSession;
     if (open == null) return;
-    _closeSession(open, WorkStatus.idle, reason: SessionEndReason.pause);
+    // `paused`, not `idle`. `idle` is the server's "open session, stationary"
+    // and reports isSessionOpen == true, so it left the card showing a frozen
+    // timer and a Break button, and made `startDay` refuse the resume.
+    _closeSession(open, WorkStatus.paused, reason: SessionEndReason.pause);
     _queueClose(open.id, reason: SessionEndReason.pause);
     await _location.stopTracking();
     _stopTicker();
@@ -591,7 +654,7 @@ class TrackingController extends ChangeNotifier {
     final WorkSession? open = activeSession;
     if (open == null) return;
 
-    _closeSession(open, WorkStatus.idle, reason: SessionEndReason.auto);
+    _closeSession(open, WorkStatus.paused, reason: SessionEndReason.auto);
     // Reason `auto` goes up as `pause`: the session stops, the day does not.
     _queueClose(open.id, reason: SessionEndReason.auto, endedAt: _now);
     _autoClosedAt = _now;
@@ -1066,6 +1129,42 @@ class TrackingController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// A health value pushed by the service (the OS location toggle moved).
+  ///
+  /// Routed by whether a session is open: an open session's health is session
+  /// state the server is told about, an idle reading is only a prompt for
+  /// Home. Both notify, because both change what the screen should say.
+  void _onHealthPushed(LocationHealth health) {
+    if (_disposed) return;
+
+    // Which branch a reading took is the whole question when watching this on
+    // a device: session health goes to the server, an idle reading only
+    // prompts Home.
+    debugPrint('[tracking] health ${health.name} '
+        '(session ${status.isSessionOpen ? 'open' : 'closed'}, '
+        'status ${status.name})');
+
+    if (status.isSessionOpen) {
+      if (_snapshot == null || health == locationHealth) return;
+      _applyHealth(health);
+      unawaited(_pushHealth(health));
+      notifyListeners();
+      return;
+    }
+
+    if (health == _idleHealth) return;
+    _idleHealth = health;
+    notifyListeners();
+  }
+
+  /// Force a health re-read. For the moment the employee returns from the
+  /// system settings app, where nothing observable to this process happened.
+  Future<void> refreshLocationHealth() async {
+    final LocationHealth health = await _location.health();
+    if (_disposed) return;
+    _onHealthPushed(health);
+  }
+
   /// GPS unusable **and** no network, for [TrackingConfig.autoCloseAfterMinutes],
   /// with a session open → close it.
   ///
@@ -1141,6 +1240,7 @@ class TrackingController extends ChangeNotifier {
     _syncSub?.cancel();
     _fixSub?.cancel();
     _movementSub?.cancel();
+    _healthSub?.cancel();
     unawaited(_sessionNotif?.stop());
     _endDayRequests.dispose();
     _clock.dispose();

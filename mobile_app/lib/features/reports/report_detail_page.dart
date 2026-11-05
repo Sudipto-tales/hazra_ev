@@ -9,7 +9,7 @@ import '../../widgets/app_card.dart';
 import '../../widgets/stat_tile.dart';
 import '../../widgets/states.dart';
 import '../../widgets/status_badge.dart';
-import 'widgets/image_tile.dart';
+import 'widgets/report_gallery.dart';
 import 'widgets/product_artwork.dart';
 import 'widgets/product_widgets.dart';
 
@@ -126,52 +126,46 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                   ],
                 ),
               ),
-              if (r.imageCount > 0) ...<Widget>[
+              if (r.visibleImageCount > 0) ...<Widget>[
                 SectionHeader(
                   title: 'Attachments',
-                  subtitle: '${r.imageCount} photo'
-                      '${r.imageCount == 1 ? '' : 's'} uploaded with this '
-                      'report',
+                  subtitle: '${r.visibleImageCount} photo'
+                      '${r.visibleImageCount == 1 ? '' : 's'} uploaded with '
+                      'this report'
+                      '${r.hasFetchedImages ? ' · tap to enlarge' : ''}',
                   padding: const EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
                 ),
                 AppCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Wrap(
-                        spacing: Insets.sm,
-                        runSpacing: Insets.sm,
-                        children: List<Widget>.generate(
-                          r.imageCount,
-                          (int i) => ReportImageTile(index: i, size: 92),
-                        ),
-                      ),
-                      const SizedBox(height: Insets.md),
-                      // The count is genuinely all the contract gives us:
-                      // `GET /reports/{id}` returns `imageCount` and no urls,
-                      // and there is no `include=images`. Showing empty slots
-                      // plus this line is the most the app can honestly say —
-                      // the alternative, tinted rectangles that read as
-                      // photos, was worse than showing nothing.
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          const Icon(
-                            Icons.info_outline_rounded,
-                            size: 15,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: Insets.xs),
-                          Expanded(
-                            child: Text(
-                              'Photos are stored with the report on the '
-                              'server. They cannot be previewed in the app '
-                              'yet.',
-                              style: theme.textTheme.bodySmall,
+                      ReportGallery(report: r),
+                      // The "they cannot be previewed in the app yet" note
+                      // that used to live here is gone — `?include=images`
+                      // serves the URLs now, so it would be false. It is kept
+                      // for the one case where it is still true: a build
+                      // running against a server that does not serve them.
+                      if (!r.hasFetchedImages) ...<Widget>[
+                        const SizedBox(height: Insets.md),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              size: 15,
+                              color: AppColors.textSecondary,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: Insets.xs),
+                            Expanded(
+                              child: Text(
+                                'Photos are stored with the report on the '
+                                'server. This build cannot preview them.',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

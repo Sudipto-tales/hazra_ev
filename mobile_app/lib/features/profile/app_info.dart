@@ -37,9 +37,10 @@ class AppInfo {
     }
   }
 
-  /// The version line with the data source appended. "Which build is this?"
-  /// and "is it actually talking to the server?" are the same question when
-  /// somebody reports a bug, so the answer is one string.
-  static String labelFor({required bool live}) =>
-      '$label · ${live ? 'connected to server' : 'demo data'}';
+  // `labelFor({required bool live})` used to live here, appending
+  // "connected to server" / "demo data" to [label]. It is gone: the only
+  // caller was the Settings version row, and the whole class of
+  // "which backend is this build pointed at?" detail is no longer rendered in
+  // the UI at all. `ApiConfig.describe()` answers it for `debugPrint` and
+  // `flutter logs`, which is where that belongs.
 }

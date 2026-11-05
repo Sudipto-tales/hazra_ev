@@ -29,6 +29,23 @@ abstract class LocationService {
   /// Device location service + permission + accuracy health.
   Future<LocationHealth> health();
 
+  /// [health] pushed as it changes, rather than polled.
+  ///
+  /// The GPS master switch is the one input that can change at any moment,
+  /// from outside the app, with no warning — and the controller's 15 s poll
+  /// only runs while a session is open, so switching location off while idle
+  /// or on break went unnoticed until the next Start Day tap.
+  ///
+  /// The production implementation drives this from
+  /// `Geolocator.getServiceStatusStream()`, which fires the instant the toggle
+  /// moves. A runtime permission revoked from the settings app has no
+  /// equivalent stream on Android, so [TrackingController] still polls as the
+  /// backstop; this makes the common case immediate rather than up to a poll
+  /// interval late.
+  ///
+  /// Emits the current value on subscribe, then every change.
+  Stream<LocationHealth> healthState();
+
   /// Ask the OS for foreground (and, if [background], always-on) permission.
   Future<LocationHealth> requestPermission({bool background = false});
 
@@ -89,14 +106,26 @@ class MockLocationService implements LocationService {
   @override
   void updateConfig(TrackingConfig next) => config = next;
 
-  /// Flip from the Settings screen to exercise the blocked-start dialogs.
-  LocationHealth simulatedHealth = LocationHealth.ok;
+  /// Flip from Developer options to exercise the blocked-start dialogs.
+  ///
+  /// Assigning it also publishes on [healthState], so the simulator exercises
+  /// the same push path the real service uses and not only the pull path.
+  LocationHealth get simulatedHealth => _simulatedHealth;
+  set simulatedHealth(LocationHealth next) {
+    if (next == _simulatedHealth) return;
+    _simulatedHealth = next;
+    if (!_healthState.isClosed) _healthState.add(next);
+  }
+
+  LocationHealth _simulatedHealth = LocationHealth.ok;
 
   final Random _rnd = Random(99);
   final StreamController<SyncSnapshot> _sync =
       StreamController<SyncSnapshot>.broadcast();
   final StreamController<MovementStatus> _movementState =
       StreamController<MovementStatus>.broadcast();
+  final StreamController<LocationHealth> _healthState =
+      StreamController<LocationHealth>.broadcast();
 
   MovementStatus _movement = MovementStatus.unknown;
 
@@ -193,6 +222,12 @@ class MockLocationService implements LocationService {
   }
 
   @override
+  Stream<LocationHealth> healthState() async* {
+    yield _simulatedHealth;
+    yield* _healthState.stream;
+  }
+
+  @override
   Future<void> flushQueue() async {
     await Future<void>.delayed(const Duration(milliseconds: 700));
     _queued = 0;
@@ -230,6 +265,7 @@ class MockLocationService implements LocationService {
     _timer?.cancel();
     _sync.close();
     _movementState.close();
+    _healthState.close();
   }
 }
 
@@ -383,7 +419,18 @@ class GeoLocationService implements LocationService {
   final StreamController<MovementStatus> _movementState =
       StreamController<MovementStatus>.broadcast();
 
+  /// Publishes [health] as it changes. See [LocationService.healthState].
+  final StreamController<LocationHealth> _healthState =
+      StreamController<LocationHealth>.broadcast();
+
+  /// Last value published on [_healthState], so an unchanged recompute does
+  /// not wake every listener.
+  LocationHealth? _lastHealth;
+
   MovementStatus _movement = MovementStatus.unknown;
+
+  /// The GPS master switch, watched rather than polled.
+  StreamSubscription<ServiceStatus>? _serviceStatus;
 
   StreamSubscription<Position>? _positions;
   Timer? _retry;
@@ -566,6 +613,69 @@ class GeoLocationService implements LocationService {
       debugPrint('[location] health check failed: $e');
       return LocationHealth.serviceDisabled;
     }
+  }
+
+  @override
+  Stream<LocationHealth> healthState() async* {
+    // Armed here rather than in the constructor, and deliberately so.
+    // `getServiceStatusStream()` is an EventChannel: subscribing to it reaches
+    // for `ServicesBinding.instance`, so arming it at construction made simply
+    // *building* this service throw in any context without a platform binding
+    // — a plain Dart test, an isolate. Lazy arming keeps construction
+    // platform-free and only pays the cost when somebody actually listens.
+    _watchServiceStatus();
+
+    // Computed on subscribe rather than replaying `_lastHealth`: a listener
+    // attaching after a long idle wants the answer now, not whatever was true
+    // when the last event fired.
+    final LocationHealth current = await health();
+    _lastHealth = current;
+    yield current;
+    yield* _healthState.stream;
+  }
+
+  /// `getServiceStatusStream()` fires the moment the location toggle moves,
+  /// which is the one health input that changes with no warning and has no
+  /// other signal. A revoked runtime permission has no equivalent stream on
+  /// Android, so [TrackingController] keeps polling as the backstop — this
+  /// only makes the common case immediate.
+  ///
+  /// Idempotent: every [healthState] subscriber calls it, one subscription is
+  /// enough. Failure is swallowed, because the poll is a complete fallback —
+  /// losing the stream costs latency, not correctness.
+  void _watchServiceStatus() {
+    if (_serviceStatus != null) return;
+    try {
+      _serviceStatus = Geolocator.getServiceStatusStream().listen(
+        (ServiceStatus status) {
+          // Logged because this is the line that proves the stream is armed
+          // and firing. On a device the alternative is inferring it from how
+          // fast a banner appears, which cannot tell "the stream fired" from
+          // "the 15 s poll caught it".
+          debugPrint('[location] service status -> ${status.name}');
+          unawaited(refreshHealth());
+        },
+        onError: (Object e) =>
+            debugPrint('[location] service status stream failed: $e'),
+        cancelOnError: false,
+      );
+      debugPrint('[location] service status stream armed');
+    } catch (e) {
+      debugPrint('[location] service status stream unavailable: $e');
+    }
+  }
+
+  /// Recompute health and publish it if it actually moved.
+  ///
+  /// Public because the permissions screen and the session card both want to
+  /// force a re-read after sending the employee to system settings, where the
+  /// change happens outside anything this class can observe.
+  Future<void> refreshHealth() async {
+    final LocationHealth next = await health();
+    if (_healthState.isClosed || next == _lastHealth) return;
+    debugPrint('[location] health ${_lastHealth?.name ?? '-'} -> ${next.name}');
+    _lastHealth = next;
+    _healthState.add(next);
   }
 
   @override
@@ -961,7 +1071,16 @@ class GeoLocationService implements LocationService {
       longitude: position.longitude,
       accuracy: position.accuracy,
       speedKmh: _speedKmh(position),
-      recordedAt: position.timestamp,
+      // `.toLocal()` is load-bearing, not decoration. geolocator builds this
+      // with `DateTime.fromMillisecondsSinceEpoch(..., isUtc: true)`, so the
+      // value arrives UTC-flagged. `Fmt.time`/`Fmt.clock` read `.hour` and
+      // `.minute` straight off the DateTime, so a UTC-flagged fix renders the
+      // UTC wall clock: a session opened at 08:35 IST displayed as "03:05"
+      // until the first server refresh replaced it (`Wire.dateOrNull` does
+      // call `.toLocal()`, which is why the bug looked intermittent).
+      // The instant is unchanged — only the flag — and uploads still go out as
+      // `.toUtc().toIso8601String()`, so the wire contract is untouched.
+      recordedAt: position.timestamp.toLocal(),
       // Nothing is synced until an uploader confirms it, so this is the only
       // truthful state for a fresh fix.
       syncState: SyncState.queued,
@@ -1241,11 +1360,14 @@ class GeoLocationService implements LocationService {
 
   Future<void> dispose() async {
     await stopTracking();
+    await _serviceStatus?.cancel();
+    _serviceStatus = null;
     // Flush any debounced write still owing before the instance goes away, so
     // a graceful teardown never loses the last few fixes.
     await _persistNow();
     await _fixes.close();
     await _sync.close();
     await _movementState.close();
+    await _healthState.close();
   }
 }

@@ -7,9 +7,32 @@ import 'day_closeout.dart';
 enum WorkStatus {
   notStarted,
   working,
+
+  /// Open session, stationary. This is the **server's** reading (API plan
+  /// §3.14 row 7, `Engine::liveStatus`) and it means tracking is still
+  /// running — which is why [WorkStatusX.isSessionOpen] is true for it.
+  ///
+  /// It does **not** mean "on break". That is [paused], and conflating the two
+  /// is what broke the Break button: `pauseSession` used to close the session
+  /// and then set `idle`, which every reader took as "still running".
   idle,
   locationUnavailable,
   offline,
+
+  /// Between sessions, with the day still open — the employee tapped Break.
+  /// No session is open, nothing is being tracked, and Start Day may run
+  /// again to open the next one.
+  ///
+  /// `status` cannot carry this from the server: `Engine::liveStatus` collapses
+  /// "no open session" to `ended` whether the day is locked or not. The
+  /// distinction does exist server-side as `activity` ∈ {`paused`, `ended`}
+  /// (§3.14 rows 8/8b), but that field is unusable on this payload today —
+  /// `DaysController` writes the §3.14 enum to `activity` and then the
+  /// activity-event array overwrites the same key, and Home requests the
+  /// array. So this is reconciled from `dayState`, which is served
+  /// unconditionally and parsed correctly; see
+  /// `TrackingController._reconcileStatus`.
+  paused,
   ended,
 }
 
@@ -20,17 +43,23 @@ extension WorkStatusX on WorkStatus {
         WorkStatus.idle => 'Stopped / Idle',
         WorkStatus.locationUnavailable => 'Location Unavailable',
         WorkStatus.offline => 'Offline',
+        WorkStatus.paused => 'On Break',
         WorkStatus.ended => 'Day Ended',
       };
 
   /// True when a session is open — drives the live timer + End Day button.
+  ///
+  /// [WorkStatus.paused] is false here, and that single line is the Break fix:
+  /// it is what lets the card swap to "Resume session", stops the frozen timer
+  /// rendering as live, and gets past `startDay`'s `isSessionOpen` guard so a
+  /// resume can actually open the next session.
   bool get isSessionOpen => switch (this) {
         WorkStatus.working ||
         WorkStatus.idle ||
         WorkStatus.locationUnavailable ||
         WorkStatus.offline =>
           true,
-        WorkStatus.notStarted || WorkStatus.ended => false,
+        WorkStatus.notStarted || WorkStatus.paused || WorkStatus.ended => false,
       };
 
   /// True when tracking is degraded and the employee must be warned.
@@ -136,6 +165,36 @@ extension LocationHealthX on LocationHealth {
           'GPS accuracy is low. Move to an open area for a better fix.',
         LocationHealth.noInternet =>
           'Locations are queued on this device and will sync automatically when you are back online.',
+      };
+
+  /// The label for the one button that actually fixes this state.
+  ///
+  /// Every prompt in the app used to say "Enable location" whatever the cause,
+  /// which is wrong three times out of five: a disabled GPS toggle, a denied
+  /// runtime permission and a permanently-denied one need three different
+  /// actions, and the last of those cannot be re-requested in-app at all — it
+  /// only opens system settings. `LocationService.requestPermission` already
+  /// routes to the right place (`openLocationSettings` vs `openAppSettings`);
+  /// this names it so the button and the outcome agree.
+  ///
+  /// Null when there is nothing for the employee to press.
+  String? get actionLabel => switch (this) {
+        LocationHealth.ok => null,
+        LocationHealth.poorAccuracy => null,
+        LocationHealth.serviceDisabled => 'Turn on location',
+        LocationHealth.permissionDenied => 'Allow location',
+        LocationHealth.permissionDeniedForever => 'Go to settings',
+        LocationHealth.backgroundDenied => 'Allow all the time',
+        LocationHealth.noInternet => 'Retry',
+      };
+
+  /// True when the only way out is the system settings app, so the UI can warn
+  /// that it is about to leave rather than appearing to do nothing.
+  bool get needsSystemSettings => switch (this) {
+        LocationHealth.permissionDeniedForever ||
+        LocationHealth.backgroundDenied =>
+          true,
+        _ => false,
       };
 }
 
@@ -248,7 +307,11 @@ class LocationLog {
         longitude: (json['longitude'] as num).toDouble(),
         accuracy: (json['accuracy'] as num).toDouble(),
         speedKmh: (json['speedKmh'] as num).toDouble(),
-        recordedAt: DateTime.parse(json['recordedAt'] as String),
+        // Written by `toJson` as `.toUtc().toIso8601String()`, so this parses
+        // back UTC-flagged. Without `.toLocal()` a fix restored from the
+        // durable offline queue would render its UTC wall clock — the same
+        // defect `_toLog` carries, reached by a different door.
+        recordedAt: DateTime.parse(json['recordedAt'] as String).toLocal(),
         syncState: SyncState.values.firstWhere(
           (SyncState s) => s.name == json['syncState'],
           orElse: () => SyncState.queued,

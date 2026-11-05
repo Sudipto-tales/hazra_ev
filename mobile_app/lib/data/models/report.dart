@@ -48,6 +48,7 @@ class VisitReport {
     this.followUpOn,
     this.sales = const <ProductSaleLine>[],
     this.paymentReceived,
+    this.images,
   });
 
   final String id;
@@ -81,13 +82,80 @@ class VisitReport {
   /// received.
   final String? paymentReceived;
 
+  /// The attachments, when they were asked for (`?include=images`).
+  ///
+  /// **Null means "not fetched", empty means "none".** The distinction is the
+  /// whole point: list responses carry [imageCount] only, so a screen that
+  /// renders from a list row must not conclude from a missing array that the
+  /// report has no photos — which is exactly the mistake that left the detail
+  /// page showing empty slots. Use [hasFetchedImages] to tell them apart.
+  final List<ReportImage>? images;
+
+  /// True when the server was asked for the attachment array, whatever it
+  /// came back with.
+  bool get hasFetchedImages => images != null;
+
   int get unitsSold =>
       sales.fold<int>(0, (int sum, ProductSaleLine l) => sum + l.units);
 
   bool get hasSale => sales.isNotEmpty;
 
+  /// How many attachment slots to draw. Prefers the fetched array over
+  /// [imageCount] so a detail screen never renders a count the array cannot
+  /// fill (they can disagree for a moment if an upload lands between reads).
+  int get visibleImageCount => images?.length ?? imageCount;
+
   String get preview {
     final String flat = body.replaceAll(RegExp(r'\s+'), ' ').trim();
     return flat.length <= 120 ? flat : '${flat.substring(0, 120)}…';
+  }
+}
+
+/// One stored attachment on a report.
+///
+/// Mirrors `Present::image`. Only ever constructed from a server payload, so
+/// [uploadState] is always `uploaded` — queued and failed are device-side
+/// states that belong to the pick-and-upload flow, not to a stored row.
+class ReportImage {
+  const ReportImage({
+    required this.id,
+    required this.reportId,
+    required this.url,
+    this.thumbnailUrl,
+    this.width,
+    this.height,
+    this.bytes,
+    this.capturedAt,
+    this.latitude,
+    this.longitude,
+  });
+
+  final String id;
+  final String reportId;
+
+  /// Path relative to the PHP document root (`storage/uploads/...`), so it
+  /// resolves against the API **origin**, not the `/api/v1` prefix. Resolved
+  /// by `ApiConfig.originUrl` at the render site.
+  final String url;
+
+  /// Server-side thumbnail where one exists. Null today — nothing generates
+  /// them yet — so the grid loads [url] and lets the image cache downscale.
+  final String? thumbnailUrl;
+
+  /// Pixel dimensions, when the upload could read them. Used to reserve the
+  /// right aspect ratio before the bytes arrive, so a grid does not reflow.
+  final int? width;
+  final int? height;
+  final int? bytes;
+
+  final DateTime? capturedAt;
+  final double? latitude;
+  final double? longitude;
+
+  double? get aspectRatio {
+    final int? w = width;
+    final int? h = height;
+    if (w == null || h == null || w <= 0 || h <= 0) return null;
+    return w / h;
   }
 }
