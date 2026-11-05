@@ -97,7 +97,9 @@
     const date = new Date(/[Zz]|[+-]\d\d:\d\d$/.test(rawDate) ? rawDate : rawDate + 'Z');
     top.append(element('time', '', Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })));
     const meta = element('div', 'release-card__meta');
-    [`${(release.fileSize / 1048576).toFixed(1)} MB`, release.androidRequirement, `Build ${release.versionCode}`, release.channel].forEach(text => meta.append(element('span', '', text)));
+    // No build number: the version name is the only identity shown. Must stay
+    // in step with the server-rendered first page in app/page/app-download.php.
+    [`${(release.fileSize / 1048576).toFixed(1)} MB`, release.androidRequirement, release.channel].forEach(text => meta.append(element('span', '', text)));
     const notes = element('details', ''); notes.append(element('summary', '', 'Release notes'), element('p', '', release.releaseNotes || 'No release notes were provided for this version.'));
     const button = element('button', 'release-download', release.available ? 'Download this version ↓' : 'APK unavailable');
     button.type = 'button'; button.disabled = !release.available; button.dataset.releaseId = release.id; button.dataset.versionName = release.versionName;
