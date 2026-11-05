@@ -190,7 +190,7 @@ CREATE TABLE tracking_configs (
   org_id                                 uuid PRIMARY KEY REFERENCES organizations(id),
   version                                integer NOT NULL DEFAULT 1,
   location_interval_seconds              integer NOT NULL DEFAULT 30,
-  min_accuracy_metres                    double precision NOT NULL DEFAULT 50,
+  min_accuracy_metres                    double precision NOT NULL DEFAULT 50,  -- read-time: low-accuracy flag AND the distance gate
   stop_radius_metres                     double precision NOT NULL DEFAULT 75,
   stop_threshold_minutes                 integer NOT NULL DEFAULT 10,
   long_stop_threshold_minutes            integer NOT NULL DEFAULT 45,
@@ -200,7 +200,7 @@ CREATE TABLE tracking_configs (
   location_unavailable_threshold_minutes integer NOT NULL DEFAULT 15,
   sync_batch_size                        integer NOT NULL DEFAULT 50,
   sync_interval_seconds                  integer NOT NULL DEFAULT 300,  -- config v9, SHIPPED (031)
-  distance_filter_metres                 integer NOT NULL DEFAULT 20,   -- config v9, SHIPPED (031)
+  distance_filter_metres                 integer NOT NULL DEFAULT 20,   -- config v9, SHIPPED (031); also the server's minimum-step distance gate
   movement_exit_speed_kmh                double precision NOT NULL DEFAULT 3,  -- config v9, SHIPPED
   live_sync_interval_seconds             integer NOT NULL DEFAULT 15,   -- config v9, SHIPPED
   updated_at                             timestamptz NOT NULL DEFAULT now(),
@@ -264,6 +264,22 @@ counted as a visit three weeks ago would make the calendar disagree with itself.
 
 Keep a `tracking_config_history` table (same columns + `changed_at`, `changed_by`) so a
 dispute about "what the rule was on the 3rd" has an answer.
+
+**Two of these columns gate derived distance (shipped 2026-11-05).** `Engine::chainDistanceKm`
+reads both when it sums a fix chain into kilometres: `min_accuracy_metres` decides which
+fixes are allowed to *measure* a leg, and `distance_filter_metres` is the **minimum step** —
+a hop shorter than it contributes 0 km and leaves the anchor where it is. Two things follow
+that are easy to miss from the column names alone:
+
+- `distance_filter_metres` is **no longer device-side only.** It was documented as the GPS
+  distance filter the OS is asked to honour; it is now also a server gate, so **widening it
+  to save battery also coarsens the odometer** (`02` §3.12).
+- `min_accuracy_metres` now has **two** read-time uses: the low-accuracy flag and this
+  measurement gate. It is still **not** an ingest check — a weak fix is stored and drawn as
+  before (§5), it just does not move the odometer.
+
+Still read-time semantics, both of them: nothing is stored about the decision, so retuning
+either threshold re-derives the distance on the next refresh instead of rewriting a fix.
 
 ---
 
@@ -336,6 +352,18 @@ CREATE INDEX open_sessions ON work_sessions (employee_id) WHERE ended_at IS NULL
 That partial index is what makes "who is working right now" — the dashboard's hottest
 query — an index-only scan over a handful of rows.
 
+`distance_km` and `point_count` are both **derived from the fix chain and rewritten whole**
+by `Engine::refreshSession`, never incremented. They do not mean the same thing:
+`point_count` is the **raw** stored fix count (what the route and the trail draw), while
+`distance_km` is the **gated** travelled sum — weak fixes and sub-threshold hops are
+excluded by the two config gates in §4. A session can legitimately carry 60 points and
+0.0 km. Since 2026-11-05 `Engine::recompute` re-derives **every** session in the day (not
+just the open one) before rebuilding stops, route and rollup, so the odometer, the route
+total and `attendance_days.distance_km` cannot drift apart. The gates are **not
+retroactive**: an open session self-heals on its next accepted batch, a closed historical
+day keeps the number it was written with until something calls `recompute` for it — see
+the board's open backfill decision.
+
 ```sql
 CREATE TABLE location_fixes (
   id           bigint GENERATED ALWAYS AS IDENTITY,
@@ -387,7 +415,9 @@ Notes that matter:
   goes back in the response so the device can drop them from its queue. Accuracy is **not**
   an ingest check: a fix with `accuracy_m > min_accuracy_metres` is stored like any other
   and flagged low-accuracy at read time (`accuracy_m` vs `min_accuracy_metres`), so a
-  threshold change reclassifies stored rows without rewriting them.
+  threshold change reclassifies stored rows without rewriting them. Since 2026-11-05 the
+  same comparison also decides whether the fix **measures** a leg of derived distance
+  (§4) — stored and drawn either way; only the kilometres skip it.
 
 **Retention.** Keep raw fixes 90 days (configurable), then `DETACH` and archive the
 partition to object storage. `day_routes` (§8) preserves the drawn route indefinitely, so

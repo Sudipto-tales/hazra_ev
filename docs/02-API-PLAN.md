@@ -461,6 +461,16 @@ POST  /tracking/watch                 {employeeIds:[...], ttlSeconds?}    → wa
   (`maxJumpKmh`), `DUPLICATE` (`UNIQUE (employee_id, client_id)`) and `MALFORMED`
   (missing id/latitude/longitude). The device may still filter on `minAccuracyMetres`
   before upload as an optimisation, never as the guarantee.
+- **`minAccuracyMetres` has a second read-time use, shipped 2026-11-05: it also decides
+  which fixes are *measured*.** `Engine::chainDistanceKm` (`api/support/Engine.php:193`)
+  skips a fix worse than the threshold when summing derived distance — the session
+  odometer, `day_routes.total_distance_km` and today's not-yet-cached route alike. The fix
+  is **still stored and still drawn**; only the measurement skips it, and the leg across it
+  is measured once from the last *accepted* anchor instead of detouring out to the bad fix
+  and back. This is **not** a return to accuracy-based rejection at ingest — the rule above
+  is unchanged and `tests/tracking-ingest.php` still pins it. Like every threshold, it is
+  read-time: retuning it re-derives distance on the next refresh and rewrites no fix.
+  See §3.12 for the second gate that pairs with it.
 - Sessions carry a `clientId` because they are opened offline. A repeated open with the
   same `clientId` returns the existing session — that is what makes "Start Day" safe to
   retry on a dead network.
@@ -665,7 +675,7 @@ but it must be one deploy. Do **not** deploy 031 as-is first.
 | Field | Type | Default | Status | Meaning |
 | --- | --- | --- | --- | --- |
 | `syncIntervalSeconds` | int | `300` | carried over from the unshipped v8 | How often the client drains its queued fixes to `POST /tracking/locations` (the mobile `_drain` batch timer). **Independent of `locationIntervalSeconds`** — that is GPS *capture* cadence, this is *upload* cadence. Two separate knobs; moving one must never be assumed to move the other. |
-| `distanceFilterMetres` | int | `20` | carried over from the unshipped v8 | GPS distance filter — the OS suppresses fixes until the device moves this far. Already a local field in the mobile `TrackingConfig`; v9 makes it server-driven so an admin can widen it to save battery on slow routes. |
+| `distanceFilterMetres` | int | `20` | carried over from the unshipped v8 | GPS distance filter — the OS suppresses fixes until the device moves this far. Already a local field in the mobile `TrackingConfig`; v9 makes it server-driven so an admin can widen it to save battery on slow routes. **No longer device-side only (2026-11-05):** it is also the server's minimum-step gate for derived distance — see the interaction note below before widening it. |
 | `movementExitSpeedKmh` | double | `3` | **NEW in v9** | Upper edge of the movement **dead band**. Enter `moving` at `>= movementExitSpeedKmh`; enter `stationary` at `< movementSpeedThresholdKmh`; **hold the current state in between.** |
 | `liveSyncIntervalSeconds` | int | `15` | **NEW in v9** | Drain cadence a device uses while an admin is actively watching it (§3.11 live watch). Applies only while `now < liveUntil`; `syncIntervalSeconds` applies otherwise. |
 
@@ -753,6 +763,19 @@ detector**: the mobile client forces a fix into the queue every ~5 min
 `locationUnavailableThresholdMinutes`. Do not treat a quiet distance-filtered stretch as
 grounds to lower the offline threshold. That same heartbeat is what floors live-mode entry
 latency at ~5 min (§3.11).
+
+**`distanceFilterMetres` is a server-side gate too, and that couples battery to the
+odometer (shipped 2026-11-05).** It was device-side only until `Engine::chainDistanceKm`
+(`api/support/Engine.php:193`) started using it as the **minimum step** for derived
+distance: a hop shorter than it contributes 0 km **and does not move the anchor**, which is
+what stops a parked device booking jitter as travel while still letting a genuinely slow
+walk accumulate until it clears the gate. The practical consequence for whoever turns the
+knob: **widening it to save battery also coarsens the odometer.** Tight, winding or
+on-foot routes measure shorter at 50 m than at 20 m, and the effect lands on
+`work_sessions.distance_km`, `attendance_days.distance_km`, `day_routes.total_distance_km`
+and the live route together, because all four now go through the one helper. A
+non-positive value disables the gate rather than zeroing the day. Same shape, corrected
+value — not a breaking change.
 
 ### 3.13 Notifications
 

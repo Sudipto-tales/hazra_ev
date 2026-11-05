@@ -113,8 +113,8 @@ Employee → Attendance (one per calendar day)
 | `index` | int | R | SRV | 1-based within the day — rendered as "Session 2" |
 | `startTime` | datetime | R | EMP | Stamped from the **first GPS fix**, not the button tap |
 | `endTime` | datetime | O | EMP | Null ⇒ session open |
-| `distanceKm` | double | R | SRV | Computed from the fix chain |
-| `locationPoints` | int | R | SRV | Count of accepted fixes |
+| `distanceKm` | double | R | SRV | Computed from the fix chain, **gated** since 2026-11-05 — weak fixes and sub-threshold hops do not count (`02` §3.12) |
+| `locationPoints` | int | R | SRV | Count of accepted fixes — the **raw** stored count, not the number that moved `distanceKm` |
 | `startLatitude` | double | R | EMP | |
 | `startLongitude` | double | R | EMP | |
 | `isOpen` | bool | D | — | `endTime == null` |
