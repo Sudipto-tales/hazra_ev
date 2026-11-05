@@ -19,6 +19,16 @@ final class AppReleaseController extends V1Controller
     private const VALID_CHANNELS = ['production', 'beta'];
     private const VALID_SOURCES = ['github_actions', 'admin_upload'];
 
+    /**
+     * Brand used for the saved download name — `Hazra-EV-v0.1.5.apk`.
+     *
+     * Deliberately a constant, not config: APP_NAME is a generic framework
+     * display value (default 'Vayu', commented out in .env.example) and the
+     * production .env is an opaque snapshot, so reading it would make the
+     * download name depend on a value no deployment is required to supply.
+     */
+    private const DOWNLOAD_BRAND = 'Hazra-EV';
+
     public function latest(): never
     {
         $row = db_fetch_one(
@@ -532,7 +542,7 @@ final class AppReleaseController extends V1Controller
     private function serveFile(array $row): never
     {
         $filePath = $this->requireFile($row);
-        $filename = preg_replace('/[^A-Za-z0-9._-]/', '_', basename($row['file_name']));
+        $filename = $this->downloadFilename($row);
         if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         header('Content-Type: application/vnd.android.package-archive');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -541,6 +551,32 @@ final class AppReleaseController extends V1Controller
         header('Cache-Control: no-store');
         readfile($filePath);
         exit;
+    }
+
+    /**
+     * Saved download name: brand + stored version, e.g. `Hazra-EV-v0.1.5.apk`.
+     * The stored upload name is `app-release.apk` for every build, so it is only
+     * used for its extension and as the fallback when no version is recorded.
+     */
+    private function downloadFilename(array $row): string
+    {
+        $storedName = basename((string) ($row['file_name'] ?? ''));
+        $version = trim((string) ($row['version_name'] ?? ''));
+        if ($version === '') {
+            return $this->sanitizeFilename($storedName);
+        }
+
+        $extension = pathinfo($storedName, PATHINFO_EXTENSION);
+
+        return $this->sanitizeFilename(
+            self::DOWNLOAD_BRAND . '-v' . $version . ($extension !== '' ? '.' . $extension : '')
+        );
+    }
+
+    /** Whitelist for Content-Disposition: version_name is operator-supplied, so treat it as hostile. */
+    private function sanitizeFilename(string $name): string
+    {
+        return preg_replace('/[^A-Za-z0-9._-]/', '_', $name);
     }
 
     private function validateApkFile(): array
