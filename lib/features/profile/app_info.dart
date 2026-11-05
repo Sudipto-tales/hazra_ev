@@ -6,6 +6,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 /// shown in Settings, on the login screens and in the device payload always
 /// matches `version:` in `pubspec.yaml` without anyone hand-editing a constant.
 ///
+/// Only the version is ever shown. [build] is kept because the update check
+/// needs a number to compare, not because anything displays it.
+///
 /// [init] runs once during startup (see `main.dart`), awaits
 /// [PackageInfo.fromPlatform] and caches the result into the mutable statics
 /// below. [version]/[build]/[label] stay plain sync getters so the widgets
@@ -20,9 +23,17 @@ class AppInfo {
   static String version = '0.1.0';
 
   /// Populated by [init] from the part after the `+`.
+  ///
+  /// Internal only. The build number is not rendered anywhere in the UI —
+  /// its single job is the `>` comparison against the API's `versionCode` in
+  /// `update_controller.dart`. Anything user-facing shows [version], via
+  /// [label] or the `VersionLabel` widget.
   static String build = '1';
 
-  static String get label => 'Version $version · build $build';
+  /// Plain-text version line, for the places that can only take a `String`
+  /// (a settings-tile subtitle, the support diagnostics map). Where a widget
+  /// fits, prefer `VersionLabel`, which sets the number apart typographically.
+  static String get label => 'Version $version';
 
   /// Loads the real build identity once. Safe to call without `await` blocking
   /// the UI, but startup awaits it so the first frame already has the value.

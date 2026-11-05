@@ -28,12 +28,20 @@ class VisitTile extends StatelessWidget {
     required this.visit,
     required this.now,
     this.reportTitles = const <String, String>{},
+    this.roughGps = false,
     this.onReportTap,
     this.onAddReport,
   });
 
   final CompanyVisit visit;
   final DateTime now;
+
+  /// The fixes behind this visit were predominantly weaker than the configured
+  /// accuracy limit. Derived by the caller (the route screen does it with
+  /// `RouteAccuracy`) — the tile has no access to the fix chain and must not
+  /// guess. Defaults to false, which is also what every caller that does not
+  /// have a fix chain to judge should pass.
+  final bool roughGps;
 
   /// Report id → label, for the ids in [CompanyVisit.reportIds]. Anything
   /// missing falls back to a neutral "Report n" — never to a guessed title.
@@ -135,6 +143,29 @@ class VisitTile extends StatelessWidget {
               ),
             ],
           ),
+          // A data-quality hint, not an error: same weight and colour as the
+          // order-reference line below it. It sits under the arrival/dwell
+          // numbers because those are the numbers it qualifies.
+          if (roughGps) ...<Widget>[
+            const SizedBox(height: Insets.md),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.blur_on_rounded,
+                  size: 15,
+                  color: theme.textTheme.bodySmall?.color,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'GPS was rough here — position approximate',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (visit.dealReference != null) ...<Widget>[
             const SizedBox(height: Insets.md),
             Row(

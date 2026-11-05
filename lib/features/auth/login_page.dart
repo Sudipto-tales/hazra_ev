@@ -6,6 +6,7 @@ import '../../core/theme/dimens.dart';
 import '../../data/api/api_exception.dart';
 import '../../state/app_scope.dart';
 import '../profile/app_info.dart';
+import '../profile/version_label.dart';
 import '../shell/main_shell.dart';
 
 /// Sign-in screen.
@@ -232,8 +233,7 @@ class _LoginPageState extends State<LoginPage> {
                           // URL on the sign-in screen — the most-screenshotted
                           // page in the app. `describe()` still exists for
                           // `debugPrint`; it is not rendered anywhere now.
-                          child: Text(
-                            AppInfo.label,
+                          child: VersionLabel(
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall,
                           ),

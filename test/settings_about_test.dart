@@ -17,6 +17,7 @@ import 'package:employeetracking_mobile_app/state/settings_controller.dart';
 import 'package:employeetracking_mobile_app/state/tracking_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// [tall] gives the test a viewport big enough that every `ListView` child is
@@ -287,7 +288,7 @@ void main() {
   });
 
   group('version screen', () {
-    testWidgets('animates, then shows the build identity',
+    testWidgets('animates, then shows the version',
         (WidgetTester tester) async {
       await openPage(tester, const VersionPage(), settle: false);
 
@@ -298,12 +299,21 @@ void main() {
       final Finder reveal = find.byKey(const ValueKey<String>('version-reveal'));
       expect(reveal, findsOneWidget);
       expect(tester.widget<Opacity>(reveal).opacity, lessThan(1.0),
-          reason: 'the build identity is still behind the smoke at 400ms');
+          reason: 'the version is still behind the smoke at 400ms');
 
       await tester.pumpAndSettle();
       expect(tester.widget<Opacity>(reveal).opacity, 1.0);
-      expect(find.text('Version ${AppInfo.version}'), findsOneWidget);
-      expect(find.text('build ${AppInfo.build}'), findsOneWidget);
+      // `findRichText` because VersionLabel is a Text.rich: "Version" and the
+      // number carry different styles, so the string only exists as the
+      // span tree's plain text.
+      expect(find.text('Version ${AppInfo.version}', findRichText: true),
+          findsOneWidget);
+      // The build number is not shown anywhere. This is the assertion that
+      // keeps it that way. Matching on the *word* rather than on
+      // `AppInfo.build`, whose fallback value ('1') is a substring of the
+      // fallback version ('0.1.0') and would fail against the line above.
+      expect(find.textContaining('build', findRichText: true), findsNothing);
+      expect(find.textContaining('Build', findRichText: true), findsNothing);
     });
 
     testWidgets('degrades without the update gate above it',
@@ -316,6 +326,30 @@ void main() {
 
       expect(find.text('Check now'), findsNothing);
       expect(find.textContaining('Android app only'), findsOneWidget);
+    });
+
+    testWidgets('ships the rider animation it asks for, and credits it',
+        (WidgetTester tester) async {
+      // A wrong Lottie path fails at runtime only, and fails *quietly* — the
+      // card just renders empty and the screen still "works". So this asserts
+      // the widget is there and that the bundled JSON actually decodes to a
+      // composition, which is what a pubspec `assets:` typo would break.
+      await openPage(tester, const VersionPage(), settle: false);
+
+      expect(find.byType(LottieBuilder), findsOneWidget);
+
+      final LottieComposition composition = await tester.runAsync(
+            () => AssetLottie('assets/anim/delivery_boy.json').load(),
+          ) ??
+          (throw StateError('composition did not load'));
+      expect(composition.duration.inMilliseconds, greaterThan(0));
+      expect(composition.endFrame, greaterThan(composition.startFrame));
+
+      // Attribution the Lottie Simple License encourages. Asserted because it
+      // is the sort of line a later layout tidy-up deletes without noticing.
+      await tester.pumpAndSettle();
+      expect(find.text('Animation by Animo Arts on LottieFiles'),
+          findsOneWidget);
     });
   });
 

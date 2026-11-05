@@ -11,7 +11,7 @@ import '../../../widgets/settings_tile.dart';
 import '../../../widgets/stat_tile.dart';
 import '../../../widgets/states.dart';
 import '../../auth/role_select_page.dart';
-import '../../profile/app_info.dart';
+import '../../profile/version_label.dart';
 import '../employees/employees_page.dart';
 import '../manage/tracking_rules_page.dart';
 import '../manage/account_deletion_requests_page.dart';
@@ -258,8 +258,8 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                 ),
                 const SizedBox(height: Insets.xl),
                 Center(
-                  child: Text(
-                    'Admin console · ${AppInfo.label}',
+                  child: VersionLabel(
+                    prefix: 'Admin console · ',
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
