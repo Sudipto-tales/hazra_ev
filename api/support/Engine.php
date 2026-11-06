@@ -15,6 +15,18 @@
  */
 final class Engine
 {
+    /**
+     * The measurement algorithm new rows are stamped with.
+     *
+     * 1 — the original gated chord sum (migration 004 .. 035). Frozen.
+     * 2 — the universal engine: accuracy-scaled step, identified gaps,
+     *     `min_step_metres` (migration 036 onward).
+     *
+     * Bumping this must always come with a new branch in `chainDistance()` and
+     * must never alter an existing one, or a historical distance moves.
+     */
+    public const DISTANCE_ALGO_VERSION = 2;
+
     /** Worked seconds at or above this count as a full day; below it, partial. */
     private const FULL_DAY_SECONDS = 4 * 3600;
 
@@ -143,15 +155,72 @@ final class Engine
      */
     public static function refreshSession(string $sessionId): void
     {
+        $session = db_fetch_one("SELECT * FROM work_sessions WHERE id = ?", [$sessionId]);
+
+        if (!$session) {
+            return;
+        }
+
+        $algo = (int) ($session['distance_algo_version'] ?? 1);
+
+        // recorded_at and source are selected for v2's gap classification;
+        // v1 ignores both, which is why it can stay byte-identical.
         $fixes = db_fetch_all(
-            "SELECT lat, lng, accuracy_m FROM location_fixes WHERE session_id = ? ORDER BY recorded_at, id",
+            "SELECT lat, lng, accuracy_m, recorded_at, source FROM location_fixes
+              WHERE session_id = ? ORDER BY recorded_at, id",
             [$sessionId],
         );
 
+        $measured = self::chainDistance($fixes, $algo);
+
+        // distance_km stays the headline figure and keeps its meaning: it is
+        // the verified number, never verified + incomplete. A v1 row leaves the
+        // three reporting columns NULL, because v1 has no coverage concept and
+        // writing 0 or 100 there would be a claim it never made.
         db_execute(
-            "UPDATE work_sessions SET distance_km = ?, point_count = ? WHERE id = ?",
-            [round(self::chainDistanceKm($fixes), 4), count($fixes), $sessionId],
+            "UPDATE work_sessions
+                SET distance_km = ?, point_count = ?,
+                    verified_distance_km = ?, incomplete_distance_km = ?, gps_coverage_percent = ?
+              WHERE id = ?",
+            [
+                round($measured['verifiedKm'], 4),
+                count($fixes),
+                $algo < 2 ? null : round($measured['verifiedKm'], 4),
+                $algo < 2 ? null : round($measured['incompleteKm'], 4),
+                $algo < 2 ? null : $measured['coveragePercent'],
+                $sessionId,
+            ],
         );
+
+        self::storeGaps($session, $measured['gaps']);
+    }
+
+    /**
+     * Replaces one session's recorded GPS gaps.
+     *
+     * Delete-then-insert rather than a merge: gaps are wholly derived from the
+     * fix chain and the thresholds in force, so a re-derive owns the set
+     * outright and partial reconciliation could only leave a stale row behind.
+     * A v1 session measures no gaps, so this clears the table for it and writes
+     * nothing — the same answer a day with continuous GPS gives.
+     */
+    private static function storeGaps(array $session, array $gaps): void
+    {
+        db_execute("DELETE FROM session_gps_gaps WHERE session_id = ?", [$session['id']]);
+
+        foreach ($gaps as $gap) {
+            db_execute(
+                "INSERT INTO session_gps_gaps
+                    (session_id, employee_id, work_date, gap_start, gap_end, seconds,
+                     displacement_m, classification)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                [
+                    $session['id'], $session['employee_id'], $session['work_date'],
+                    $gap['start'], $gap['end'], $gap['seconds'],
+                    $gap['displacementM'], $gap['class'],
+                ],
+            );
+        }
     }
 
     /**
@@ -190,7 +259,7 @@ final class Engine
      *
      * @param array<int, array{lat: mixed, lng: mixed, accuracy_m?: mixed}> $fixes ordered oldest first
      */
-    public static function chainDistanceKm(array $fixes): float
+    private static function chainDistanceV1(array $fixes): float
     {
         $minAccuracyM = (float) Ctx::configValue('min_accuracy_metres', 50);
         $minStepM     = (float) Ctx::configValue('distance_filter_metres', 20);
@@ -222,6 +291,240 @@ final class Engine
         }
 
         return $distance;
+    }
+
+    /**
+     * Verified kilometres over an ordered fix chain — the one number every
+     * distance surface in the system reads.
+     *
+     * Kept as a float accessor because that is what the live route and the
+     * cached day row compare against each other; `chainDistance()` below
+     * carries the rest of what v2 knows.
+     */
+    public static function chainDistanceKm(array $fixes, int $algoVersion = self::DISTANCE_ALGO_VERSION): float
+    {
+        return self::chainDistance($fixes, $algoVersion)['verifiedKm'];
+    }
+
+    /**
+     * Full measurement over an ordered fix chain, pinned to an algorithm
+     * version.
+     *
+     * **Why a version at all.** The contract is that a historical distance is
+     * never silently recalculated, and that is not free in this design: nothing
+     * is stored about a measurement decision (so retuning a threshold
+     * re-derives on the next refresh), and `recompute()` re-derives a whole day
+     * on any late-arriving fix. Either property would quietly move an old
+     * number the first time an old day was touched. So the algorithm is pinned
+     * on the row — `work_sessions.distance_algo_version`, `day_routes` likewise
+     * — v1 stays here verbatim and forever, and only rows created after
+     * migration 036 are measured by v2.
+     *
+     * v1 reports no coverage, because it has no concept of one: `null` is the
+     * honest answer there, not 100.
+     *
+     * @param array<int, array{lat: mixed, lng: mixed, accuracy_m?: mixed,
+     *                         recorded_at?: mixed, source?: mixed}> $fixes oldest first
+     * @return array{verifiedKm: float, incompleteKm: float,
+     *               coveragePercent: float|null, gaps: array<int, array>}
+     */
+    public static function chainDistance(array $fixes, int $algoVersion = self::DISTANCE_ALGO_VERSION): array
+    {
+        if ($algoVersion < 2) {
+            return [
+                'verifiedKm'      => self::chainDistanceV1($fixes),
+                'incompleteKm'    => 0.0,
+                'coveragePercent' => null,
+                'gaps'            => [],
+            ];
+        }
+
+        return self::chainDistanceV2($fixes);
+    }
+
+    /**
+     * v2 — the universal engine: cycling, road travel and train on one rule.
+     *
+     * Still haversine over consecutive GPS fixes and nothing else. No routing
+     * service, no road-network length and no matched geometry reaches this
+     * number; map matching is a drawing, never a measurement. Transport mode is
+     * metadata and does not appear here at all, which is what makes the engine
+     * universal — a train and a bicycle are measured by the identical code.
+     *
+     * Three things differ from v1:
+     *
+     *   - **The step scales with the fix's own error.** v1 refused to measure a
+     *     leg from any fix worse than `min_accuracy_metres` and carried the
+     *     anchor forward, so a weak-GPS stretch collapsed to one straight chord
+     *     and real travel was thrown away — which is the under-count this whole
+     *     change exists to fix. v2 instead asks a weak fix to move *further
+     *     than it could be wrong by*: the hop must clear
+     *     `max(min_step_metres, accuracy_step_factor * accuracy_m)`. A 40 m fix
+     *     that moved 200 m is travel and now counts; one that moved 25 m cannot
+     *     be told from noise and still does not. `accuracy_step_factor = 0`
+     *     restores a flat floor.
+     *   - **`min_step_metres`, not `distance_filter_metres`.** That column was
+     *     doing two opposing jobs; see migration 036. Capture went down to 10 m
+     *     so corners survive, measurement stayed at 15 m so a parked phone's
+     *     drift never books distance.
+     *   - **Gaps are identified, not bridged.** See below.
+     *
+     * The anchor still holds on a rejected hop — moving it is exactly what lets
+     * noise accumulate in sub-threshold increments, and holding it is what
+     * keeps genuinely slow travel measurable, since displacement from the held
+     * anchor keeps growing until it clears the step.
+     *
+     * **A quiet stretch is only a gap when something moved across it.** Elapsed
+     * time alone cannot separate a parked vehicle from a tunnel: the capture
+     * distance filter means a parked device emits nothing until its five-minute
+     * heartbeat, which is well past the incomplete threshold, so classifying on
+     * time alone would report every lunch break and every long customer visit
+     * as broken GPS coverage and make the coverage figure meaningless.
+     * Displacement is what decides, because it is what says whether any
+     * distance is unaccounted for. The closing fix's `source` is recorded on
+     * the gap for the UI and for debugging — a `HEARTBEAT` close is what
+     * explains most non-gaps — but it is deliberately not part of the
+     * arithmetic.
+     *
+     * Distance across a real gap is **never** verified: we do not know what was
+     * driven between the two ends, so the straight line goes to
+     * `incompleteKm` and is reported under its own label, never summed into the
+     * headline number.
+     */
+    private static function chainDistanceV2(array $fixes): array
+    {
+        $config = Ctx::config();
+
+        $minStepM  = (float) ($config['min_step_metres'] ?? 15);
+        $factor    = (float) ($config['accuracy_step_factor'] ?? 1);
+        $gapWarnS  = (int) ($config['gps_gap_warning_seconds'] ?? 60);
+        $gapBreakS = (int) ($config['gps_gap_incomplete_seconds'] ?? 180);
+
+        $verified   = 0.0;
+        $incomplete = 0.0;
+        $gaps       = [];
+
+        $anchor  = null;   // last point distance was measured FROM
+        $prev    = null;   // immediately preceding fix; gap timing only
+        $spanS   = 0;      // total tracked seconds across the chain
+        $gapS    = 0;      // of which unaccounted for
+
+        foreach ($fixes as $fix) {
+            $lat = (float) $fix['lat'];
+            $lng = (float) $fix['lng'];
+            $acc = (float) ($fix['accuracy_m'] ?? 0);
+            $at  = (string) ($fix['recorded_at'] ?? '');
+
+            if ($prev === null) {
+                $anchor = [$lat, $lng];
+                $prev   = [$lat, $lng, $acc, $at];
+                continue;
+            }
+
+            $elapsed = max(0, Wire::seconds($prev[3], $at));
+            $spanS  += $elapsed;
+
+            $hopKm = Geo::distanceKm($prev[0], $prev[1], $lat, $lng);
+
+            // Worse of the two ends decides what counts as movement across a
+            // quiet stretch: a gap bounded by one weak fix is not evidence.
+            $gapStepM = max($minStepM, $factor * max($acc, $prev[2]));
+
+            if ($elapsed >= $gapWarnS && $hopKm * 1000 > $gapStepM) {
+                $gaps[] = [
+                    'start'         => $prev[3],
+                    'end'           => $at,
+                    'seconds'       => $elapsed,
+                    'displacementM' => round($hopKm * 1000, 1),
+                    'class'         => $elapsed >= $gapBreakS ? 'INCOMPLETE' : 'WARNING',
+                    'source'        => (string) ($fix['source'] ?? 'STREAM'),
+                ];
+
+                $incomplete += $hopKm;
+                $gapS       += $elapsed;
+
+                // Both restart on the far side: measuring from an anchor on the
+                // near side would bridge the gap, which is the one thing a gap
+                // must never be.
+                $anchor = [$lat, $lng];
+                $prev   = [$lat, $lng, $acc, $at];
+                continue;
+            }
+
+            $prev  = [$lat, $lng, $acc, $at];
+            $stepM = max($minStepM, $factor * $acc);
+            $km    = Geo::distanceKm($anchor[0], $anchor[1], $lat, $lng);
+
+            if ($km * 1000 < $stepM) {
+                continue;      // noise: no distance, and the anchor HOLDS
+            }
+
+            $verified += $km;
+            $anchor = [$lat, $lng];
+        }
+
+        return [
+            'verifiedKm'      => $verified,
+            'incompleteKm'    => $incomplete,
+            'coveragePercent' => $spanS <= 0
+                ? 100.0
+                : round(max(0.0, ($spanS - $gapS) / $spanS) * 100, 2),
+            'gaps'            => $gaps,
+        ];
+    }
+
+    /**
+     * One ordered fix chain per session of a day, oldest session first.
+     *
+     * v2 measures a day session by session rather than as one chain; see
+     * `buildDayRoute`. Sessions with no fixes are skipped — they contribute
+     * neither distance nor tracked seconds.
+     *
+     * @return array<int, array<int, array>>
+     */
+    private static function daySessionFixes(string $employeeId, string $workDate): array
+    {
+        $sessions = db_fetch_all(
+            "SELECT id FROM work_sessions WHERE employee_id = ? AND work_date = ? ORDER BY seq",
+            [$employeeId, $workDate],
+        );
+
+        $chains = [];
+
+        foreach ($sessions as $session) {
+            $chain = db_fetch_all(
+                "SELECT lat, lng, accuracy_m, recorded_at, source FROM location_fixes
+                  WHERE session_id = ? ORDER BY recorded_at, id",
+                [$session['id']],
+            );
+
+            if ($chain) {
+                $chains[] = $chain;
+            }
+        }
+
+        return $chains;
+    }
+
+    /**
+     * The algorithm version in force for one employee-day.
+     *
+     * The **minimum** across the day's sessions, so a day that straddles the
+     * migration is measured by the older rule rather than having half of it
+     * silently restated. A day with no sessions has nothing to freeze and gets
+     * the current version.
+     */
+    public static function dayAlgoVersion(string $employeeId, string $workDate): int
+    {
+        $row = db_fetch_one(
+            "SELECT MIN(distance_algo_version) AS v FROM work_sessions
+              WHERE employee_id = ? AND work_date = ?",
+            [$employeeId, $workDate],
+        );
+
+        return $row === null || $row === false || $row['v'] === null
+            ? self::DISTANCE_ALGO_VERSION
+            : (int) $row['v'];
     }
 
     // -------------------------------------------------------------- derivation
@@ -466,8 +769,118 @@ final class Engine
     // ---------------------------------------------------------------- rollups
 
     /**
+     * The newest stored fix per session for one employee-day.
+     *
+     * "Evidence" means a row in location_fixes and nothing else. Not a status,
+     * not device_health: `offline` (a stale received_at) and
+     * `location_unavailable` (a stale recorded_at, or a device reporting itself
+     * blind) are deliberately different statuses for DISPLAY and must stay
+     * that way — but for worked-time arithmetic they are the same thing, dark,
+     * so the arithmetic reads fix recency instead of either status. A device
+     * that was dark and then backfilled its offline queue has evidence for the
+     * whole stretch and must not be penalised for having been late with it.
+     *
+     * Public because CloseDaysCommand stamps its midnight close against the
+     * same horizon; two definitions of "last evidence" would let a session's
+     * stamped end disagree with the worked time derived from it.
+     *
+     * Lexicographic MAX over recorded_at, which is how the rest of the Engine
+     * already orders fixes (`ORDER BY recorded_at, id` everywhere) — correct
+     * for the single canonical UTC timestamp format every writer stores.
+     *
+     * @return array<string, string> session id -> last recorded_at
+     */
+    public static function sessionLastFixes(string $employeeId, string $workDate): array
+    {
+        $rows = db_fetch_all(
+            "SELECT f.session_id AS session_id, MAX(f.recorded_at) AS last_fix
+               FROM location_fixes f
+               JOIN work_sessions s ON s.id = f.session_id
+              WHERE s.employee_id = ? AND s.work_date = ?
+              GROUP BY f.session_id",
+            [$employeeId, $workDate],
+        );
+
+        $last = [];
+
+        foreach ($rows as $row) {
+            if ($row['last_fix'] !== null && $row['last_fix'] !== '') {
+                $last[(string) $row['session_id']] = (string) $row['last_fix'];
+            }
+        }
+
+        return $last;
+    }
+
+    /**
+     * Worked seconds for one session, with its trailing dark tail removed.
+     *
+     * THE RULE: a session's worked time runs from its start to the last moment
+     * we have evidence for. Dark time counts as worked ONLY when it sits
+     * between two known-good fixes.
+     *
+     * That asymmetry is the whole point, so it is encoded directly rather than
+     * approximated by summing gaps:
+     *
+     *   - An INTERIOR gap (a fix on each side) COUNTS, in full, by
+     *     construction. It lies inside [started_at, lastFix], and this function
+     *     never subdivides that span — so no gap-walk, no per-gap threshold and
+     *     no way for an interior hole to be scored twice or dropped. The
+     *     employee was working; there was simply no signal, and the device
+     *     backfills the stretch from its offline queue anyway.
+     *   - A TRAILING dark tail (no fix ever follows) does NOT count. There is
+     *     no evidence of work after the last fix, so worked time stops there.
+     *
+     * Closed session: ended_at is the employee's own declaration and stands as
+     * it always has, unless the span from the last fix to that declaration
+     * EXCEEDS offlineThresholdMinutes — a strict >, so a tail exactly at the
+     * threshold is not trimmed and nothing moves by an off-by-one second. Short
+     * tails are normal (a session ends between two sync ticks) and trimming
+     * them would make every honest day read a minute or two short.
+     *
+     * Open session: capped at the last fix, never at the clock. This is what
+     * stops a dead phone in a drawer accruing hours against a roster that
+     * already reads `offline` — the roster and the timesheet now disagree about
+     * nothing. An open session is capped unconditionally, with no threshold:
+     * `$now` is not evidence of anything, whereas a closed session's ended_at
+     * is a declaration that someone made. min() with $now only guards a fix
+     * timestamped in the future by a skewed device clock.
+     *
+     * No fixes at all: 0, not the wall-clock span. A session with no evidence
+     * whatsoever is not a session anyone can be paid for.
+     */
+    private static function sessionWorkedSeconds(
+        array $session,
+        ?string $lastFixAt,
+        string $now,
+        int $darkSeconds,
+    ): int {
+        if ($lastFixAt === null) {
+            return 0;
+        }
+
+        $startedAt = $session['started_at'] ?? null;
+        $endedAt   = $session['ended_at'] ?? null;
+
+        if ($endedAt === null) {
+            return min(Wire::seconds($startedAt, $lastFixAt), Wire::seconds($startedAt, $now));
+        }
+
+        // Wire::seconds floors at 0, so a fix recorded after ended_at reads as
+        // no tail at all and the declaration stands.
+        return Wire::seconds($lastFixAt, $endedAt) > $darkSeconds
+            ? Wire::seconds($startedAt, $lastFixAt)
+            : Wire::seconds($startedAt, $endedAt);
+    }
+
+    /**
      * The one table Attendance, DaySummary, the attendance matrix and both
      * statistics endpoints all read.
+     *
+     * worked_seconds is evidence-bounded — see sessionWorkedSeconds(). Same
+     * column, same wire shape, corrected value: a day whose device went dark
+     * and never came back reports the hours it has fixes for, not the hours
+     * between its first fix and midnight.
      */
     public static function rollupDay(string $employeeId, string $workDate): void
     {
@@ -483,9 +896,26 @@ final class Engine
         $end = null;
         $anyOpen = false;
 
+        $incomplete = 0.0;
+
+        // Read-time, from config, per rollup — never stored. An admin who
+        // retunes offlineThresholdMinutes re-derives worked time on the next
+        // recompute instead of leaving a frozen decision behind.
+        $darkSeconds = (int) Ctx::config()['offline_threshold_minutes'] * 60;
+        $lastFixes   = self::sessionLastFixes($employeeId, $workDate);
+
         foreach ($sessions as $session) {
-            $worked   += Wire::seconds($session['started_at'], $session['ended_at'] ?? $now);
+            $worked   += self::sessionWorkedSeconds(
+                $session,
+                $lastFixes[(string) $session['id']] ?? null,
+                $now,
+                $darkSeconds,
+            );
             $distance += (float) $session['distance_km'];
+            // NULL on a v1 session and coalesced to 0 here: a day's incomplete
+            // total is a sum over the sessions that measured one, and the
+            // day-level column is itself left NULL for a v1 day below.
+            $incomplete += (float) ($session['incomplete_distance_km'] ?? 0);
             $joining   = $joining === null ? $session['started_at'] : min($joining, $session['started_at']);
 
             if ($session['ended_at'] === null) {
@@ -520,11 +950,26 @@ final class Engine
 
         $status = self::classifyDay($workDate, count($sessions), $worked);
 
+        // distance_km keeps its meaning — the verified figure, never verified
+        // plus incomplete. The three reporting columns stay NULL for a v1 day,
+        // which is what marks it as predating the universal engine rather than
+        // as a day that happened to have perfect coverage.
+        $algo = self::dayAlgoVersion($employeeId, $workDate);
+
+        // Coverage is the duration-weighted day figure buildDayRoute already
+        // computed; recompute() runs it immediately before this, so reading it
+        // back beats recomputing the weighting in two places.
+        $coverage = $algo < 2 ? null : (db_fetch_one(
+            "SELECT gps_coverage_percent FROM day_routes WHERE employee_id = ? AND work_date = ?",
+            [$employeeId, $workDate],
+        )['gps_coverage_percent'] ?? null);
+
         db_execute(
             "INSERT INTO attendance_days
                 (employee_id, work_date, status, joining_time, end_time, session_count, worked_seconds,
-                 distance_km, companies_visited, reports_submitted, stop_seconds, longest_stop_seconds, computed_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 distance_km, companies_visited, reports_submitted, stop_seconds, longest_stop_seconds, computed_at,
+                 verified_distance_km, incomplete_distance_km, gps_coverage_percent)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT (employee_id, work_date) DO UPDATE SET
                 status = excluded.status,
                 joining_time = excluded.joining_time,
@@ -536,11 +981,17 @@ final class Engine
                 reports_submitted = excluded.reports_submitted,
                 stop_seconds = excluded.stop_seconds,
                 longest_stop_seconds = excluded.longest_stop_seconds,
-                computed_at = excluded.computed_at",
+                computed_at = excluded.computed_at,
+                verified_distance_km = excluded.verified_distance_km,
+                incomplete_distance_km = excluded.incomplete_distance_km,
+                gps_coverage_percent = excluded.gps_coverage_percent",
             [
                 $employeeId, $workDate, $status, $joining, $anyOpen ? null : $end,
                 count($sessions), $worked, round($distance, 4), $companies, $reports,
                 $stopSeconds, $longestStop, $now,
+                $algo < 2 ? null : round($distance, 4),
+                $algo < 2 ? null : round($incomplete, 4),
+                $coverage,
             ],
         );
     }
@@ -598,10 +1049,51 @@ final class Engine
         $minLat = $maxLat = (float) $rows[0]['lat'];
         $minLng = $maxLng = (float) $rows[0]['lng'];
 
-        // Same gated sum as refreshSession(), so the route card and the day
+        // Same measurement as refreshSession(), so the route card and the day
         // summary cannot disagree about how far the employee went. The polyline
         // below still draws every fix — the gates shape the number, not the line.
-        $distance = self::chainDistanceKm($rows);
+        //
+        // v2 measures **per session and sums**, where v1 measured the whole
+        // day's chain in one pass. Two reasons, and both are why v1 is left
+        // alone rather than corrected: a pause between sessions is not tracked
+        // time, so classifying it as a GPS gap would report every lunch break
+        // as broken coverage; and measuring across the boundary books the leg
+        // from where one session ended to where the next began, which is travel
+        // that happened while nothing was tracking it.
+        $algo = self::dayAlgoVersion($employeeId, $workDate);
+
+        if ($algo < 2) {
+            $distance   = self::chainDistanceKm($rows, $algo);
+            $incomplete = null;
+            $coverage   = null;
+        } else {
+            $distance   = 0.0;
+            $incomplete = 0.0;
+            $spanS      = 0;
+            $goodS      = 0.0;
+
+            foreach (self::daySessionFixes($employeeId, $workDate) as $chain) {
+                $measured    = self::chainDistance($chain, $algo);
+                $distance   += $measured['verifiedKm'];
+                $incomplete += $measured['incompleteKm'];
+
+                // Coverage over a day is duration-weighted across its sessions,
+                // not the mean of their percentages: a four-hour session with
+                // one gap and a five-minute session with none are not equal
+                // halves of the day's answer.
+                $seconds = count($chain) < 2
+                    ? 0
+                    : max(0, Wire::seconds(
+                        (string) $chain[0]['recorded_at'],
+                        (string) $chain[count($chain) - 1]['recorded_at'],
+                    ));
+
+                $spanS += $seconds;
+                $goodS += $seconds * ((float) ($measured['coveragePercent'] ?? 100.0) / 100);
+            }
+
+            $coverage = $spanS <= 0 ? 100.0 : round($goodS / $spanS * 100, 2);
+        }
 
         foreach ($rows as $row) {
             $lat = (float) $row['lat'];
@@ -630,8 +1122,9 @@ final class Engine
         db_execute(
             "INSERT INTO day_routes
                 (employee_id, work_date, point_count, total_distance_km, min_lat, max_lat, min_lng, max_lng,
-                 polyline, first_fix_at, last_fix_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 polyline, first_fix_at, last_fix_at,
+                 distance_algo_version, verified_distance_km, incomplete_distance_km, gps_coverage_percent)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT (employee_id, work_date) DO UPDATE SET
                 point_count = excluded.point_count,
                 total_distance_km = excluded.total_distance_km,
@@ -639,13 +1132,21 @@ final class Engine
                 min_lng = excluded.min_lng, max_lng = excluded.max_lng,
                 polyline = excluded.polyline,
                 first_fix_at = excluded.first_fix_at,
-                last_fix_at = excluded.last_fix_at",
+                last_fix_at = excluded.last_fix_at,
+                distance_algo_version = excluded.distance_algo_version,
+                verified_distance_km = excluded.verified_distance_km,
+                incomplete_distance_km = excluded.incomplete_distance_km,
+                gps_coverage_percent = excluded.gps_coverage_percent",
             [
                 $employeeId, $workDate, count($simplified), round($distance, 4),
                 $minLat, $maxLat, $minLng, $maxLng,
                 json_encode($simplified),
                 Wire::ts($rows[0]['recorded_at']),
                 Wire::ts($rows[count($rows) - 1]['recorded_at']),
+                $algo,
+                $algo < 2 ? null : round($distance, 4),
+                $incomplete === null ? null : round($incomplete, 4),
+                $coverage,
             ],
         );
 
@@ -659,8 +1160,10 @@ final class Engine
 
     /**
      * Rebuilds the day's timeline from sessions + stops + visits + reports so
-     * the client never joins them. Alert rows (tracking_issue) are written by
-     * the health endpoint as they happen and are preserved across a rebuild.
+     * the client never joins them. `tracking_issue` rows — the Offline alert
+     * and the Back online row that closes it — are written by the health
+     * endpoint as they happen and are preserved across a rebuild, because
+     * nothing else in the schema records that the device went dark.
      */
     public static function rebuildActivity(string $employeeId, string $workDate): void
     {
@@ -809,9 +1312,40 @@ final class Engine
         ];
     }
 
+    /** Something went wrong and the employee should see it in red. */
     public static function logAlert(string $employeeId, string $workDate, string $title, string $subtitle): void
     {
-        $event = self::event($employeeId, $workDate, 'tracking_issue', Wire::now(), $title, subtitle: $subtitle, isAlert: true);
+        self::logHealthRow($employeeId, $workDate, $title, $subtitle, true);
+    }
+
+    /**
+     * The row that CLOSES an alert — tracking recovered.
+     *
+     * Same row family as [logAlert] (same type, so the rebuild preserves it
+     * too) but not an alert, because "you are back online" is good news and a
+     * red row for it would be noise. `is_alert` is the only thing telling the
+     * two apart, which is what the timeline reads to pick its icon and colour.
+     */
+    public static function logRecovery(string $employeeId, string $workDate, string $title, string $subtitle): void
+    {
+        self::logHealthRow($employeeId, $workDate, $title, $subtitle, false);
+    }
+
+    /**
+     * The one write behind both. Deliberately `tracking_issue` for either
+     * sense: it is the only type `rebuildActivity` steps around, and these
+     * rows cannot be rebuilt from sessions and stops because nothing else
+     * records them. A new enum value would need a migration and a client that
+     * understands it, and would buy nothing `is_alert` does not already say.
+     */
+    private static function logHealthRow(
+        string $employeeId,
+        string $workDate,
+        string $title,
+        string $subtitle,
+        bool $isAlert,
+    ): void {
+        $event = self::event($employeeId, $workDate, 'tracking_issue', Wire::now(), $title, subtitle: $subtitle, isAlert: $isAlert);
 
         db_execute(
             "INSERT INTO activity_events

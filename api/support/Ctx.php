@@ -158,8 +158,18 @@ final class Ctx
         $row = db_fetch_one("SELECT * FROM tracking_configs WHERE org_id = ?", [self::orgId()]);
 
         if (!$row) {
+            // The three universal-engine defaults are written explicitly
+            // rather than left to the column defaults 002 and 031 declared.
+            // Neither driver can change an existing column's DEFAULT without
+            // rewriting the table — SQLite cannot at all — and this INSERT is
+            // the only path that materialises a missing row, so stating them
+            // here keeps one documented source for the new values while every
+            // org row an admin has already tuned is left exactly as it is.
             db_execute(
-                "INSERT INTO tracking_configs (org_id, version, updated_at) VALUES (?, 9, ?)",
+                "INSERT INTO tracking_configs
+                    (org_id, version, updated_at,
+                     location_interval_seconds, distance_filter_metres, min_accuracy_metres)
+                 VALUES (?, 10, ?, 10, 10, 30)",
                 [self::orgId(), Wire::now()],
             );
             $row = db_fetch_one("SELECT * FROM tracking_configs WHERE org_id = ?", [self::orgId()]);

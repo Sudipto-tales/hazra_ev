@@ -23,6 +23,7 @@ require __DIR__ . '/core/Console/MatchCommand.php';
 require __DIR__ . '/core/Console/CloseDaysCommand.php';
 require __DIR__ . '/core/Console/DeleteAccountsCommand.php';
 require __DIR__ . '/core/Console/UserPasswordCommand.php';
+require __DIR__ . '/core/Console/MessagingCommand.php';
 
 $command = $argv[1] ?? null;
 
@@ -36,6 +37,9 @@ $commands = [
     'days:close' => 'Close days nobody ended, at org-local midnight (--date, --employee, --dry)',
     'accounts:delete-due' => 'Process account deletion requests after 30 days (--dry)',
     'user:password' => 'Reset a user password interactively (--email, --org, --no-must-change)',
+    'key:generate' => 'Generate an APP_KEY for the encrypted credential store (--write)',
+    'webhooks:prune' => 'Delete inbound webhook events past their retention (--days=N)',
+    'otp:prune' => 'Wipe stored OTP codes past their reveal window',
 ];
 
 if ($command === null || $command === 'help' || $command === '--help') {
@@ -63,6 +67,9 @@ match ($command) {
     'days:close' => (new CloseDaysCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'accounts:delete-due' => (new DeleteAccountsCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'user:password' => (new UserPasswordCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
+    'key:generate' => (new MessagingCommand(__DIR__, $framework))->keyGenerate(array_slice($argv, 2)),
+    'webhooks:prune' => (new MessagingCommand(__DIR__, $framework))->webhooksPrune(array_slice($argv, 2)),
+    'otp:prune' => (new MessagingCommand(__DIR__, $framework))->otpPrune(array_slice($argv, 2)),
     default => (function () use ($command) {
         echo PHP_EOL;
         echo "  \033[31mUnknown command: {$command}\033[0m" . PHP_EOL;

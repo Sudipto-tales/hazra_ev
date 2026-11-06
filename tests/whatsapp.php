@@ -7,6 +7,9 @@ require_once __DIR__ . '/../api/support/Uuid.php';
 require_once __DIR__ . '/../core/OtpService.php';
 require_once __DIR__ . '/../database/migrations/028_whatsapp_messages.php';
 require_once __DIR__ . '/../database/migrations/029_message_delivery.php';
+require_once __DIR__ . '/../database/migrations/032_messaging_credentials.php';
+require_once __DIR__ . '/../database/migrations/034_message_attempts.php';
+require_once __DIR__ . '/../database/migrations/035_otp_code_cipher.php';
 function db_query($sql, $params = []) { global $pdo; $q = $pdo->prepare($sql); $q->execute($params); return $q; }
 function db_fetch_one($sql, $params = []) { return db_query($sql, $params)->fetch(PDO::FETCH_ASSOC); }
 function db_fetch_all($sql, $params = []) { return db_query($sql, $params)->fetchAll(PDO::FETCH_ASSOC); }
@@ -19,6 +22,9 @@ CREATE TABLE website_settings (id TEXT PRIMARY KEY, group_name TEXT, setting_key
 CREATE TABLE otp_challenges (id TEXT PRIMARY KEY, mobile TEXT, purpose TEXT, code_hash TEXT, expires_at TEXT, attempts INTEGER, created_at TEXT, ip_address TEXT, verified_at TEXT, session_token TEXT, consumed_at TEXT);");
 $migration = new WhatsAppMessages($pdo); $migration->up(); $migration->up();
 $deliveryMigration = new MessageDelivery($pdo); $deliveryMigration->up(); $deliveryMigration->up();
+// Every migration is re-run once: the ledger assumes they are idempotent.
+foreach (['MessagingCredentials', 'MessageAttempts', 'OtpCodeCipher'] as $class) { $m = new $class($pdo); $m->up(); $m->up(); }
+check(count(db_fetch_all("SELECT * FROM messaging_routes WHERE event_name = 'otp'")) === 7, 'Chain seed not idempotent');
 class FakeWhatsApp extends WhatsAppService
 {
     public static array $payload = [];
@@ -89,35 +95,85 @@ check(!OtpService::verifyOtp('9002921511', 'warranty_free', '000000')['success']
 check(!OtpService::sendOtp('invalid', 'warranty_free')['success'], 'Invalid mobile accepted');
 check(!OtpService::sendOtp('9002921512', 'unknown')['success'], 'Unknown purpose accepted');
 
-class FakeOtp extends OtpService
+// The chain, with every provider faked: no provider is ever contacted, and
+// one OTP must survive however many steps are tried.
+class FakeTransport implements MessagingTransport
 {
-    public static string $whatsappCode = '';
-    public static string $smsCode = '';
-    public static bool $acceptWhatsApp = false;
-    protected static function sendWhatsAppOtp(string $mobile, string $code, string $id): array
+    /** @var array<string,string> channel => the code it was handed */
+    public static array $seen = [];
+    public function __construct(private string $channel, private bool $accept) {}
+    public function send(array $message): array
     {
-        self::$whatsappCode = $code;
-        return ['success' => self::$acceptWhatsApp];
-    }
-    protected static function sendSmsOtp(string $provider, string $mobile, string $code, string $purpose, string $reference): bool
-    {
-        self::$smsCode = $code;
-        return true;
+        self::$seen[$this->channel] = (string) ($message['code'] ?? ($message['params'][0] ?? ''));
+        return ['success' => $this->accept, 'id' => Uuid::v4(), 'status' => $this->accept ? 'accepted' : 'failed',
+            'error_detail' => $this->accept ? null : 'Fake rejection.'];
     }
 }
-$fallback = FakeOtp::sendOtp('9002921513', 'warranty_free');
-check($fallback['success'] && $fallback['channel'] === 'sms' && FakeOtp::$whatsappCode === FakeOtp::$smsCode, 'Fallback changed OTP');
+$_ENV['APP_ENV'] = 'production';
+// Restored after the "missing credential" case above blanked it: an
+// unconfigured provider is skipped before its transport is ever called, which
+// is the behaviour that case asserts and this one must not inherit.
+$_ENV['WHATSAPP_ACCESS_TOKEN'] = 'fake-token';
+MessagingRegistry::override('whatsapp.meta', new FakeTransport('whatsapp', false));
+MessagingRegistry::override('sms.msg91', new FakeTransport('sms', true));
+$_ENV['MSG91_AUTH_KEY'] = 'fake'; $_ENV['MSG91_TEMPLATE_ID'] = 'fake';
+
+$fallback = OtpService::sendOtp('9002921513', 'warranty_free');
+check($fallback['success'] && $fallback['channel'] === 'sms', 'Fallback did not reach SMS');
+check(FakeTransport::$seen['whatsapp'] === FakeTransport::$seen['sms'], 'Fallback changed the OTP');
 check(!isset($fallback['debug_code']), 'Production transport exposed OTP');
-check(FakeOtp::verifyOtp('9002921513', 'warranty_free', FakeOtp::$smsCode)['success'], 'Production fallback code failed');
-FakeOtp::$acceptWhatsApp = true; FakeOtp::$smsCode = '';
-$wa = FakeOtp::sendOtp('9002921514', 'warranty_free');
-check($wa['success'] && $wa['channel'] === 'whatsapp' && FakeOtp::$smsCode === '', 'Accepted WhatsApp send also sent SMS');
-check(FakeOtp::verifyOtp('9002921514', 'warranty_free', FakeOtp::$whatsappCode)['success'], 'WhatsApp OTP did not verify');
+check(OtpService::verifyOtp('9002921513', 'warranty_free', FakeTransport::$seen['sms'])['success'], 'Production fallback code failed');
+
+// Every attempt of one request shares an attempt group, and the chain stops at
+// the first acceptance.
+$group = db_fetch_all("SELECT attempt_group FROM (SELECT attempt_group FROM whatsapp_messages WHERE reference_id IS NOT NULL UNION ALL SELECT attempt_group FROM sms_messages) WHERE attempt_group IS NOT NULL");
+check(count($group) > 0, 'Chain attempts were not grouped');
+
+FakeTransport::$seen = [];
+MessagingRegistry::override('whatsapp.meta', new FakeTransport('whatsapp', true));
+$wa = OtpService::sendOtp('9002921514', 'warranty_free');
+check($wa['success'] && $wa['channel'] === 'whatsapp', 'Accepted WhatsApp send did not win');
+check(!isset(FakeTransport::$seen['sms']), 'Accepted WhatsApp send also sent SMS');
+check(OtpService::verifyOtp('9002921514', 'warranty_free', FakeTransport::$seen['whatsapp'])['success'], 'WhatsApp OTP did not verify');
+
+// `sms` pins the chain to SMS steps rather than reordering anything.
+FakeTransport::$seen = [];
+db_execute("UPDATE website_settings SET updated_at = '1970-01-01T00:00:00Z' WHERE group_name = 'whatsapp_locks'");
+$pinned = OtpService::sendOtp('9002921517', 'warranty_free', 'sms');
+check($pinned['success'] && $pinned['channel'] === 'sms' && !isset(FakeTransport::$seen['whatsapp']), 'Channel pinning tried WhatsApp');
+
+// The address the warranty form now collects at step 1 reaches the chain, so
+// an email-first delivery order can actually use it. Without one the email
+// step is skipped, which is what the form did before the field moved up.
+FakeTransport::$seen = [];
+MessagingRegistry::override('email.smtp', new FakeTransport('email', true));
+$_ENV['SMTP_HOST'] = 'smtp.test'; $_ENV['SMTP_PORT'] = '587'; $_ENV['SMTP_USERNAME'] = 'u';
+$_ENV['SMTP_PASSWORD'] = 'p'; $_ENV['SMTP_FROM_EMAIL'] = 'from@test';
+MessagingCredentialStore::flush();
+MessagingRouter::saveChain('otp', [
+    ['provider' => 'email.smtp', 'position' => 10, 'enabled' => true],
+    ['provider' => 'sms.msg91', 'position' => 20, 'enabled' => true],
+]);
+db_execute("UPDATE website_settings SET updated_at = '1970-01-01T00:00:00Z' WHERE group_name = 'whatsapp_locks'");
+$byEmail = OtpService::sendOtp('9002921518', 'warranty_free', 'auto', 'customer@example.test');
+check($byEmail['success'] && $byEmail['channel'] === 'email', 'A step-1 email address did not reach the chain');
+check(str_contains($byEmail['message'], 'c***@example.test'), 'The email recipient was not masked in the message: ' . $byEmail['message']);
+check(FakeTransport::$seen['email'] !== '', 'The email transport got no code');
+
+FakeTransport::$seen = [];
+db_execute("UPDATE website_settings SET updated_at = '1970-01-01T00:00:00Z' WHERE group_name = 'whatsapp_locks'");
+$noEmail = OtpService::sendOtp('9002921519', 'warranty_free');
+check($noEmail['success'] && $noEmail['channel'] === 'sms', 'With no address the email step was not skipped');
+check(!isset(FakeTransport::$seen['email']), 'Email was attempted with no address');
+MessagingRegistry::override('email.smtp', null);
+MessagingRouter::saveChain('otp', [['provider' => 'whatsapp.meta', 'position' => 10, 'enabled' => true], ['provider' => 'sms.msg91', 'position' => 20, 'enabled' => true]]);
+
 for ($i = 0; $i < 5; $i++) db_execute('INSERT INTO otp_challenges (id, mobile, purpose, created_at) VALUES (?, ?, ?, ?)', [Uuid::v4(), '9002921515', 'warranty_free', gmdate('Y-m-d\TH:i:s\Z', time() - 120)]);
-check(!FakeOtp::sendOtp('9002921515', 'warranty_paid')['success'], 'Hourly limit crossed purposes');
+check(!OtpService::sendOtp('9002921515', 'warranty_paid')['success'], 'Hourly limit crossed purposes');
 for ($i = 0; $i < 20; $i++) db_execute('INSERT INTO otp_challenges (id, mobile, purpose, created_at, ip_address) VALUES (?, ?, ?, ?, ?)', [Uuid::v4(), 'other', 'warranty_free', gmdate('Y-m-d\TH:i:s\Z'), 'abusive']);
 $_SERVER['REMOTE_ADDR'] = 'abusive';
-check(!FakeOtp::sendOtp('9002921516', 'warranty_free')['success'], 'IP limit bypassed');
+check(!OtpService::sendOtp('9002921516', 'warranty_free')['success'], 'IP limit bypassed');
+MessagingRegistry::override('whatsapp.meta', null); MessagingRegistry::override('sms.msg91', null);
 
 // MySQL migration expansion and lock upserts must remain portable.
 Dialect::boot($pdo, 'mysql');

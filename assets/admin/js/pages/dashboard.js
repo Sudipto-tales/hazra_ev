@@ -14,6 +14,7 @@
         ['dealership_leads', 'Dealership leads', 'fa-store', 'blue'],
         ['contact_leads', 'Contact leads', 'fa-envelope', 'magenta'],
         ['career_applications', 'Career applications', 'fa-file-signature', 'red'],
+        ['warranty_pending', 'Warranty pending', 'fa-shield-halved', 'navy'],
     ];
 
     function skeletonCard(size, tall) {
@@ -48,7 +49,7 @@
                 ${skeletonCard('c4', true)}
             </div>
             <div class="bento mb-4">
-                ${Array(8).fill(0).map(() => skeletonCard('c3')).join('')}
+                ${Array(STAT_TILES.length).fill(0).map(() => skeletonCard('c3')).join('')}
             </div>
             <div class="bento">
                 ${skeletonCard('c8', true)}
@@ -91,8 +92,8 @@
                     ${quickActionsHtml()}
                 </article>
                 <article class="card c4">
-                    <div class="card__head"><h2>Lead inbox</h2></div>
-                    ${leadLinksHtml(stats)}
+                    <div class="card__head"><h2>Latest activity</h2></div>
+                    ${recentHtml(data.recent, stats)}
                 </article>
             </div>`;
 
@@ -151,6 +152,34 @@
             <a class="quick-action" href="${href}">
                 <i class="fa-solid ${icon}"></i><span>${label}</span>
             </a>`).join('')}</div>`;
+    }
+
+    const RECENT_KINDS = {
+        lead:        ['fa-inbox', 'info'],
+        application: ['fa-file-signature', 'info'],
+        warranty:    ['fa-shield-halved', 'info'],
+    };
+
+    function recentHtml(recent, stats) {
+        if (!Array.isArray(recent) || recent.length === 0) {
+            // Nothing has come in yet — keep the useful lead shortcuts rather
+            // than an empty box.
+            return leadLinksHtml(stats);
+        }
+
+        const rows = recent.map((it) => {
+            const [icon, tone] = RECENT_KINDS[it.kind] || ['fa-circle-dot', 'info'];
+            const href = it.href ? `href="${U.esc(it.href)}"` : '';
+            return `<li class="feed__item">
+                <span class="feed__icon ${tone}"><i class="fa-solid ${icon}"></i></span>
+                <span class="feed__body">
+                    <a ${href}><b>${U.esc(it.title || '')}</b></a>
+                    <span>${U.esc(it.subtitle || '')}</span>
+                </span>
+            </li>`;
+        }).join('');
+
+        return `<ul class="feed">${rows}</ul>`;
     }
 
     function leadLinksHtml(stats) {

@@ -106,7 +106,7 @@ App::render('header', ['isStickyOnly' => true]);
       <!-- Stepped Progress Indicator -->
       <div class="wf-stepper reveal-up" style="--d:.06s;margin-bottom:24px;">
         <div class="wf-stepper__track">
-          <div class="wf-step is-active" id="stepInd1"><span class="wf-step__num">1</span> <span class="wf-step__txt">Mobile OTP</span></div>
+          <div class="wf-step is-active" id="stepInd1"><span class="wf-step__num">1</span> <span class="wf-step__txt">Contact &amp; OTP</span></div>
           <div class="wf-step" id="stepInd2"><span class="wf-step__num">2</span> <span class="wf-step__txt">Customer</span></div>
           <div class="wf-step" id="stepInd3"><span class="wf-step__num">3</span> <span class="wf-step__txt">Vehicle</span></div>
           <div class="wf-step" id="stepInd4"><span class="wf-step__num">4</span> <span class="wf-step__txt">Dealer &amp; Invoice</span></div>
@@ -155,8 +155,8 @@ App::render('header', ['isStickyOnly' => true]);
 
         <!-- STEP 1: MOBILE & OTP GATE (ALWAYS ACCESSIBLE FIRST) -->
         <fieldset class="wf-fs" id="fsOtp" style="border:2px solid color-mix(in srgb, var(--brand-violet) 40%, var(--hair-0));">
-          <legend style="color:var(--brand-violet);font-weight:900;">Step 1 · Mobile Verification (OTP Required)</legend>
-          <p class="wf-hint" style="margin-top:2px;">Government and warranty policy require mobile number verification before entering vehicle and customer details.</p>
+          <legend style="color:var(--brand-violet);font-weight:900;">Step 1 · Contact Details &amp; Mobile Verification (OTP Required)</legend>
+          <p class="wf-hint" style="margin-top:2px;">Government and warranty policy require mobile number verification before entering vehicle and customer details. Your verification code is sent to the mobile number or the email address below, whichever we are set up to use — the message we show you says which one it went to.</p>
 
           <div class="wf-grid" style="grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));align-items:end;">
             <label class="wf-field">
@@ -164,11 +164,17 @@ App::render('header', ['isStickyOnly' => true]);
               <input type="tel" name="userMobile" id="userMobile" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10" autocomplete="tel">
             </label>
 
+            <label class="wf-field">
+              <span>Email address <strong style="color:var(--brand-red)">*</strong></span>
+              <input type="email" name="userEmail" id="userEmail" placeholder="Your email address" required autocomplete="email">
+              <small class="wf-hint">Also where your warranty confirmation is sent.</small>
+            </label>
+
             <div class="wf-field">
               <span>&nbsp;</span>
               <button type="button" class="btn btn--ink" id="sendOtpBtn" style="height:44px;display:flex;align-items:center;justify-content:center;">
                 <span id="sendOtpLabel">Send OTP Code</span>
-              </button><label style="display:block;margin:8px 0"><input type="checkbox" id="otpSmsOnly"> Request your OTP on WhatsApp, with SMS fallback. Choose SMS instead (also use this if WhatsApp hasn't arrived).</label>
+              </button><label style="display:block;margin:8px 0"><input type="checkbox" id="otpSmsOnly"> Send my code by SMS instead — use this if the code hasn't arrived by email or WhatsApp.</label>
             </div>
 
             <div class="wf-field wf-otp-entry" id="otpEntryGroup" style="display:none;">
@@ -192,10 +198,6 @@ App::render('header', ['isStickyOnly' => true]);
             <label class="wf-field">
               <span>Customer full name <small>(as per invoice)</small> <strong style="color:var(--brand-red)">*</strong></span>
               <input type="text" name="name" id="customerName" placeholder="Enter your full name" required autocomplete="name">
-            </label>
-            <label class="wf-field">
-              <span>Email address <strong style="color:var(--brand-red)">*</strong></span>
-              <input type="email" name="userEmail" id="userEmail" placeholder="Your email address" required autocomplete="email">
             </label>
             <label class="wf-field">
               <span>Vehicle Model</span>
@@ -382,6 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const form          = document.getElementById('warrantyForm');
   const userMobile    = document.getElementById('userMobile');
+  const userEmail     = document.getElementById('userEmail');
   const sendOtpBtn    = document.getElementById('sendOtpBtn');
   const sendOtpLabel  = document.getElementById('sendOtpLabel');
   const otpEntryGroup = document.getElementById('otpEntryGroup');
@@ -414,6 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (new Date(parsed.expiresAt).getTime() > Date.now()) {
             unlockGatedSteps(parsed.sessionToken, parsed.mobile);
             userMobile.value = parsed.mobile;
+            // The email is not part of what the OTP verified; it is restored
+            // only so a reload does not make the customer type it again.
+            if (parsed.email && !userEmail.value) userEmail.value = parsed.email;
           } else {
             sessionStorage.removeItem(STORAGE_KEY);
           }
@@ -458,6 +464,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Checked here rather than left to form validation: the code may be sent
+    // to this address, and the browser does not validate a field on a button
+    // click outside a submit.
+    const email = userEmail.value.trim();
+    if (!userEmail.checkValidity() || !email) {
+      alert('Please enter your email address. Your verification code may be sent there, and your warranty confirmation will be.');
+      userEmail.focus();
+      return;
+    }
+
     sendOtpBtn.disabled = true;
     sendOtpLabel.textContent = 'Sending...';
     otpStatusMsg.style.display = 'none';
@@ -466,7 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/v1/warranty/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ mobile: mobile, purpose: 'warranty_free', channel: document.getElementById('otpSmsOnly').checked ? 'sms' : 'auto' }),
+        body: JSON.stringify({ mobile: mobile, email: email, purpose: 'warranty_free', channel: document.getElementById('otpSmsOnly').checked ? 'sms' : 'auto' }),
       });
       const data = await res.json();
 
@@ -544,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
           sessionToken: token,
           mobile: mobile,
+          email: userEmail.value.trim(),
           expiresAt: expiresAt,
         }));
       } catch (e) {}

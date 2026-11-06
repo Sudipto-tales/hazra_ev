@@ -30,6 +30,21 @@ final class ConfigController extends V1Controller
         'distanceFilterMetres'                => 'distance_filter_metres',
         'movementExitSpeedKmh'                => 'movement_exit_speed_kmh',
         'liveSyncIntervalSeconds'             => 'live_sync_interval_seconds',
+        // --- the universal distance engine (036) -------------------------
+        //
+        // minStepMetres is the server's measurement floor and is NOT
+        // distanceFilterMetres, which stayed behind as the device's OS capture
+        // filter. One column was doing both jobs and they want opposite values:
+        // capture goes down so a winding track keeps its corners, measurement
+        // stays up so a parked phone's drift never books distance.
+        //
+        // There is no moderate/poor threshold here. That edge is
+        // minAccuracyMetres, which already means it.
+        'minStepMetres'                       => 'min_step_metres',
+        'accuracyGoodMetres'                  => 'accuracy_good_metres',
+        'accuracyStepFactor'                  => 'accuracy_step_factor',
+        'gpsGapWarningSeconds'                => 'gps_gap_warning_seconds',
+        'gpsGapIncompleteSeconds'             => 'gps_gap_incomplete_seconds',
     ];
 
     /** Documented defaults, used when a column predates the v9 migration. */
@@ -38,6 +53,11 @@ final class ConfigController extends V1Controller
         'distanceFilterMetres'    => 20,
         'movementExitSpeedKmh'    => 3,
         'liveSyncIntervalSeconds' => 15,
+        'minStepMetres'           => 15,
+        'accuracyGoodMetres'      => 20,
+        'accuracyStepFactor'      => 1,
+        'gpsGapWarningSeconds'    => 60,
+        'gpsGapIncompleteSeconds' => 180,
     ];
 
     /** `version` backs the ETag, so an unchanged config is a 304. */
@@ -121,6 +141,20 @@ final class ConfigController extends V1Controller
             $values['liveSyncIntervalSeconds'] = $liveSync;
         }
 
+        // A step factor is a slider: out of range is a typo, not an intent. 0
+        // disables the scaling and restores a flat min_step_metres floor, which
+        // is the documented escape hatch; above 5 the step would exceed any
+        // plausible fix error and measure nothing at all.
+        if (array_key_exists('accuracyStepFactor', $values)) {
+            $values['accuracyStepFactor'] = max(0, min(5, $values['accuracyStepFactor']));
+        }
+
+        // Same reasoning. 0 disables the floor (the raw chord sum); 500 m is
+        // already far past anything a 10 s capture interval can produce.
+        if (array_key_exists('minStepMetres', $values)) {
+            $values['minStepMetres'] = max(0, min(500, $values['minStepMetres']));
+        }
+
         // --- the two 422 rules -----------------------------------------------
         //
         // Carried over from v8: the device must post at least twice inside the
@@ -156,6 +190,36 @@ final class ConfigController extends V1Controller
             );
         }
 
+        // Good cannot end after poor begins, or the moderate band inverts and
+        // a fix lands in two of them. 422 rather than a clamp, for the same
+        // reason the pair rules above are: an admin who typed a number has to
+        // be told it cannot hold. The DB CHECK is the backstop.
+        $goodMetres = $effective('accuracyGoodMetres');
+        $poorMetres = array_key_exists('minAccuracyMetres', $body) && is_numeric($body['minAccuracyMetres'])
+            ? $body['minAccuracyMetres'] + 0
+            : (float) $before['min_accuracy_metres'];
+
+        if ($goodMetres > $poorMetres) {
+            Envelope::invalid(
+                "accuracyGoodMetres must be at most minAccuracyMetres ({$poorMetres}) — "
+                    . 'the moderate band cannot invert',
+                'accuracyGoodMetres',
+            );
+        }
+
+        // Incomplete is strictly worse than a warning. Equal thresholds would
+        // make one of the two classifications unreachable.
+        $gapWarning = $effective('gpsGapWarningSeconds');
+        $gapIncomplete = $effective('gpsGapIncompleteSeconds');
+
+        if ($gapIncomplete <= $gapWarning) {
+            Envelope::invalid(
+                "gpsGapIncompleteSeconds must be greater than gpsGapWarningSeconds ({$gapWarning}) — "
+                    . 'otherwise no gap is ever only a warning',
+                'gpsGapIncompleteSeconds',
+            );
+        }
+
         $sets = [];
         $params = [];
 
@@ -181,7 +245,10 @@ final class ConfigController extends V1Controller
                     . 'locationIntervalSeconds must be 5-600, '
                     . 'syncIntervalSeconds must be at most offlineThresholdMinutes × 60 / 2 '
                     . 'and greater than liveSyncIntervalSeconds (which holds at 5-120s), '
-                    . 'and movementExitSpeedKmh must be at least movementSpeedThresholdKmh'
+                    . 'movementExitSpeedKmh must be at least movementSpeedThresholdKmh, '
+                    . 'accuracyGoodMetres must be at most minAccuracyMetres, '
+                    . 'gpsGapIncompleteSeconds must be greater than gpsGapWarningSeconds, '
+                    . 'and minStepMetres and accuracyStepFactor must not be negative'
             );
         }
 
@@ -190,13 +257,21 @@ final class ConfigController extends V1Controller
         db_execute(
             "INSERT INTO tracking_config_history
                  (id, org_id, version, payload, sync_interval_seconds, distance_filter_metres,
-                  movement_exit_speed_kmh, live_sync_interval_seconds, changed_at, changed_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                  movement_exit_speed_kmh, live_sync_interval_seconds, changed_at, changed_by,
+                  min_step_metres, accuracy_good_metres, accuracy_step_factor,
+                  gps_gap_warning_seconds, gps_gap_incomplete_seconds)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 Uuid::v4(), Ctx::orgId(), $after['version'], json_encode($after),
                 $after['sync_interval_seconds'] ?? null, $after['distance_filter_metres'] ?? null,
                 $after['movement_exit_speed_kmh'] ?? null, $after['live_sync_interval_seconds'] ?? null,
                 Wire::now(), Ctx::id(),
+                // The payload JSON above already carries the whole row; these
+                // keep the tunable knobs queryable without parsing it, which is
+                // the same reason the v9 four are mirrored.
+                $after['min_step_metres'] ?? null, $after['accuracy_good_metres'] ?? null,
+                $after['accuracy_step_factor'] ?? null,
+                $after['gps_gap_warning_seconds'] ?? null, $after['gps_gap_incomplete_seconds'] ?? null,
             ],
         );
 

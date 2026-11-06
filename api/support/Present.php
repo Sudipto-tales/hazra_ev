@@ -79,9 +79,22 @@ final class Present
             'reportReminders'      => (bool) ($r['report_reminders'] ?? 1),
             'sessionReminders'     => (bool) ($r['session_reminders'] ?? 1),
             'systemNotifications'  => (bool) ($r['system_notifications'] ?? 1),
-            'highAccuracyMode'     => (bool) ($r['high_accuracy_mode'] ?? 1),
-            'syncOnMobileData'     => (bool) ($r['sync_on_mobile_data'] ?? 1),
-            'batterySaver'         => (bool) ($r['battery_saver'] ?? 0),
+            // Retired as per-employee settings, and deliberately still on the
+            // wire as fixed values.
+            //
+            // Collection is organisation config, identical for every employee:
+            // an employee may not make their own tracking less aggressive than
+            // the org's rule, which is what these three used to allow. The
+            // write path is gone from MeController and the stored columns were
+            // reset by migration 036.
+            //
+            // They are reported rather than removed because dropping a field
+            // breaks every app build already in the field, and these are the
+            // values those builds should now behave as if they had. The
+            // columns can go in a later migration once no client reads them.
+            'highAccuracyMode'     => true,
+            'syncOnMobileData'     => true,
+            'batterySaver'         => false,
         ];
     }
 
@@ -100,7 +113,25 @@ final class Present
             'reportsSubmitted'  => Wire::int($r['reports_submitted'] ?? 0),
             'stopDuration'      => Wire::int($r['stop_seconds'] ?? 0),
             'longestStop'       => Wire::int($r['longest_stop_seconds'] ?? 0),
+            // 036, additive and nullable — see Present::session. `distanceKm`
+            // above keeps its exact meaning: the verified figure.
+            'verifiedDistanceKm'   => self::nullableFloat($r['verified_distance_km'] ?? null),
+            'incompleteDistanceKm' => self::nullableFloat($r['incomplete_distance_km'] ?? null),
+            'gpsCoveragePercent'   => self::nullableFloat($r['gps_coverage_percent'] ?? null),
         ];
+    }
+
+    /**
+     * A number that is allowed to be absent.
+     *
+     * `Wire::float` substitutes a default for anything non-numeric, which is
+     * right for a column that always has a value and wrong for one where NULL
+     * is itself the answer — "this row predates the measurement, so there is
+     * no figure", which 0 and 100 would both misreport.
+     */
+    private static function nullableFloat(mixed $value): ?float
+    {
+        return $value === null || $value === '' ? null : Wire::float($value);
     }
 
     /**
@@ -157,6 +188,20 @@ final class Present
             'locationPoints'  => Wire::int($r['point_count'] ?? 0),
             'startLatitude'   => Wire::float($r['start_lat'] ?? 0),
             'startLongitude'  => Wire::float($r['start_lng'] ?? 0),
+            // The universal distance engine (036), additive and NULLABLE.
+            //
+            // `distanceKm` above is unchanged and still the headline figure:
+            // it is the VERIFIED number, never verified + incomplete. Nothing
+            // measured across a GPS gap is folded into it.
+            //
+            // null is not 0 here. It means this session predates the engine
+            // and no coverage was ever computed for it, which a consumer must
+            // render as "not measured" rather than as a zero or a 100 %. The
+            // same rule `headingDeg` follows.
+            'verifiedDistanceKm'    => self::nullableFloat($r['verified_distance_km'] ?? null),
+            'incompleteDistanceKm'  => self::nullableFloat($r['incomplete_distance_km'] ?? null),
+            'gpsCoveragePercent'    => self::nullableFloat($r['gps_coverage_percent'] ?? null),
+            'distanceAlgoVersion'   => Wire::int($r['distance_algo_version'] ?? 1),
         ];
     }
 
@@ -462,6 +507,20 @@ final class Present
             // lands serves the shipped behaviour rather than a 0.
             'movementExitSpeedKmh'                 => Wire::float($r['movement_exit_speed_kmh'] ?? 3),
             'liveSyncIntervalSeconds'              => Wire::int($r['live_sync_interval_seconds'] ?? 15),
+            // The universal distance engine (036). `??` defaults match the
+            // documented ones so a read taken before the migration lands
+            // serves the shipped behaviour rather than a 0 — the same
+            // discipline the v9 fields above follow.
+            //
+            // minStepMetres is the server's measurement floor and is NOT
+            // distanceFilterMetres, which is the device's OS capture filter.
+            // The moderate/poor edge is minAccuracyMetres; there is no
+            // separate column for it.
+            'minStepMetres'                        => Wire::float($r['min_step_metres'] ?? 15),
+            'accuracyGoodMetres'                   => Wire::float($r['accuracy_good_metres'] ?? 20),
+            'accuracyStepFactor'                   => Wire::float($r['accuracy_step_factor'] ?? 1),
+            'gpsGapWarningSeconds'                 => Wire::int($r['gps_gap_warning_seconds'] ?? 60),
+            'gpsGapIncompleteSeconds'              => Wire::int($r['gps_gap_incomplete_seconds'] ?? 180),
             'version'                              => Wire::int($r['version']),
             'updatedAt'                            => Wire::ts($r['updated_at']),
             'updatedBy'                            => $r['updated_by'] ?? null,

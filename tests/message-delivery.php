@@ -10,6 +10,10 @@ require_once __BASEDIR__ . '/api/controllers/MessageDeliveryController.php';
 require_once __BASEDIR__ . '/api/controllers/SmsWebhookController.php';
 require_once __BASEDIR__ . '/database/migrations/028_whatsapp_messages.php';
 require_once __BASEDIR__ . '/database/migrations/029_message_delivery.php';
+require_once __BASEDIR__ . '/database/migrations/032_messaging_credentials.php';
+require_once __BASEDIR__ . '/database/migrations/033_webhook_events.php';
+require_once __BASEDIR__ . '/database/migrations/034_message_attempts.php';
+require_once __BASEDIR__ . '/database/migrations/035_otp_code_cipher.php';
 function db_query($sql, $params = []) { global $pdo; $q = $pdo->prepare($sql); $q->execute($params); return $q; }
 function db_fetch_one($sql, $params = []) { return db_query($sql, $params)->fetch(PDO::FETCH_ASSOC); }
 function db_fetch_all($sql, $params = []) { return db_query($sql, $params)->fetchAll(PDO::FETCH_ASSOC); }
@@ -22,10 +26,12 @@ CREATE TABLE website_leads (id TEXT PRIMARY KEY, name TEXT, type TEXT, phone TEX
 CREATE TABLE website_settings (id TEXT PRIMARY KEY, group_name TEXT, setting_key TEXT, setting_value TEXT, updated_at TEXT, UNIQUE(group_name, setting_key));
 CREATE TABLE otp_challenges (id TEXT PRIMARY KEY, mobile TEXT, purpose TEXT, code_hash TEXT, expires_at TEXT, attempts INTEGER, created_at TEXT, ip_address TEXT, verified_at TEXT, session_token TEXT, consumed_at TEXT);");
 (new WhatsAppMessages($pdo))->up(); $migration = new MessageDelivery($pdo); $migration->up(); $migration->up();
+foreach (['MessagingCredentials', 'WebhookEvents', 'MessageAttempts', 'OtpCodeCipher'] as $class) { $m = new $class($pdo); $m->up(); $m->up(); }
 function setting($key, $value) { db_execute("INSERT INTO website_settings VALUES (?, 'general', ?, ?, '') ON CONFLICT(group_name, setting_key) DO UPDATE SET setting_value = excluded.setting_value", [Uuid::v4(), $key, $value]); }
 function challenge($id, $mobile = '9002921509', $age = 120) { db_execute('INSERT INTO otp_challenges (id, mobile, purpose, code_hash, expires_at, attempts, created_at, ip_address) VALUES (?, ?, ?, ?, ?, 0, ?, ?)', [$id, $mobile, 'warranty_free', 'old-hash', gmdate('Y-m-d\TH:i:s\Z'), gmdate('Y-m-d\TH:i:s\Z', time() - $age), 'old-ip']); }
 function seedMessage($channel, $id, $reference, $event, $status, $date = '2026-10-02T08:00:00Z') {
-    if ($channel === 'sms') db_execute('INSERT INTO sms_messages (id, reference_id, event_name, mobile, provider, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [$id, $reference, $event, '919002921509', 'twilio', $status, $date, $date]);
+    if ($channel === 'email') db_execute('INSERT INTO email_messages (id, reference_id, event_name, mobile, provider, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [$id, $reference, $event, 'customer@example.test', 'smtp', $status, $date, $date]);
+    elseif ($channel === 'sms') db_execute('INSERT INTO sms_messages (id, reference_id, event_name, mobile, provider, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [$id, $reference, $event, '919002921509', 'twilio', $status, $date, $date]);
     else db_execute('INSERT INTO whatsapp_messages (id, reference_id, event_name, mobile, template_name, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [$id, $reference, $event, '919002921509', 'template', $status, $date, $date]);
 }
 
@@ -71,7 +77,7 @@ if (($argv[1] ?? '') === '--controller') {
         (new MessageDeliveryController())->retry();
     }
     seedMessage('sms', 'probe', 'r', 'warranty_free', 'accepted');
-    $_GET = $mode === 'bad-filter' ? ['channel' => 'email'] : [];
+    $_GET = $mode === 'bad-filter' ? ['channel' => 'postcard'] : [];
     (new MessageDeliveryController())->index();
 }
 
@@ -146,7 +152,19 @@ check($wa['total'] === 1 && $wa['items'][0]['id'] === 'wa-existing', 'Channel fi
 check(MessageDeliveryLog::listing(['q' => 'sms-next-day'])['total'] === 0, 'Search should match public references not internal IDs');
 check(MessageDeliveryLog::listing(['q' => 'msg-request'])['total'] === 1, 'Provider ID search');
 check(MessageDeliveryLog::listing(['channel' => 'sms', 'status' => 'sent', 'from' => '2026-10-02', 'to' => '2026-10-02'])['total'] === 1, 'Inclusive end-date filter');
-foreach ([['channel' => 'email'], ['status' => 'nonsense'], ['from' => '2026-02-30'], ['from' => '2026-10-03', 'to' => '2026-10-02'], ['q' => str_repeat('x', 121)]] as $filter) rejects(fn() => MessageDeliveryLog::listing($filter), InvalidArgumentException::class);
+foreach ([['channel' => 'postcard'], ['status' => 'nonsense'], ['tests' => 'maybe'], ['from' => '2026-02-30'], ['from' => '2026-10-03', 'to' => '2026-10-02'], ['q' => str_repeat('x', 121)]] as $filter) rejects(fn() => MessageDeliveryLog::listing($filter), InvalidArgumentException::class);
+
+// Email is a tracked channel now, not an invalid filter value.
+seedMessage('email', 'email-lead', 'reference-email', 'lead_received', 'accepted', '2026-10-04T08:00:00Z');
+$emails = MessageDeliveryLog::listing(['channel' => 'email']);
+check($emails['total'] === 1 && $emails['items'][0]['provider'] === 'smtp' && $emails['items'][0]['mobile'] === 'customer@example.test', 'Email arm missing from the union');
+check($emails['items'][0]['canReveal'] === false, 'A lead email offered an OTP reveal');
+
+// Test sends are filterable so they never inflate real delivery figures.
+db_execute("UPDATE email_messages SET is_test = 1 WHERE id = 'email-lead'");
+check(MessageDeliveryLog::listing(['tests' => 'only'])['total'] === 1, 'Test-only filter');
+check(MessageDeliveryLog::listing(['tests' => 'exclude', 'channel' => 'email'])['total'] === 0, 'Test sends counted as real');
+db_execute("UPDATE email_messages SET is_test = 0 WHERE id = 'email-lead'");
 for ($i = 0; $i < 30; $i++) seedMessage('whatsapp', 'page-' . $i, 'reference-' . $i, 'lead_received', 'delivered');
 $first = MessageDeliveryLog::listing(['channel' => 'whatsapp', 'page' => 1]); $second = MessageDeliveryLog::listing(['channel' => 'whatsapp', 'page' => 2]);
 check(count($first['items']) === 25 && count($second['items']) === 6 && !array_intersect(array_column($first['items'], 'id'), array_column($second['items'], 'id')), 'Pagination repeated or lost messages');

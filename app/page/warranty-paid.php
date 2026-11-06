@@ -104,7 +104,7 @@ App::render('header', ['isStickyOnly' => true]);
         <!-- STEP 1: MOBILE & OTP -->
         <div class="wp-step" id="step1" data-step="1">
           <h3 class="wp-step__title">Step 1 · Mobile Verification</h3>
-          <p class="wp-step__lead">Verify your registered 10-digit mobile number via OTP first.</p>
+          <p class="wp-step__lead">Verify your registered 10-digit mobile number via OTP first. The code goes to your mobile, or to an email address you give below — the message we show you says which.</p>
 
           <form id="formStep1" class="wp-form" novalidate>
             <fieldset class="wp-fs">
@@ -114,10 +114,15 @@ App::render('header', ['isStickyOnly' => true]);
                   <span>Registered mobile number <strong style="color:var(--brand-red)">*</strong></span>
                   <input type="tel" name="mobile" id="paidMobile" placeholder="10-digit mobile number" required pattern="[0-9]{10}" maxlength="10" autocomplete="tel">
                 </label>
+                <label class="wp-field">
+                  <span>Email address <small>(optional)</small></span>
+                  <input type="email" name="otpEmail" id="paidEmail" placeholder="Your email address" autocomplete="email">
+                  <small style="font-size:11px;font-weight:500;color:var(--ink-soft-0);">Only used to send your verification code. Your warranty record keeps the email from your original registration.</small>
+                </label>
                 <div class="wp-field wp-field--btn" style="display:flex;align-items:flex-end;">
                   <button type="button" class="btn btn--ink" id="paidSendOtpBtn" style="height:44px;width:100%;justify-content:center;">
                     <span id="paidSendOtpLabel">Send OTP Code</span>
-                  </button><label style="display:block;margin:8px 0"><input type="checkbox" id="otpSmsOnly"> Request your OTP on WhatsApp, with SMS fallback. Choose SMS instead (also use this if WhatsApp hasn't arrived).</label>
+                  </button><label style="display:block;margin:8px 0"><input type="checkbox" id="otpSmsOnly"> Send my code by SMS instead — use this if the code hasn't arrived by email or WhatsApp.</label>
                 </div>
               </div>
 
@@ -275,6 +280,17 @@ document.addEventListener('DOMContentLoaded', () => {
     freeReference: '',
   };
 
+  /* The optional step-1 address, used only to route the verification code.
+     A malformed entry is sent as empty rather than rejected: the delivery
+     chain then skips its email step and the code goes to the phone, which is
+     better than blocking a customer over a field they did not have to fill. */
+  function otpEmail() {
+    const field = document.getElementById('paidEmail');
+    if (!field) return '';
+    const value = field.value.trim();
+    return value && field.checkValidity() ? value : '';
+  }
+
   const steps = [1, 2, 3, 4].map(n => document.getElementById('step' + n));
   const inds = [...document.querySelectorAll('[data-step-ind]')];
   const STORAGE_KEY = 'hazra_warranty_otp_paid';
@@ -348,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/v1/warranty/otp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ mobile: mobile, purpose: 'warranty_paid', channel: document.getElementById('otpSmsOnly').checked ? 'sms' : 'auto' }),
+        body: JSON.stringify({ mobile: mobile, email: otpEmail(), purpose: 'warranty_paid', channel: document.getElementById('otpSmsOnly').checked ? 'sms' : 'auto' }),
       });
       const data = await res.json();
 

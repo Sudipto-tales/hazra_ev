@@ -28,8 +28,18 @@ class ApiGatewayProvider extends RouteProvider
             'POST:api/v1/whatsapp/webhook' => ['WhatsAppController', 'webhook'],
             'POST:api/v1/sms/webhook/twilio' => ['SmsWebhookController', 'twilio'],
             'POST:api/v1/sms/webhook/msg91' => ['SmsWebhookController', 'msg91'],
+            'POST:api/v1/whatsapp/webhook/msg91' => ['WhatsAppController', 'webhookMsg91'],
             'GET:api/v1/admin/message-delivery' => ['MessageDeliveryController', 'index', 'auth'],
             'POST:api/v1/admin/message-delivery/{channel}/{id}/retry' => ['MessageDeliveryController', 'retry', 'auth'],
+            'POST:api/v1/admin/message-delivery/{channel}/{id}/code' => ['MessageDeliveryController', 'reveal', 'auth'],
+            // --- Messaging configuration (admin) -------------------------------
+            'GET:api/v1/admin/messaging/config' => ['MessagingConfigController', 'show', 'auth'],
+            'PUT:api/v1/admin/messaging/config' => ['MessagingConfigController', 'update', 'auth'],
+            'POST:api/v1/admin/messaging/secrets/{provider}/rotate' => ['MessagingConfigController', 'rotateSecret', 'auth'],
+            'POST:api/v1/admin/messaging/test' => ['MessagingConfigController', 'test', 'auth'],
+            'GET:api/v1/admin/webhook-events' => ['WebhookEventsController', 'index', 'auth'],
+            'GET:api/v1/admin/webhook-events/{id}' => ['WebhookEventsController', 'show', 'auth'],
+            'POST:api/v1/admin/webhook-events/{id}/replay' => ['WebhookEventsController', 'replay', 'auth'],
             'GET:api/v1/website/leads/{id}/whatsapp' => ['WhatsAppController', 'history', 'auth'],
             'POST:api/v1/website/leads/{id}/whatsapp' => ['WhatsAppController', 'sendLead', 'auth'],
             // --- Auth (public) -------------------------------------------- §3.1
