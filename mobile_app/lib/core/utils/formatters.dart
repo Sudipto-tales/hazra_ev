@@ -142,7 +142,9 @@ class Fmt {
     return '${diff.inDays} d ago';
   }
 
-  static String percent(double v) => '${v.toStringAsFixed(0)}%';
+  /// Floored, not rounded: 99.6% must not read as a flat "100%" on an
+  /// attendance card — a shown 100 should mean exactly 100.
+  static String percent(double v) => '${v.floor()}%';
 
   /// `—` for a field the employee never filled in. Optional text fields
   /// (department, region, blood group, address) travel as empty strings, and a

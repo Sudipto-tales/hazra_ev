@@ -96,9 +96,9 @@ class TeamStatusTile extends StatelessWidget {
                         runSpacing: Insets.xs,
                         children: <Widget>[
                           StatusBadge.work(member.status, dense: true),
-                          if (member.isDegraded)
+                          if (member.degradedReason != null)
                             StatusBadge(
-                              label: member.locationHealth.title,
+                              label: member.degradedReason!,
                               tone: BadgeTone.danger,
                               icon: Icons.gps_off_rounded,
                               dense: true,

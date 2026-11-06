@@ -163,4 +163,32 @@ void main() {
           TrackingConfig.defaults.distanceFilterMetres); // 20
     });
   });
+
+  group('Wire.config universal distance engine (036)', () {
+    test('parses minStepMetres and accuracyStepFactor', () {
+      final TrackingConfig decoded = Wire.config(<String, dynamic>{
+        'locationIntervalSeconds': 60,
+        'syncBatchSize': 50,
+        'minStepMetres': 25,
+        'accuracyStepFactor': 2,
+        'version': 10,
+      });
+
+      expect(decoded.minStepMetres, 25);
+      expect(decoded.accuracyStepFactor, 2);
+    });
+
+    test('a server without them falls back to the local defaults', () {
+      final TrackingConfig decoded = Wire.config(<String, dynamic>{
+        'locationIntervalSeconds': 60,
+        'syncBatchSize': 50,
+        'version': 7,
+      });
+
+      expect(decoded.minStepMetres,
+          TrackingConfig.defaults.minStepMetres); // 15
+      expect(decoded.accuracyStepFactor,
+          TrackingConfig.defaults.accuracyStepFactor); // 1
+    });
+  });
 }

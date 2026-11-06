@@ -265,6 +265,60 @@ counted as a visit three weeks ago would make the calendar disagree with itself.
 Keep a `tracking_config_history` table (same columns + `changed_at`, `changed_by`) so a
 dispute about "what the rule was on the 3rd" has an answer.
 
+### Config v10 — five more columns (**BUILT in migration 036, UNTRACKED in git, NOT APPLIED anywhere**)
+
+> `036_universal_distance_engine.php` exists only in the working tree — **untracked**, not
+> committed, not on `main`, applied on SQLite by the suite and **never on production**,
+> which still serves **v9**. It floors `tracking_configs.version` to 10. Reported
+> 2026-11-05T18:31Z, verified and merged 2026-11-06.
+
+```sql
+ALTER TABLE tracking_configs ADD COLUMN
+  min_step_metres            double precision NOT NULL DEFAULT 15,   -- v10: the SERVER's measurement floor
+  accuracy_good_metres       double precision NOT NULL DEFAULT 20,   -- v10: upper edge of the "good" band
+  accuracy_step_factor       double precision NOT NULL DEFAULT 1,    -- v10: scales the step by the fix's own error
+  gps_gap_warning_seconds    integer          NOT NULL DEFAULT 60,   -- v10
+  gps_gap_incomplete_seconds integer          NOT NULL DEFAULT 180,  -- v10
+  CHECK (accuracy_good_metres <= min_accuracy_metres),   -- chk_accuracy_bands
+  CHECK (gps_gap_incomplete_seconds > gps_gap_warning_seconds),  -- chk_gap_order
+  CHECK (accuracy_step_factor >= 0),                     -- chk_accuracy_step_factor
+  CHECK (min_step_metres >= 0);                          -- chk_min_step_metres
+```
+
+All five are mirrored **nullable** into `tracking_config_history`, the same way v9's four
+are: a history row written before 036 has no value for them and `0` would be a claim it
+never made.
+
+**`min_step_metres` exists because `distance_filter_metres` was doing two unrelated jobs**
+— the OS capture filter on the device and the server's minimum measurement step — and those
+want **opposite** values. Capture wants to go down (10 m) so a winding track keeps its
+corners; measurement wants to stay up (15 m) so a parked phone's ~13 m drift at 15 m
+accuracy is never booked as travel. One column cannot be both, which is why lowering the
+filter alone would have inflated every parked session. `distance_filter_metres` keeps its
+meaning and its column; measurement moved here.
+
+**There is deliberately no `accuracy_moderate_metres`.** It was in the first draft of 036
+and was removed before the migration was cemented: it and `min_accuracy_metres` are the
+same boundary, and two columns for one fact are free to drift until the engine's "poor" and
+the admin map's "rough" disagree about the same fix — the exact overload this migration
+exists to undo, reintroduced one column over. Bands are good `0..accuracy_good_metres`,
+moderate up to `min_accuracy_metres`, poor above.
+
+**The MySQL branch is unverified.** 036 was proven idempotent over three applications on
+SQLite with all four `CHECK`s enforced; there is no MySQL in the dev environment, so the
+MySQL path is mirrored from 031's `addCheck` pattern line for line and has never run. MySQL
+column-level `CHECK` may reference only its own column, which is why every cross-column rule
+is added as a named table constraint. **Confirm on the first production `db:sync`.**
+
+**Three new defaults do not come from the column defaults.** `Ctx::config()`'s materialising
+INSERT writes `location_interval_seconds = 10`, `distance_filter_metres = 10`,
+`min_accuracy_metres = 30` and `version = 10` explicitly (`Ctx.php:169-172`). Neither driver
+can change an existing column's `DEFAULT` without rewriting the table and SQLite cannot at
+all, and that INSERT is the only path that materialises a missing row — so it is the single
+documented source for the new values, while **every org row an admin has already tuned is
+left exactly as it is.** Mirror `Ctx::config()`, not the DDL above, when you need to know
+what a fresh org gets.
+
 **Two of these columns gate derived distance (shipped 2026-11-05).** `Engine::chainDistanceKm`
 reads both when it sums a fix chain into kilometres: `min_accuracy_metres` decides which
 fixes are allowed to *measure* a leg, and `distance_filter_metres` is the **minimum step** —
@@ -342,6 +396,11 @@ CREATE TABLE work_sessions (
   start_lng      double precision NOT NULL,
   distance_km    double precision NOT NULL DEFAULT 0,
   point_count    integer NOT NULL DEFAULT 0,
+  -- migration 036, BUILT / UNTRACKED / NOT APPLIED — see the v10 note in §4
+  distance_algo_version  integer NOT NULL DEFAULT 1,  -- 1 freezes the row to the pre-036 rule
+  verified_distance_km   double precision,            -- NULL = row predates the engine. NOT 0
+  incomplete_distance_km double precision,
+  gps_coverage_percent   double precision,
   UNIQUE (employee_id, client_id),                 -- idempotent offline replay
   UNIQUE (employee_id, work_date, seq)
 );
@@ -364,6 +423,44 @@ retroactive**: an open session self-heals on its next accepted batch, a closed h
 day keeps the number it was written with until something calls `recompute` for it — see
 the board's open backfill decision.
 
+**Migration 036 adds four more columns to this table and three to `day_routes` and
+`attendance_days` — BUILT, UNTRACKED IN GIT, NEVER APPLIED TO PRODUCTION.** See the v10 note
+in §4 for the status and the config side.
+
+- **`distance_algo_version` (default `1`) is what freezes history.** A session created
+  before 036 keeps `1` and is measured by `Engine::chainDistanceV1()` — the pre-036 body,
+  preserved **byte-identical**, private and permanent — so **no stored historical distance
+  moves and no backfill is needed** for the algorithm change. `TrackingController::startSession`
+  stamps the current version at creation (`:89-95`) and `recompute()` never upgrades an
+  existing v1 row. `RoutesController::livePoints` measures with `Engine::dayAlgoVersion()`
+  (`:186`) rather than the current default, so a live read of an old day cannot disagree with
+  its cached row. This is the one column that makes "historical records are not recalculated"
+  true rather than aspirational.
+- **The three reporting columns are nullable with no default, and `NULL` is not `0` or
+  `100`.** A row written before 036 has no coverage figure and both of those would be a lie
+  about it — the same reason `heading_deg` is nullable in 031. v1 rows leave all three
+  **NULL** by design. `Present::nullableFloat()` carries that to the wire.
+- `distance_km` **keeps its exact meaning** — the verified figure, never verified +
+  incomplete. It is not dropped and must not be: two consumers read it.
+- **`location_fixes.source` exists and nothing writes it.** The column is the server's only
+  way to tell "parked, deliberately sampling slowly" from "GPS lost": the device's heartbeat
+  fix is built through the same `_toLog()` as a movement sample, so the two are
+  indistinguishable on the wire and in this table today. Every row therefore carries the
+  `'STREAM'` default. `Engine` reads the column (`:169`, `:496`) and falls back to `'STREAM'`
+  (`:440`). **The device half is not built**, which is why gap classification is
+  displacement-gated rather than relying on it — see §4.
+- Two new tables come with 036. **`session_gps_gaps`** (`session_id`, `employee_id`,
+  `work_date`, `gap_start`, `gap_end`, `seconds`, `displacement_m`, `classification`)
+  — one row per non-normal stretch, written by `Engine::storeGaps` and **replaced**, not
+  appended, on re-derive. `displacement_m` is the column that makes it work: a 300 s gap
+  with 5 m of displacement is a parked vehicle, a 180 s gap with 5 km is a train leaving a
+  tunnel. **`session_transport_modes`** (`session_id`, `employee_id`, `work_date`, `mode`,
+  `effective_from`, `effective_to`) — an interval table rather than a session column because
+  the mode is changeable mid-session and the history has to survive the change;
+  `effective_to` NULL means still in force. **Nothing writes to it on either side** — the
+  table exists, the endpoint does not, and mode never selects a distance algorithm or varies
+  capture config.
+
 ```sql
 CREATE TABLE location_fixes (
   id           bigint GENERATED ALWAYS AS IDENTITY,
@@ -379,6 +476,7 @@ CREATE TABLE location_fixes (
   accuracy_m   real NOT NULL,
   speed_kmh    real NOT NULL,
   heading_deg  real,                                 -- NULL = unknown. NOT 0: 0 is due north
+  source       text NOT NULL DEFAULT 'STREAM',       -- migration 036: STREAM | HEARTBEAT. NOTHING WRITES IT YET
   PRIMARY KEY (recorded_at, id)
 ) PARTITION BY RANGE (recorded_at);
 
@@ -679,6 +777,37 @@ Materialised rather than computed per request: the same timeline is read by the 
 Home, the employee's activity tab and the admin's employee-day view, and it is a four-way
 join otherwise.
 
+**`type = 'tracking_issue'` now carries TWO senses, and `is_alert` is the only thing that
+separates them (changed 2026-11-05).** Weak GPS stopped being a status anybody is shown; an
+outage is reported instead, as a **pair** of rows:
+
+| `is_alert` | `title` | `subtitle` | Written by |
+| --- | --- | --- | --- |
+| `1` | `Offline` | the plain-language reason for that outage value | `Engine::logAlert`, on entering one of the five outage health values |
+| `0` | `Back online` | how long the gap was | `Engine::logRecovery`, on the first non-outage value that follows |
+
+Before this, an outage wrote `title = 'Tracking issue'` with the camelCase health enum as
+the subtitle, and nothing ever closed it — so nobody reading a day could tell a two-minute
+gap from a two-hour one. **No migration and no change to the `activity_type` enum**, which
+is why the type name no longer tells the whole story: a reader that switches on `type` alone
+will paint a recovery row in the alert colour with a crossed-out GPS glyph, the opposite of
+its own text. Read `is_alert` **before** the type.
+
+`poor_accuracy` writes **neither** row — it is accepted on `POST /tracking/health` for
+builds already in the field and is otherwise inert — but it does **close** an open outage,
+because any non-outage value does.
+
+**Old rows are not backfilled.** Days before 2026-11-05 still read `Tracking issue` /
+`poorAccuracy` and nothing rewrites them; whether that is acceptable (they age out of view)
+or wants a one-off `UPDATE` is an open mobile-agent/web-agent item on the board.
+
+**A dangling `Offline` row is a known hole.** The recovery row is written only when the
+device comes back and says so, so a killed app, a dead phone, or location left off until the
+next morning leaves the outage open and the day simply ends with it. Owned by Phase 3 of
+`09-SESSION-DARK-TIME-PLAN.md` — and it must close at the **same last-evidence timestamp**
+Phase 3 stamps the session with, or the timeline and the timesheet will disagree about when
+the employee stopped.
+
 ### Day closeout and reopen (migration 009)
 
 ```sql
@@ -902,11 +1031,53 @@ both) → `visit_reports` → `report_sales`, `report_images`, `report_reviews` 
 `attendance_days`, `day_routes`, `activity_events` → `notifications`,
 `notification_recipients` → `audit_log`.
 
-Shipped migration ledger (`website/database/migrations/`, 001–031): 001–007 core/tracking/
+Shipped migration ledger (`website/database/migrations/`, 001–036 on disk; **001–031
+applied on production, 032–036 not**): 001–007 core/tracking/
 catalogue/session/report/rollup/notification tables, **008** `route_geometry`, **009**
 `day_closeouts` + `day_reopen_audit`, **010** `users.must_change_password`, 011+ the website
 admin / content / catalogue / warranty / app-release / dealer-locations / account-deletion /
 messaging tables (website side, no inbox note — not described above).
+
+> **Status correction, 2026-11-06: "on `main`" was wrong for 032–036.** All five of these
+> migration files are **untracked in git** (`git status` → `??`) — they are in the working
+> tree only, not committed, not on `main`, and not applied to production. The board said "on
+> `main`, not deployed" for the messaging tranche and for v10; the first half was false in
+> both cases. Production's applied ledger stops at **031**.
+
+**032–035 — messaging, applied on SQLite 2026-11-05, NOT yet on production.** Website side,
+so they are named rather than modelled above, and nothing the mobile app reads is touched:
+**032** `messaging_credentials` (AES-256-GCM ciphertext in `value_cipher`, readable-back
+non-secrets in `value_plain`, in one table so a provider's config is one query and one
+atomic save) + `messaging_routes` (per-event delivery chains, seeded with a static default
+order — see the board's Discrepancies for what that order actually is); **033**
+`webhook_events`; **034** `email_messages` plus `attempt_group` / `chain_position` /
+`is_test` on all three message tables and `provider` on `whatsapp_messages`, which
+`channel` alone no longer identifies; **035** `otp_challenges.code_cipher` +
+`code_cipher_expires_at` + `otp_reveal_audit` — the cipher sits **beside** the bcrypt hash,
+never instead of it, so `password_verify` remains the only verification path and an
+unreadable cipher cannot weaken the check. These four need `APP_KEY` in the environment
+before the panel can store anything; without it the store is read-only and the app falls
+back to `website_settings` then env.
+
+**036 — universal distance engine, config v10. BUILT, UNTRACKED, applied on SQLite by the
+suite, NEVER on production.** Five `tracking_configs` columns + four `CHECK`s + the nullable
+history mirror (§4); `location_fixes.source`; `distance_algo_version` +
+`verified_distance_km` / `incomplete_distance_km` / `gps_coverage_percent` on `work_sessions`
+and `day_routes`, the three reporting columns on `attendance_days`; the new
+`session_gps_gaps` and `session_transport_modes` tables (§5); a `user_preferences` reset
+(`high_accuracy_mode = 1`, `sync_on_mobile_data = 1`, `battery_saver = 0` on all rows,
+because those three became server-fixed — `02` §3.2); and the `version` floor to **10**.
+Idempotent over three applications on SQLite with all four `CHECK`s enforced; **the MySQL
+branch has never run** and mirrors 031's `addCheck` pattern. Ordering inside it follows the
+same rule 031 set: columns before the `version` bump, so a device never re-pulls a config
+whose columns do not exist yet.
+
+**Two things gate this deploy and neither is in the migration.** (1) `location_fixes.source`
+is useless until the device sends it, and gap classification was deliberately made
+displacement-aware so 036 does not *depend* on it — but deploying ahead of the client half
+means the one case `source` was added to disambiguate falls back to displacement alone.
+(2) The mobile client's pre-fetch config fallbacks still read the **old** `60 / 20 / 50`,
+so a cold start before the first `GET /config` captures at the pre-036 cadence.
 
 **Config v9 — shipped as migration 031, applied on production 2026-11-04T18:20:03Z.** It was
 written first as `031_tracking_config_v8.php` and retargeted under the **new filename**

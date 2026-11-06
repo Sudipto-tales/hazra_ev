@@ -4,6 +4,8 @@ class TrackingConfig {
   const TrackingConfig({
     this.locationIntervalSeconds = 60,
     this.distanceFilterMetres = 20,
+    this.minStepMetres = 15,
+    this.accuracyStepFactor = 1,
     this.minAccuracyMetres = 50,
     this.stopRadiusMetres = 75,
     this.stopThresholdMinutes = 10,
@@ -28,6 +30,20 @@ class TrackingConfig {
   /// reporting the same spot every interval. A local default for now; like the
   /// rest of this class it can later be driven by the backend.
   final int distanceFilterMetres;
+
+  /// The server's **measurement** floor, mirrored so the device's live
+  /// distance uses the identical rule the server will reconcile it to. A leg
+  /// counts only when it clears `max(minStepMetres, accuracyStepFactor *
+  /// fix.accuracy)` — never [distanceFilterMetres], which is the OS *capture*
+  /// filter and a different number doing a different job (036). Server-driven;
+  /// a pre-036 server omits it → local default (15 m).
+  final double minStepMetres;
+
+  /// Scales the measurement floor by each fix's own error, so a weak-GPS leg
+  /// must out-travel what it could be wrong by before it books distance. 0
+  /// restores a flat [minStepMetres] floor. Server-driven; a pre-036 server
+  /// omits it → local default (1).
+  final double accuracyStepFactor;
 
   /// Fixes worse than this horizontal accuracy are dropped.
   final double minAccuracyMetres;
@@ -102,6 +118,8 @@ class TrackingConfig {
   TrackingConfig copyWith({
     int? locationIntervalSeconds,
     int? distanceFilterMetres,
+    double? minStepMetres,
+    double? accuracyStepFactor,
     double? minAccuracyMetres,
     double? stopRadiusMetres,
     int? stopThresholdMinutes,
@@ -120,6 +138,8 @@ class TrackingConfig {
       locationIntervalSeconds:
           locationIntervalSeconds ?? this.locationIntervalSeconds,
       distanceFilterMetres: distanceFilterMetres ?? this.distanceFilterMetres,
+      minStepMetres: minStepMetres ?? this.minStepMetres,
+      accuracyStepFactor: accuracyStepFactor ?? this.accuracyStepFactor,
       minAccuracyMetres: minAccuracyMetres ?? this.minAccuracyMetres,
       stopRadiusMetres: stopRadiusMetres ?? this.stopRadiusMetres,
       stopThresholdMinutes: stopThresholdMinutes ?? this.stopThresholdMinutes,

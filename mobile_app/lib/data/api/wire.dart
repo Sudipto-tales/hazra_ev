@@ -148,6 +148,17 @@ class Wire {
           TrackingConfig.defaults.distanceFilterMetres,
         ),
         minAccuracyMetres: dbl(j['minAccuracyMetres']),
+        // The universal distance engine (036): server-driven measurement rule,
+        // mirrored so live device distance matches what the server reconciles
+        // to. A pre-036 server omits them → local defaults (15 m, factor 1).
+        minStepMetres: dblOr(
+          j['minStepMetres'],
+          TrackingConfig.defaults.minStepMetres,
+        ),
+        accuracyStepFactor: dblOr(
+          j['accuracyStepFactor'],
+          TrackingConfig.defaults.accuracyStepFactor,
+        ),
         stopRadiusMetres: dbl(j['stopRadiusMetres']),
         stopThresholdMinutes: integer(j['stopThresholdMinutes']),
         longStopThresholdMinutes: integer(j['longStopThresholdMinutes']),
@@ -180,6 +191,8 @@ class Wire {
         'locationIntervalSeconds': c.locationIntervalSeconds,
         'distanceFilterMetres': c.distanceFilterMetres,
         'minAccuracyMetres': c.minAccuracyMetres,
+        'minStepMetres': c.minStepMetres,
+        'accuracyStepFactor': c.accuracyStepFactor,
         'stopRadiusMetres': c.stopRadiusMetres,
         'stopThresholdMinutes': c.stopThresholdMinutes,
         'longStopThresholdMinutes': c.longStopThresholdMinutes,
@@ -725,6 +738,8 @@ class Wire {
       offlineCount: integer(t['offlineCount']),
       pendingReviewCount: integer(t['pendingReviewCount']),
       longStopCount: integer(t['longStopCount']),
+      headcount: integer(t['headcount']),
+      attendancePercent: dbl(t['attendancePercent']),
     );
   }
 

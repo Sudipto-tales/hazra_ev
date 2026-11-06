@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../support/V1Controller.php';
+require_once __BASEDIR__ . '/core/messaging/Registry.php';
 
 final class AdminController extends V1Controller
 {
@@ -43,8 +44,72 @@ final class AdminController extends V1Controller
                 'career_applications' => $careerApps,
                 'warranty_pending' => $warrantyCount,
             ],
-            'recent' => [],
+            'recent' => $this->recentActivity(),
         ]);
+    }
+
+    /**
+     * The newest handful of inbound items across the three lead-bearing tables,
+     * merged and sorted newest-first. The dashboard's "latest activity" panel
+     * was hardcoded to an empty array, so it rendered a dead strip; this fills
+     * it from the same tables the stat tiles count.
+     *
+     * Each row is a flat {kind, title, subtitle, at, href} the panel renders
+     * without joining anything. Capped at ten — this is a glance, not a list
+     * screen (each table has its own).
+     */
+    private function recentActivity(int $limit = 10): array
+    {
+        $items = [];
+
+        foreach (db_fetch_all(
+            "SELECT type, name, phone, created_at FROM website_leads ORDER BY created_at DESC LIMIT ?",
+            [$limit],
+        ) ?? [] as $row) {
+            $type = (string) ($row['type'] ?? 'contact');
+            $href = str_starts_with($type, 'test') ? 'test-drive'
+                  : (str_contains($type, 'dealer') ? 'dealership' : 'contact');
+            $label = str_replace(['_', 'enquiry'], [' ', ''], $type);
+            $items[] = [
+                'kind'     => 'lead',
+                'title'    => trim((string) ($row['name'] ?? '')) ?: 'New lead',
+                'subtitle' => trim(ucfirst(trim($label)) . ' · ' . (string) ($row['phone'] ?? '')),
+                'at'       => $row['created_at'],
+                'href'     => $href,
+            ];
+        }
+
+        foreach (db_fetch_all(
+            "SELECT applicant_name, name, created_at FROM job_applications ORDER BY created_at DESC LIMIT ?",
+            [$limit],
+        ) ?? [] as $row) {
+            $items[] = [
+                'kind'     => 'application',
+                'title'    => trim((string) ($row['applicant_name'] ?: $row['name'] ?? '')) ?: 'Applicant',
+                'subtitle' => 'Career application',
+                'at'       => $row['created_at'],
+                'href'     => 'career-apps',
+            ];
+        }
+
+        foreach (db_fetch_all(
+            "SELECT customer_name, type, reference_no, created_at FROM warranty_registrations ORDER BY created_at DESC LIMIT ?",
+            [$limit],
+        ) ?? [] as $row) {
+            $items[] = [
+                'kind'     => 'warranty',
+                'title'    => trim((string) ($row['customer_name'] ?? '')) ?: 'Warranty',
+                'subtitle' => trim(ucfirst((string) ($row['type'] ?? '')) . ' warranty · ' . (string) ($row['reference_no'] ?? '')),
+                'at'       => $row['created_at'],
+                'href'     => 'warranty',
+            ];
+        }
+
+        // Newest first across all three. created_at is ISO-8601 UTC, so a string
+        // sort is a chronological sort.
+        usort($items, static fn(array $a, array $b) => strcmp((string) $b['at'], (string) $a['at']));
+
+        return array_slice($items, 0, $limit);
     }
 
     public function bootstrap(): never
@@ -128,6 +193,7 @@ final class AdminController extends V1Controller
         if (is_array($body)) {
             foreach ($body as $key => $val) {
                 if (str_starts_with($key, 'wa:') || str_starts_with($key, 'whatsapp_')) Envelope::invalid('This setting is server-managed');
+                if (in_array(strtolower((string) $key), MessagingCredentialStore::reservedSettingKeys(), true)) Envelope::invalid('This credential is managed in Admin → Settings → Messaging, where it is stored encrypted.');
                 if (str_starts_with($key, 'wa_') && !in_array($key, ['wa_enabled', 'wa_auto_leads', 'wa_lead_mode', 'wa_language', 'wa_template_otp', 'wa_template_lead_received', 'wa_template_lead_approved', 'wa_template_lead_rejected', 'wa_template_warranty_received'], true)) Envelope::invalid('Unknown WhatsApp setting');
                 if (str_starts_with($key, 'wa_') && $group !== 'general') Envelope::invalid('WhatsApp settings belong to general');
                 db_execute(

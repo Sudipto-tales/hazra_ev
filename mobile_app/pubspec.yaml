@@ -1,7 +1,7 @@
 name: employeetracking_mobile_app
 description: Salesman / Employee tracking mobile app — UI layer with static data.
 publish_to: "none"
-version: 0.1.7+8
+version: 0.1.8+9
 
 # Requires Flutter 3.27+ (uses Color.withValues and TextScaler.clamp).
 environment:
@@ -62,7 +62,16 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # The app's first bundled asset. Everything else on screen is either painted
-  # at runtime or fetched from the API, so this block exists for one file.
+  # Bundled art. Everything else on screen is either painted at runtime or
+  # fetched from the API.
+  #
+  # hazra_logo.png is the launch screen's mark. It is derived from
+  # `website/assets/hazraevLogo.jpg` (design-agent's file, not ours to edit):
+  # the white JPEG field was keyed out to alpha and the result resampled up to
+  # 480px so it is not pixellated at the 128dp it draws at. A byte-identical
+  # copy lives at `android/.../res/drawable-nodpi/hazra_splash_logo.png` for
+  # the native launch background — the two must stay the same image or the
+  # native→Flutter handoff visibly jumps.
   assets:
     - assets/anim/delivery_boy.json
+    - assets/brand/hazra_logo.png

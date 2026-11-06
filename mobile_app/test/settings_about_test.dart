@@ -356,6 +356,8 @@ void main() {
   group('permissions', () {
     test('every blocking health state names its own action', () {
       for (final LocationHealth h in LocationHealth.values) {
+        // poorAccuracy is a legacy wire value folded into ok — no banner, so
+        // no button either.
         if (h == LocationHealth.ok || h == LocationHealth.poorAccuracy) {
           expect(h.actionLabel, isNull,
               reason: '$h needs no button');

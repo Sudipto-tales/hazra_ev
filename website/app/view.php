@@ -119,6 +119,7 @@ class ViewRouteProvider extends RouteProvider
             'admin/app-releases' => ['Page', 'adminAppReleases'],
             'admin/settings' => ['Page', 'adminSettings'],
             'admin/message-delivery' => ['Page', 'adminMessageDelivery'],
+            'admin/webhooks' => ['Page', 'adminWebhooks'],
             'admin/profile' => ['Page', 'adminProfile'],
             'admin/profile.php' => ['Page', 'adminProfile'],
 

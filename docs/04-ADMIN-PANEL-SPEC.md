@@ -6,8 +6,26 @@ panel, its authorization model, and the shared backend architecture.
 
 **Owner:** `web-agent` (`website/`). Nothing here is design-agent work.
 
-**Status:** unbuilt. `docs/02-API-PLAN.md` remains authoritative for endpoint shapes;
-this document describes the admin surface those endpoints must serve.
+**Status (corrected 2026-11-05):** *partly built — read each section as a plan until it says
+otherwise.* The blanket "unbuilt" this header used to carry is no longer true:
+
+- **§16 Admin Authentication** and **§17 Admin Route Protection** are **built**. The panel
+  authenticates through the same API (`POST /api/v1/admin/login`) and every admin page goes
+  through `Page::guardAdmin()` — 22 call sites — which also sends `no-store` so a page
+  cannot be replayed from the browser's history cache. §17's flow diagram is accurate; what
+  it does not mention is the **reverse** guard added 2026-11-05, `guardGuest()`, which
+  turns an already-signed-in admin away from `/admin/login`. Covered by
+  `website/tests/admin-session-guard.php`.
+- **§21 Website Settings** predates the 2026-11-05 messaging work and is now the most stale
+  section here: there is a **Messaging & Webhooks** tab and a **Webhooks** page, provider
+  credentials live in an encrypted store rather than in `website_settings`, and the generic
+  settings endpoint now *refuses* every credential key. §21 describes none of that.
+- Careers, blogs, products, gallery and the dashboard (§18–§20) are built well beyond what
+  this file sketches.
+
+Reconciling the body section by section is a `docs-agent` TODO on the board.
+`docs/02-API-PLAN.md` remains authoritative for the **mobile** endpoint shapes (see its
+§3.15 for why the admin panel's own routes are listed there but not specified).
 
 ---
 

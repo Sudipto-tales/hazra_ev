@@ -502,11 +502,6 @@ class GeoLocationService implements LocationService {
 
   LocationLog? _lastAccepted;
 
-  /// When a fix was last thrown away for being less accurate than
-  /// [TrackingConfig.minAccuracyMetres]. Drives [LocationHealth.poorAccuracy],
-  /// so that state is only ever reported off real rejected fixes.
-  DateTime? _lastAccuracyReject;
-
   /// Point the queue at `POST /tracking/locations`. Feature code keeps talking
   /// to [LocationService]; only the composition root knows this exists.
   void attachUploader(LocationUploader uploader) {
@@ -604,7 +599,10 @@ class GeoLocationService implements LocationService {
       // Only reported when an upload actually failed — this class has no
       // connectivity plugin and will not guess at the network.
       if (!_online) return LocationHealth.noInternet;
-      if (_accuracyIsPoor) return LocationHealth.poorAccuracy;
+      // Accuracy is deliberately NOT consulted here. A weak fix is still a
+      // fix: it is flagged on the fix itself for the admin's route map, and
+      // the employee is told nothing, because there is nothing they can do
+      // about it and an outage warning for a working session is a lie.
       return LocationHealth.ok;
     } catch (e) {
       // A dead platform channel is indistinguishable, from up here, from a
@@ -727,15 +725,6 @@ class GeoLocationService implements LocationService {
         LocationPermission.whileInUse || LocationPermission.always => null,
       };
 
-  bool get _accuracyIsPoor {
-    final DateTime? rejected = _lastAccuracyReject;
-    if (rejected == null) return false;
-    // One bad fix is weather; bad fixes inside the last few intervals are a
-    // signal worth showing.
-    return DateTime.now().difference(rejected) <=
-        Duration(seconds: config.locationIntervalSeconds * 3);
-  }
-
   // ------------------------------------------------------------------- fixes
 
   @override
@@ -749,11 +738,8 @@ class GeoLocationService implements LocationService {
         ),
       );
       // Deliberately not accuracy-filtered: a weak start fix is still where
-      // the employee is, and health() already reports poorAccuracy (which does
-      // not block the day) rather than refusing to open a session at all.
-      if (position.accuracy > config.minAccuracyMetres) {
-        _lastAccuracyReject = DateTime.now();
-      }
+      // the employee is, so it opens the session rather than refusing to.
+      // _toLog flags it low-accuracy and nothing else is said about it.
       return _toLog(position, sessionId);
     } catch (e) {
       debugPrint('[location] currentFix failed: $e');
@@ -892,10 +878,10 @@ class GeoLocationService implements LocationService {
     // left weak-GPS stretches with no trail at all. It is now kept and queued,
     // flagged low-accuracy so the server (and the UI) can tell it apart from a
     // confident fix — a rough point is still roughly where the employee was,
-    // and that is the whole record of the day. The poorAccuracy health signal
-    // still fires off it, so the "weak GPS" warning is unchanged.
+    // and that is the whole record of the day. Nothing is reported to the
+    // employee about it: weak GPS is a property of the fix, read by the
+    // admin's route map, not a status anyone is warned about.
     final bool lowAccuracy = position.accuracy > config.minAccuracyMetres;
-    if (lowAccuracy) _lastAccuracyReject = DateTime.now();
 
     final LocationLog fix = _toLog(position, sessionId, lowAccuracy: lowAccuracy);
 
@@ -905,8 +891,6 @@ class GeoLocationService implements LocationService {
       return;
     }
 
-    // A good fix clears the warning; a low-accuracy one leaves it standing.
-    if (!lowAccuracy) _lastAccuracyReject = null;
     _lastAccepted = fix;
     _enqueue(fix);
     if (!_fixes.isClosed) _fixes.add(fix);
@@ -1026,7 +1010,6 @@ class GeoLocationService implements LocationService {
       );
       if (_sessionId != sessionId) return; // session closed mid-read.
       final bool lowAccuracy = position.accuracy > config.minAccuracyMetres;
-      if (lowAccuracy) _lastAccuracyReject = DateTime.now();
       final LocationLog fix =
           _toLog(position, sessionId, lowAccuracy: lowAccuracy);
       // Deliberately bypasses the jump filter: this is a forced top-up, not a

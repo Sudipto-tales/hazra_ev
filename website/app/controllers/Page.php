@@ -134,12 +134,48 @@ class Page extends BaseController
         return $this->respond('/app/page/app-download.php');
     }
 
+    /**
+     * Keep admin responses out of the browser's history cache.
+     *
+     * A server-side guard cannot see the back button: without these headers the
+     * browser replays /admin/login or a panel page straight from its history
+     * cache and PHP is never asked. headers_sent() keeps a second call (or a
+     * call after output has begun) harmless.
+     */
+    private function noStore()
+    {
+        if (headers_sent()) {
+            return;
+        }
+
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+    }
+
     private function guardAdmin()
     {
         Csrf::ensureSession();
+        $this->noStore();
 
         if (empty($_SESSION['admin_logged_in']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
             header('Location: ' . base_url('/admin/login'));
+            exit;
+        }
+    }
+
+    /**
+     * The mirror of guardAdmin(): an admin who is already signed in has no use
+     * for the sign-in form. The session-key test is deliberately the exact
+     * inverse of guardAdmin()'s, so the two can never disagree about what
+     * "signed in" means.
+     */
+    private function guardGuest()
+    {
+        Csrf::ensureSession();
+        $this->noStore();
+
+        if (!empty($_SESSION['admin_logged_in']) && ($_SESSION['user_role'] ?? '') === 'admin') {
+            header('Location: ' . base_url('/admin/dashboard'));
             exit;
         }
     }
@@ -152,6 +188,7 @@ class Page extends BaseController
 
     public function adminLogin()
     {
+        $this->guardGuest();
         return $this->respond('/app/page/admin/login.php');
     }
 
@@ -266,6 +303,12 @@ class Page extends BaseController
     {
         $this->guardAdmin();
         return $this->respond('/app/page/admin/message-delivery.php');
+    }
+
+    public function adminWebhooks()
+    {
+        $this->guardAdmin();
+        return $this->respond('/app/page/admin/webhooks.php');
     }
 
     public function adminDealerLocations()

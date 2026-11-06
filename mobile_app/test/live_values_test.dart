@@ -149,6 +149,7 @@ class _ScriptedRepository extends MockEmployeeRepository {
   double serverDistanceKm = 0;
   WorkStatus status = WorkStatus.notStarted;
   List<WorkSession> sessions = const <WorkSession>[];
+  List<ActivityEvent> serverActivity = const <ActivityEvent>[];
 
   @override
   Future<HomeSnapshot> home() async => HomeSnapshot(
@@ -159,7 +160,7 @@ class _ScriptedRepository extends MockEmployeeRepository {
         locationHealth: LocationHealth.ok,
         sessions: sessions,
         summary: DaySummary.empty.copyWith(distanceKm: serverDistanceKm),
-        activity: const <ActivityEvent>[],
+        activity: serverActivity,
         visits: const <CompanyVisit>[],
         stops: const <StopRecord>[],
         lastFix: null,
@@ -302,17 +303,23 @@ void main() {
       );
     });
 
-    test('ignores sub-filter jitter so a parked phone does not walk', () async {
+    test('ignores jitter so a parked phone does not walk', () async {
       location.nextFix = _fix('open', lat: 23.2400, lng: 87.8600);
       await tracking.startDay();
       final String sid = tracking.activeSession!.id;
 
-      // ~1 m apart, well under the 20 m distance filter.
+      // Real parked jitter oscillates around a point rather than drifting one
+      // way: each fix lands a few metres off the anchor and back, never out-
+      // travelling the measurement step. The anchor is held on every rejected
+      // hop (the server's own rule), so net displacement stays near zero and
+      // nothing is booked. A monotonic ramp would be slow travel, not jitter —
+      // and the server would count it too.
       for (int i = 1; i <= 20; i++) {
+        final bool even = i.isEven;
         location.emitFix(_fix(
           'j$i',
-          lat: 23.2400 + i * 0.00001,
-          lng: 87.8600,
+          lat: 23.2400 + (even ? 0.00003 : -0.00003), // ~3.3 m either side
+          lng: 87.8600 + (even ? -0.00003 : 0.00003),
           session: sid,
         ));
       }
@@ -380,6 +387,124 @@ void main() {
       await tracking.refresh();
 
       expect(tracking.summary.distanceKm, closeTo(1.111, 0.05));
+    });
+
+    test('follows the server downward when a covered day is reconciled lower',
+        () async {
+      location.nextFix = _fix('open', lat: 23.2400, lng: 87.8600);
+      await tracking.startDay();
+      final String sid = tracking.activeSession!.id;
+
+      final DateTime t0 = DateTime.now();
+      location.emitFix(
+          _fix('f1', lat: 23.2500, lng: 87.8600, at: t0, session: sid));
+      location.emitFix(_fix('f2',
+          lat: 23.2600,
+          lng: 87.8600,
+          at: t0.add(const Duration(seconds: 1)),
+          session: sid));
+      await Future<void>.delayed(Duration.zero);
+      expect(tracking.summary.distanceKm, closeTo(2.22, 0.1));
+
+      // Both legs have now reached the server.
+      location.emitSync(SyncSnapshot(
+        queued: 0,
+        failed: 0,
+        lastSyncedAt: t0.add(const Duration(seconds: 2)),
+        isOnline: true,
+      ));
+      await Future<void>.delayed(Duration.zero);
+
+      // The server's universal engine counted one hop as jitter / moved a gap
+      // chord to incompleteKm, so the verified day is lower than the device's
+      // optimistic sum. The screen must follow it down — freezing high is the
+      // bug that made Home disagree with the dashboard and the stats tab.
+      repo.serverDistanceKm = 1.4;
+      await tracking.refresh();
+
+      expect(tracking.summary.distanceKm, closeTo(1.4, 0.01));
+      expect(tracking.liveDistanceKm, tracking.summary.distanceKm);
+    });
+  });
+
+  group('activity timeline is immediate (hybrid)', () {
+    test('Start Day writes provisional day + session rows at once', () async {
+      location.nextFix = _fix('open', lat: 23.24, lng: 87.86);
+      await tracking.startDay();
+
+      final List<ActivityEvent> events = tracking.activity;
+      final Iterable<ActivityEvent> dayStarted = events.where(
+          (ActivityEvent e) => e.type == ActivityType.dayStarted);
+      final Iterable<ActivityEvent> sessionStarted = events.where(
+          (ActivityEvent e) => e.type == ActivityType.sessionStarted);
+
+      expect(dayStarted.length, 1);
+      expect(sessionStarted.length, 1);
+      expect(dayStarted.single.provisional, isTrue);
+      expect(sessionStarted.single.provisional, isTrue);
+      expect(dayStarted.single.time, tracking.activeSession!.startTime);
+    });
+
+    test('a server row supersedes the matching provisional row on refresh',
+        () async {
+      location.nextFix = _fix('open', lat: 23.24, lng: 87.86);
+      await tracking.startDay();
+      final DateTime start = tracking.activeSession!.startTime;
+
+      // The server's rebuildActivity now carries its own rows, stamped at the
+      // same instant the device sent as startedAt.
+      repo.serverActivity = <ActivityEvent>[
+        ActivityEvent(
+            id: 's-day',
+            type: ActivityType.dayStarted,
+            time: start,
+            title: 'Day started'),
+        ActivityEvent(
+            id: 's-sess',
+            type: ActivityType.sessionStarted,
+            time: start,
+            title: 'Session 1 started'),
+      ];
+      repo.sessions = tracking.sessions;
+      await tracking.refresh();
+
+      final List<ActivityEvent> events = tracking.activity;
+      expect(events.any((ActivityEvent e) => e.provisional), isFalse,
+          reason: 'a confirmed row replaces its provisional twin, not stacks');
+      expect(
+          events
+              .where((ActivityEvent e) => e.type == ActivityType.dayStarted)
+              .length,
+          1);
+      expect(
+          events
+              .where(
+                  (ActivityEvent e) => e.type == ActivityType.sessionStarted)
+              .length,
+          1);
+    });
+
+    test('a session boundary never synthesizes a stop or report', () async {
+      location.nextFix = _fix('open', lat: 23.24, lng: 87.86);
+      await tracking.startDay();
+      await tracking.pauseSession();
+
+      // Pause closes the session -> a provisional sessionEnded, but nothing
+      // that belongs to the fix chain (arrived/stayed/left/report).
+      final Set<ActivityType> local = tracking.activity
+          .where((ActivityEvent e) => e.provisional)
+          .map((ActivityEvent e) => e.type)
+          .toSet();
+      expect(local.contains(ActivityType.sessionEnded), isTrue);
+      expect(
+          local.intersection(<ActivityType>{
+            ActivityType.arrived,
+            ActivityType.stayed,
+            ActivityType.left,
+            ActivityType.travelling,
+            ActivityType.reportSubmitted,
+          }),
+          isEmpty);
     });
   });
 }

@@ -98,12 +98,27 @@ Employee → Attendance (one per calendar day)
 | `joiningTime` | datetime | O | SRV | First **valid** session start — the authoritative joining time. Null when absent |
 | `endTime` | datetime | O | SRV | Last session close. Null while the day is open |
 | `sessionCount` | int | R | SRV | |
-| `workedDuration` | duration | R | SRV | Sum of session durations, excludes gaps between sessions |
-| `distanceKm` | double | R | SRV | Sum of session distances |
+| `workedDuration` | duration | R | SRV | **Evidence-bounded since 2026-11-06 (built, not deployed).** Sum of session durations, excludes gaps *between* sessions — and each session now runs `started_at → last evidence`, not `started_at → ended_at ?? now`. An **interior** dark gap counts; a **trailing** dark tail does not; a session with no fixes contributes 0. Same field, same type, **corrected value** (`02` §3.16, `09`) |
+| `distanceKm` | double | R | SRV | Sum of session distances. **Still the verified figure**, never verified + incomplete |
+| `verifiedDistanceKm` | double? | O | SRV | **Migration 036, built / untracked / not deployed.** Alias of `distanceKm` for a v2 row. **`null` means the row predates the engine** — render as "not measured", never 0 |
+| `incompleteDistanceKm` | double? | O | SRV | Distance across INCOMPLETE gaps, deliberately kept **out** of the headline figure so an under-count becomes visible and attributable instead of silent. Same null rule |
+| `gpsCoveragePercent` | double? | O | SRV | Duration-weighted across the day's sessions — **not** the mean of their percentages. Same null rule |
 | `companiesVisited` | int | R | SRV | Distinct companies, not visit count |
 | `reportsSubmitted` | int | R | SRV | |
 | `stopDuration` | duration | R | SRV | Total time stationary |
 | `longestStop` | duration | R | SRV | Feeds the long-stop alert history |
+
+**`joiningTime` / `endTime` and `workedDuration` are now allowed to disagree, by design.**
+The first pair is the **declaration** — `min(session start)` and `max(session end)`,
+untouched by the evidence-bounding above. So a day can legitimately read "joined 09:00,
+ended 18:00" with **3.5 h worked**. Both numbers are honest and they answer different
+questions, but nothing on any screen says so yet — an open copy/UI item for `design-agent`.
+
+**`status` can now change on a day that is already closed.** The corrected `workedDuration`
+is graded by `Engine::classifyDay` against a four-hour full day, so removing phantom hours
+can flip `present` → `partial`. It happens whenever the day is re-derived, which may be
+weeks later. One consequence reaches the API: `GET /attendance` caches past windows for 24 h
+on the premise that they cannot change — see `02` §3.16.
 
 ### 2.2 `WorkSession`
 
@@ -115,6 +130,10 @@ Employee → Attendance (one per calendar day)
 | `endTime` | datetime | O | EMP | Null ⇒ session open |
 | `distanceKm` | double | R | SRV | Computed from the fix chain, **gated** since 2026-11-05 — weak fixes and sub-threshold hops do not count (`02` §3.12) |
 | `locationPoints` | int | R | SRV | Count of accepted fixes — the **raw** stored count, not the number that moved `distanceKm` |
+| `verifiedDistanceKm` | double? | O | SRV | **Migration 036, built / untracked / not deployed.** `null` = row predates the engine, which is **not** 0 |
+| `incompleteDistanceKm` | double? | O | SRV | Distance the engine measured but cannot vouch for, across INCOMPLETE gaps. Same null rule |
+| `gpsCoveragePercent` | double? | O | SRV | Same null rule |
+| `distanceAlgoVersion` | int | R | SRV | `1` = the pre-036 rule, frozen at session creation and never upgraded. This is what makes historical distances immovable across the algorithm change |
 | `startLatitude` | double | R | EMP | |
 | `startLongitude` | double | R | EMP | |
 | `isOpen` | bool | D | — | `endTime == null` |
@@ -128,7 +147,7 @@ Employee → Attendance (one per calendar day)
 | `sessionId` | string | R | EMP | |
 | `latitude` | double | R | SYS | |
 | `longitude` | double | R | SYS | |
-| `accuracy` | double (m) | R | SYS | Fixes worse than `minAccuracyMetres` are dropped **before** upload |
+| `accuracy` | double (m) | R | SYS | **Corrected 2026-11-06: weak fixes are NOT dropped.** They are uploaded with a `lowAccuracy` flag (`location_service.dart:891`) and stored; accuracy is **never** a rejection reason at ingest (the reasons are `JUMP \| DUPLICATE \| MALFORMED`). `minAccuracyMetres` is applied at **read time**, twice — to classify a fix as rough for drawing, and to decide whether it may *measure* a leg of derived distance. This row said "dropped before upload" and had been wrong since 2026-10-31 |
 | `speedKmh` | double | R | SYS | Drives `MovementStatus` against `movementSpeedThresholdKmh` |
 | `recordedAt` | datetime | R | SYS | Device clock. Server also stamps `received_at` — clock skew is real |
 | `syncState` | enum | R | EMP | `synced queued failed`. Client-side only; the server never returns anything but `synced` |
@@ -428,7 +447,7 @@ lookup needs no date arithmetic) · `presentDays` · `absentDays` · `partialDay
 | --- | --- | --- |
 | `WorkStatus` | `notStarted working idle locationUnavailable offline ended` | Server, from session state + fix recency |
 | `MovementStatus` | `moving stationary unknown` | Last fixes vs `movementSpeedThresholdKmh` |
-| `LocationHealth` | `ok serviceDisabled permissionDenied permissionDeniedForever backgroundDenied poorAccuracy noInternet` | **Device only** — reported upward, never authored by the server |
+| `LocationHealth` | `ok serviceDisabled permissionDenied permissionDeniedForever backgroundDenied poorAccuracy noInternet` | **Device only** — reported upward, never authored by the server. **`poorAccuracy` is a legacy wire value since 2026-11-05:** weak GPS is no longer a status anybody is shown. The device no longer *produces* it (`LocationService.health()` stopped consulting accuracy; the 3-interval `_accuracyIsPoor` window is deleted), the client folds it onto the same arm as `ok` for title/message/action, and the server accepts it and does nothing with it. It stays on the wire only because builds already in the field (0.1.7) send it |
 | `AttendanceStatus` | `present absent partial holiday weekend noData` | Server calendar rules |
 | `SyncState` | `synced queued failed` | Device |
 | `VisitStatus` | `inProgress completed unassigned` | Server |
@@ -453,7 +472,7 @@ Keep these client-side — they are presentation rules, not stored state.
 | Field | Type | Default | Editable in UI | Effect |
 | --- | --- | --- | --- | --- |
 | `locationIntervalSeconds` | int | 30 | ✅ 15–120 | Fix capture cadence while a session is open |
-| `minAccuracyMetres` | double | 50 | ✅ 20–150 | Fixes worse than this are dropped, not plotted |
+| `minAccuracyMetres` | double | 50 | ✅ 20–150 | **Corrected 2026-11-06: nothing is dropped and everything is plotted.** Read-time threshold with two uses — the rough-fix classification the admin route screen draws, and the gate deciding which fixes may *measure* derived distance. Retuning it reclassifies history with no rewrite, which is the property that makes storing a boolean wrong (`02` §3.11). Since migration 036 it is also the **moderate/poor band edge**; the server default moves to **30** for freshly materialised orgs |
 | `stopRadiusMetres` | double | 75 | ✅ 25–200 | Must stay inside this radius to be a stop candidate |
 | `stopThresholdMinutes` | int | 10 | ✅ 5–30 | Minimum dwell before a stop is recorded |
 | `longStopThresholdMinutes` | int | 45 | ✅ 20–120 | Dwell after which the dashboard raises a red alert |
@@ -483,9 +502,24 @@ Per user + device, **not** tracking config. In memory today; needs persistence.
 `reportReminders` · `sessionReminders` · `systemNotifications` · `highAccuracyMode` ·
 `syncOnMobileData` · `batterySaver`. All R, bool unless noted.
 
-`highAccuracyMode`, `syncOnMobileData` and `batterySaver` interact with `TrackingConfig`:
-admin config sets the ceiling, the device preference may only make collection *less*
-aggressive, never more.
+**`highAccuracyMode`, `syncOnMobileData` and `batterySaver` are RETIRED as of 2026-11-05
+(built, not deployed).** They are now **server-fixed and read-only**: `GET /me/preferences`
+reports `true, true, false` as literals rather than reading the stored columns, and a
+`PATCH` carrying them is **ignored, not rejected** (`02` §3.2). The response shape is
+unchanged — all nine fields are still on the wire — so an older build keeps working and
+simply reads the behaviour it should now have. The columns stay in the database; migration
+036 resets them to those values on every row.
+
+This paragraph previously said admin config sets a ceiling and the device preference may
+only make collection *less* aggressive. **That was never true in the code** — verified
+before the retirement: nothing in `location_service.dart` read any of the three, so they
+were inert, and they were **not** a cause of the under-counted distance that started the
+universal-distance work. Removing them changed no capture behaviour. The reason they went is
+the rule, not a bug: tracking config is org-wide and admin-only, and an employee who can
+soften their own capture settings can soften their own odometer.
+
+The client still holds all three in `settings_controller.dart`; removing them there, and the
+three switches in the settings UI, is an open `mobile-agent` item.
 
 ---
 

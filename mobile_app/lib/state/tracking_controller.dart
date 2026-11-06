@@ -214,6 +214,11 @@ class TrackingController extends ChangeNotifier {
   bool _loading = true;
   Object? _error;
   HomeSnapshot? _snapshot;
+
+  /// Provisional, device-synthesized session-boundary rows awaiting server
+  /// confirmation. See the [activity] getter. Pruned on every refresh/load and
+  /// cleared on reset.
+  final List<ActivityEvent> _localActivity = <ActivityEvent>[];
   DateTime _now = DateTime.now();
   bool _busy = false;
 
@@ -240,6 +245,38 @@ class TrackingController extends ChangeNotifier {
   LocationHealth get locationHealth =>
       _snapshot?.locationHealth ?? LocationHealth.ok;
   List<WorkSession> get sessions => _snapshot?.sessions ?? const <WorkSession>[];
+
+  /// The day's activity timeline: the server's events, with the device's own
+  /// provisional session-boundary rows merged in so the timeline is as
+  /// immediate as the stat tiles beside it (Start Day already shows the session,
+  /// joining time and worked clock the instant it is tapped; the timeline was
+  /// the one panel that waited for the round trip).
+  ///
+  /// A provisional row is dropped as soon as the server sends its own row for
+  /// the same boundary — matched on type and a near-identical instant, because
+  /// the device stamps these with the fix time it also sends as `startedAt`, so
+  /// the server's row lands on the same moment. Only boundaries the device
+  /// already owns are synthesized; stops/visits/reports stay the server's.
+  List<ActivityEvent> get activity {
+    final List<ActivityEvent> server = _snapshot?.activity ?? const <ActivityEvent>[];
+    if (_localActivity.isEmpty) return server;
+
+    final List<ActivityEvent> merged = <ActivityEvent>[
+      ...server,
+      for (final ActivityEvent local in _localActivity)
+        if (!_isSuperseded(local, server)) local,
+    ]..sort((ActivityEvent a, ActivityEvent b) => a.time.compareTo(b.time));
+
+    return merged;
+  }
+
+  /// A server row of the same type within ~2 min of the provisional one is the
+  /// same boundary. Session boundaries sit minutes apart, so this cannot fold
+  /// two distinct events together.
+  static bool _isSuperseded(ActivityEvent local, List<ActivityEvent> server) =>
+      server.any((ActivityEvent s) =>
+          s.type == local.type &&
+          (s.time.difference(local.time)).abs() < const Duration(seconds: 120));
   WorkSession? get activeSession => _snapshot?.activeSession;
   DaySummary get summary => _snapshot?.summary ?? DaySummary.empty;
   SyncSnapshot? get sync => _snapshot?.sync;
@@ -350,6 +387,7 @@ class TrackingController extends ChangeNotifier {
       // to the state being replaced, and the server's number is the baseline
       // for everything measured from here.
       _resetDistance();
+      _localActivity.clear();
       _snapshot = _reconcileStatus(fresh);
       _reconcileDistance(fresh.summary.distanceKm, syncedAt: null);
       _error = null;
@@ -408,6 +446,7 @@ class TrackingController extends ChangeNotifier {
       // Server wins as the baseline; legs measured after [syncedAt] ride on
       // top, and _applyDistance's floor keeps the figure from stepping back.
       _reconcileDistance(fresh.summary.distanceKm, syncedAt: syncedAt);
+      _pruneLocalActivity(fresh.activity);
       if (locked) {
         await _location.stopTracking();
         _stopTicker();
@@ -504,6 +543,15 @@ class TrackingController extends ChangeNotifier {
         sessions: <WorkSession>[...sessions, session],
         lastFix: fix,
       );
+
+      // The timeline keeps pace with the tap: the first session of the day
+      // also writes "Day started". These are provisional until the server's
+      // rebuildActivity sends its own rows, stamped at the same fix time.
+      if (session.index == 1) {
+        _addProvisional(ActivityType.dayStarted, session.startTime, 'Day started');
+      }
+      _addProvisional(ActivityType.sessionStarted, session.startTime,
+          'Session ${session.index} started');
 
       // This session starts at zero on this device, and the opening fix is the
       // first anchor every later leg is measured from.
@@ -633,6 +681,7 @@ class TrackingController extends ChangeNotifier {
         dayState: DayState.closedByEmployee,
         closeout: stored,
       );
+      _addProvisional(ActivityType.dayEnded, draft.endedAt, 'Day ended');
 
       await _location.stopTracking();
       _stopTicker();
@@ -671,6 +720,7 @@ class TrackingController extends ChangeNotifier {
     _stopTicker();
     _snapshot = _emptySnapshot();
     _resetDistance();
+    _localActivity.clear();
     _degradedSince = null;
     _autoClosedAt = null;
     _outbox.clear();
@@ -731,9 +781,49 @@ class TrackingController extends ChangeNotifier {
       lastFix: finalFix,
     );
 
+    _addProvisional(
+      ActivityType.sessionEnded,
+      end,
+      'Session ${open.index} ended',
+      subtitle: '${closedKm.toStringAsFixed(1)} km tracked',
+      duration: end.difference(open.startTime),
+    );
+
     _openSessionBaselineKm = 0;
     _openSessionLocalKm = 0;
     _applyDistance();
+  }
+
+  /// Append a provisional timeline row (device-owned session boundary) unless an
+  /// identical one is already pending. Server confirmation later supersedes it.
+  void _addProvisional(
+    ActivityType type,
+    DateTime time,
+    String title, {
+    String? subtitle,
+    Duration? duration,
+  }) {
+    final bool exists = _localActivity.any((ActivityEvent e) =>
+        e.type == type &&
+        (e.time.difference(time)).abs() < const Duration(seconds: 2));
+    if (exists) return;
+
+    _localActivity.add(ActivityEvent(
+      id: 'local-${type.name}-${time.microsecondsSinceEpoch}',
+      type: type,
+      time: time,
+      title: title,
+      subtitle: subtitle,
+      duration: duration,
+      provisional: true,
+    ));
+  }
+
+  /// Drop provisional rows the server has now confirmed, so the local list does
+  /// not grow across a day of refreshes.
+  void _pruneLocalActivity(List<ActivityEvent> server) {
+    _localActivity.removeWhere(
+        (ActivityEvent local) => _isSuperseded(local, server));
   }
 
   void _applyHealth(LocationHealth health) {
@@ -746,11 +836,13 @@ class TrackingController extends ChangeNotifier {
   /// Maps device-location health to the workday status shown on the hero card.
   ///
   /// A fix we actually have — even an approximate one worse than
-  /// [TrackingConfig.minAccuracyMetres] ([LocationHealth.poorAccuracy]) — is
-  /// still a live, working session. "Location Unavailable" is reserved for the
-  /// states where there is genuinely no position to record (service off,
-  /// permission denied/revoked, background location refused). A dropped network
-  /// is "Offline", not unavailable, because fixes keep queuing locally.
+  /// [TrackingConfig.minAccuracyMetres] — is still a live, working session,
+  /// which is why accuracy has no say here and the legacy
+  /// [LocationHealth.poorAccuracy] lands on the same arm as [LocationHealth.ok].
+  /// "Location Unavailable" is reserved for the states where there is
+  /// genuinely no position to record (service off, permission denied/revoked,
+  /// background location refused). A dropped network is "Offline", not
+  /// unavailable, because fixes keep queuing locally.
   WorkStatus _statusForHealth(LocationHealth health) => switch (health) {
         LocationHealth.ok || LocationHealth.poorAccuracy => WorkStatus.working,
         LocationHealth.noInternet => WorkStatus.offline,
@@ -776,11 +868,29 @@ class TrackingController extends ChangeNotifier {
     return _serverDistanceKm + tail;
   }
 
-  /// Measure the leg from the previous accepted fix to [fix].
+  /// Measure the leg from the last counted fix to [fix], using the identical
+  /// rule the server's universal engine (036) reconciles this number to.
+  ///
+  /// The hop must out-travel what the fix could be wrong by —
+  /// `max(minStepMetres, accuracyStepFactor * fix.accuracy)` — not the OS
+  /// *capture* filter (`distanceFilterMetres`), which is a different, smaller
+  /// number whose job is keeping corners, not measuring. A weak 40 m fix that
+  /// moved 200 m is travel and counts; one that moved 25 m cannot be told from
+  /// noise and does not.
+  ///
+  /// Crucially the anchor **holds** on a rejected hop rather than advancing to
+  /// [fix] — the server does exactly this, and for the same reason: advancing
+  /// it is what lets noise accumulate in sub-threshold increments, while
+  /// holding it keeps genuinely slow travel measurable because displacement
+  /// from the held anchor keeps growing until it clears the step. Advancing
+  /// the anchor on every fix is what made this device read higher than the
+  /// server every day.
   void _accumulateDistance(LocationLog fix) {
     final LocationLog? previous = _distanceAnchor;
-    _distanceAnchor = fix;
-    if (previous == null) return;
+    if (previous == null) {
+      _distanceAnchor = fix;
+      return;
+    }
 
     final double km = kmBetween(
       previous.latitude,
@@ -789,12 +899,14 @@ class TrackingController extends ChangeNotifier {
       fix.longitude,
     );
 
-    // Anything under the OS distance filter is GPS jitter, not travel. A phone
-    // on a table wanders a few metres per fix; summed over a day that is
-    // kilometres of work nobody did. (Heartbeat top-ups bypass the filter, so
-    // this has to be checked here and not assumed.)
-    if (km * 1000 < config.distanceFilterMetres) return;
+    final double stepMetres =
+        max(config.minStepMetres, config.accuracyStepFactor * fix.accuracy);
 
+    // Held, not advanced, when the hop is noise: the next fix is measured from
+    // the same anchor so slow travel still clears the step eventually.
+    if (km * 1000 < stepMetres) return;
+
+    _distanceAnchor = fix;
     _legs.add(_DistanceLeg(fix.recordedAt, km));
     _openSessionLocalKm += km;
   }
@@ -809,8 +921,10 @@ class TrackingController extends ChangeNotifier {
     _serverDistanceKm = server;
     if (syncedAt == null) {
       // Nothing has ever reached the server from this device, so nothing it
-      // reports can include our legs. Keep them all.
-      _legs.clear();
+      // reports can include our legs: keep them all and show server + legs.
+      // (Clearing them here is what used to force the upward-only ratchet —
+      // without the legs the measured number collapsed to a bare server value
+      // that a pre-upload refresh could read as 0.)
     } else {
       _legs.removeWhere((_DistanceLeg leg) => !leg.at.isAfter(syncedAt));
     }
@@ -824,7 +938,13 @@ class TrackingController extends ChangeNotifier {
     final HomeSnapshot? snap = _snapshot;
     if (snap == null) return;
 
-    _displayedDistanceKm = max(_displayedDistanceKm, _measuredDistanceKm);
+    // No ratchet. The displayed number IS the measured one — server baseline
+    // plus the device's own un-synced legs — so when the server reconciles a
+    // day downward (a leg it counted as jitter, a gap chord it moved to
+    // incompleteKm) the employee's screen follows instead of freezing high and
+    // disagreeing with the dashboard, the stats tab and the closeout sheet. The
+    // step gate now matches the server's, so any correction is small.
+    _displayedDistanceKm = _measuredDistanceKm;
 
     final WorkSession? open = snap.activeSession;
     final double openKm = _openSessionBaselineKm + _openSessionLocalKm;

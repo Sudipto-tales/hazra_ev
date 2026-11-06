@@ -183,6 +183,9 @@ class MockAdminRepository implements AdminRepository {
         offlineCount: offline,
         pendingReviewCount: pending,
         longStopCount: longStop,
+        headcount: members.length,
+        attendancePercent:
+            members.isEmpty ? 0 : present * 100 / members.length,
       ),
     );
   }

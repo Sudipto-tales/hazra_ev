@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../support/V1Controller.php';
 require_once __BASEDIR__ . '/core/OtpService.php';
+require_once __BASEDIR__ . '/core/messaging/Router.php';
 
 final class WarrantyController extends V1Controller
 {
@@ -61,7 +62,16 @@ final class WarrantyController extends V1Controller
             Envelope::fail('INVALID_MOBILE', 'Mobile number is required.', 400, 'mobile');
         }
 
-        $res = OtpService::sendOtp($mobile, $purpose, (string) ($body["channel"] ?? "auto"));
+        // An email address is optional here and is only used if the OTP chain
+        // has an email step before the mobile ones. The public warranty form
+        // asks for the address at step 2, after verification, so it normally
+        // has none to send at this point and the email step is skipped.
+        $email = trim((string) ($body['email'] ?? $body['userEmail'] ?? ''));
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $email = '';
+        }
+
+        $res = OtpService::sendOtp($mobile, $purpose, (string) ($body["channel"] ?? "auto"), $email);
 
         if (!$res['success']) {
             $statusCode = ($res['cooldown'] ?? 0) > 0 ? 429 : 400;
@@ -452,11 +462,20 @@ final class WarrantyController extends V1Controller
             @Mailer::send($adminEmail, $subject, $message);
         } catch (\Throwable) {}
 
+        // The customer's own confirmation goes down the warranty_received
+        // chain. Its email step ships switched off, so nothing new reaches
+        // customers until an admin enables it; the WhatsApp step still requires
+        // the recorded opt-in, exactly as before.
         try {
-            if ($whatsappConsentAt !== null) {
-                WhatsAppService::send($normMobile, 'warranty_received', [$customerName, $refNo], $id);
-            }
-        } catch (Throwable $e) { error_log('Warranty saved, WhatsApp confirmation failed: ' . $id); }
+            MessagingRouter::dispatch('warranty_received', [
+                'reference' => $id,
+                'mobile' => $normMobile,
+                'email' => $email,
+                'params' => [$customerName, $refNo],
+                'payload' => ['whatsappConsent' => $whatsappConsentAt !== null],
+                'lock' => 'wa:' . $id . ':warranty_received',
+            ]);
+        } catch (Throwable $e) { error_log('Warranty saved, confirmation failed: ' . $id); }
         Envelope::created([
             'id'           => $id,
             'reference_no' => $refNo,

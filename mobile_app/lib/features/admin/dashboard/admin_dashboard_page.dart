@@ -173,7 +173,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
     final List<TeamMember> degraded =
         o.members.where((TeamMember m) => m.isDegraded).toList();
     final List<TeamMember> notStarted = o.members
-        .where((TeamMember m) => m.status == WorkStatus.notStarted)
+        .where((TeamMember m) =>
+            m.active && m.status == WorkStatus.notStarted)
         .toList();
 
     return <Widget>[
@@ -195,10 +196,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
       if (degraded.isNotEmpty) ...<Widget>[
         AlertBanner(
           icon: Icons.gps_off_rounded,
-          title: 'Tracking degraded for ${degraded.length}',
+          title: '${degraded.length} offline',
           message: degraded
               .map((TeamMember m) =>
-                  '${m.employee.firstName} · ${m.locationHealth.title}')
+                  '${m.employee.firstName} · ${m.degradedReason ?? 'No signal'}')
               .join('  ·  '),
           actionLabel: 'View',
           onAction: () => _openEmployee(degraded.first),
@@ -250,7 +251,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
           StatTile(
             icon: Icons.storefront_outlined,
             value: '${o.totalVisits}',
-            label: 'Visits today',
+            label: 'Companies visited',
             tone: AppColors.info,
           ),
           StatTile(
@@ -296,10 +297,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage>
                   value: o.offlineCount.toDouble(),
                   color: AppColors.statusOffline,
                 ),
+                // Not "Absent": nobody is a confirmed absence while the day is
+                // still open — they are people who have not clocked on yet, and
+                // this is the bucket that made the old bar fall short of the
+                // headcount and read 0% at 9am.
                 ProportionSegment(
-                  label: 'Absent',
-                  value: o.absentCount.toDouble(),
-                  color: AppColors.danger,
+                  label: 'Not started',
+                  value: notStarted.length.toDouble(),
+                  color: AppColors.statusOffline.withValues(alpha: 0.4),
                 ),
               ],
             ),

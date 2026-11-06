@@ -196,18 +196,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     onRetry: _load,
                   ),
                   const SizedBox(height: Insets.lg),
-                  // An approximate fix (poorAccuracy) is a live, working
-                  // session — GPS is on and recording — so it does not raise a
-                  // banner. Only states with no usable position (service off,
-                  // permission denied, offline) or a degraded status do.
+                  // Only a device that cannot record or cannot deliver a
+                  // position raises a banner: service off, permission denied,
+                  // no network, or an already-degraded status. Weak GPS is not
+                  // one of those and is never surfaced at all — see
+                  // LocationHealth.poorAccuracy.
                   //
                   // Reads `effectiveLocationHealth`, not the snapshot's value:
                   // with no session open the snapshot is stale (or the `ok` an
                   // empty one starts with), which is why GPS switched off
                   // before Start Day used to say nothing at all.
-                  if ((c.effectiveLocationHealth != LocationHealth.ok &&
-                          c.effectiveLocationHealth !=
-                              LocationHealth.poorAccuracy) ||
+                  if (c.effectiveLocationHealth != LocationHealth.ok ||
                       c.status.isDegraded) ...<Widget>[
                     AlertBanner(
                       icon: Icons.warning_amber_rounded,
@@ -274,7 +273,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     onAction: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => ActivityPage(
-                          events: c.snapshot?.activity ?? const <ActivityEvent>[],
+                          events: c.activity,
                         ),
                       ),
                     ),
@@ -721,8 +720,7 @@ class _ActivityBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<ActivityEvent> events =
-        controller.snapshot?.activity ?? const <ActivityEvent>[];
+    final List<ActivityEvent> events = controller.activity;
 
     if (events.isEmpty) {
       return AppCard(

@@ -147,6 +147,25 @@ the only recovery path.
 | `GET` | `/me/preferences` | §11 of the data doc |
 | `PATCH` | `/me/preferences` | Partial |
 
+**Three preference fields became server-fixed and read-only on 2026-11-05 (built, in the
+working tree, not deployed).** `highAccuracyMode`, `syncOnMobileData` and `batterySaver`
+were employee-settable tracking flags. **The response shape is unchanged** — all nine
+preference fields are still on the wire — but `Present::preferences()` now returns them as
+literal `true, true, false` (`Present.php:95-97`) rather than reading the stored columns,
+and they are gone from `MeController::updatePreferences()`'s writable column map, so a
+`PATCH` carrying them is **ignored, not rejected**. Ignored rather than 422'd on purpose: an
+old build sending them is not making an error, and failing the whole save would cost that
+employee their theme and notification settings too. A body of **only** retired fields gets a
+`200` with the current values, via the existing `if ($sets)` guard.
+
+Why they went: tracking config is org-wide and admin-only, and an employee who can soften
+their own capture settings can soften their own odometer. Verified before being written
+down: **the three were already inert** — nothing in `location_service.dart` read any of them,
+so removing them changed no capture behaviour and they were **not** the cause of the
+under-counted distance that started the universal-distance work. The columns stay in the
+database for now. The client still holds all three in `settings_controller.dart`; removing
+them there is an open mobile-agent item.
+
 ### 3.3 Employees — **one route serves roster, dashboard, and member-by-id**
 
 ```
@@ -462,7 +481,9 @@ POST  /tracking/watch                 {employeeIds:[...], ttlSeconds?}    → wa
   (missing id/latitude/longitude). The device may still filter on `minAccuracyMetres`
   before upload as an optimisation, never as the guarantee.
 - **`minAccuracyMetres` has a second read-time use, shipped 2026-11-05: it also decides
-  which fixes are *measured*.** `Engine::chainDistanceKm` (`api/support/Engine.php:193`)
+  which fixes are *measured*.** `Engine::chainDistanceKm` (`api/support/Engine.php:304`;
+  it was `:193` until the universal-distance tranche moved it, and the v1 body it
+  dispatches to is now the private `chainDistanceV1()` at `:262`)
   skips a fix worse than the threshold when summing derived distance — the session
   odometer, `day_routes.total_distance_km` and today's not-yet-cached route alike. The fix
   is **still stored and still drawn**; only the measurement skips it, and the leg across it
@@ -478,8 +499,27 @@ POST  /tracking/watch                 {employeeIds:[...], ttlSeconds?}    → wa
   them; posting them would let two devices disagree about what a stop is.
 - `POST /tracking/health` is what turns a `TeamMember` red on the admin dashboard while the
   employee's GPS is off. Cheap, fire-and-forget, no response body needed.
+- **`poorAccuracy` is accepted-and-inert since 2026-11-05 — request shape unchanged,
+  behaviour changed.** Weak GPS is no longer a status anybody is shown. `TrackingController`
+  keeps `poor_accuracy` in its accepted set (`:362`) on purpose — builds already in the
+  field (0.1.7) send it, and a 422 on a fire-and-forget ping would only litter their logs —
+  but it is deliberately absent from the new `OFFLINE_HEALTH` map (`:36`), so it writes no
+  timeline row and colours nothing. It was never in `BLIND_HEALTH` either, so it now has no
+  visible effect anywhere on the server.
+- **The five outage values write a paired timeline row.** Entering an outage writes
+  `title = 'Offline'` with the reason as the subtitle (`Engine::logAlert`, `is_alert = 1`);
+  any non-outage value — `poor_accuracy` included — closes it with
+  `title = 'Back online'` and the gap length as the subtitle (`Engine::logRecovery`,
+  `is_alert = 0`). Both rows carry `type = 'tracking_issue'`, so **that type now has two
+  senses and `is_alert` is the only thing that separates them.** One row per transition, not
+  per ping. No migration and no enum change. See `03-DATABASE-SCHEMA.md` §12.
+- **A dangling `Offline` row is a known hole.** The recovery row is only written when the
+  device comes back and says so, so a killed app, a dead phone or location left off until
+  morning leaves the outage open forever. Owned by Phase 3 of
+  `09-SESSION-DARK-TIME-PLAN.md`, which must close it at the **same last-evidence
+  timestamp** it stamps the session with.
 
-#### Fix wire shape — `heading`, additive only (specced 2026-11-04, not built)
+#### Fix wire shape — `heading`, additive only (**shipped and deployed 2026-11-04T18:20Z**)
 
 The flat tuple grows exactly one slot:
 
@@ -489,7 +529,9 @@ The flat tuple grows exactly one slot:
 ```
 
 - The object form gains **`headingDeg`** under the same rules.
-- `Present::fix` returns **`headingDeg: float|null`** (it returns no heading at all today).
+- `Present::fix` returns **`headingDeg: float|null`** — built, `Present.php:226`, null-preserving
+  (`heading_deg` NULL is **not** 0). Ingest reads slot 6 or the object key
+  (`TrackingController.php:557`, `:538`).
 - **Old clients must keep working unchanged.** A 6-slot tuple is a complete, valid fix and
   means precisely what it meant before. No version negotiation, no new endpoint, no
   deprecation: `TrackingController::normaliseFix()` already accepts `count($fix) >= 3` and
@@ -712,6 +754,85 @@ device-side equivalent already exists and is already debounced (`_evaluateMoveme
 hold window, `mobile_app/lib/services/location_service.dart`); v9 is what lets the server's
 answer stop disagreeing with the phone's.
 
+#### v10 — five more config fields and seven more payload fields (**BUILT, NOT COMMITTED, NOT DEPLOYED**)
+
+> **Status, precisely.** `036_universal_distance_engine.php` is **untracked in git** — not
+> committed, not on `main`, not deployed — and the `Engine`, `ConfigController`, `Present`,
+> `Ctx`, `TrackingController` and `RoutesController` changes beside it are unstaged
+> modifications. **Production serves v9.** 036 floors `tracking_configs.version` to 10, so
+> deploying it costs the fleet exactly one full `GET /config` per device. Reported
+> 2026-11-05T18:31Z, verified and merged 2026-11-06.
+
+The universal distance engine (cycling / road / train; walking explicitly out of scope).
+All additions, no removals, no shape changes. The hard rule it is built under, recorded
+because it constrains every future option: **no Google Maps, no routing API, no OSRM, no
+Valhalla and no road-network length may ever contribute to measured distance.** Haversine
+over consecutive GPS fixes is the only distance engine; `MapMatch` / `matched.distanceKm`
+stays visualisation-only and is never the headline number.
+
+| Field | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `minStepMetres` | double | `15` | **The server's minimum measurement step, now a separate knob from `distanceFilterMetres`.** The two were one column doing two opposite jobs: capture wants to go *down* (10 m) so a winding track keeps its corners; measurement wants to stay *up* (15 m) so a parked phone's ~13 m drift at 15 m accuracy is never booked as travel. `0` disables the floor — a documented escape hatch. Clamped `0..500` |
+| `accuracyGoodMetres` | double | `20` | Upper edge of the **good** accuracy band. Bands are good `0..accuracyGoodMetres`, moderate up to `minAccuracyMetres`, **poor** above it. There is deliberately **no** `accuracyModerateMetres`: it and `minAccuracyMetres` were the same boundary, and two columns for one fact drift until the engine's "poor" and the map's "rough" disagree about the same fix |
+| `accuracyStepFactor` | double | `1.0` | Scales the measurement step by the fix's own reported error: the step is `max(minStepMetres, accuracyStepFactor * accuracy_m)`. A weak 40 m fix that moved 200 m is travel and counts; one that moved 25 m cannot be told from noise and does not. `0` restores a flat `minStepMetres` floor. Clamped `0..5` |
+| `gpsGapWarningSeconds` | int | `60` | A quiet stretch longer than this is a **WARNING** gap |
+| `gpsGapIncompleteSeconds` | int | `180` | A quiet stretch longer than this is an **INCOMPLETE** gap; its distance goes to `incompleteDistanceKm` and never into the headline figure |
+
+Two new 422s, both judged on **post-write** values so moving both sides of a pair at once
+succeeds: `accuracyGoodMetres <= minAccuracyMetres` and
+`gpsGapIncompleteSeconds > gpsGapWarningSeconds`. Four DB `CHECK`s back them.
+
+**Gap classification is displacement-aware, not elapsed-time-only, and that is load-bearing.**
+A genuinely parked vehicle emits nothing until the device heartbeat fires at **300 s** —
+past the 180 s incomplete line — so time alone would mark every lunch break and every long
+customer visit as broken coverage and make `gpsCoveragePercent` meaningless. A 300 s gap
+with 5 m of displacement is a parked vehicle; a 180 s gap with 5 km of displacement is a
+train leaving a tunnel. The tunnel case is also why gap detection cannot live at ingest:
+5 km in 3 minutes is ~100 km/h, under `maxJumpKmh` 180, so `ingest()` accepts it and would
+book a straight 5 km chord.
+
+**New payload fields.** `Session` gains `verifiedDistanceKm`, `incompleteDistanceKm`,
+`gpsCoveragePercent`, `distanceAlgoVersion`; `DaySummary` gains the first three.
+`distanceKm` is **untouched and still means the verified figure** — never verified +
+incomplete.
+
+> **The three distance fields are nullable and `null` is not `0`.** It means the row
+> predates the engine and no coverage was ever computed. They must render as "not
+> measured", never as 0 or 100 %. `Present::nullableFloat()` exists for exactly this
+> (`Present.php:132`) because `Wire::float` would substitute a default — the same
+> discipline `location_fixes.heading_deg` follows in v9.
+
+**Historical rows are frozen by `distance_algo_version`**, which defaults to `1` on
+`work_sessions` / `day_routes`. A session created before 036 keeps v1 — today's code
+verbatim, preserved as the private `Engine::chainDistanceV1()` — so no stored historical
+distance moves and no backfill is needed. `startSession()` stamps the current version at
+creation and `recompute()` never upgrades an existing v1 row. `RoutesController::livePoints()`
+measures with `Engine::dayAlgoVersion()` rather than the current default, so a live read of
+an old day cannot disagree with its cached row. v1 rows leave the three reporting columns
+**NULL**.
+
+**One default change with a client consequence.** `Ctx::config()`'s materialising INSERT
+now writes `location_interval_seconds = 10`, `distance_filter_metres = 10`,
+`min_accuracy_metres = 30` and `version = 10` explicitly (`Ctx.php:169-172`), rather than
+relying on column defaults — neither driver can change an existing column's `DEFAULT`
+without rewriting the table, and SQLite cannot at all. **Org rows an admin has already
+tuned are untouched**, which was the requirement. The mobile client's pre-fetch fallbacks
+still read `60 / 20 / 50` (`tracking_config.dart:5-9`), so a cold start before the first
+`GET /config` answer captures at the old cadence; realigning them is an open mobile-agent
+item.
+
+**Not built on either side (reported as a work order, verified absent):** a transport-mode
+endpoint. Mode is employee-selected metadata for analytics and drawing only — it must never
+select a different distance algorithm and must never vary capture config per employee — and
+`session_transport_modes` exists as a table in 036 with **nothing writing to it**. The
+endpoint shape is unspecified; it needs to be designed here before either side codes it.
+Also not built: `source` (`STREAM | HEARTBEAT`) on the fix wire shape. The column exists in
+036 and the server needs it to tell "parked, sampling slowly" from "signal lost", but the
+device does not send it — `_onHeartbeat()` still builds its fix through the same `_toLog()`
+as a movement sample, so the two are indistinguishable on the wire. **036 should not deploy
+ahead of that**, or gap classification falls back to displacement alone for the one case it
+was added to disambiguate.
+
 #### Validation — clamp or 422, stated per rule
 
 | Rule | On violation | Why |
@@ -766,8 +887,8 @@ latency at ~5 min (§3.11).
 
 **`distanceFilterMetres` is a server-side gate too, and that couples battery to the
 odometer (shipped 2026-11-05).** It was device-side only until `Engine::chainDistanceKm`
-(`api/support/Engine.php:193`) started using it as the **minimum step** for derived
-distance: a hop shorter than it contributes 0 km **and does not move the anchor**, which is
+(`api/support/Engine.php:304`, v1 body at `:262`) started using it as the **minimum
+step** for derived distance: a hop shorter than it contributes 0 km **and does not move the anchor**, which is
 what stops a parked device booking jitter as travel while still letting a genuinely slow
 walk accumulate until it clears the gate. The practical consequence for whoever turns the
 knob: **widening it to save battery also coarsens the odometer.** Tight, winding or
@@ -776,6 +897,12 @@ on-foot routes measure shorter at 50 m than at 20 m, and the effect lands on
 and the live route together, because all four now go through the one helper. A
 non-positive value disables the gate rather than zeroing the day. Same shape, corrected
 value — not a breaking change.
+
+**Two further config fields are PLANNED and not built** — `autoCloseAfterMinutes` and
+`staleCloseAfterMinutes`, with an ordering invariant against `offlineThresholdMinutes`, and
+an unresolved v10-or-v11 question that decides how many fleet-wide ETag invalidations they
+cost. See **§3.16** and `09-SESSION-DARK-TIME-PLAN.md`. Nothing about them is servable
+today; `autoCloseAfterMinutes` in particular is a client constant the server has never sent.
 
 ### 3.13 Notifications
 
@@ -790,7 +917,20 @@ afterwards; push delivers the increments.
 
 ### 3.14 `activity` — one derived enum the map maps 1:1 to an icon
 
-**Specced 2026-11-04, not built.** Added to **four** payloads, all of them read paths:
+> **BUILT AND DEPLOYED.** `Engine::activity()` implements the eight-row precedence
+> table below verbatim, and it shipped with config **v9**, applied on production
+> **2026-11-04T18:20:03Z** (`migrated 031_tracking_config_v9`, deploy-server.yml run
+> 41886059371). The header here said "Specced 2026-11-04, not built" until
+> **2026-11-06**, by which point it had been live for two days — the same class of
+> stale banner `04-ADMIN-PANEL-SPEC.md` carried. The client half shipped in mobile
+> **0.1.5+6** and is carried forward in 0.1.6/0.1.7.
+>
+> One thing in §3.4 is still **not** built and is tracked on the board: the key
+> collision in `DaysController`, where `activity` carries this string enum at `:53`
+> and is then overwritten by the activity-**event array** at `:114` under
+> `?include=activity`. The rename (`activityState`) is open.
+
+Added to **four** payloads, all of them read paths:
 
 | Payload | Where |
 | --- | --- |
@@ -894,6 +1034,190 @@ The client owns its icons; this is only here so the enum's purpose is unambiguou
 `stopped` → pin with dwell duration · `idle` → hollow dot · `location_unavailable` → grey
 marker with a GPS-off badge · `offline` → grey marker with last-seen age · `paused` → marker
 at last fix, muted · `ended` → day-summary marker · `not_started` → not on the map.
+
+---
+
+### 3.15 Website-only admin surface — **listed, not specified**
+
+`website/api/` has two consumers, and this document describes one of them. Everything in
+§1–§3.14 and §4 is the **mobile contract**: shapes the Flutter app codes against, where a
+change is breaking and has to be reported before it ships. The PHP admin panel calls a
+second set of routes on the same base path that no `mobile_app/` repository touches —
+app releases, dealer locations, content/posts/settings, warranty, account deletion,
+message delivery, and since 2026-11-05 messaging configuration and webhook events.
+
+They are listed here for one reason: so that reading this file cannot leave anyone
+believing `/api/v1` is only what §3 describes. **The rules above are not claimed over
+them** — not one-shape-per-endpoint, not the `include`/`subject` conventions, not the
+three standing rules. Shapes live in the controllers and in `website/docs/`.
+
+Added 2026-11-05 (on `main`, **not deployed**; requires migrations 032–035 and an
+`APP_KEY` — see `03` §14). All admin-authenticated except where noted:
+
+| Route | Notes |
+| --- | --- |
+| `GET` · `PUT /admin/messaging/config` | provider registry + per-event delivery chains. **No secret field is ever returned** — a stored credential reads back as a hint only |
+| `POST /admin/messaging/secrets/{provider}/rotate` | |
+| `POST /admin/messaging/test` | test sends are flagged `is_test` and filterable, so they never pollute real delivery stats |
+| `GET /admin/webhook-events` · `GET /admin/webhook-events/{id}` | inbound callback log, refusals included |
+| `POST /admin/webhook-events/{id}/replay` | verified-but-matched-nothing calls only; idempotent via each handler's status-rank guard |
+| `POST /admin/message-delivery/{channel}/{id}/code` | reveals a **live** OTP to an admin; off by default, audited per reveal, rate-capped. The code is never in a listing payload |
+| `POST /whatsapp/webhook/msg91` | **public**, token-authenticated (`X-WA-Webhook-Token`) |
+
+Two existing behaviours widened, both additive:
+
+- `GET /admin/message-delivery` accepts `channel=email` and `tests=only|exclude`, and its
+  rows carry `attempt_group`, `chain_position`, `is_test` and `canReveal`.
+- `POST /warranty/otp/send` accepts an optional `email`. Absent or malformed → empty, and
+  the chain's email step is skipped rather than failing. **This one is public**, reached by
+  the two warranty forms, not by the app.
+
+Nothing the Flutter app reads changed shape in any of this.
+
+---
+
+### 3.16 Session and dark-time accounting — **item 3 BUILT NOT DEPLOYED, items 1–2 PLANNED**
+
+> **Nothing in this section is servable today, but item 3 is written.** Items (1) and (2)
+> below are PLANNED — no column, field or value for them exists in `website/` or in any
+> released mobile build. Item **(3)** — Phase 1, the worked-time arithmetic — is
+> **code-complete in the working tree with a green suite, not committed, not deployed**, so
+> the values it corrects have not moved on the wire yet. It never had a shape to change.
+>
+> Full record, with the defects, the ten gaps and the reasoning: **`09-SESSION-DARK-TIME-PLAN.md`**.
+> Added 2026-11-06; item 3's status corrected the same day when Phase 1's report was
+> verified and drained.
+
+The rule the whole design rests on: **`ended_at` is the last moment we have evidence for —
+never the clock at the moment of detection.** And its corollary, which is the half that
+decides the arithmetic: **an interior dark gap, bracketed by fixes on both sides, counts as
+worked time; a trailing dark tail that no fix ever follows does not.** Dark time is only
+"worked" when it sits between two known-good fixes.
+
+Three contract items, in the phase order they would land in.
+
+**(1) PLANNED — two new `TrackingConfig` fields (Phase 2).** Both plain scalars on the
+existing object, same `ETag` / `If-None-Match` / `304` path as every other field, no new
+endpoint and no new envelope — exactly as §3.12's four were.
+
+| Field | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `autoCloseAfterMinutes` | int | `30` | Client auto-pause threshold. **It already exists as a client constant** (`mobile_app/lib/core/config/tracking_config.dart:19`) and is served by nobody: it is absent from `ConfigController::FIELDS` and has no column, so every device falls back to its hard-coded 30 and client and server cannot agree on one number. This is the open "config-defaults migration" task on the board |
+| `staleCloseAfterMinutes` | int | > `autoCloseAfterMinutes` | Threshold for the PLANNED server-side stale-session watchdog (item 2). Strictly greater than the client's, so a device that is still alive always closes its own session first and the server's sweep stays a backstop rather than a competitor |
+
+Ordering invariant, which is the part that must not be left as a convention:
+
+```
+staleCloseAfterMinutes > autoCloseAfterMinutes > offlineThresholdMinutes
+```
+
+Enforced as a **`422 VALIDATION_FAILED` on the offending field**, judged against
+**post-write** values through the existing `$effective()` closure, exactly as
+`syncIntervalSeconds <= offlineThresholdMinutes * 60 / 2` already is (§3.12's validation
+table) — plus a **DB `CHECK` as the backstop**, the same discipline
+`CHECK (sync_interval_seconds <= offline_threshold_minutes * 30)` follows today.
+
+**Version: unresolved, and consequential.** Config is at **v10** in the working tree
+(`036_universal_distance_engine.php` floors `version` to 10) — **untracked in git, not on
+`main`, not deployed; production serves v9.** These two fields either fold into that
+unshipped v10 or land as a v11. `version` backs the ETag, so each bump costs the fleet
+exactly one full `GET /config` per device: folding into v10 is free, v11 is a second
+fleet-wide re-pull plus a window where a device sees v10 without `autoCloseAfterMinutes`
+and keeps today's bug. The decision point is a production `db:sync` reporting
+`migrated 036_universal_distance_engine` — after that the ledger keys on the filename and a
+retarget is **silently skipped**, the same trap §3.12 documents for v8 → v9. See
+`09` §7.1.
+
+**(2) PLANNED — `end_reason`, carrying a new `stale_provisional` value (Phase 3).**
+
+**This is a new field on a new column, not a new value on an existing enum.** There is no
+`end_reason` anywhere on the server today — no column on `work_sessions`, no key in
+`Present::session()`, zero occurrences across `website/api/` and all 36 migrations. The Dart
+`SessionEndReason { manual, pause, auto }` is **client-local and never round-trips**:
+`PATCH /tracking/sessions/{id}` validates `reason ∈ {pause, end}` and then never uses the
+value, so `pause` and `end` do the identical thing and the server cannot tell an automatic
+close from a human one. That is the evidence anyone would want in an hours dispute.
+
+```
+end_reason: manual | pause | auto | stale_provisional        # PLANNED
+```
+
+`stale_provisional` means "closed because nothing arrived, not because anyone said so", and
+it is a **permission marker, not a label**: only a `stale_provisional` session may be
+reopened and extended by a late batch. A session an employee closed is a declaration and
+must never be silently reopened. The server cannot distinguish "offline but still queuing
+fixes locally" from "dead" — which is why the client's own watchdog requires GPS-unusable
+**and** offline — so the server's close has to be reversible: reopen, extend,
+`Engine::recompute`. Safe because `UNIQUE (employee_id, client_id)` already makes fix replay
+idempotent and `recompute` is already idempotent.
+
+Also PLANNED for Phase 4 and **needing no API change**: the client stamping last-evidence
+time rather than the detection moment. `PATCH /tracking/sessions/{id}` already accepts and
+honours `endedAt`; the client currently sends `_now` into it from the auto-pause path. The
+wire is already capable of the correct behaviour.
+
+**(3) BUILT 2026-11-06, NOT DEPLOYED — Phase 1 changes `worked_seconds` VALUES without
+changing the wire shape.**
+
+Implemented in `Engine::sessionWorkedSeconds()` (`api/support/Engine.php:852`), summed by
+`rollupDay()` (`:895-913`), with `CloseDaysCommand` stamping last evidence per session
+(`core/Console/CloseDaysCommand.php:217`). Suites:
+`website/tests/session-worked-time.php` and `website/tests/worked-time-blast-radius.php`.
+**Working tree only — the two implementation files are unstaged and the three new files are
+untracked, so production still serves the old arithmetic.** Verified by `docs-agent`
+2026-11-06: both suites pass, every PHP suite in `website/tests/` exits 0, and the revert
+experiment fails 20 assertions against pre-fix behaviour while leaving the interior-gap and
+599/600 s boundary cases untouched.
+
+**One read dependency is new and is not visible on the wire:** `rollupDay()` now reads
+`Ctx::config()` for `offline_threshold_minutes` (`Engine.php:904`). Always satisfied in
+production; it fatals against a partial schema or an org with no `tracking_configs` row,
+which is what it changed in `tests/account-deletion.php`.
+
+Same field, same type, same key, every payload that carries it unchanged. What changes is
+the number: worked time becomes `started_at → last evidence` instead of
+`started_at → ended_at ?? now`, so an open session stops accruing against the clock and a
+force-closed day stops being stamped at a flat local `23:59:59`.
+
+**Same shape, corrected value — not breaking.** Identical framing to the derived-distance
+gates (§3.12), and the same consequence: a day whose device went dark and never came back
+will report **fewer** hours, and any test, export or copy asserting that hours keep growing
+while a phone is dead was asserting the bug. Two further things follow, and they are not the
+same thing: the `rollupDay` half takes effect **immediately on deploy** (`recompute()` runs
+on every accepted batch), while the midnight stamping is **latent until the `days:close`
+cron is installed on production**, which it is not. And neither is retroactive — a closed
+historical day keeps the figure it was written with until something recomputes it, exactly
+as the distance gates are not retroactive.
+
+**Two things about item 3 that a consumer should know before the deploy.** First, an
+**open** session now caps at its last fix with **no threshold grace**, so a healthy
+in-progress day reports worked time up to one `syncIntervalSeconds` (300 s) behind wall
+clock, sawtoothing back on each accepted batch. A closed session is treated differently —
+its declared `ended_at` stands unless the tail from the last fix exceeds
+`offlineThresholdMinutes`. That asymmetry is deliberate but **unresolved as a product
+decision**: correct for a timesheet, potentially reads as a stalled clock on a live roster.
+See `09` §7.4; the user has not ruled on it. Second, the **blast radius on historical days
+has not been measured** — nobody has counted how many stored `attendance_days` rows move or
+flip `present` → `partial`. The user asked for that number before deploying; the deliverable
+is the read-only `website/tools/blast-radius-worked-seconds.sql`, which only the user can run
+(no prod access from the repo, and the local database has 0 rows in every tracking table).
+
+**One cache header is now unsound and is the only place this reaches the wire.**
+`GET /attendance` sends `Cache-Control: private, max-age=86400` for any window ending before
+today, on the stated premise that such a window "can no longer change"
+(`AttendanceController::cache()`). Phase 1 falsifies the premise: a past day's `status` can
+move, and because the fix is non-retroactive it moves at an arbitrary later moment. A client
+can show a stale attendance verdict for up to 24 h. **`GET /days` and `GET /statistics` send
+no cache header and are unaffected.** Needs a ruling before deploy — leave it, drop to
+`no-store` for past windows while a backfill runs, or replace `max-age` with an ETag over
+the covered rollup rows. See `09` §7.5.
+
+**What Phase 1 does NOT move, which is the reassuring half:** `endTime` and `joiningTime`
+are the declaration and are untouched, `day_closeouts` never snapshotted worked time (it
+freezes `measured_distance_km` and `measured_visits` only), so **no signed declaration is
+contradicted** — unlike the distance backfill. The visible consequence is that a day can
+read "joined 09:00, ended 18:00" with 3.5 h worked; honest, and unexplained on every screen
+that shows both.
 
 ---
 

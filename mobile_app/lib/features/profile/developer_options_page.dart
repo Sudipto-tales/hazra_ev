@@ -292,6 +292,8 @@ class DeveloperOptionsPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: LocationHealth.values
+                // Not simulable: it is a legacy wire value with no UI left.
+                .where((LocationHealth h) => h != LocationHealth.poorAccuracy)
                 .map(
                   (LocationHealth h) => ListTile(
                     title: Text(h.title),

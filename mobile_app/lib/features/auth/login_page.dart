@@ -69,8 +69,14 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+      // pushAndRemoveUntil, not pushReplacement: RoleSelectPage *pushes* this
+      // form rather than replacing itself, so replacing only the login route
+      // would leave [RoleSelectPage, MainShell] on the stack and Android back
+      // on Home would pop a signed-in user out to the sign-in screen. Clearing
+      // the stack makes the shell the sole route — same shape logout uses.
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const MainShell()),
+        (Route<dynamic> route) => false,
       );
     } on ApiException catch (e) {
       if (!mounted) return;

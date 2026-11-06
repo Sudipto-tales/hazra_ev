@@ -48,12 +48,19 @@ db_execute('INSERT INTO users (id, org_id, role, name, email, password_hash, cre
 function reload(): void { Ctx::impersonate(['id' => 'employee', 'org_id' => 'org', 'role' => 'employee']); }
 reload();
 
-// The documented defaults the gates fall back on: 50 m accuracy (002), 20 m
-// distance filter (031 / 02 §3.12). Both are admin-tunable config columns —
-// no new column, no new ConfigController::FIELDS entry, no contract change.
+// The documented defaults the v1 gates fall back on. Both moved in 036 — 50 ->
+// 30 m accuracy and 20 -> 10 m capture filter — because capture has to sample
+// finely enough not to cut the corners of a winding track. Measurement did NOT
+// follow the filter down: it moved to its own column, min_step_metres (15 m),
+// so a parked phone's drift still books nothing. See migration 036.
+//
+// Every session in this file is v1 (work_sessions.distance_algo_version
+// defaults to 1), so everything below exercises the frozen v1 engine against
+// these two columns. The v2 engine has its own section at the end.
 $config = Ctx::config();
-check((float) $config['min_accuracy_metres'] === 50.0, 'Expected the documented default accuracy threshold');
-check((int) $config['distance_filter_metres'] === 20, 'Expected the documented default distance filter');
+check((float) $config['min_accuracy_metres'] === 30.0, 'Expected the documented default accuracy threshold');
+check((int) $config['distance_filter_metres'] === 10, 'Expected the documented default distance filter');
+check((float) $config['min_step_metres'] === 15.0, 'Expected the documented default measurement step');
 
 $base = [22.5700, 88.3600];
 
@@ -263,7 +270,209 @@ $raw = db_fetch_all("SELECT f.lat, f.lng, f.accuracy_m FROM location_fixes f
                        JOIN work_sessions s ON s.id = f.session_id
                       WHERE s.employee_id = 'employee' AND s.work_date = '2026-10-02'
                       ORDER BY f.recorded_at, f.id");
-near(Engine::chainDistanceKm($raw), (float) $route['total_distance_km'], 0.0001,
+near(Engine::chainDistanceKm($raw, Engine::dayAlgoVersion('employee', '2026-10-02')),
+    (float) $route['total_distance_km'], 0.0001,
     'The live route sum must match the cached day_routes row');
+
+// The v1 day leaves every v2 reporting column NULL — that is what marks it as
+// predating the universal engine, rather than as a day with perfect coverage.
+$routeFull = db_fetch_one("SELECT * FROM day_routes WHERE employee_id = 'employee' AND work_date = '2026-10-02'");
+check($routeFull['verified_distance_km'] === null, 'A v1 day_routes row must not claim a verified figure');
+check($routeFull['gps_coverage_percent'] === null, 'A v1 day_routes row must not claim coverage');
+check((int) $routeFull['distance_algo_version'] === 1, 'A day of v1 sessions must stay pinned to v1');
+$dayRow = db_fetch_one("SELECT * FROM attendance_days WHERE employee_id = 'employee' AND work_date = '2026-10-02'");
+check($dayRow['verified_distance_km'] === null, 'A v1 attendance_days row must not claim a verified figure');
+check($dayRow['gps_coverage_percent'] === null, 'A v1 attendance_days row must not claim coverage');
+
+// ===========================================================================
+// 8. The v2 universal engine (migration 036). Cycling, road travel and train
+//    are measured by the identical code — mode never reaches the arithmetic.
+// ===========================================================================
+//
+// Thresholds are set explicitly rather than taken from the defaults, so these
+// checks keep meaning the same thing if a default is retuned again.
+db_execute("UPDATE tracking_configs SET min_step_metres = 15, accuracy_step_factor = 1.0,
+            gps_gap_warning_seconds = 60, gps_gap_incomplete_seconds = 180,
+            min_accuracy_metres = 30 WHERE org_id = 'org'");
+reload();
+
+$v2Date = '2026-10-03';
+$v2Base = strtotime($v2Date . 'T07:00:00Z');
+
+function makeSessionV2(string $id, string $date): array {
+    global $sessionSeq;
+    db_execute('INSERT INTO work_sessions (id, employee_id, client_id, work_date, seq, started_at, start_lat, start_lng, distance_algo_version)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$id, 'employee', $id . '-client', $date, ++$sessionSeq, $date . 'T07:00:00Z', 22.5700, 88.3600,
+         Engine::DISTANCE_ALGO_VERSION]);
+    return db_fetch_one('SELECT * FROM work_sessions WHERE id = ?', [$id]);
+}
+
+function addFixAt(string $sessionId, array $point, float $accuracy, int $second, string $source = 'STREAM'): void {
+    global $fixSeq, $v2Base;
+    $ts = gmdate('Y-m-d\TH:i:s\Z', $v2Base + $second);
+    db_execute('INSERT INTO location_fixes (session_id, employee_id, client_id, recorded_at, received_at, lat, lng, accuracy_m, speed_kmh, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$sessionId, 'employee', 'fix-' . (++$fixSeq), $ts, $ts, $point[0], $point[1], $accuracy, 0, $source]);
+}
+
+function gapsOf(string $sessionId): array {
+    return db_fetch_all('SELECT * FROM session_gps_gaps WHERE session_id = ? ORDER BY gap_start', [$sessionId]);
+}
+
+// ---------------------------------------------------------------------------
+// 8a. Weak GPS over real travel. THE under-count this change exists to fix.
+//
+// Five fixes 200 m apart with 100 m accuracy — an off-road track under tree
+// cover, a factory yard, a village lane. v1 refuses to measure from any fix
+// worse than min_accuracy_metres (30) and carries the anchor forward, so the
+// whole 800 m collapses to nothing. v2 asks the fix to move further than it
+// could be wrong by: the step is max(15, 1.0 * 100) = 100 m, which a 200 m hop
+// clears, so the real travel survives.
+//
+// Hop and step are deliberately a factor of two apart. A fixture sitting ON
+// its own threshold measures whatever `at()`'s flat-earth metre and the
+// haversine disagree about in the last decimetre, which is a test that fails
+// for a reason that has nothing to do with the engine.
+// ---------------------------------------------------------------------------
+$weakReal = makeSessionV2('weak-real', $v2Date);
+for ($i = 0; $i <= 4; $i++) {
+    addFixAt('weak-real', at($base, $i * 200, 0), 100, $i * 30);     // 30 s apart: no gap branch
+}
+
+$weakFixes = db_fetch_all("SELECT lat, lng, accuracy_m, recorded_at, source FROM location_fixes
+                            WHERE session_id = 'weak-real' ORDER BY recorded_at, id");
+
+near(Engine::chainDistanceKm($weakFixes, 1), 0.0, 0.0001,
+    'v1 must still measure nothing here — that is the bug, and it stays frozen');
+near(Engine::chainDistanceKm($weakFixes, 2), 0.8, 0.01,
+    'v2 must measure the real 800 m through weak GPS');
+
+Engine::refreshSession('weak-real');
+$row = db_fetch_one("SELECT * FROM work_sessions WHERE id = 'weak-real'");
+near((float) $row['distance_km'], 0.8, 0.01, 'distance_km must carry the v2 verified figure');
+near((float) $row['verified_distance_km'], 0.8, 0.01, 'verified_distance_km must be populated for v2');
+near((float) $row['incomplete_distance_km'], 0.0, 0.0001, 'Continuous GPS owes nothing to incomplete');
+near((float) $row['gps_coverage_percent'], 100.0, 0.01, 'Continuous GPS is 100 % coverage');
+check(gapsOf('weak-real') === [], 'Continuous GPS must record no gaps');
+
+// A weak fix that CANNOT be told from its own error still measures nothing:
+// 100 m hops under 400 m accuracy never clear the scaled step.
+$weakNoise = makeSessionV2('weak-noise', $v2Date);
+for ($i = 0; $i <= 3; $i++) { addFixAt('weak-noise', at($base, $i * 100, 0), 400, 600 + $i * 30); }
+$noiseFixes = db_fetch_all("SELECT lat, lng, accuracy_m, recorded_at, source FROM location_fixes
+                             WHERE session_id = 'weak-noise' ORDER BY recorded_at, id");
+near(Engine::chainDistanceKm($noiseFixes, 2), 0.0, 0.0001,
+    'Movement smaller than the fix error is not evidence of travel');
+
+// factor = 0 collapses the scaling back to a flat floor, which is the
+// documented escape hatch — the same fixes then measure in full.
+db_execute("UPDATE tracking_configs SET accuracy_step_factor = 0 WHERE org_id = 'org'");
+reload();
+near(Engine::chainDistanceKm($noiseFixes, 2), 0.3, 0.01,
+    'accuracy_step_factor = 0 must restore a flat min_step_metres floor');
+db_execute("UPDATE tracking_configs SET accuracy_step_factor = 1.0 WHERE org_id = 'org'");
+reload();
+
+// ---------------------------------------------------------------------------
+// 8b. A parked vehicle is NOT a GPS gap. The false positive that would have
+//     made gps_coverage_percent meaningless.
+//
+//     The capture distance filter means a parked device emits nothing until its
+//     five-minute heartbeat, which is past the 180 s incomplete threshold. On
+//     elapsed time alone every lunch break and long customer visit would be
+//     reported as broken coverage. Displacement is what decides.
+// ---------------------------------------------------------------------------
+$parkedV2 = makeSessionV2('parked-v2', $v2Date);
+addFixAt('parked-v2', at($base, 0, 0), 10, 0);
+addFixAt('parked-v2', at($base, 3, 2), 10, 300, 'HEARTBEAT');       // 10 min of silence,
+addFixAt('parked-v2', at($base, 0, 4), 10, 600, 'HEARTBEAT');       // ~4 m of drift
+
+Engine::refreshSession('parked-v2');
+$row = db_fetch_one("SELECT * FROM work_sessions WHERE id = 'parked-v2'");
+near((float) $row['distance_km'], 0.0, 0.0001, 'A parked v2 device must still measure 0');
+near((float) $row['gps_coverage_percent'], 100.0, 0.01,
+    'Ten minutes parked must not cost GPS coverage');
+check(gapsOf('parked-v2') === [], 'A parked stretch is a stop, never a GPS gap');
+
+// ---------------------------------------------------------------------------
+// 8c. A tunnel IS a gap, and its straight line is never verified distance.
+//
+//     This is also the case ingest cannot catch: 5 km in 300 s implies 60 km/h,
+//     far under maxJumpKmh (180), so the fix is accepted and v1 would book the
+//     chord as travelled road.
+// ---------------------------------------------------------------------------
+$tunnel = makeSessionV2('tunnel', $v2Date);
+addFixAt('tunnel', at($base, 0, 0), 10, 0);
+addFixAt('tunnel', at($base, 5000, 0), 10, 300);        // 5 km later, nothing in between
+addFixAt('tunnel', at($base, 5100, 0), 10, 330);        // then 100 m of real tracking
+
+$tunnelFixes = db_fetch_all("SELECT lat, lng, accuracy_m, recorded_at, source FROM location_fixes
+                              WHERE session_id = 'tunnel' ORDER BY recorded_at, id");
+$measured = Engine::chainDistance($tunnelFixes, 2);
+
+near($measured['verifiedKm'], 0.1, 0.01, 'Only the tracked 100 m is verified');
+near($measured['incompleteKm'], 5.0, 0.02, 'The 5 km across the gap is incomplete, not verified');
+check(count($measured['gaps']) === 1, 'The tunnel must be recorded as exactly one gap');
+check($measured['gaps'][0]['class'] === 'INCOMPLETE', 'A 300 s gap is INCOMPLETE, not a warning');
+near($measured['coveragePercent'], 9.09, 0.5, 'Coverage must fall to the tracked share of the span');
+
+// v1 is untouched by any of this: it bridges the tunnel silently, which is
+// precisely why historical days must keep measuring themselves their own way.
+near(Engine::chainDistanceKm($tunnelFixes, 1), 5.1, 0.02,
+    'v1 must still bridge the gap — frozen, not corrected');
+
+Engine::refreshSession('tunnel');
+$row = db_fetch_one("SELECT * FROM work_sessions WHERE id = 'tunnel'");
+near((float) $row['distance_km'], 0.1, 0.01, 'distance_km is the verified figure, never verified + incomplete');
+near((float) $row['incomplete_distance_km'], 5.0, 0.02, 'The gap distance is stored under its own label');
+
+$gaps = gapsOf('tunnel');
+check(count($gaps) === 1, 'The gap must be persisted');
+check($gaps[0]['classification'] === 'INCOMPLETE', 'Persisted classification must match');
+near((float) $gaps[0]['displacement_m'], 5000.0, 20.0, 'Persisted displacement must match');
+check((int) $gaps[0]['seconds'] === 300, 'Persisted gap duration must match');
+
+// Re-deriving owns the set outright rather than appending to it.
+Engine::refreshSession('tunnel');
+check(count(gapsOf('tunnel')) === 1, 'A re-derive must replace the gap set, not duplicate it');
+
+// ---------------------------------------------------------------------------
+// 8d. WARNING vs INCOMPLETE, either side of the two thresholds.
+// ---------------------------------------------------------------------------
+$twoGaps = makeSessionV2('two-gaps', $v2Date);
+addFixAt('two-gaps', at($base, 0, 0), 10, 0);
+addFixAt('two-gaps', at($base, 500, 0), 10, 100);       // 100 s: >= 60, < 180  -> WARNING
+addFixAt('two-gaps', at($base, 1000, 0), 10, 400);      // 300 s: >= 180        -> INCOMPLETE
+
+Engine::refreshSession('two-gaps');
+$gaps = gapsOf('two-gaps');
+check(count($gaps) === 2, 'Both quiet stretches must be recorded');
+check($gaps[0]['classification'] === 'WARNING', 'A 100 s gap is a WARNING');
+check($gaps[1]['classification'] === 'INCOMPLETE', 'A 300 s gap is INCOMPLETE');
+near((float) stored('two-gaps')['distance_km'], 0.0, 0.0001,
+    'Nothing across either gap may be verified');
+
+// ---------------------------------------------------------------------------
+// 8e. The day rollup and the drawn route carry the v2 figures, and a pause
+//     between two sessions is not a gap.
+// ---------------------------------------------------------------------------
+Engine::recompute('employee', $v2Date);
+
+$route = db_fetch_one("SELECT * FROM day_routes WHERE employee_id = 'employee' AND work_date = ?", [$v2Date]);
+check((int) $route['distance_algo_version'] === 2, 'A day of v2 sessions must be pinned to v2');
+check($route['verified_distance_km'] !== null, 'A v2 day must report a verified figure');
+check($route['gps_coverage_percent'] !== null, 'A v2 day must report coverage');
+
+$day = db_fetch_one("SELECT * FROM attendance_days WHERE employee_id = 'employee' AND work_date = ?", [$v2Date]);
+near((float) $day['distance_km'], (float) $route['total_distance_km'], 0.01,
+    'The day summary and the drawn route must agree — v2 measures both per session');
+check((float) $day['incomplete_distance_km'] > 4.9, 'The day must carry the tunnel as incomplete distance');
+
+// Five sessions on this day, each starting at the same base point and hours
+// apart on the clock. Measuring the day as one chain would read every gap
+// between them as travel AND as a GPS outage; measuring per session cannot.
+$dayGaps = db_fetch_all("SELECT * FROM session_gps_gaps WHERE employee_id = 'employee' AND work_date = ?", [$v2Date]);
+check(count($dayGaps) === 3, sprintf('Only the three real in-session gaps may exist, got %d', count($dayGaps)));
 
 fwrite(STDOUT, "tracking-distance: all checks passed\n");
