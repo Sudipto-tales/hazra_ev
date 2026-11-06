@@ -19,6 +19,28 @@ final class TrackingController extends V1Controller
     private const WATCH_TTL_MIN = 30;
     private const WATCH_TTL_MAX = 600;
 
+    /**
+     * The health values that earn a row on the employee's timeline, and the
+     * plain-language reason each one gets, keyed by the stored (snake_case)
+     * value.
+     *
+     * These are the states where the day has no record at all while they last:
+     * the device either cannot produce a fix or cannot deliver one. Both read
+     * as "Offline" on the timeline, because that is what they are from the
+     * record's point of view.
+     *
+     * `poor_accuracy` is deliberately absent. It is still accepted and still
+     * stored on `device_health`, but it is a quality note about fixes that DID
+     * arrive, not an outage — see `health()`.
+     */
+    private const OFFLINE_HEALTH = [
+        'service_disabled'          => 'Device location was switched off',
+        'permission_denied'         => 'Location permission was denied',
+        'permission_denied_forever' => 'Location permission is blocked in system settings',
+        'background_denied'         => 'Background location is not allowed',
+        'no_internet'               => 'No internet connection, so fixes are queued on the device',
+    ];
+
 
     /** POST /tracking/sessions — startTime comes from the first fix, not the tap. */
     public function openSession(): never
@@ -64,10 +86,19 @@ final class TrackingController extends V1Controller
         $id = Uuid::v4();
 
         db_execute(
+            // distance_algo_version is stamped here, at creation, and never
+            // updated afterwards: it is what stops a later engine change from
+            // restating this session's distance. The column defaults to 1 so
+            // every session that predates migration 036 stays on the old rule.
             "INSERT INTO work_sessions
-                (id, employee_id, client_id, work_date, seq, started_at, start_lat, start_lng)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            [$id, Ctx::id(), $clientId, $workDate, $seq, $startedAt, (float) $fix['latitude'], (float) $fix['longitude']],
+                (id, employee_id, client_id, work_date, seq, started_at, start_lat, start_lng,
+                 distance_algo_version)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                $id, Ctx::id(), $clientId, $workDate, $seq, $startedAt,
+                (float) $fix['latitude'], (float) $fix['longitude'],
+                Engine::DISTANCE_ALGO_VERSION,
+            ],
         );
 
         $session = db_fetch_one("SELECT * FROM work_sessions WHERE id = ?", [$id]);
@@ -314,6 +345,12 @@ final class TrackingController extends V1Controller
     /**
      * What turns a TeamMember red on the dashboard while the employee's GPS is
      * off. Cheap, fire-and-forget, no response body.
+     *
+     * `poor_accuracy` stays in the accepted set — older apps in the field send
+     * it and a 422 on a fire-and-forget ping would be a pointless error in
+     * their logs — and it is still stored. It simply never becomes a timeline
+     * row, and it was never one of the BLIND_HEALTH values that colour the
+     * dashboard, so it now has no visible effect anywhere.
      */
     public function health(): never
     {
@@ -346,15 +383,84 @@ final class TrackingController extends V1Controller
             ],
         );
 
-        // A newly degraded stack is a timeline event, not just a status flag.
-        if ($health !== 'ok' && ($previous['location_health'] ?? 'ok') !== $health) {
-            Engine::logAlert(Ctx::id(), Ctx::today(), 'Tracking issue', Wire::enum($health));
+        // Going dark is a timeline event, not just a status flag. Weak GPS is
+        // not one: an approximate fix is still a recorded position, and a red
+        // row the employee can do nothing about only makes an honest day look
+        // like a suspect one. A weak fix is marked on the fix itself
+        // (`low_accuracy`), which is where the admin's route map reads it.
+        //
+        // Two rows, and only on a transition — which is what makes this cheap,
+        // since the ping only arrives when the device's answer changed:
+        //
+        //   into an outage   -> "Offline" (alert)
+        //   out of an outage -> "Back online" (not an alert), closing the gap
+        //
+        // Without the second row an outage has a start and no end, and nobody
+        // reading the day can tell a two-minute gap from a two-hour one.
+        $was = $previous['location_health'] ?? 'ok';
+
+        if (isset(self::OFFLINE_HEALTH[$health])) {
+            if ($was !== $health) {
+                Engine::logAlert(Ctx::id(), Ctx::today(), 'Offline', self::OFFLINE_HEALTH[$health]);
+            }
+        } elseif (isset(self::OFFLINE_HEALTH[$was])) {
+            // Any non-outage value ends the outage, `poor_accuracy` included:
+            // a device reporting weak GPS is a device that is reporting.
+            Engine::logRecovery(Ctx::id(), Ctx::today(), 'Back online', $this->outageLength());
         }
 
         Envelope::noContent();
     }
 
     // ------------------------------------------------------------- internals
+
+    /**
+     * How long the outage that just ended lasted, in words.
+     *
+     * Measured from the newest `Offline` row of the day rather than from
+     * `device_health.reported_at`, because that column was overwritten by this
+     * very request. Matched on the title too: the sweeper's
+     * "Day closed automatically" is an alert of the same type and would
+     * otherwise be read as the start of the gap.
+     *
+     * A missing row is not an error — the outage may have begun before this
+     * deploy, or on a day already rolled over — so it falls back to saying
+     * only that tracking resumed.
+     */
+    private function outageLength(): string
+    {
+        $since = db_fetch_one(
+            "SELECT occurred_at FROM activity_events
+              WHERE employee_id = ? AND work_date = ? AND type = 'tracking_issue'
+                AND is_alert = 1 AND title = 'Offline'
+              ORDER BY occurred_at DESC LIMIT 1",
+            [Ctx::id(), Ctx::today()],
+        );
+
+        if (!$since) {
+            return 'Location and uploads are working again';
+        }
+
+        // Wire::seconds floors at 0, so a clock skew cannot produce a
+        // negative gap here.
+        $seconds = Wire::seconds($since['occurred_at'], Wire::now());
+
+        if ($seconds < 60) {
+            return 'Tracking was down for less than a minute';
+        }
+
+        $minutes = intdiv($seconds, 60);
+
+        if ($minutes < 60) {
+            return 'Tracking was down for ' . $minutes . ' minute' . ($minutes === 1 ? '' : 's');
+        }
+
+        $hours = intdiv($minutes, 60);
+        $rest  = $minutes % 60;
+
+        return 'Tracking was down for ' . $hours . ' hour' . ($hours === 1 ? '' : 's')
+            . ($rest > 0 ? ' ' . $rest . ' min' : '');
+    }
 
     private function requireEmployee(): void
     {

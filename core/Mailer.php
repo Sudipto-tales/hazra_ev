@@ -3,43 +3,63 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 require_once __BASEDIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/messaging/Registry.php';
 
 class Mailer
 {
+    /**
+     * SMTP configuration, from MessagingCredentialStore: the encrypted store
+     * first, then the old website_settings rows the Settings tab wrote, then
+     * SMTP_* in the environment.
+     *
+     * This method used to fall back to a real Gmail address and app password
+     * written into the source of a public repository. They are gone: an
+     * unconfigured mailer now fails loudly instead of quietly sending from
+     * somebody's personal mailbox. Enter the credentials in
+     * Admin → Settings → Messaging.
+     */
     private static function getSetting(string $key, string $default = ''): string
     {
-        try {
-            if (function_exists('db_fetch_one')) {
-                $row = db_fetch_one("SELECT setting_value FROM website_settings WHERE setting_key = ?", [$key]);
-                if ($row && isset($row['setting_value']) && $row['setting_value'] !== '') {
-                    return $row['setting_value'];
-                }
-            }
-        } catch (Throwable $e) {
-        }
-        return env(strtoupper($key), $default);
+        $value = MessagingRegistry::value('email.smtp', $key);
+
+        return $value !== '' ? $value : $default;
     }
 
     protected static function getMailer()
     {
         $mail = new PHPMailer(true);
 
-        $host     = self::getSetting('smtp_host', 'smtp.gmail.com');
-        $port     = (int) self::getSetting('smtp_port', '587');
-        $username = self::getSetting('smtp_username', 'bcasudipta@gmail.com');
-        $password = self::getSetting('smtp_password', 'cgcw bvfe jgqv jbsm');
-        $fromEmail = self::getSetting('smtp_from_email', $username);
-        $fromName  = self::getSetting('smtp_from_name', 'Hazra EV');
+        $host     = self::getSetting('host');
+        $port     = (int) (self::getSetting('port') ?: 587);
+        $username = self::getSetting('username');
+        $password = self::getSetting('password');
+        $fromEmail = self::getSetting('from_email', $username);
+        $fromName  = self::getSetting('from_name', 'Hazra EV');
+        $encryption = self::getSetting('encryption', 'tls');
+
+        if ($host === '' || $username === '' || $password === '') {
+            throw new Exception('SMTP is not configured. Set the host, username and password in Admin → Settings → Messaging.');
+        }
 
         $mail->isSMTP();
         $mail->Host       = $host;
         $mail->SMTPAuth   = true;
         $mail->Username   = $username;
         $mail->Password   = $password;
-        $mail->SMTPSecure = ($port === 465) ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = $port;
 
-        $mail->setFrom($fromEmail, $fromName);
+        // The explicit setting wins; the port is only a fallback guess for
+        // configurations saved before the field existed.
+        if ($encryption === 'none') {
+            $mail->SMTPSecure = false;
+            $mail->SMTPAutoTLS = false;
+        } else {
+            $mail->SMTPSecure = ($encryption === 'ssl' || $port === 465)
+                ? PHPMailer::ENCRYPTION_SMTPS
+                : PHPMailer::ENCRYPTION_STARTTLS;
+        }
+
+        $mail->setFrom($fromEmail !== '' ? $fromEmail : $username, $fromName);
 
         return $mail;
     }

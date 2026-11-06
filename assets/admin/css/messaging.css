@@ -1,0 +1,188 @@
+/* Admin → Settings → Messaging & Webhooks, and the Webhooks page.
+   Built on the same tokens and card classes as the rest of the admin, so this
+   file only adds the shapes those two screens need: provider cards, the chain
+   editor, webhook setup blocks and the payload viewer. */
+
+/* ------------------------------------------------------------- shared bits */
+
+.msg-alert {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    margin: 0 0 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    border: 1px solid var(--hairline);
+    background: var(--surface-2, rgba(0, 0, 0, 0.03));
+}
+.msg-alert.bad {
+    border-color: color-mix(in srgb, var(--bad) 40%, transparent);
+    background: color-mix(in srgb, var(--bad) 8%, transparent);
+}
+.msg-alert i { margin-top: 2px; color: var(--bad); }
+.msg-alert code { font-size: 12px; }
+
+.msg-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.msg-req {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bad);
+}
+
+.msg-clear {
+    background: none;
+    border: 0;
+    padding: 0;
+    margin-left: 6px;
+    font: inherit;
+    color: var(--hazra-blue, #2458a5);
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* ------------------------------------------------------------ chain editor */
+
+.msg-chain {
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+.msg-chain__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.msg-chain__head > strong { font-size: 14px; }
+.msg-chain__mode { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-mid); }
+.msg-chain__mode .input { min-width: 260px; }
+
+.msg-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: step; }
+.msg-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--surface-1, transparent);
+}
+.msg-step.is-off { opacity: 0.6; }
+.msg-step__order { display: flex; flex-direction: column; gap: 2px; }
+.msg-step__order .btn { padding: 2px 6px; line-height: 1; }
+.msg-step__body { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1; font-size: 13px; }
+.msg-step__switch { flex: 0 0 auto; }
+
+/* --------------------------------------------------------- provider cards */
+
+.msg-provider {
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+}
+.msg-provider__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.msg-provider__head > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.msg-health {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface-2, rgba(0, 0, 0, 0.03));
+    font-size: 12px;
+}
+.msg-health dt { color: var(--text-mid); font-size: 11px; }
+.msg-health dd { margin: 2px 0 0; font-weight: 600; }
+
+.msg-generated { display: flex; gap: 8px; align-items: center; }
+.msg-generated .input { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.msg-webhook {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border: 1px dashed var(--hairline);
+    border-radius: 10px;
+}
+.msg-webhook h4 { margin: 0 0 10px; font-size: 13px; }
+.msg-webhook__url { display: flex; gap: 8px; align-items: center; }
+.msg-webhook__url .input { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.msg-steps-list { margin: 10px 0 0; padding-left: 20px; font-size: 12px; line-height: 1.6; color: var(--text-mid); }
+
+.msg-notes { margin: 12px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: var(--text-mid); }
+
+.msg-secret, .msg-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.08em;
+}
+
+/* ------------------------------------------------------- the eye on a code */
+
+.msg-eye {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.msg-eye[disabled] { cursor: default; opacity: 0.6; }
+.msg-eye__dots { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.18em; }
+.msg-eye.is-open { border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.msg-eye.is-open .msg-eye__dots { letter-spacing: 0.12em; font-weight: 700; }
+
+/* -------------------------------------------------------- webhooks page */
+
+.webhooks { display: grid; gap: var(--s4, 16px); }
+.webhook-row__toggle {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-size: 12px;
+    color: var(--hazra-blue, #2458a5);
+    cursor: pointer;
+    text-decoration: underline;
+}
+.webhook-payload {
+    margin: 8px 0 0;
+    padding: 10px;
+    max-height: 320px;
+    overflow: auto;
+    border-radius: 8px;
+    background: var(--surface-2, rgba(0, 0, 0, 0.04));
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+    .msg-chain__mode { width: 100%; }
+    .msg-chain__mode .input { min-width: 0; width: 100%; }
+    .msg-health { gap: 12px; }
+}

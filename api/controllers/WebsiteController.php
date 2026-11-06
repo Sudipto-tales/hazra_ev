@@ -4,9 +4,27 @@ require_once __DIR__ . '/../support/V1Controller.php';
 require_once __BASEDIR__ . '/core/Mailer.php';
 require_once __BASEDIR__ . '/core/EmailService.php';
 require_once __BASEDIR__ . '/core/WhatsAppService.php';
+require_once __BASEDIR__ . '/core/messaging/Router.php';
 
 final class WebsiteController extends V1Controller
 {
+
+    /**
+     * The one description of an enquiry for the delivery chain: who to reach on
+     * each channel, the template parameters, the opt-in, and the duplicate
+     * guard. Built here so the create and status-change paths cannot drift.
+     */
+    private static function leadContext(array $lead, string $event): array
+    {
+        return [
+            'reference' => (string) $lead['id'],
+            'mobile' => (string) ($lead['phone'] ?? ''),
+            'email' => (string) ($lead['email'] ?? ''),
+            'params' => WhatsAppService::leadParams($lead, $event),
+            'payload' => ['lead' => $lead, 'whatsappConsent' => WhatsAppService::leadConsent($lead)],
+            'lock' => 'wa:' . $lead['id'] . ':' . $event,
+        ];
+    }
     /** Public GET /api/v1/website/products */
     public function products(): never
     {
@@ -189,6 +207,9 @@ final class WebsiteController extends V1Controller
         foreach ($body as $key => $value) {
             $keyStr = (string) $key;
             if (str_starts_with($keyStr, 'wa:') || in_array($keyStr, ['whatsapp_access_token', 'whatsapp_app_secret', 'whatsapp_verify_token'], true)) Envelope::invalid('This setting is server-managed');
+            // Credentials belong in the encrypted store, not in this table. The
+            // only one that ever reached it was smtp_password, in plaintext.
+            if (in_array(strtolower($keyStr), MessagingCredentialStore::reservedSettingKeys(), true)) Envelope::invalid('This credential is managed in Admin → Settings → Messaging, where it is stored encrypted.');
             if (str_starts_with($keyStr, 'wa_') && !in_array($keyStr, ['wa_enabled', 'wa_auto_leads', 'wa_lead_mode', 'wa_language', 'wa_template_otp', 'wa_template_lead_received', 'wa_template_lead_approved', 'wa_template_lead_rejected', 'wa_template_warranty_received'], true)) Envelope::invalid('Unknown WhatsApp setting');
             $valStr = is_array($value) ? json_encode($value) : (string) $value;
 
@@ -292,10 +313,12 @@ final class WebsiteController extends V1Controller
             'created_at' => $now,
         ];
 
-        // Trigger email notification
+        // Notify down the chain configured for this event in Admin → Messaging.
+        // The seeded chain is email then WhatsApp, with `all` or `first_success`
+        // taken from wa_lead_mode, which is exactly what the two hand-written
+        // conditions here used to do.
         try {
-            $emailSent = EmailService::notifyNewLead($leadRecord);
-            if (WhatsAppService::setting('wa_auto_leads', '0') === '1' && (WhatsAppService::setting('wa_lead_mode', 'additional') !== 'fallback' || !$emailSent)) WhatsAppService::notifyLead($leadRecord, 'lead_received');
+            MessagingRouter::dispatch('lead_received', self::leadContext($leadRecord, 'lead_received'));
         } catch (Throwable $e) {
             error_log('Lead saved, notification failed: ' . $id);
         }
@@ -394,19 +417,18 @@ final class WebsiteController extends V1Controller
             'details' => json_decode($existing['details_json'] ?? '{}', true) ?? [],
         ]);
 
-        $emailSent = false;
-        if ($status === 'approved' && $existing['status'] !== 'approved') {
-            $emailSent = EmailService::notifyLeadApproved($updatedLead);
-        } elseif ($status === 'rejected' && $existing['status'] !== 'rejected') {
-            $emailSent = EmailService::notifyLeadRejected($updatedLead);
-        }
+        // Only a real status change notifies, as before.
+        $event = $status !== $existing['status']
+            ? match ($status) { 'approved' => 'lead_approved', 'rejected' => 'lead_rejected', default => '' }
+            : '';
 
-        try {
-            if (WhatsAppService::setting('wa_auto_leads', '0') === '1' && (WhatsAppService::setting('wa_lead_mode', 'additional') !== 'fallback' || !$emailSent) && $status !== $existing['status']) {
-                if ($status === 'approved') WhatsAppService::notifyLead($updatedLead, 'lead_approved');
-                elseif ($status === 'rejected') WhatsAppService::notifyLead($updatedLead, 'lead_rejected');
+        if ($event !== '') {
+            try {
+                MessagingRouter::dispatch($event, self::leadContext($updatedLead, $event));
+            } catch (Throwable $e) {
+                error_log('Lead saved, notification failed: ' . $id);
             }
-        } catch (Throwable $e) { error_log('Lead saved, WhatsApp notification failed: ' . $id); }
+        }
         Envelope::ok($updatedLead);
     }
 

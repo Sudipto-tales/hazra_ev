@@ -34,9 +34,12 @@ db_execute('INSERT INTO users (id, org_id, role, name, email, password_hash, cre
 
 Ctx::impersonate(['id' => 'employee', 'org_id' => 'org', 'role' => 'employee']);
 
-// Default config materialises on first read: min_accuracy_metres = 50, max_jump_kmh = 180.
+// Default config materialises on first read: min_accuracy_metres = 30 (036 —
+// was 50 through 035), max_jump_kmh = 180. Accuracy is still never a rejection
+// reason at ingest, which is what the rest of this file checks; the threshold
+// only decides read-time classification and, from 036, the accuracy band.
 $minAccuracy = (float) Ctx::config()['min_accuracy_metres'];
-check($minAccuracy === 50.0, 'Expected the documented default accuracy threshold');
+check($minAccuracy === 30.0, 'Expected the documented default accuracy threshold');
 
 db_execute('INSERT INTO work_sessions (id, employee_id, client_id, work_date, seq, started_at, start_lat, start_lng) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     ['session', 'employee', 'session-client', '2026-10-02', 1, '2026-10-02T07:00:00Z', 22.5700, 88.3600]);

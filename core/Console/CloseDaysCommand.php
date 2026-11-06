@@ -9,6 +9,10 @@
  * never leaves `open`, and the roster shows them working at 4am. So at the
  * org's local midnight the day is closed *by the system* and says so.
  *
+ * Each session is stamped with the last moment there is evidence for —
+ * min(last fix recorded_at, local 23:59:59) — not a flat 23:59:59. A dead
+ * phone's session ends when the phone died.
+ *
  *   php vayu days:close                  every org, every unclosed past day
  *   php vayu days:close --date=2026-08-26  one day
  *   php vayu days:close --employee=<id>     one employee
@@ -191,17 +195,30 @@ class CloseDaysCommand
 
         // The day ended when the day ended, not when this command ran. A cron
         // that fires late must not extend everyone's worked hours to match.
-        $endedAt = (new DateTimeImmutable($workDate . ' 23:59:59', $zone))
+        $midnight = (new DateTimeImmutable($workDate . ' 23:59:59', $zone))
             ->setTimezone(new DateTimeZone('UTC'))
             ->format(Wire::TS);
 
+        // ...and that principle, at evidence granularity: the day ended when we
+        // last had proof of it. A phone that died at 14:10 leaves a session
+        // whose honest end is 14:10, not local midnight, so each session is
+        // stamped min(last fix, 23:59:59) rather than 23:59:59 flat. Same
+        // horizon Engine::sessionWorkedSeconds trims against, read through the
+        // same helper, so the stamped end and the derived worked time cannot
+        // disagree.
+        $lastFixes = Engine::sessionLastFixes($employeeId, $workDate);
+
         $open = db_fetch_all(
-            "SELECT id FROM work_sessions WHERE employee_id = ? AND work_date = ? AND ended_at IS NULL",
+            "SELECT id, started_at FROM work_sessions WHERE employee_id = ? AND work_date = ? AND ended_at IS NULL",
             [$employeeId, $workDate],
         );
 
         foreach ($open as $session) {
+            $endedAt = $this->evidenceEnd($session, $lastFixes[(string) $session['id']] ?? null, $midnight);
+
             db_execute("UPDATE work_sessions SET ended_at = ? WHERE id = ?", [$endedAt, $session['id']]);
+            // The same capped stamp, so a stop or a visit cannot outlive the
+            // session it belongs to.
             db_execute(
                 "UPDATE stop_records SET departure = ? WHERE session_id = ? AND departure IS NULL",
                 [$endedAt, $session['id']],
@@ -214,6 +231,12 @@ class CloseDaysCommand
         }
 
         Engine::recompute($employeeId, $workDate);
+
+        // The declaration's own ended_at follows the sessions: the latest end
+        // the day actually has, capped at local midnight. It was hardcoded to
+        // the midnight value, which claimed every force-closed day ran to
+        // 23:59:59 even when the evidence stopped at lunchtime.
+        $dayEndedAt = $this->dayEnd($employeeId, $workDate, $midnight);
 
         $day = db_fetch_one(
             "SELECT distance_km, companies_visited FROM attendance_days WHERE employee_id = ? AND work_date = ?",
@@ -246,7 +269,7 @@ class CloseDaysCommand
              VALUES (?, ?, ?, ?, 'closed_by_system', ?, ?, ?, ?, ?, ?, ?, '[]', ?)",
             [
                 Uuid::v4(), $employeeId, $workDate, $clientId,
-                Wire::now(), $endedAt,
+                Wire::now(), $dayEndedAt,
                 $measuredKm, $measuredVisits, $measuredKm, $measuredVisits,
                 self::AUTO_RATING, self::AUTO_FEEDBACK,
             ],
@@ -258,6 +281,54 @@ class CloseDaysCommand
             'Day closed automatically',
             'You did not end this day in the app, so it was closed at midnight.',
         );
+    }
+
+    /**
+     * Where one open session's evidence stops: min(last fix, local midnight).
+     *
+     * No fix at all -> the midnight stamp stands. There is nothing to cap to,
+     * and nothing is overstated by it either: Engine::sessionWorkedSeconds
+     * contributes 0 for a session with no fixes whatever its ended_at says, so
+     * a fixless session cannot bank phantom hours through this stamp.
+     *
+     * Floored at started_at so a fix predating its own session (a skewed device
+     * clock) can never stamp an end before the start.
+     *
+     * All three values are normalised through Wire::ts first, which makes the
+     * string comparisons below a chronological comparison.
+     */
+    private function evidenceEnd(array $session, ?string $lastFixAt, string $midnight): string
+    {
+        $fix = $lastFixAt === null ? null : Wire::ts($lastFixAt);
+
+        if ($fix === null) {
+            return $midnight;
+        }
+
+        $capped  = $fix < $midnight ? $fix : $midnight;
+        $started = Wire::ts($session['started_at'] ?? null);
+
+        return $started !== null && $capped < $started ? $started : $capped;
+    }
+
+    /**
+     * The day's end for the stand-in declaration: the latest session end on the
+     * day, capped at local midnight.
+     *
+     * Read back after the stamping loop so it covers sessions the employee
+     * ended themselves as well as the ones just force-closed — the day ends at
+     * the last of them, not at the last one this command touched.
+     */
+    private function dayEnd(string $employeeId, string $workDate, string $midnight): string
+    {
+        $latest = db_fetch_one(
+            "SELECT MAX(ended_at) AS last_end FROM work_sessions WHERE employee_id = ? AND work_date = ?",
+            [$employeeId, $workDate],
+        )['last_end'] ?? null;
+
+        $end = $latest === null ? null : Wire::ts($latest);
+
+        return $end !== null && $end < $midnight ? $end : $midnight;
     }
 
     private function option(array $args, string $name): ?string

@@ -180,7 +180,10 @@ final class RoutesController extends V1Controller
         // to the cached row. Measuring today's live route with a raw sum would
         // have the map report more kilometres than the identical day does once
         // it is cached, which reads as a bug in whichever number is on screen.
-        $distance = Engine::chainDistanceKm($rows);
+        // Pinned per day, exactly as the cached row is: a live read of an old
+        // day must not measure it by a newer rule than the one it was stored
+        // under, or the live number and the cached number disagree.
+        $distance = Engine::chainDistanceKm($rows, Engine::dayAlgoVersion($employeeId, $date));
 
         foreach ($rows as $row) {
             $tuples[] = [

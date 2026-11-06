@@ -1,21 +1,34 @@
 <?php
 require_once __DIR__ . '/WhatsAppService.php';
 require_once __DIR__ . '/OtpService.php';
+require_once __DIR__ . '/messaging/Router.php';
 
 /** Combined, paginated metadata view. Never includes OTP hashes, codes, or tokens. */
 class MessageDeliveryLog
 {
     public const STATUSES = ['sending', 'accepted', 'sent', 'delivered', 'read', 'failed', 'logged'];
+    public const CHANNELS = ['whatsapp', 'sms', 'email'];
 
+    /**
+     * One shape over three tables. The email arm is new; the WhatsApp arm no
+     * longer hardcodes 'meta' as the provider, because that table now also
+     * holds sends made through MSG91 — a NULL there is a row written before the
+     * indirect route existed, which was Meta by definition.
+     */
     private static function unionSql(): string
     {
-        return "SELECT w.id, 'whatsapp' AS channel, 'meta' AS provider, w.reference_id, w.event_name,
+        return "SELECT w.id, 'whatsapp' AS channel, COALESCE(NULLIF(w.provider, ''), 'meta') AS provider, w.reference_id, w.event_name,
             COALESCE(o.purpose, w.event_name) AS purpose, w.mobile, w.template_name, w.provider_id,
-            w.status, w.error_code, w.error_detail, w.created_at, w.updated_at
+            w.status, w.error_code, w.error_detail, w.attempt_group, w.chain_position, w.is_test, w.created_at, w.updated_at
             FROM whatsapp_messages w LEFT JOIN otp_challenges o ON o.id = w.reference_id AND w.event_name = 'otp'
             UNION ALL
             SELECT id, 'sms' AS channel, provider, reference_id, event_name, event_name AS purpose,
-            mobile, '' AS template_name, provider_id, status, error_code, error_detail, created_at, updated_at FROM sms_messages";
+            mobile, '' AS template_name, provider_id, status, error_code, error_detail, attempt_group, chain_position, is_test, created_at, updated_at FROM sms_messages
+            UNION ALL
+            SELECT e.id, 'email' AS channel, e.provider, e.reference_id, e.event_name,
+            COALESCE(o.purpose, e.event_name) AS purpose, e.mobile, '' AS template_name, e.provider_id,
+            e.status, e.error_code, e.error_detail, e.attempt_group, e.chain_position, e.is_test, e.created_at, e.updated_at
+            FROM email_messages e LEFT JOIN otp_challenges o ON o.id = e.reference_id AND e.event_name = 'otp'";
     }
 
     public static function listing(array $filters): array
@@ -23,8 +36,13 @@ class MessageDeliveryLog
         $where = []; $params = [];
         $channel = (string) ($filters['channel'] ?? ''); $status = (string) ($filters['status'] ?? '');
         if ($channel !== '') {
-            if (!in_array($channel, ['whatsapp', 'sms'], true)) throw new InvalidArgumentException('Invalid channel.');
+            if (!in_array($channel, self::CHANNELS, true)) throw new InvalidArgumentException('Invalid channel.');
             $where[] = 'channel = ?'; $params[] = $channel;
+        }
+        $tests = (string) ($filters['tests'] ?? '');
+        if ($tests !== '') {
+            if (!in_array($tests, ['only', 'exclude'], true)) throw new InvalidArgumentException('Invalid test filter.');
+            $where[] = $tests === 'only' ? 'is_test = 1' : '(is_test = 0 OR is_test IS NULL)';
         }
         if ($status !== '') {
             if (!in_array($status, self::STATUSES, true)) throw new InvalidArgumentException('Invalid status.');
@@ -58,14 +76,91 @@ class MessageDeliveryLog
             $row['retryReason'] = self::retryReason($row);
             $row['canRetry'] = $row['retryReason'] === '';
             $row['retryLabel'] = in_array($row['purpose'], ['warranty_free', 'warranty_paid'], true) ? 'Send fresh OTP' : 'Retry message';
+            // Whether the eye should appear at all. The code itself is never in
+            // this payload — it is fetched per click, from its own endpoint,
+            // and audited.
+            $row['canReveal'] = self::revealable($row);
         }
         return ['items' => $rows, 'total' => $total, 'summary' => $summary, 'page' => $page, 'pageSize' => $size];
     }
 
     public static function find(string $channel, string $id): ?array
     {
-        if (!in_array($channel, ['whatsapp', 'sms'], true)) return null;
+        if (!in_array($channel, self::CHANNELS, true)) return null;
         return db_fetch_one('SELECT * FROM (' . self::unionSql() . ') AS messages WHERE channel = ? AND id = ?', [$channel, $id]) ?: null;
+    }
+
+    /**
+     * An OTP row whose challenge is still live and still holds a cipher.
+     *
+     * Cheap on purpose — one indexed lookup per OTP row — and it never
+     * decrypts: this only decides whether to draw the eye. OtpService::reveal
+     * re-checks every condition before handing a code over, so a stale `true`
+     * here cannot leak anything.
+     */
+    private static function revealable(array $row): bool
+    {
+        if (!in_array($row['purpose'], ['warranty_free', 'warranty_paid'], true) && $row['event_name'] !== 'otp') {
+            return false;
+        }
+        if (MessagingRouter::setting('otp_reveal_enabled', '0') !== '1') {
+            return false;
+        }
+
+        $now = gmdate('Y-m-d\TH:i:s\Z');
+        $challenge = db_fetch_one(
+            'SELECT id FROM otp_challenges
+              WHERE id = ? AND verified_at IS NULL AND consumed_at IS NULL
+                AND expires_at > ? AND code_cipher IS NOT NULL AND code_cipher_expires_at > ?',
+            [$row['reference_id'], $now, $now]
+        );
+
+        return (bool) $challenge;
+    }
+
+    /**
+     * Hands one live code to an admin and records that it happened.
+     *
+     * The audit row is written before the code is returned and is not
+     * conditional on anything: if an admin saw a customer's code, there is a row
+     * saying who, when and from where.
+     *
+     * @return array{code: string, challengeId: string}
+     * @throws OutOfBoundsException|DomainException
+     */
+    public static function reveal(string $channel, string $id, array $admin): array
+    {
+        $row = self::find($channel, $id);
+        if (!$row) throw new OutOfBoundsException('Message not found.');
+        if (!in_array($row['purpose'], ['warranty_free', 'warranty_paid'], true) && $row['event_name'] !== 'otp') {
+            throw new DomainException('This message is not a verification code.');
+        }
+
+        // A reveal is a deliberate support action, not something to be done in
+        // bulk. The cap is high enough never to be hit by a person working
+        // through a queue and low enough to stop a script walking the log.
+        $recent = db_fetch_one('SELECT COUNT(*) AS c FROM otp_reveal_audit WHERE admin_user_id = ? AND revealed_at >= ?',
+            [$admin['id'] ?? '', gmdate('Y-m-d\TH:i:s\Z', time() - 3600)]);
+        if ((int) ($recent['c'] ?? 0) >= 30) {
+            throw new DomainException('Too many codes revealed in the last hour. Try again later.');
+        }
+
+        $result = OtpService::revealCode((string) $row['reference_id']);
+        if ($result['code'] === null) throw new DomainException($result['reason']);
+
+        db_execute(
+            'INSERT INTO otp_reveal_audit (id, challenge_id, message_id, channel, admin_user_id, admin_email, ip, user_agent, revealed_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                Uuid::v4(), $row['reference_id'], $row['id'], $channel,
+                $admin['id'] ?? null, $admin['email'] ?? null,
+                substr((string) ($_SERVER['REMOTE_ADDR'] ?? ''), 0, 64),
+                substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 512),
+                gmdate('Y-m-d\TH:i:s\Z'),
+            ]
+        );
+
+        return ['code' => $result['code'], 'challengeId' => (string) $row['reference_id']];
     }
 
     public static function retryReason(array $row): string
@@ -81,7 +176,7 @@ class MessageDeliveryLog
             if ($sibling) return 'This OTP was already accepted or delivered through another send. The customer can request a new code if needed.';
             return '';
         }
-        $table = $row['channel'] === 'whatsapp' ? 'whatsapp_messages' : 'sms_messages';
+        $table = match ($row['channel']) { 'whatsapp' => 'whatsapp_messages', 'email' => 'email_messages', default => 'sms_messages' };
         $newer = db_fetch_one("SELECT id FROM {$table} WHERE reference_id = ? AND event_name = ? AND id <> ? AND created_at >= ? LIMIT 1",
             [$row['reference_id'], $row['event_name'], $row['id'], $row['created_at']]);
         if ($newer) return 'A subsequent send already exists. Review its delivery status.';
@@ -106,20 +201,52 @@ class MessageDeliveryLog
         $row = self::find($channel, $id);
         if (!$row) throw new OutOfBoundsException('Message not found.');
         if ($reason = self::retryReason($row)) throw new DomainException($reason);
-        $lock = 'wa:retry:' . $channel . ':' . $id; $now = gmdate('Y-m-d\TH:i:s\Z');
-        db_execute("INSERT INTO website_settings (id, group_name, setting_key, setting_value, updated_at) VALUES (?, 'whatsapp_locks', ?, '', ?) ON CONFLICT(group_name, setting_key) DO NOTHING", [Uuid::v4(), $lock, '1970-01-01T00:00:00Z']);
-        if (!db_execute("UPDATE website_settings SET updated_at = ? WHERE group_name = 'whatsapp_locks' AND setting_key = ? AND updated_at <= ?", [$now, $lock, gmdate('Y-m-d\TH:i:s\Z', time() - 60)])) throw new DomainException('Please wait 60 seconds before retrying.');
+        if (!WhatsAppService::reserve('wa:retry:' . $channel . ':' . $id)) throw new DomainException('Please wait 60 seconds before retrying.');
         if (in_array($row['purpose'], ['warranty_free', 'warranty_paid'], true) || $row['event_name'] === 'otp') {
             $challenge = db_fetch_one('SELECT mobile, purpose FROM otp_challenges WHERE id = ?', [$row['reference_id']]);
             $result = OtpService::sendOtp($challenge['mobile'], $challenge['purpose'], $channel === 'sms' ? 'sms' : 'auto');
             unset($result['debug_code']); // An admin delivery page must never disclose the customer's code.
             return $result;
         }
+        // Retry means "send this again the same way", so the provider comes
+        // from the row rather than from the top of the chain. Without this, an
+        // operator running WhatsApp through MSG91 could only retry through Meta.
         if ($row['event_name'] === 'warranty_received') {
             $registration = db_fetch_one('SELECT * FROM warranty_registrations WHERE id = ?', [$row['reference_id']]);
-            return WhatsAppService::send($registration['mobile'], 'warranty_received', [$registration['customer_name'], $registration['reference_no']], $registration['id']);
+            return self::resend($row, (string) $registration['mobile'], (string) ($registration['email'] ?? ''),
+                [$registration['customer_name'], $registration['reference_no']], (string) $registration['id']);
         }
         $lead = db_fetch_one('SELECT * FROM website_leads WHERE id = ?', [$row['reference_id']]);
-        return WhatsAppService::notifyLead($lead, $row['event_name']);
+
+        return self::resend($row, (string) $lead['phone'], (string) ($lead['email'] ?? ''),
+            WhatsAppService::leadParams($lead, $row['event_name']), (string) $lead['id'], ['lead' => $lead]);
+    }
+
+    /** Re-sends one logged message through the provider that produced it. */
+    private static function resend(array $row, string $mobile, string $email, array $params, string $reference, array $payload = []): array
+    {
+        $provider = match ($row['channel']) {
+            'whatsapp' => 'whatsapp.' . (($row['provider'] ?? '') !== '' ? $row['provider'] : 'meta'),
+            'email' => 'email.smtp',
+            default => 'sms.' . (($row['provider'] ?? '') !== '' ? $row['provider'] : 'log'),
+        };
+
+        $spec = MessagingRegistry::spec($provider);
+        $transport = MessagingRegistry::transport($provider);
+        if (!$spec || !$transport) {
+            throw new DomainException('No transport is available for the provider this message was sent with.');
+        }
+
+        $result = $transport->send([
+            'event' => $row['event_name'],
+            'recipient' => $spec['recipient'] === 'email' ? $email : $mobile,
+            'reference' => $reference,
+            'attemptGroup' => $row['attempt_group'] ?: Uuid::v4(),
+            'position' => (int) ($row['chain_position'] ?? 0),
+            'params' => $params,
+            'payload' => $payload,
+        ]);
+
+        return $result + ['message' => $result['success'] ? 'Message accepted for delivery.' : 'The provider rejected the message.'];
     }
 }

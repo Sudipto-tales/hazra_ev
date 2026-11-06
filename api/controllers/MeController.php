@@ -48,9 +48,21 @@ final class MeController extends V1Controller
     }
 
     /**
-     * Partial update. `highAccuracyMode`, `syncOnMobileData` and `batterySaver`
-     * interact with TrackingConfig: admin config sets the ceiling, a device
-     * preference may only make collection less aggressive, never more.
+     * Partial update.
+     *
+     * `highAccuracyMode`, `syncOnMobileData` and `batterySaver` are **no longer
+     * writable**. They used to let a device make its own collection less
+     * aggressive than the organisation's rule, and collection is organisation
+     * config — identical for every employee, admin-owned, and not something an
+     * employee may opt out of one phone at a time. Migration 036 reset the
+     * stored columns and `Present::preferences` now reports the fixed uniform
+     * values, so a build in the field reads the behaviour it should have.
+     *
+     * They are dropped from the map rather than 422'd on: an old app sending
+     * them is not making an error, it is sending a field that stopped meaning
+     * anything, and failing its whole preferences save over that would break
+     * theme and notification settings too. Unknown keys are already ignored
+     * here, so they take exactly that path.
      */
     public function updatePreferences(): never
     {
@@ -63,9 +75,6 @@ final class MeController extends V1Controller
             'reportReminders'      => 'report_reminders',
             'sessionReminders'     => 'session_reminders',
             'systemNotifications'  => 'system_notifications',
-            'highAccuracyMode'     => 'high_accuracy_mode',
-            'syncOnMobileData'     => 'sync_on_mobile_data',
-            'batterySaver'         => 'battery_saver',
         ];
 
         $body = ApiRequest::body();

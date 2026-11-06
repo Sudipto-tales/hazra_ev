@@ -13,17 +13,19 @@ function element(id) {
 }
 const escaped = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 let requests = [], posts = [], result, rejectRequest = false, bootPromise;
+let postReply = { message: 'Retry accepted.' };
 const context = {
     document: { getElementById: element, hidden: false },
     FormData: class { constructor() { this.entries = [['q', '90029'], ['channel', 'sms'], ['status', 'failed'], ['from', '2026-10-01'], ['to', '2026-10-02']]; } [Symbol.iterator]() { return this.entries[Symbol.iterator](); } },
-    setInterval: () => 1, clearInterval() {}, console,
+    setInterval: () => 1, clearInterval() {}, setTimeout: (fn, ms) => 0, console,
     window: { addEventListener() {}, HAZRA: {
         util: { esc: escaped, fmtDateTime: value => value, statStrip: cards => JSON.stringify(cards) },
-        layout: { pageHead: options => options.title }, toast: { success() {}, error() {} },
+        layout: { pageHead: options => options.title }, toast: { success() {}, error() {}, info() {} },
         confirm: async () => true,
         api: {
+            base: '/',
             async get(path, query) { requests.push({ path, query }); if (rejectRequest) throw new Error('Unavailable'); return { data: result }; },
-            async post(path, body) { posts.push({ path, body }); return { data: { message: 'Retry accepted.' } }; },
+            async post(path, body) { posts.push({ path, body }); return { data: postReply }; },
         },
         boot(fn) { bootPromise = fn(); },
     } },
@@ -58,5 +60,39 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname, '../asse
     await element('deliveryRefresh').handlers.click();
     assert.equal(element('deliveryNotice').textContent, 'Unavailable');
     assert.equal(element('deliveryTable').innerHTML, '', 'Failed requests must clear stale rows');
-    console.log('Message delivery UI filters, status labels, errors, pagination and empty states passed.');
+
+    // The eye: offered only when the server says the code is still live, and
+    // the code itself must never arrive with the listing.
+    rejectRequest = false;
+    result.total = 1;
+    result.items = [{
+        id: 'otp-row', channel: 'sms', provider: 'msg91', mobile: '919002921509', purpose: 'warranty_free', status: 'accepted',
+        reference_id: 'challenge-1', provider_id: 'req', error_code: null, error_detail: null, chain_position: 20, is_test: 0,
+        created_at: '2026-11-05T00:00:00Z', updated_at: '2026-11-05T00:00:00Z', canRetry: false, retryLabel: 'Send fresh OTP', canReveal: true,
+    }];
+    await element('deliveryRefresh').handlers.click();
+    let revealHtml = element('deliveryTable').innerHTML;
+    assert(revealHtml.includes('data-reveal="sms:otp-row"'), 'The eye is missing for a live code');
+    assert(revealHtml.includes('••••••'), 'The code placeholder is missing');
+    assert(revealHtml.includes('Step 2 of the delivery order'), 'The chain position is not shown');
+
+    postReply = { code: '246813', notice: 'Recorded.', audited: true };
+    const eyeButton = { dataset: { reveal: 'sms:otp-row' }, disabled: false, classList: { add() {}, remove() {} }, innerHTML: '', setAttribute() {} };
+    element('deliveryTable').handlers.click({ target: { closest: selector => selector === '[data-reveal]' ? eyeButton : null } });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(posts[1].path, 'api/v1/admin/message-delivery/sms/otp-row/code', 'The eye must call the per-message code endpoint');
+    assert.equal(Object.keys(posts[1].body).length, 0, 'The reveal request must carry no client-supplied data');
+    assert(eyeButton.innerHTML.includes('246813'), 'The revealed code was not shown');
+
+    result.items[0].canReveal = false;
+    await element('deliveryRefresh').handlers.click();
+    revealHtml = element('deliveryTable').innerHTML;
+    assert(!revealHtml.includes('data-reveal'), 'The eye was offered for a code that is no longer live');
+
+    // A test send is labelled, so it cannot be mistaken for real traffic.
+    result.items[0].is_test = 1;
+    await element('deliveryRefresh').handlers.click();
+    assert(element('deliveryTable').innerHTML.includes('Test send'), 'Test sends are not labelled');
+
+    console.log('Message delivery UI filters, status labels, the OTP reveal, errors, pagination and empty states passed.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

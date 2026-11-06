@@ -40,7 +40,10 @@
 ?>
     <link rel="stylesheet" href="<?= e(base_url("assets/admin/css/{$sheet}.css?v={$cv}")) ?>">
 <?php endforeach; ?>
-<?php if (($page ?? '') === 'message-delivery'): ?>
+<?php if (in_array(($page ?? ''), ['settings', 'webhooks', 'message-delivery'], true)): ?>
+    <link rel="stylesheet" href="<?= e(base_url('assets/admin/css/messaging.css?v=' . filemtime(__BASEDIR__ . '/assets/admin/css/messaging.css'))) ?>">
+<?php endif; ?>
+<?php if (in_array(($page ?? ''), ['message-delivery', 'webhooks'], true)): ?>
     <link rel="stylesheet" href="<?= e(base_url('assets/admin/css/message-delivery.css?v=' . filemtime(__BASEDIR__ . '/assets/admin/css/message-delivery.css'))) ?>">
 <?php endif; ?>
 <?php if (($page ?? '') === 'dealer-locations'): ?>

@@ -33,8 +33,8 @@ final class StatisticsController extends V1Controller
         );
 
         $data = $subject['scope'] === 'team'
-            ? $this->team($rows, $subject['ids'], $label)
-            : $this->period($rows, $label);
+            ? $this->team($rows, $subject['ids'], $label, $from, $to)
+            : $this->period($rows, $label, $from, $to, $subject['ids'][0] ?? null);
 
         if ($this->wants('daily')) {
             $data['dailyDistance'] = $this->daily($rows, $from, $to);
@@ -48,13 +48,24 @@ final class StatisticsController extends V1Controller
 
     // ------------------------------------------------------------- internals
 
-    /** Working days exclude weekends, holidays and days with no data. */
-    private function period(array $rows, string $label): array
+    /**
+     * Working days are the organisation's working calendar, NOT the set of
+     * stored rows. No `attendance_days` row is written for a day nobody worked
+     * (the rollup only runs when a session exists), so counting rows made every
+     * denominator equal its numerator and every employee read 100% present.
+     * The denominator is instead the weekdays in range that are neither a
+     * weekend nor a holiday, up to today, and from this employee's joining date
+     * — so a month with twenty working days and three worked reads 15%, not
+     * 100%.
+     */
+    private function period(array $rows, string $label, string $from, string $to, ?string $employeeId): array
     {
         $totals = $this->tally($rows);
 
-        $workingDays = $totals['present'] + $totals['partial'] + $totals['absent'];
+        $joinedOn = $employeeId === null ? null : ($this->joinedOn($employeeId));
+        $workingDays = $this->calendarWorkingDays($from, $to, $joinedOn);
         $attended = $totals['present'] + $totals['partial'];
+        $absentDays = max(0, $workingDays - $attended);
 
         return [
             'rangeLabel'            => $label,
@@ -67,25 +78,32 @@ final class StatisticsController extends V1Controller
             'totalReports'          => $totals['reports'],
             'averageReportsPerDay'  => $attended === 0 ? 0.0 : Wire::float($totals['reports'] / $attended),
             'workingDays'           => $workingDays,
-            'presentDays'           => $totals['present'] + $totals['partial'],
-            'absentDays'            => $totals['absent'],
+            'presentDays'           => $attended,
+            'absentDays'            => $absentDays,
             'attendancePercent'     => $workingDays === 0 ? 0.0 : Wire::float($attended * 100 / $workingDays),
         ];
     }
 
-    private function team(array $rows, array $employeeIds, string $label): array
+    private function team(array $rows, array $employeeIds, string $label, string $from, string $to): array
     {
         $totals = $this->tally($rows);
 
-        $workingDays = $totals['present'] + $totals['partial'] + $totals['absent'];
         $attended = $totals['present'] + $totals['partial'];
 
-        // Distinct calendar days in the range that counted as working days —
-        // the per-employee denominator, not the summed one.
-        $calendarDays = count(array_unique(array_column(
-            array_filter($rows, static fn(array $r) => in_array($r['status'], ['present', 'partial', 'absent'], true)),
-            'work_date',
-        )));
+        // The working calendar, same as period() — weekdays in range that are
+        // neither weekend nor holiday, up to today — not the stored rows (a day
+        // nobody worked has no row). This is the per-employee denominator; the
+        // team percentage divides the attended employee-days by this times the
+        // roster size.
+        //
+        // KNOWN APPROXIMATION: this does not subtract per-employee joining
+        // dates from the team denominator, so a month with recent hires reads a
+        // little low. period() (one employee) does honour joined_on; doing it
+        // per head here would mean one calendar pass per employee. Flagged for
+        // docs-agent rather than silently fudged.
+        $calendarDays = $this->calendarWorkingDays($from, $to, null);
+        $headcount = count($employeeIds);
+        $possibleEmployeeDays = $calendarDays * $headcount;
 
         $data = [
             'rangeLabel'            => $label,
@@ -95,7 +113,7 @@ final class StatisticsController extends V1Controller
             'totalReports'          => $totals['reports'],
             'averageDistanceKm'     => $attended === 0 ? 0.0 : Wire::float($totals['distance'] / $attended),
             'averageWorkedDuration' => $attended === 0 ? 0 : (int) round($totals['worked'] / $attended),
-            'attendancePercent'     => $workingDays === 0 ? 0.0 : Wire::float($attended * 100 / $workingDays),
+            'attendancePercent'     => $possibleEmployeeDays === 0 ? 0.0 : Wire::float($attended * 100 / $possibleEmployeeDays),
             'workingDays'           => $calendarDays,
         ];
 
@@ -104,8 +122,10 @@ final class StatisticsController extends V1Controller
         }
 
         $names = [];
+        $joined = [];
         foreach (Users::many("WHERE u.org_id = ? AND u.role = 'employee'", [Ctx::orgId()]) as $employee) {
             $names[$employee['id']] = $employee['name'];
+            $joined[$employee['id']] = $employee['joined_on'] ?? null;
         }
 
         $byEmployee = [];
@@ -115,8 +135,9 @@ final class StatisticsController extends V1Controller
 
         foreach ($employeeIds as $employeeId) {
             $own = $this->tally($byEmployee[$employeeId] ?? []);
-            $ownWorking = $own['present'] + $own['partial'] + $own['absent'];
+            $ownWorking = $this->calendarWorkingDays($from, $to, $joined[$employeeId] ?? null);
             $ownAttended = $own['present'] + $own['partial'];
+            $ownAbsent = max(0, $ownWorking - $ownAttended);
 
             $data['perEmployee'][] = Present::employeeMetric([
                 'employeeId'            => $employeeId,
@@ -125,7 +146,7 @@ final class StatisticsController extends V1Controller
                 'visits'                => $own['visits'],
                 'reports'               => $own['reports'],
                 'presentDays'           => $ownAttended,
-                'absentDays'            => $own['absent'],
+                'absentDays'            => $ownAbsent,
                 'attendancePercent'     => $ownWorking === 0 ? 0.0 : $ownAttended * 100 / $ownWorking,
                 'averageWorkedDuration' => $ownAttended === 0 ? 0 : (int) round($own['worked'] / $ownAttended),
             ]);
@@ -203,5 +224,65 @@ final class StatisticsController extends V1Controller
         }
 
         return $out;
+    }
+
+    /** This employee's joining date, or null when the profile has none. */
+    private function joinedOn(string $employeeId): ?string
+    {
+        $row = db_fetch_one(
+            "SELECT joined_on FROM employee_profiles WHERE user_id = ?",
+            [$employeeId],
+        );
+
+        return $row['joined_on'] ?? null;
+    }
+
+    /**
+     * Working days in [from, to]: weekdays that are neither a weekend (per the
+     * org's `weekend_days`) nor a holiday, never counting past today, and never
+     * before [joinedOn] when given. This is the attendance denominator — it
+     * must not depend on whether an attendance_days row was ever written, which
+     * is the whole point (a day nobody worked has no row).
+     */
+    private function calendarWorkingDays(string $from, string $to, ?string $joinedOn): int
+    {
+        $start = $from;
+        if ($joinedOn !== null && $joinedOn !== '' && strcmp($joinedOn, $start) > 0) {
+            $start = substr($joinedOn, 0, 10);
+        }
+
+        $today = Ctx::today();
+        $end = strcmp($to, $today) > 0 ? $today : $to;
+
+        if (strcmp($start, $end) > 0) {
+            return 0;
+        }
+
+        $holidays = [];
+        foreach (db_fetch_all(
+            "SELECT date FROM holidays WHERE org_id = ? AND date BETWEEN ? AND ?",
+            [Ctx::orgId(), $start, $end],
+        ) as $row) {
+            $holidays[substr((string) $row['date'], 0, 10)] = true;
+        }
+
+        $weekend = Ctx::weekendDays();
+        $count = 0;
+
+        $cursor = new DateTimeImmutable($start);
+        $last = new DateTimeImmutable($end);
+
+        while ($cursor <= $last) {
+            $date = $cursor->format('Y-m-d');
+            $isoDay = (int) $cursor->format('N');
+
+            if (!in_array($isoDay, $weekend, true) && !isset($holidays[$date])) {
+                $count++;
+            }
+
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        return $count;
     }
 }

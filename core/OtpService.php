@@ -1,10 +1,18 @@
 <?php
 require_once __DIR__ . "/WhatsAppService.php";
 require_once __DIR__ . '/SmsDeliveryService.php';
+require_once __DIR__ . '/Secrets.php';
+require_once __DIR__ . '/messaging/Router.php';
 
 /**
- * Shared OTP challenges with WhatsApp-first delivery and SMS fallback.
- * SMS providers: MSG91, Twilio, and development-only log.
+ * Shared OTP challenges, delivered down the chain configured for the `otp`
+ * event in Admin → Messaging (email, WhatsApp and SMS providers, in the
+ * operator's own order) rather than the old hardcoded WhatsApp-then-SMS rule.
+ *
+ * What did not move: the 60-second cooldown, the five-per-hour and
+ * twenty-per-IP caps, one code per challenge however many providers are tried,
+ * and the invalidation of earlier unverified codes. Those are request-level
+ * rules, so a three-step fallback still costs the customer one request.
  */
 class OtpService
 {
@@ -36,7 +44,7 @@ class OtpService
      *
      * @return array{success: bool, message: string, cooldown: int, debug_code?: string}
      */
-    public static function sendOtp(string $mobile, string $purpose, string $channel = "auto"): array
+    public static function sendOtp(string $mobile, string $purpose, string $channel = "auto", string $email = ''): array
     {
         $norm = self::normalizeMobile($mobile);
         if (!$norm) {
@@ -92,10 +100,7 @@ class OtpService
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'cli';
         $ipCount = db_fetch_one('SELECT COUNT(*) AS c FROM otp_challenges WHERE ip_address = ? AND created_at >= ?', [$ip, $oneHourAgo]);
         if (($ipCount['c'] ?? 0) >= 20) return ['success' => false, 'message' => 'Too many requests. Please try later.', 'cooldown' => 3600];
-        $lock = 'wa:otp:' . $norm;
-        $lockNow = gmdate('Y-m-d\TH:i:s\Z');
-        db_execute("INSERT INTO website_settings (id, group_name, setting_key, setting_value, updated_at) VALUES (?, 'whatsapp_locks', ?, '', ?) ON CONFLICT(group_name, setting_key) DO NOTHING", [Uuid::v4(), $lock, '1970-01-01T00:00:00Z']);
-        if (!db_execute("UPDATE website_settings SET updated_at = ? WHERE group_name = 'whatsapp_locks' AND setting_key = ? AND updated_at <= ?", [$lockNow, $lock, gmdate('Y-m-d\TH:i:s\Z', time() - 60)])) {
+        if (!WhatsAppService::reserve('wa:otp:' . $norm)) {
             return ['success' => false, 'message' => 'Please wait 60 seconds before requesting another OTP.', 'cooldown' => 60];
         }
         // 3. Generate 6-digit OTP
@@ -107,42 +112,111 @@ class OtpService
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'cli';
 
         db_execute(
-            "INSERT INTO otp_challenges (id, mobile, purpose, code_hash, expires_at, attempts, created_at, ip_address)
-             VALUES (?, ?, ?, ?, ?, 0, ?, ?)",
-            [$id, $norm, $purpose, $hash, $expiresAt, $now, $ip]
+            "INSERT INTO otp_challenges (id, mobile, purpose, code_hash, expires_at, attempts, created_at, ip_address, code_cipher, code_cipher_expires_at)
+             VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)",
+            [$id, $norm, $purpose, $hash, $expiresAt, $now, $ip, self::cipher($code), $expiresAt]
         );
 
         // Invalidate earlier unverified codes; channel switching never leaves two valid codes.
-        db_execute('UPDATE otp_challenges SET expires_at = ? WHERE mobile = ? AND purpose = ? AND verified_at IS NULL AND id <> ?', [$now, $norm, $purpose, $id]);
-        // 4. Send via configured provider
-        $provider = env('SMS_PROVIDER', 'log');
-        $actualChannel = 'sms';
-        $sent = false;
-        if ($channel === 'auto' && WhatsAppService::enabled()) {
-            try {
-                $sent = static::sendWhatsAppOtp($norm, $code, $id)['success'];
-                if ($sent) $actualChannel = 'whatsapp';
-            } catch (Throwable $e) { error_log('[OTP] WhatsApp dispatch failed'); }
-        }
-        if (!$sent) $sent = static::sendSmsOtp($provider, $norm, $code, $purpose, $id);
-        if (!$sent) {
-            db_execute('UPDATE otp_challenges SET expires_at = ? WHERE id = ?', [$now, $id]);
+        db_execute('UPDATE otp_challenges SET expires_at = ?, code_cipher = NULL, code_cipher_expires_at = NULL WHERE mobile = ? AND purpose = ? AND verified_at IS NULL AND id <> ?', [$now, $norm, $purpose, $id]);
+        self::purgeCiphers();
+
+        // 4. Send down the chain configured for the `otp` event. `sms` from the
+        // form means "the customer says WhatsApp never arrived", so it pins the
+        // chain to SMS steps rather than reordering anything.
+        $result = MessagingRouter::dispatch('otp', [
+            'reference' => $id,
+            'mobile' => $norm,
+            'email' => trim($email),
+            'params' => [$code],
+            'code' => $code,
+            'payload' => ['purpose' => $purpose],
+            'only' => $channel === 'sms' ? 'sms' : null,
+        ]);
+
+        if (!$result['success']) {
+            db_execute('UPDATE otp_challenges SET expires_at = ?, code_cipher = NULL, code_cipher_expires_at = NULL WHERE id = ?', [$now, $id]);
             return ['success' => false, 'message' => 'Unable to send your OTP. Please try again after 60 seconds.', 'cooldown' => 60];
         }
 
         $res = [
             'success' => true,
-            'channel' => $actualChannel,
-            'message' => 'OTP sent via ' . ($actualChannel === 'whatsapp' ? 'WhatsApp' : 'SMS') . ' to ' . substr($norm, 0, 2) . '******' . substr($norm, -2),
+            'channel' => $result['channel'],
+            'message' => 'OTP sent via ' . self::channelLabel($result['channel']) . ' to ' . self::maskRecipient($result['channel'], $norm, $email),
             'cooldown' => self::COOLDOWN_SECONDS,
         ];
 
-        // Include debug code if non-production or debug enabled
-        if (in_array(env('APP_ENV'), ['local', 'development', 'testing'], true) && $provider === 'log' && $actualChannel === 'sms') {
+        // The development log sends nothing, so the code has to come back in the
+        // response for a local test to be possible at all. Production never
+        // reaches this: sms.log is refused outside local/development/testing.
+        if (in_array(env('APP_ENV'), ['local', 'development', 'testing'], true) && self::usedDevelopmentLog($result['attempts'])) {
             $res['debug_code'] = $code;
         }
 
         return $res;
+    }
+
+    private static function channelLabel(?string $channel): string
+    {
+        return match ($channel) {
+            'whatsapp' => 'WhatsApp',
+            'email' => 'email',
+            default => 'SMS',
+        };
+    }
+
+    private static function maskRecipient(?string $channel, string $mobile, string $email): string
+    {
+        if ($channel === 'email' && str_contains($email, '@')) {
+            [$user, $domain] = explode('@', trim($email), 2);
+            return substr($user, 0, 1) . '***@' . $domain;
+        }
+
+        return substr($mobile, 0, 2) . '******' . substr($mobile, -2);
+    }
+
+    private static function usedDevelopmentLog(array $attempts): bool
+    {
+        foreach ($attempts as $attempt) {
+            if (!empty($attempt['success']) && ($attempt['provider'] ?? '') === 'sms.log') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The code, encrypted for the admin reveal — null when APP_KEY is absent, in
+     * which case the eye simply has nothing to show. Verification never depends
+     * on this: password_verify against code_hash remains the only check.
+     */
+    private static function cipher(string $code): ?string
+    {
+        if (!Secrets::available() || MessagingRouter::setting('otp_reveal_enabled', '0') !== '1') {
+            return null;
+        }
+
+        try {
+            return Secrets::encrypt($code, Secrets::PURPOSE_OTP);
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Drops ciphers that are past their window, on every send, so a revealable
+     * code never outlives its challenge even if no cron runs. Cheap: the
+     * column is indexed and the predicate is a single range scan.
+     */
+    public static function purgeCiphers(): int
+    {
+        return (int) db_execute(
+            'UPDATE otp_challenges SET code_cipher = NULL, code_cipher_expires_at = NULL
+              WHERE code_cipher IS NOT NULL
+                AND (code_cipher_expires_at IS NULL OR code_cipher_expires_at <= ? OR verified_at IS NOT NULL OR consumed_at IS NOT NULL)',
+            [gmdate('Y-m-d\TH:i:s\Z')]
+        );
     }
 
     /**
@@ -202,7 +276,7 @@ class OtpService
 
         $verified = db_execute(
             "UPDATE otp_challenges
-                SET verified_at = ?, session_token = ?
+                SET verified_at = ?, session_token = ?, code_cipher = NULL, code_cipher_expires_at = NULL
               WHERE id = ? AND verified_at IS NULL AND attempts < 5 AND expires_at > ?",
             [$verifiedAt, $sessionToken, $challenge['id'], $now]
         );
@@ -217,15 +291,42 @@ class OtpService
     }
 
     /**
-     * Dispatch SMS through selected gateway provider.
+     * Reveals a live code to an admin, or explains why it cannot.
+     *
+     * Deliberately narrow: the challenge must still be open, within its reveal
+     * window, and have a cipher at all. A verified, consumed, expired or
+     * superseded challenge has already had its cipher wiped, so this cannot
+     * resurrect one — which is what keeps a stolen admin session from mining
+     * historical codes.
+     *
+     * @return array{code: ?string, reason: string}
      */
-    protected static function sendWhatsAppOtp(string $mobile, string $code, string $id): array
+    public static function revealCode(string $challengeId): array
     {
-        return WhatsAppService::send($mobile, 'otp', [$code], $id);
-    }
+        if (MessagingRouter::setting('otp_reveal_enabled', '0') !== '1') {
+            return ['code' => null, 'reason' => 'Revealing codes is switched off in Admin → Messaging.'];
+        }
 
-    protected static function sendSmsOtp(string $provider, string $mobile, string $code, string $purpose, string $reference): bool
-    {
-        return SmsDeliveryService::sendOtp($provider, $mobile, $code, $purpose, $reference)['success'];
+        $row = db_fetch_one('SELECT * FROM otp_challenges WHERE id = ?', [$challengeId]);
+        if (!$row) {
+            return ['code' => null, 'reason' => 'This challenge no longer exists.'];
+        }
+
+        $now = gmdate('Y-m-d\TH:i:s\Z');
+        if (!empty($row['verified_at']) || !empty($row['consumed_at'])) {
+            return ['code' => null, 'reason' => 'This code has already been used, so it is no longer stored.'];
+        }
+        if (($row['expires_at'] ?? '') <= $now || ($row['code_cipher_expires_at'] ?? '') <= $now) {
+            return ['code' => null, 'reason' => 'This code has expired. Only a live code can be shown.'];
+        }
+        if (empty($row['code_cipher'])) {
+            return ['code' => null, 'reason' => 'This code was not stored for reveal — it was sent before the setting was switched on.'];
+        }
+
+        $code = Secrets::decrypt($row['code_cipher'], Secrets::PURPOSE_OTP);
+
+        return $code === null
+            ? ['code' => null, 'reason' => 'The stored code could not be read. APP_KEY may have changed since it was sent.']
+            : ['code' => $code, 'reason' => ''];
     }
 }
