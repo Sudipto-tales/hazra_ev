@@ -108,6 +108,27 @@ class TeamMember {
 
   bool get isDegraded => active && status.isDegraded;
 
+  /// Why this member reads "Offline", for the badge beside the status.
+  ///
+  /// The device's own account of it when there is one ("Location service is
+  /// off", "No internet connection"). When the device claims to be healthy and
+  /// the server decided otherwise, the reason IS the silence: fixes or uploads
+  /// stopped arriving and the device never said why — so saying "Tracking
+  /// active" in a red badge, which is what reading `locationHealth.title`
+  /// blindly used to do, is worse than saying nothing.
+  String? get degradedReason {
+    if (!isDegraded) return null;
+
+    if (locationHealth == LocationHealth.ok ||
+        locationHealth == LocationHealth.poorAccuracy) {
+      return status == WorkStatus.offline
+          ? 'No uploads received'
+          : 'No GPS fix received';
+    }
+
+    return locationHealth.title;
+  }
+
   bool get isWorking => status == WorkStatus.working;
 }
 
@@ -126,6 +147,8 @@ class TeamOverview {
     required this.offlineCount,
     required this.pendingReviewCount,
     required this.longStopCount,
+    required this.headcount,
+    required this.attendancePercent,
   });
 
   final DateTime date;
@@ -141,10 +164,12 @@ class TeamOverview {
   final int pendingReviewCount;
   final int longStopCount;
 
-  int get headcount => members.length;
-
-  double get attendancePercent =>
-      headcount == 0 ? 0 : presentCount * 100 / headcount;
+  /// The true roster size and attendance, read straight from `meta.totals` —
+  /// the server counts the WHOLE roster, while `members` is one page (limit
+  /// 200). Deriving these from `members.length` divided a full-roster numerator
+  /// by a paged denominator, which disagreed silently past 200 field staff.
+  final int headcount;
+  final double attendancePercent;
 }
 
 /// Geographic extent of a set of points. Pure geometry — no widget imports, so

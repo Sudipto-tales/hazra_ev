@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ draws its own splash before the window background, from
+         the theme rather than from @drawable/launch_background. It only
+         inherits windowBackground when that is a flat colour, and ours is now
+         a layer-list, so without this line the system splash would fall back
+         to the platform background and the first thing the user sees would be
+         a different colour from the two screens after it. Naming the same
+         colour makes system splash → launch background → BrandSplash one
+         continuous white field.
+
+         The icon is left to default to @mipmap/ic_launcher, which is already
+         the Hazra mark on white. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

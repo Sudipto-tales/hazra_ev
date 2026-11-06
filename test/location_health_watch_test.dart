@@ -248,9 +248,11 @@ void main() {
   });
 
   group('what Home renders', () {
-    test('ok and poorAccuracy raise no banner', () {
+    test('ok and the legacy weak-signal value raise no banner', () {
       // A weak fix is a working session: GPS is on and recording, so warning
-      // about it would train the employee to ignore the banner.
+      // about it would train the employee to ignore the banner. poorAccuracy
+      // is no longer produced at all, but an older device can still send it,
+      // so it has to stay silent rather than merely unused.
       for (final LocationHealth h in <LocationHealth>[
         LocationHealth.ok,
         LocationHealth.poorAccuracy,

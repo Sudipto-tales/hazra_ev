@@ -41,7 +41,12 @@ extension WorkStatusX on WorkStatus {
         WorkStatus.notStarted => 'Not Started',
         WorkStatus.working => 'Working',
         WorkStatus.idle => 'Stopped / Idle',
-        WorkStatus.locationUnavailable => 'Location Unavailable',
+        // Both outages read "Offline" on purpose: from the record's point of
+        // view a device that cannot get a fix and one that cannot deliver one
+        // are the same gap in the day. They stay separate enum values, and the
+        // reason is shown beside the badge (TeamMember.degradedReason), so
+        // nothing is lost by giving them one word.
+        WorkStatus.locationUnavailable => 'Offline',
         WorkStatus.offline => 'Offline',
         WorkStatus.paused => 'On Break',
         WorkStatus.ended => 'Day Ended',
@@ -129,6 +134,14 @@ enum LocationHealth {
   permissionDenied,
   permissionDeniedForever,
   backgroundDenied,
+
+  /// **Legacy wire value — this build never produces it.**
+  ///
+  /// Weak GPS used to be a status. It is not one any more: an approximate fix
+  /// is still a recorded position, so low accuracy is flagged on the fix
+  /// ([LocationLog.lowAccuracy]) for the admin's route map and the employee is
+  /// never warned about it. Kept in the enum only so a payload from an older
+  /// device still parses, and folded into [ok] everywhere it is read.
   poorAccuracy,
   noInternet,
 }
@@ -140,18 +153,17 @@ extension LocationHealthX on LocationHealth {
       };
 
   String get title => switch (this) {
-        LocationHealth.ok => 'Tracking active',
+        LocationHealth.ok || LocationHealth.poorAccuracy => 'Tracking active',
         LocationHealth.serviceDisabled => 'Location service is off',
         LocationHealth.permissionDenied => 'Location permission denied',
         LocationHealth.permissionDeniedForever =>
           'Location permission permanently denied',
         LocationHealth.backgroundDenied => 'Background location not allowed',
-        LocationHealth.poorAccuracy => 'Weak GPS signal',
         LocationHealth.noInternet => 'No internet connection',
       };
 
   String get message => switch (this) {
-        LocationHealth.ok =>
+        LocationHealth.ok || LocationHealth.poorAccuracy =>
           'Your location is being recorded while your session is open.',
         LocationHealth.serviceDisabled =>
           'Turn on device location to start your day. Tracking cannot begin without a valid GPS fix.',
@@ -161,8 +173,6 @@ extension LocationHealthX on LocationHealth {
           'Open system settings and allow location access for this app.',
         LocationHealth.backgroundDenied =>
           'Set location permission to "Allow all the time" so tracking continues when the screen is off.',
-        LocationHealth.poorAccuracy =>
-          'GPS accuracy is low. Move to an open area for a better fix.',
         LocationHealth.noInternet =>
           'Locations are queued on this device and will sync automatically when you are back online.',
       };
@@ -179,8 +189,7 @@ extension LocationHealthX on LocationHealth {
   ///
   /// Null when there is nothing for the employee to press.
   String? get actionLabel => switch (this) {
-        LocationHealth.ok => null,
-        LocationHealth.poorAccuracy => null,
+        LocationHealth.ok || LocationHealth.poorAccuracy => null,
         LocationHealth.serviceDisabled => 'Turn on location',
         LocationHealth.permissionDenied => 'Allow location',
         LocationHealth.permissionDeniedForever => 'Go to settings',

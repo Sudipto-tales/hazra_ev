@@ -126,7 +126,7 @@ class _TeamAnalyticsTabState extends State<TeamAnalyticsTab> {
           StatTile(
             icon: Icons.storefront_outlined,
             value: '${s.totalVisits}',
-            label: 'Visits',
+            label: 'Companies',
             tone: AppColors.info,
           ),
           StatTile(

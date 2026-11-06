@@ -10,6 +10,7 @@ import 'package:employeetracking_mobile_app/data/api/api_client.dart';
 import 'package:employeetracking_mobile_app/data/api/token_store.dart';
 import 'package:employeetracking_mobile_app/features/profile/app_info.dart';
 import 'package:employeetracking_mobile_app/features/update/update_controller.dart';
+import 'package:employeetracking_mobile_app/widgets/brand_splash.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,9 @@ void main() {
       permission = true,
       failDownload = false;
   int requests = 0;
+  // Stands in for a weak signal: ApiClient allows 20s per request, so a slow
+  // check is the normal case this gate has to survive, not an edge one.
+  Duration responseDelay = Duration.zero;
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     AppInfo.build = '3';
@@ -32,6 +36,7 @@ void main() {
     permission = true;
     failDownload = false;
     requests = 0;
+    responseDelay = Duration.zero;
     calls = [];
     release = {
       'id': 'release-4',
@@ -54,6 +59,9 @@ void main() {
         client: MockClient((request) async {
           requests++;
           expect(request.headers['Authorization'], 'Bearer access');
+          if (responseDelay > Duration.zero) {
+            await Future<void>.delayed(responseDelay);
+          }
           if (offline) throw http.ClientException('offline');
           if (withdrawn) {
             return http.Response(
@@ -292,5 +300,126 @@ void main() {
 
     expect(built, isTrue, reason: 'absence must not throw');
     expect(seen, isNull);
+  });
+
+  // ---------------------------------------------------------------------
+  // Cold-start timing. The gate used to hold every signed-in launch behind
+  // "Checking for updates…" for one full round-trip, and ApiClient allows 20s
+  // per request — so on weak signal the app was unusable for 20 seconds. The
+  // splash is the visible half of the fix; UpdateGate.splashTimeBox is the
+  // half that actually matters, and these pin it.
+  // ---------------------------------------------------------------------
+
+  testWidgets('a slow cold start shows the splash, then the time box opens the app',
+      (tester) async {
+    responseDelay = const Duration(seconds: 10);
+
+    await tester.pumpWidget(MaterialApp(
+      home: const Scaffold(body: Text('Employee home')),
+      builder: (context, child) => UpdateGate(api: api, child: child!),
+    ));
+    for (int i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+
+    // Branded, and silent: no spinner, no "Checking for updates…".
+    expect(find.byType(BrandSplash), findsOneWidget);
+    expect(find.text('Employee home'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.pump(
+        UpdateGate.splashTimeBox - const Duration(milliseconds: 100));
+    expect(find.byType(BrandSplash), findsOneWidget,
+        reason: 'still inside the box');
+
+    // The box expires with the request still in flight. The app opens anyway
+    // — this is the whole point. Without it this is the same 20-second wall
+    // with nicer art on it.
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(BrandSplash), findsNothing);
+    expect(find.text('Employee home'), findsOneWidget);
+
+    // Opening the app is not giving up on the check. When the answer finally
+    // lands it is still enforced.
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    expect(find.text('Update required'), findsOneWidget);
+    expect(find.text('Employee home'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a clean answer ends the splash early, long before the box',
+      (tester) async {
+    release['versionCode'] = 3; // == AppInfo.build: nothing to install.
+    responseDelay = const Duration(milliseconds: 300);
+
+    await tester.pumpWidget(MaterialApp(
+      home: const Scaffold(body: Text('Employee home')),
+      builder: (context, child) => UpdateGate(api: api, child: child!),
+    ));
+    for (int i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+    expect(find.byType(BrandSplash), findsOneWidget);
+
+    // The splash is sized by the answer, not by the box: on a healthy
+    // connection the limit is never what ends it.
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(BrandSplash), findsNothing);
+    expect(find.text('Employee home'), findsOneWidget);
+    expect(const Duration(milliseconds: 400),
+        lessThan(UpdateGate.splashTimeBox));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a cached required update blocks at once, with no network wait',
+      (tester) async {
+    await (await SharedPreferences.getInstance())
+        .setString(UpdateController.cacheKey, jsonEncode(release));
+    responseDelay = const Duration(seconds: 10);
+
+    await tester.pumpWidget(MaterialApp(
+      home: const Scaffold(body: Text('Employee home')),
+      builder: (context, child) => UpdateGate(api: api, child: child!),
+    ));
+    // Zero-duration pumps only: the fake clock has not moved, so the 10s
+    // response cannot have arrived. Everything below comes from the cache
+    // read start() does before it touches the network.
+    for (int i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+
+    expect(find.text('Update required'), findsOneWidget);
+    expect(find.byType(BrandSplash), findsNothing,
+        reason: 'a known requirement has nothing to wait for');
+    expect(find.text('Employee home'), findsNothing);
+
+    await tester.pump(const Duration(seconds: 10));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('a signed-out cold start is never held behind the splash',
+      (tester) async {
+    await tokens.clear();
+    responseDelay = const Duration(seconds: 10);
+
+    await tester.pumpWidget(MaterialApp(
+      home: const Scaffold(body: Text('Sign in')),
+      builder: (context, child) => UpdateGate(api: api, child: child!),
+    ));
+    for (int i = 0; i < 5; i++) {
+      await tester.pump();
+    }
+
+    // The gate only engages for a signed-in principal, so the sign-in screen
+    // must never pay for the update check.
+    expect(find.byType(BrandSplash), findsNothing);
+    expect(find.text('Sign in'), findsOneWidget);
+    expect(requests, 0);
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

@@ -493,9 +493,16 @@ class MockData {
         id: 'ev_7',
         type: ActivityType.trackingIssue,
         time: _ago(h: 3, m: 58),
-        title: 'Weak GPS signal',
-        subtitle: 'Accuracy above 50 m for 6 minutes · points discarded',
+        title: 'Offline',
+        subtitle: 'No internet connection, so fixes are queued on the device',
         isAlert: true,
+      ),
+      ActivityEvent(
+        id: 'ev_7b',
+        type: ActivityType.trackingIssue,
+        time: _ago(h: 3, m: 51),
+        title: 'Back online',
+        subtitle: 'Tracking was down for 7 minutes',
       ),
       ActivityEvent(
         id: 'ev_8',

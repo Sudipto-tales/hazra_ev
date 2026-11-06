@@ -21,9 +21,10 @@ class ActivityTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<ActivityEvent> items = maxItems != null && events.length > maxItems!
-        ? events.sublist(0, maxItems!)
-        : events;
+    final List<ActivityEvent> items =
+        maxItems != null && events.length > maxItems!
+            ? events.sublist(0, maxItems!)
+            : events;
 
     return Column(
       children: List<Widget>.generate(items.length, (int i) {
@@ -56,145 +57,171 @@ class _TimelineRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final (IconData icon, Color color) = _visual(event);
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          // Rail
-          SizedBox(
-            width: 34,
-            child: Column(
-              children: <Widget>[
-                Container(
-                  width: 2,
-                  height: 6,
-                  color: isFirst ? Colors.transparent : theme.dividerColor,
-                ),
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.13),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: color.withValues(alpha: 0.35)),
-                  ),
-                  child: Icon(icon, size: 15, color: color),
-                ),
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isLast ? Colors.transparent : theme.dividerColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: Insets.md),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(top: 4, bottom: isLast ? 0 : Insets.lg),
+    // A provisional row is one the device synthesized and the server has not
+    // confirmed yet; dim it so the timeline shows it is still settling.
+    return Opacity(
+      opacity: event.provisional ? 0.55 : 1,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            // Rail
+            SizedBox(
+              width: 34,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Text(
-                        event.endTime == null
-                            ? Fmt.time(event.time)
-                            : '${Fmt.time(event.time)} – ${Fmt.time(event.endTime)}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.textTheme.bodySmall?.color,
-                          fontSize: 11.5,
-                        ),
-                      ),
-                      if (event.duration != null) ...<Widget>[
-                        const SizedBox(width: Insets.sm),
-                        Container(
-                          width: 3,
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: theme.textTheme.bodySmall?.color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: Insets.sm),
-                        Text(
-                          Fmt.duration(event.duration!),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: color,
-                            fontSize: 11.5,
-                          ),
-                        ),
-                      ],
-                    ],
+                  Container(
+                    width: 2,
+                    height: 6,
+                    color: isFirst ? Colors.transparent : theme.dividerColor,
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    event.title,
-                    style: theme.textTheme.titleMedium?.copyWith(fontSize: 14.5),
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.13),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: color.withValues(alpha: 0.35)),
+                    ),
+                    child: Icon(icon, size: 15, color: color),
                   ),
-                  if (event.branchName != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        event.branchName!,
-                        style: theme.textTheme.bodySmall,
-                      ),
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: isLast ? Colors.transparent : theme.dividerColor,
                     ),
-                  if (event.subtitle != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        event.subtitle!,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  if (event.reportId != null && onReportTap != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: Insets.sm),
-                      child: InkWell(
-                        onTap: () => onReportTap!(event.reportId!),
-                        borderRadius: BorderRadius.circular(Radii.sm),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                'Open report',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const Icon(
-                                Icons.chevron_right_rounded,
-                                size: 16,
-                                color: AppColors.primary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: Insets.md),
+            Expanded(
+              child: Padding(
+                padding:
+                    EdgeInsets.only(top: 4, bottom: isLast ? 0 : Insets.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Text(
+                          event.endTime == null
+                              ? Fmt.time(event.time)
+                              : '${Fmt.time(event.time)} – ${Fmt.time(event.endTime)}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.textTheme.bodySmall?.color,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                        if (event.duration != null) ...<Widget>[
+                          const SizedBox(width: Insets.sm),
+                          Container(
+                            width: 3,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: theme.textTheme.bodySmall?.color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: Insets.sm),
+                          Text(
+                            Fmt.duration(event.duration!),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: color,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      event.title,
+                      style:
+                          theme.textTheme.titleMedium?.copyWith(fontSize: 14.5),
+                    ),
+                    if (event.branchName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          event.branchName!,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    if (event.subtitle != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          event.subtitle!,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    if (event.reportId != null && onReportTap != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: Insets.sm),
+                        child: InkWell(
+                          onTap: () => onReportTap!(event.reportId!),
+                          borderRadius: BorderRadius.circular(Radii.sm),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Text(
+                                  'Open report',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 16,
+                                  color: AppColors.primary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   (IconData, Color) _visual(ActivityEvent e) {
+    // One row family carries both halves of an outage: "Offline" arrives as an
+    // alert, "Back online" closes it and is not one. isAlert is the only thing
+    // that separates them, so it is read before the type — otherwise a
+    // recovery would render in red with a crossed-out GPS glyph, which is the
+    // opposite of what it says.
+    if (e.type == ActivityType.trackingIssue) {
+      return e.isAlert
+          ? (Icons.gps_off_rounded, AppColors.danger)
+          : (Icons.gps_fixed_rounded, AppColors.success);
+    }
     if (e.isAlert) return (Icons.gps_off_rounded, AppColors.danger);
     return switch (e.type) {
       ActivityType.dayStarted => (Icons.play_arrow_rounded, AppColors.success),
-      ActivityType.sessionStarted => (Icons.restart_alt_rounded, AppColors.success),
-      ActivityType.travelling => (Icons.directions_car_filled_outlined, AppColors.info),
+      ActivityType.sessionStarted => (
+          Icons.restart_alt_rounded,
+          AppColors.success
+        ),
+      ActivityType.travelling => (
+          Icons.directions_car_filled_outlined,
+          AppColors.info
+        ),
       ActivityType.arrived => (Icons.place_rounded, AppColors.primary),
       ActivityType.stayed => (Icons.timelapse_rounded, AppColors.warning),
-      ActivityType.reportSubmitted => (Icons.description_rounded, AppColors.primary),
+      ActivityType.reportSubmitted => (
+          Icons.description_rounded,
+          AppColors.primary
+        ),
       ActivityType.left => (Icons.logout_rounded, AppColors.textSecondary),
       ActivityType.sessionEnded => (Icons.pause_rounded, AppColors.warning),
       ActivityType.dayEnded => (Icons.stop_rounded, AppColors.textSecondary),

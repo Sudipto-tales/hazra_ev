@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launch screen's field. White in both day and night (there is no
+         values-night override on purpose): the Hazra mark is drawn for a
+         white background and its dark-purple wordmark disappears on a dark
+         one. Mirrored by BrandSplash.background in lib/widgets/brand_splash.dart
+         — the Flutter splash takes over from this drawable at first frame and
+         any difference shows up as a flash. -->
+    <color name="splash_background">#FFFFFFFF</color>
+</resources>

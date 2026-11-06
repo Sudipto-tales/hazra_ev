@@ -278,24 +278,40 @@ void main() {
       expect(seen, hasLength(1));
       expect(seen.single.lowAccuracy, isTrue);
 
-      // The poorAccuracy health signal still fires off the weak fix.
-      expect(await service.health(), LocationHealth.poorAccuracy);
+      // And it stays a property of the fix. Weak GPS is not a health state
+      // any more: the session is working, so health reads ok and the employee
+      // is told nothing.
+      expect(await service.health(), LocationHealth.ok,
+          reason: 'the flag on the fix is the whole record of weak GPS');
 
       await sub.cancel();
     });
 
-    test('a good fix is queued unflagged and clears the warning', () async {
-      platform.controller.add(_pos(accuracy: 160)); // trips poorAccuracy
+    test('accuracy never becomes a health state, weak or good', () async {
+      platform.controller.add(_pos(accuracy: 160)); // worse than 50 m
       await settle();
-      expect(await service.health(), LocationHealth.poorAccuracy);
+      expect(await service.health(), LocationHealth.ok,
+          reason: 'a weak fix is a working session, not an outage');
 
       platform.controller.add(_pos(accuracy: 9)); // confident fix
       await settle();
 
       expect(service.queuedCount, 2);
-      expect(await service.health(), LocationHealth.ok,
-          reason: 'a confident fix clears the weak-GPS warning');
+      expect(await service.health(), LocationHealth.ok);
       expect(store.data.fixes.last.lowAccuracy, isFalse);
+    });
+
+    test('a run of weak fixes still reports ok', () async {
+      // The old behaviour flipped to poorAccuracy once bad fixes landed inside
+      // three intervals. Nothing may resurrect that: a stretch of rough GPS is
+      // an admin-side map detail, never an employee-facing status.
+      for (int i = 0; i < 5; i++) {
+        platform.controller.add(_pos(accuracy: 200));
+        await settle();
+      }
+
+      expect(await service.health(), LocationHealth.ok);
+      expect(service.queuedCount, 5, reason: 'every weak fix is still kept');
     });
   });
 }

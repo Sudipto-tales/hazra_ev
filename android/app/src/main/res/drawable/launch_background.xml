@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+<!-- What the window shows from the moment it opens until Flutter's first
+     frame. Leaving this the template's bare white is what produced the white
+     flash between Android's system splash and the app.
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+     Kept byte-for-byte in step with drawable-v21/launch_background.xml, and
+     with lib/widgets/brand_splash.dart, which continues this exact picture on
+     the Flutter side: same colour, same 128dp logo, same window-centred
+     position, so the handoff holds still instead of jumping. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+
+    <!-- nodpi source + explicit dp size: the art is one 480px bitmap, and
+         sizing it here means it lands at 128dp on every density instead of
+         being auto-scaled by whichever density bucket it was filed under. -->
+    <item
+        android:width="128dp"
+        android:height="128dp"
+        android:gravity="center"
+        android:drawable="@drawable/hazra_splash_logo" />
 </layer-list>

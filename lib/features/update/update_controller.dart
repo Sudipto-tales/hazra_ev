@@ -55,6 +55,13 @@ class UpdateController extends ChangeNotifier {
     } catch (_) {
       // A damaged cache must not prevent a fresh server check.
     }
+    // Publish the cached requirement before going to the network. `check()`
+    // only notifies in its `finally`, so without this the gate would keep
+    // showing its launch screen — for a whole round-trip — over a requirement
+    // already known on disk. Nothing about the requirement changes here; it
+    // is the same `release` set above, just announced at the moment it is
+    // known instead of one network call later.
+    if (release != null) _emit();
     await check();
   }
 
