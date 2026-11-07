@@ -202,6 +202,13 @@ final class Present
             'incompleteDistanceKm'  => self::nullableFloat($r['incomplete_distance_km'] ?? null),
             'gpsCoveragePercent'    => self::nullableFloat($r['gps_coverage_percent'] ?? null),
             'distanceAlgoVersion'   => Wire::int($r['distance_algo_version'] ?? 1),
+            // The client odometer (037), additive and NULLABLE. For a v3 session
+            // this is the device's own measured kilometres and the SOURCE of
+            // `distanceKm` above; NULL means no report has landed yet (and
+            // `distanceKm` is falling back to the derived figure) or the session
+            // predates v3. A consumer reads `distanceKm` for the headline — this
+            // is for transparency, not a second number to show.
+            'clientDistanceKm'      => self::nullableFloat($r['client_distance_km'] ?? null),
         ];
     }
 

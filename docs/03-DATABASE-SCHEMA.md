@@ -707,8 +707,32 @@ CREATE INDEX ON attendance_days (work_date);
 
 This one table is `Attendance` **and** `DaySummary` **and** every cell of the team
 attendance matrix **and** the input to both statistics endpoints. Written by the ingest
-worker on session close and by a nightly job that also fills `absent` / `holiday` /
-`weekend` rows so the calendar has no gaps.
+worker on session close — and **by nothing else.**
+
+> **Corrected 2026-11-06. This paragraph used to say "and by a nightly job that also fills
+> `absent` / `holiday` / `weekend` rows so the calendar has no gaps". No such job has ever
+> existed, and the sentence caused a real bug.** `Engine::rollupDay` is reached only through
+> `recompute()`, so **a day nobody worked has no row at all** — the table is sparse and
+> always has been. `StatisticsController` had computed its denominator by counting rows
+> (`present + partial + absent`), which with no absent rows equalled the numerator, so
+> **every employee read 100 % attendance** and `absentDays` was permanently 0 on a figure
+> both `02` and `03` call a headline number.
+>
+> The fix is **read-time, not a new table or job**: `StatisticsController::calendarWorkingDays(from, to, joinedOn)`
+> counts weekdays in range that are neither a weekend (`Ctx::weekendDays()`) nor in
+> `holidays`, never past `Ctx::today()` and never before the employee's `joined_on`. Same
+> wire keys, corrected values, and **not retroactive by nature** — retuning the
+> weekend/holiday calendar re-derives and rewrites nothing, which is standing rule 2 again.
+>
+> **The stored `status` enum therefore only ever holds the worked-day verdicts the rollup
+> writes** (`present` / `partial`). `absent`, `holiday`, `weekend` and `noData` are
+> read-time answers that no row ever carries — which is the opposite of what the enum's
+> presence in the DDL suggests, so do not code against a stored `absent`.
+>
+> **One approximation is flagged rather than fudged:** `team()`'s single aggregate
+> denominator is `calendarWorkingDays × headcount` and does **not** subtract per-employee
+> joining dates (the per-employee rows do). A month with recent hires reads a little low at
+> the team total. Exactness costs one calendar pass per head.
 
 The `(employee_id, work_date)` primary key makes a 120-day calendar a single range scan,
 and `(work_date)` makes the team matrix for a month one scan of ~360 rows.

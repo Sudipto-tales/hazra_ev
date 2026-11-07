@@ -176,14 +176,12 @@ final class RoutesController extends V1Controller
 
         $tuples = [];
 
-        // The same accuracy / minimum-step gates Engine::buildDayRoute applies
-        // to the cached row. Measuring today's live route with a raw sum would
-        // have the map report more kilometres than the identical day does once
-        // it is cached, which reads as a bug in whichever number is on screen.
-        // Pinned per day, exactly as the cached row is: a live read of an old
-        // day must not measure it by a newer rule than the one it was stored
-        // under, or the live number and the cached number disagree.
-        $distance = Engine::chainDistanceKm($rows, Engine::dayAlgoVersion($employeeId, $date));
+        // The same headline rule Engine::buildDayRoute caches, pinned to the
+        // day's own algorithm version so a live read of an old day is never
+        // measured by a newer rule than the one it was stored under. Through v2
+        // that is the fix-derived figure under the accuracy / minimum-step
+        // gates; from v3 it is the client odometer summed off the session rows.
+        $distance = Engine::liveDayDistanceKm($employeeId, $date, $rows);
 
         foreach ($rows as $row) {
             $tuples[] = [

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -39,11 +41,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   /// session notification, and the last request count we have already handled.
   TrackingController? _tracking;
   int _handledEndDayRequests = 0;
+  Timer? _summaryRefresh;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _armSummaryRefresh();
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
@@ -55,7 +59,24 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // runtime permission has no equivalent stream, so resume is the signal.
     if (state == AppLifecycleState.resumed) {
       _tracking?.refreshLocationHealth();
+      _armSummaryRefresh();
+      _refreshSummary();
+    } else {
+      _summaryRefresh?.cancel();
+      _summaryRefresh = null;
     }
+  }
+
+  void _armSummaryRefresh() {
+    _summaryRefresh ??= Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _refreshSummary(),
+    );
+  }
+
+  void _refreshSummary() {
+    if (!mounted || _tracking == null || _tracking!.isLoading) return;
+    _tracking!.refresh();
   }
 
   @override
@@ -98,6 +119,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _summaryRefresh?.cancel();
     _tracking?.endDayRequests.removeListener(_onEndDayRequested);
     super.dispose();
   }
@@ -219,12 +241,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       // used to say "Details" and open a read-only sheet,
                       // which told the employee what was wrong and left them
                       // to find Android settings themselves.
-                      actionLabel: c.effectiveLocationHealth.actionLabel ??
-                          'Details',
-                      onAction: () => c.effectiveLocationHealth.actionLabel ==
-                              null
-                          ? showTrackingSheet(context)
-                          : _fixLocation(context, c),
+                      actionLabel:
+                          c.effectiveLocationHealth.actionLabel ?? 'Details',
+                      onAction: () =>
+                          c.effectiveLocationHealth.actionLabel == null
+                              ? showTrackingSheet(context)
+                              : _fixLocation(context, c),
                     ),
                     const SizedBox(height: Insets.lg),
                   ],
@@ -263,7 +285,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   SectionHeader(
                     title: 'Company visits',
                     subtitle: '${c.snapshot?.visits.length ?? 0} today',
-                    padding: const EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
+                    padding:
+                        const EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
                   ),
                   _VisitsBlock(controller: c, reportTitles: _reportTitles),
                   SectionHeader(
@@ -277,7 +300,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
-                    padding: const EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
+                    padding:
+                        const EdgeInsets.fromLTRB(2, Insets.xxl, 0, Insets.md),
                   ),
                   _ActivityBlock(controller: c),
                 ],

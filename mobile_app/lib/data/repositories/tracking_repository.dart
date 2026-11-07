@@ -50,6 +50,10 @@ abstract class TrackingRepository {
     required SessionEndReason reason,
     LocationLog? fix,
     DateTime? endedAt,
+    // The session's final odometer, stored server-side as its headline distance
+    // (v3, migration 037). Optional and additive: an older build omits it and
+    // the server falls back to its fix-derived figure.
+    double? measuredDistanceKm,
   });
 
   /// `POST /tracking/locations` — the fix ingest, and the only batched call in
@@ -65,6 +69,10 @@ abstract class TrackingRepository {
   Future<LocationSyncResult> pushLocations({
     required String sessionId,
     required List<LocationLog> fixes,
+    // The open session's live odometer, ridden on each batch so the admin
+    // dashboard tracks the phone within one sync (v3, migration 037). Optional
+    // and additive.
+    double? measuredDistanceKm,
   });
 
   /// `POST /tracking/health` — what turns a team member red on the admin
@@ -167,6 +175,7 @@ class HttpTrackingRepository implements TrackingRepository {
     required SessionEndReason reason,
     LocationLog? fix,
     DateTime? endedAt,
+    double? measuredDistanceKm,
   }) async {
     final ApiResult result = await _api.patch(
       '/tracking/sessions/$sessionId',
@@ -174,6 +183,7 @@ class HttpTrackingRepository implements TrackingRepository {
         'reason': _reason(reason),
         'endedAt': (endedAt ?? DateTime.now()).toUtc().toIso8601String(),
         if (fix != null) 'fix': _fixObject(fix),
+        if (measuredDistanceKm != null) 'measuredDistanceKm': measuredDistanceKm,
       },
     );
 
@@ -184,6 +194,7 @@ class HttpTrackingRepository implements TrackingRepository {
   Future<LocationSyncResult> pushLocations({
     required String sessionId,
     required List<LocationLog> fixes,
+    double? measuredDistanceKm,
   }) async {
     if (fixes.isEmpty) {
       // The server answers 422 on an empty batch. Nothing was sent, so nothing
@@ -197,6 +208,7 @@ class HttpTrackingRepository implements TrackingRepository {
       body: <String, dynamic>{
         'sessionId': sessionId,
         'fixes': fixes.map(_fixTuple).toList(growable: false),
+        if (measuredDistanceKm != null) 'measuredDistanceKm': measuredDistanceKm,
       },
     );
 
@@ -325,6 +337,7 @@ class NoopTrackingRepository implements TrackingRepository {
     required SessionEndReason reason,
     LocationLog? fix,
     DateTime? endedAt,
+    double? measuredDistanceKm,
   }) async {
     final DateTime end = endedAt ?? fix?.recordedAt ?? DateTime.now();
 
@@ -333,7 +346,7 @@ class NoopTrackingRepository implements TrackingRepository {
       index: 1,
       startTime: end,
       endTime: end,
-      distanceKm: 0,
+      distanceKm: measuredDistanceKm ?? 0,
       locationPoints: 0,
       startLatitude: fix?.latitude ?? 0,
       startLongitude: fix?.longitude ?? 0,
@@ -345,6 +358,7 @@ class NoopTrackingRepository implements TrackingRepository {
   Future<LocationSyncResult> pushLocations({
     required String sessionId,
     required List<LocationLog> fixes,
+    double? measuredDistanceKm,
   }) async =>
       LocationSyncResult.empty;
 

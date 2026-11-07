@@ -16,6 +16,17 @@ final class Envelope
     public const IMMUTABLE = 'private, max-age=86400';
     public const LIVE      = 'no-store';
 
+    /**
+     * Cache the body, but check every time.
+     *
+     * For a response that is stable *until something changes it* — which is not
+     * the same thing as IMMUTABLE, and conflating the two is what made
+     * AttendanceController serve a 24-hour-stale attendance verdict. Pair it
+     * with freshness(): the client keeps the body, revalidates on every read,
+     * and an untouched window answers 304 with no body at all.
+     */
+    public const REVALIDATE = 'private, no-cache';
+
     public static function ok(mixed $data = null, array $meta = [], array $headers = []): never
     {
         self::send(['data' => $data, 'meta' => self::meta($meta), 'error' => null], 200, $headers);
