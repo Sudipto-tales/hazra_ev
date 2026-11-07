@@ -129,6 +129,11 @@ final class TrackingController extends V1Controller
             Envelope::invalid('reason must be pause or end', 'reason');
         }
 
+        // The final odometer for the session rides on the close, stored before
+        // any ingest or recompute below so every one of them reads it (v3,
+        // migration 037).
+        $this->applyClientOdometer($session);
+
         $fix = $this->input('fix');
 
         if (is_array($fix) && isset($fix['latitude'], $fix['longitude'])) {
@@ -191,7 +196,17 @@ final class TrackingController extends V1Controller
             Envelope::invalid("At most {$batchSize} fixes per request — see config.syncBatchSize", 'fixes');
         }
 
+        // The phone's odometer rides on the batch (v3, migration 037). Stored
+        // before ingest so the recompute ingest triggers reads the new value;
+        // ingest only recomputes when a fix is accepted, so a batch that moved
+        // the odometer but landed no new fix recomputes explicitly below.
+        $odometerChanged = $this->applyClientOdometer($session);
+
         $result = Engine::ingest($session, array_map([$this, 'normaliseFix'], $fixes));
+
+        if ($odometerChanged && !$result['accepted']) {
+            Engine::recompute($session['employee_id'], $session['work_date']);
+        }
 
         // `data` stays byte-identical — {accepted, rejected}, the two lists the
         // device walks to clear its queue. `liveUntil` is a statement about the
@@ -517,6 +532,52 @@ final class TrackingController extends V1Controller
         return strcmp((string) $row['watching_until'], Wire::now()) > 0
             ? Wire::ts($row['watching_until'])
             : null;
+    }
+
+    /**
+     * Fold a reported `measuredDistanceKm` into the session's stored odometer.
+     *
+     * The client reports the ABSOLUTE kilometres it has measured for THIS
+     * session (its baseline for a resumed session plus what it has measured
+     * since). The stored value only ever moves up — `max(stored, reported)` —
+     * which is what makes a replayed or out-of-order batch harmless and a device
+     * handoff safe: the resuming phone's baseline is the server's current value,
+     * so it reports at least as much and the first phone's distance is never
+     * lost. Only v3 sessions (migration 037) carry an odometer; older sessions
+     * ignore the field, and an absent or non-numeric value never fails the batch
+     * — the fixes in it must still land.
+     *
+     * @return bool whether the stored odometer actually changed (a recompute is
+     *              only worth running when it did)
+     */
+    private function applyClientOdometer(array $session): bool
+    {
+        if ((int) ($session['distance_algo_version'] ?? 1) < 3) {
+            return false;
+        }
+
+        $reported = $this->input('measuredDistanceKm');
+
+        if (!is_numeric($reported) || (float) $reported < 0) {
+            return false;
+        }
+
+        $current = (float) ($session['client_distance_km'] ?? 0);
+        $next    = max($current, (float) $reported);
+
+        // A stale report that cannot raise an already-set value is a no-op; a
+        // first report of 0 km (client not null yet) still writes, so the column
+        // leaves NULL and the Engine stops falling back to the derived figure.
+        if ($next <= $current && $session['client_distance_km'] !== null) {
+            return false;
+        }
+
+        db_execute(
+            "UPDATE work_sessions SET client_distance_km = ? WHERE id = ?",
+            [round($next, 4), $session['id']],
+        );
+
+        return true;
     }
 
     private function normaliseFix(mixed $fix): array

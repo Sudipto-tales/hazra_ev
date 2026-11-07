@@ -20,12 +20,27 @@ final class Engine
      *
      * 1 — the original gated chord sum (migration 004 .. 035). Frozen.
      * 2 — the universal engine: accuracy-scaled step, identified gaps,
-     *     `min_step_metres` (migration 036 onward).
+     *     `min_step_metres` (migration 036 .. 036). Frozen.
+     * 3 — the client odometer: the HEADLINE distance is the device's own
+     *     measured kilometres (`work_sessions.client_distance_km`), falling
+     *     back to the v2 verified figure while no report has landed. The v2
+     *     verified/incomplete/coverage numbers are still derived from the fix
+     *     chain and kept as diagnostics — see `sessionHeadlineKm` and migration
+     *     037.
      *
-     * Bumping this must always come with a new branch in `chainDistance()` and
-     * must never alter an existing one, or a historical distance moves.
+     * The DERIVATION is still v1 or v2: v3 has no `chainDistance()` branch of
+     * its own (algo 3 derives exactly like v2). What v3 changes is which number
+     * becomes `distance_km`, and that lives in `sessionHeadlineKm`, not in
+     * `chainDistance`. Bumping this must never alter an existing branch, or a
+     * historical distance moves.
      */
-    public const DISTANCE_ALGO_VERSION = 2;
+    public const DISTANCE_ALGO_VERSION = 3;
+
+    /**
+     * The algorithm version at or above which the client odometer is the
+     * headline distance. Below it, the headline is the fix-derived figure.
+     */
+    private const CLIENT_ODOMETER_ALGO = 3;
 
     /** Worked seconds at or above this count as a full day; below it, partial. */
     private const FULL_DAY_SECONDS = 4 * 3600;
@@ -99,11 +114,21 @@ final class Engine
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [$session['id'], $session['employee_id'], $clientId, $recordedAt, $now, $lat, $lng, $accuracy, $speed, $heading],
                 );
-            } catch (PDOException) {
-                // The unique (employee_id, client_id) index is the idempotency
-                // guarantee: a replayed batch is reported, never duplicated.
-                $rejected[] = ['id' => $clientId, 'reason' => 'DUPLICATE'];
-                continue;
+            } catch (PDOException $error) {
+                // A failed insert is only settled when the exact id is already
+                // present. Treating every PDO error as a duplicate makes a
+                // transient database failure look successful to the phone,
+                // which then removes that fix from its durable queue.
+                $existing = db_fetch_one(
+                    "SELECT id FROM location_fixes WHERE employee_id = ? AND client_id = ? LIMIT 1",
+                    [$session['employee_id'], $clientId],
+                );
+                if ($existing) {
+                    $rejected[] = ['id' => $clientId, 'reason' => 'DUPLICATE'];
+                    continue;
+                }
+
+                throw $error;
             }
 
             $accepted[] = $clientId;
@@ -173,17 +198,20 @@ final class Engine
 
         $measured = self::chainDistance($fixes, $algo);
 
-        // distance_km stays the headline figure and keeps its meaning: it is
-        // the verified number, never verified + incomplete. A v1 row leaves the
-        // three reporting columns NULL, because v1 has no coverage concept and
-        // writing 0 or 100 there would be a claim it never made.
+        // distance_km is the HEADLINE figure. Through v2 that is the derived
+        // verified number; from v3 it is the client odometer (with the verified
+        // figure as the fallback until a report lands). The three reporting
+        // columns always carry the FIX-DERIVED numbers — verified never becomes
+        // the client value — so the coverage indicator and the gap rows keep
+        // meaning their own thing. A v1 row leaves them NULL, because v1 has no
+        // coverage concept and writing 0 or 100 would be a claim it never made.
         db_execute(
             "UPDATE work_sessions
                 SET distance_km = ?, point_count = ?,
                     verified_distance_km = ?, incomplete_distance_km = ?, gps_coverage_percent = ?
               WHERE id = ?",
             [
-                round($measured['verifiedKm'], 4),
+                round(self::sessionHeadlineKm($session, $measured['verifiedKm']), 4),
                 count($fixes),
                 $algo < 2 ? null : round($measured['verifiedKm'], 4),
                 $algo < 2 ? null : round($measured['incompleteKm'], 4),
@@ -304,6 +332,35 @@ final class Engine
     public static function chainDistanceKm(array $fixes, int $algoVersion = self::DISTANCE_ALGO_VERSION): float
     {
         return self::chainDistance($fixes, $algoVersion)['verifiedKm'];
+    }
+
+    /**
+     * The headline distance for one session, given its already-derived verified
+     * figure.
+     *
+     * Through v2 the headline IS the verified figure. From v3 (the client
+     * odometer, migration 037) the headline is `client_distance_km` — the
+     * device's own measured kilometres for the session — and the verified
+     * figure is only the fallback for a v3 session that has not reported an
+     * odometer yet (just opened, or an older client). NULL is "no report yet",
+     * never 0: falling back is what stops a v3 session reading 0 km between its
+     * first fix and its first odometer report.
+     *
+     * The caller passes the verified figure it has in hand rather than this
+     * recomputing it, so there is exactly one chain pass per refresh.
+     */
+    public static function sessionHeadlineKm(array $session, float $verifiedKm): float
+    {
+        $algo = (int) ($session['distance_algo_version'] ?? 1);
+
+        if ($algo >= self::CLIENT_ODOMETER_ALGO) {
+            $client = $session['client_distance_km'] ?? null;
+            if ($client !== null && $client !== '') {
+                return (float) $client;
+            }
+        }
+
+        return $verifiedKm;
     }
 
     /**
@@ -525,6 +582,36 @@ final class Engine
         return $row === null || $row === false || $row['v'] === null
             ? self::DISTANCE_ALGO_VERSION
             : (int) $row['v'];
+    }
+
+    /**
+     * The live headline distance for one employee-day, measured off the raw day
+     * fixes the caller already has in hand.
+     *
+     * RoutesController measures today's not-yet-cached route and must arrive at
+     * the same kilometres `buildDayRoute` will cache. Through v2 that is the
+     * fix-derived figure (`chainDistanceKm`, pinned to the day's own version so
+     * an old day is never measured by a newer rule). From v3 the headline is the
+     * client odometer, which lives on the session rows that every batch ingest
+     * keeps fresh — so the live number is their sum, exactly what `buildDayRoute`
+     * stores, not a re-derivation from fixes.
+     *
+     * @param array<int, array{lat: mixed, lng: mixed, accuracy_m?: mixed,
+     *                         recorded_at?: mixed, source?: mixed}> $dayFixes
+     */
+    public static function liveDayDistanceKm(string $employeeId, string $workDate, array $dayFixes): float
+    {
+        $algo = self::dayAlgoVersion($employeeId, $workDate);
+
+        if ($algo < self::CLIENT_ODOMETER_ALGO) {
+            return self::chainDistanceKm($dayFixes, $algo);
+        }
+
+        return (float) (db_fetch_one(
+            "SELECT COALESCE(SUM(distance_km), 0) AS s FROM work_sessions
+              WHERE employee_id = ? AND work_date = ?",
+            [$employeeId, $workDate],
+        )['s'] ?? 0);
     }
 
     // -------------------------------------------------------------- derivation
@@ -874,6 +961,60 @@ final class Engine
     }
 
     /**
+     * One employee-day's evidence-bounded worked seconds: the sum of
+     * sessionWorkedSeconds() over its sessions.
+     *
+     * Extracted from rollupDay() so a caller can ASK for the figure without
+     * rewriting the rollup row — `vayu worked:rebuild` needs the number before
+     * it decides whether to write anything, and a dry run must be able to get
+     * it without writing at all.
+     *
+     * Deliberately not reimplemented anywhere: two definitions of the day's
+     * worked time is the same failure mode sessionLastFixes() exists to avoid.
+     * Whatever this returns is, by construction, what rollupDay() will store.
+     *
+     * $sessions is the already-fetched work_sessions rows when the caller has
+     * them (rollupDay does), null to fetch them here. $now defaults to
+     * Wire::now() and only ever acts as a ceiling against a device clock
+     * stamped in the future.
+     *
+     * Reads: work_sessions, location_fixes, tracking_configs. Writes: nothing.
+     *
+     * @param list<array<string,mixed>>|null $sessions
+     */
+    public static function dayWorkedSeconds(
+        string $employeeId,
+        string $workDate,
+        ?array $sessions = null,
+        ?string $now = null,
+    ): int {
+        $sessions ??= db_fetch_all(
+            "SELECT * FROM work_sessions WHERE employee_id = ? AND work_date = ? ORDER BY seq",
+            [$employeeId, $workDate],
+        );
+
+        // Read-time, from config, per rollup — never stored. An admin who
+        // retunes offlineThresholdMinutes re-derives worked time on the next
+        // recompute instead of leaving a frozen decision behind.
+        $darkSeconds = (int) Ctx::config()['offline_threshold_minutes'] * 60;
+        $lastFixes   = self::sessionLastFixes($employeeId, $workDate);
+        $now       ??= Wire::now();
+
+        $worked = 0;
+
+        foreach ($sessions as $session) {
+            $worked += self::sessionWorkedSeconds(
+                $session,
+                $lastFixes[(string) $session['id']] ?? null,
+                $now,
+                $darkSeconds,
+            );
+        }
+
+        return $worked;
+    }
+
+    /**
      * The one table Attendance, DaySummary, the attendance matrix and both
      * statistics endpoints all read.
      *
@@ -890,32 +1031,31 @@ final class Engine
         );
 
         $now = Wire::now();
-        $worked = 0;
         $distance = 0.0;
         $joining = null;
         $end = null;
         $anyOpen = false;
 
         $incomplete = 0.0;
+        // The FIX-DERIVED verified sum, kept separate from $distance. They are
+        // equal through v2, but from v3 $distance is the client odometer while
+        // verified_distance_km must stay the derived figure the coverage
+        // indicator is read against — so it sums the per-session verified
+        // column, never the headline distance_km.
+        $verified = 0.0;
 
-        // Read-time, from config, per rollup — never stored. An admin who
-        // retunes offlineThresholdMinutes re-derives worked time on the next
-        // recompute instead of leaving a frozen decision behind.
-        $darkSeconds = (int) Ctx::config()['offline_threshold_minutes'] * 60;
-        $lastFixes   = self::sessionLastFixes($employeeId, $workDate);
+        // The day's evidence-bounded worked time, from the same helper a
+        // backfill calls. Passing the sessions already in hand keeps this at
+        // zero extra queries.
+        $worked = self::dayWorkedSeconds($employeeId, $workDate, $sessions, $now);
 
         foreach ($sessions as $session) {
-            $worked   += self::sessionWorkedSeconds(
-                $session,
-                $lastFixes[(string) $session['id']] ?? null,
-                $now,
-                $darkSeconds,
-            );
             $distance += (float) $session['distance_km'];
             // NULL on a v1 session and coalesced to 0 here: a day's incomplete
             // total is a sum over the sessions that measured one, and the
             // day-level column is itself left NULL for a v1 day below.
             $incomplete += (float) ($session['incomplete_distance_km'] ?? 0);
+            $verified   += (float) ($session['verified_distance_km'] ?? 0);
             $joining   = $joining === null ? $session['started_at'] : min($joining, $session['started_at']);
 
             if ($session['ended_at'] === null) {
@@ -989,7 +1129,7 @@ final class Engine
                 $employeeId, $workDate, $status, $joining, $anyOpen ? null : $end,
                 count($sessions), $worked, round($distance, 4), $companies, $reports,
                 $stopSeconds, $longestStop, $now,
-                $algo < 2 ? null : round($distance, 4),
+                $algo < 2 ? null : round($verified, 4),
                 $algo < 2 ? null : round($incomplete, 4),
                 $coverage,
             ],
@@ -1062,19 +1202,24 @@ final class Engine
         // that happened while nothing was tracking it.
         $algo = self::dayAlgoVersion($employeeId, $workDate);
 
+        // $headline is what `total_distance_km` carries — the number every
+        // distance surface reads. $verified is the fix-derived figure that
+        // backs the coverage indicator. They are equal through v2; from v3 the
+        // headline is the summed client odometer while verified stays derived.
         if ($algo < 2) {
-            $distance   = self::chainDistanceKm($rows, $algo);
+            $headline   = self::chainDistanceKm($rows, $algo);
+            $verified   = null;
             $incomplete = null;
             $coverage   = null;
         } else {
-            $distance   = 0.0;
+            $verified   = 0.0;
             $incomplete = 0.0;
             $spanS      = 0;
             $goodS      = 0.0;
 
             foreach (self::daySessionFixes($employeeId, $workDate) as $chain) {
                 $measured    = self::chainDistance($chain, $algo);
-                $distance   += $measured['verifiedKm'];
+                $verified   += $measured['verifiedKm'];
                 $incomplete += $measured['incompleteKm'];
 
                 // Coverage over a day is duration-weighted across its sessions,
@@ -1093,6 +1238,19 @@ final class Engine
             }
 
             $coverage = $spanS <= 0 ? 100.0 : round($goodS / $spanS * 100, 2);
+
+            // v2 headline is the verified sum; v3 headline is the client
+            // odometer — the per-session values refreshSessions() set earlier in
+            // this same recompute(), summed. Reading them back keeps one
+            // definition of the headline (sessionHeadlineKm) rather than
+            // reimplementing the fallback here.
+            $headline = $algo < self::CLIENT_ODOMETER_ALGO
+                ? $verified
+                : (float) (db_fetch_one(
+                    "SELECT COALESCE(SUM(distance_km), 0) AS s FROM work_sessions
+                      WHERE employee_id = ? AND work_date = ?",
+                    [$employeeId, $workDate],
+                )['s'] ?? 0);
         }
 
         foreach ($rows as $row) {
@@ -1138,13 +1296,13 @@ final class Engine
                 incomplete_distance_km = excluded.incomplete_distance_km,
                 gps_coverage_percent = excluded.gps_coverage_percent",
             [
-                $employeeId, $workDate, count($simplified), round($distance, 4),
+                $employeeId, $workDate, count($simplified), round($headline, 4),
                 $minLat, $maxLat, $minLng, $maxLng,
                 json_encode($simplified),
                 Wire::ts($rows[0]['recorded_at']),
                 Wire::ts($rows[count($rows) - 1]['recorded_at']),
                 $algo,
-                $algo < 2 ? null : round($distance, 4),
+                $verified === null ? null : round($verified, 4),
                 $incomplete === null ? null : round($incomplete, 4),
                 $coverage,
             ],
