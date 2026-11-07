@@ -593,8 +593,9 @@ class TrackingController extends ChangeNotifier {
     // `paused`, not `idle`. `idle` is the server's "open session, stationary"
     // and reports isSessionOpen == true, so it left the card showing a frozen
     // timer and a Break button, and made `startDay` refuse the resume.
-    _closeSession(open, WorkStatus.paused, reason: SessionEndReason.pause);
-    _queueClose(open.id, reason: SessionEndReason.pause);
+    final double closedKm =
+        _closeSession(open, WorkStatus.paused, reason: SessionEndReason.pause);
+    _queueClose(open.id, reason: SessionEndReason.pause, measuredDistanceKm: closedKm);
     await _location.stopTracking();
     _stopTicker();
     _degradedSince = null;
@@ -656,7 +657,7 @@ class TrackingController extends ChangeNotifier {
 
       final WorkSession? open = activeSession;
       if (open != null) {
-        _closeSession(
+        final double closedKm = _closeSession(
           open,
           WorkStatus.ended,
           reason: SessionEndReason.manual,
@@ -664,14 +665,15 @@ class TrackingController extends ChangeNotifier {
           endedAt: draft.endedAt,
         );
         // The closeout is the day's declaration; this is the session's own
-        // end time and last fix. Queued rather than awaited: the day is
-        // already closed on the server, and a flaky connection at this exact
-        // moment must not leave the employee staring at a spinner.
+        // end time, last fix and final odometer. Queued rather than awaited:
+        // the day is already closed on the server, and a flaky connection at
+        // this exact moment must not leave the employee staring at a spinner.
         _queueClose(
           open.id,
           reason: SessionEndReason.manual,
           endedAt: draft.endedAt,
           fix: finalFix,
+          measuredDistanceKm: closedKm,
         );
       } else {
         _snapshot = _snapshot?.copyWith(status: WorkStatus.ended);
@@ -703,9 +705,10 @@ class TrackingController extends ChangeNotifier {
     final WorkSession? open = activeSession;
     if (open == null) return;
 
-    _closeSession(open, WorkStatus.paused, reason: SessionEndReason.auto);
+    final double closedKm =
+        _closeSession(open, WorkStatus.paused, reason: SessionEndReason.auto);
     // Reason `auto` goes up as `pause`: the session stops, the day does not.
-    _queueClose(open.id, reason: SessionEndReason.auto, endedAt: _now);
+    _queueClose(open.id, reason: SessionEndReason.auto, endedAt: _now, measuredDistanceKm: closedKm);
     _autoClosedAt = _now;
     _degradedSince = null;
     unawaited(_location.stopTracking());
@@ -740,7 +743,10 @@ class TrackingController extends ChangeNotifier {
 
   // ---------------------------------------------------------------- internals
 
-  void _closeSession(
+  /// Returns the session's final odometer (`closedKm`) so the caller can hand
+  /// it to [_queueClose] — it is the number the server stores as this session's
+  /// headline distance (v3, migration 037).
+  double _closeSession(
     WorkSession open,
     WorkStatus next, {
     required SessionEndReason reason,
@@ -792,6 +798,8 @@ class TrackingController extends ChangeNotifier {
     _openSessionBaselineKm = 0;
     _openSessionLocalKm = 0;
     _applyDistance();
+
+    return closedKm;
   }
 
   /// Append a provisional timeline row (device-owned session boundary) unless an
@@ -938,13 +946,16 @@ class TrackingController extends ChangeNotifier {
     final HomeSnapshot? snap = _snapshot;
     if (snap == null) return;
 
-    // No ratchet. The displayed number IS the measured one — server baseline
-    // plus the device's own un-synced legs — so when the server reconciles a
-    // day downward (a leg it counted as jitter, a gap chord it moved to
-    // incompleteKm) the employee's screen follows instead of freezing high and
-    // disagreeing with the dashboard, the stats tab and the closeout sheet. The
-    // step gate now matches the server's, so any correction is small.
-    _displayedDistanceKm = _measuredDistanceKm;
+    // Monotonic within a day: the measured number — server baseline plus the
+    // device's own un-synced legs — may raise the displayed figure and never
+    // lower it. The server now STORES this device's odometer (v3, migration
+    // 037) rather than a fix-derived number that could reconcile downward, so
+    // `_serverDistanceKm` comes back equal to what this device reported and the
+    // floor only ever guards a transient dip (a refresh that lands between a leg
+    // and its sync). A travel figure that ticks backwards reads as a bug, not as
+    // precision — which is exactly what the old derived-and-collapsing headline
+    // did on Day-End, and what this whole change removes.
+    _displayedDistanceKm = max(_displayedDistanceKm, _measuredDistanceKm);
 
     final WorkSession? open = snap.activeSession;
     final double openKm = _openSessionBaselineKm + _openSessionLocalKm;
@@ -1038,6 +1049,7 @@ class TrackingController extends ChangeNotifier {
     required SessionEndReason reason,
     DateTime? endedAt,
     LocationLog? fix,
+    double? measuredDistanceKm,
   }) {
     final _SessionOutbox entry = _outbox.putIfAbsent(
       sessionId,
@@ -1047,6 +1059,9 @@ class TrackingController extends ChangeNotifier {
     entry.closeReason = reason;
     entry.closedAt = endedAt ?? DateTime.now();
     entry.closeFix = fix ?? entry.closeFix;
+    // The session's final odometer, carried to the server on close as the
+    // authoritative headline distance (v3, migration 037).
+    entry.measuredDistanceKm = measuredDistanceKm ?? entry.measuredDistanceKm;
 
     unawaited(syncPendingWork());
   }
@@ -1109,6 +1124,7 @@ class TrackingController extends ChangeNotifier {
               reason: entry.closeReason!,
               endedAt: entry.closedAt,
               fix: entry.closeFix,
+              measuredDistanceKm: entry.measuredDistanceKm,
             );
             entry.closeSent = true;
           } catch (e) {
@@ -1182,9 +1198,20 @@ class TrackingController extends ChangeNotifier {
       return UploadOutcome.nothing;
     }
 
+    // Ride the open session's live odometer on its own batches, so the admin
+    // dashboard tracks the phone within one sync instead of waiting for close
+    // (v3, migration 037). A draining batch for an already-closed session
+    // carries nothing — that session's final odometer went up with its close,
+    // and this device no longer measures it.
+    final WorkSession? open = activeSession;
+    final double? measuredDistanceKm = open != null && open.id == sessionId
+        ? _openSessionBaselineKm + _openSessionLocalKm
+        : null;
+
     final LocationSyncResult result = await _sync.pushLocations(
       sessionId: serverId,
       fixes: batch,
+      measuredDistanceKm: measuredDistanceKm,
     );
 
     return UploadOutcome(result.settled, liveUntil: result.liveUntil);
@@ -1403,6 +1430,11 @@ class _SessionOutbox {
   DateTime? closedAt;
   LocationLog? closeFix;
   bool closeSent = false;
+
+  /// The session's final odometer, sent on close as its headline distance
+  /// (v3, migration 037). Null for an older build or a close that measured
+  /// nothing.
+  double? measuredDistanceKm;
 
   bool get needsOpen => serverId == null;
 

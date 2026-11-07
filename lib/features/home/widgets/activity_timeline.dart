@@ -21,10 +21,15 @@ class ActivityTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final List<ActivityEvent> ordered = List<ActivityEvent>.of(events)
+      ..sort((ActivityEvent a, ActivityEvent b) {
+        final int byTime = a.time.compareTo(b.time);
+        return byTime != 0 ? byTime : a.type.index.compareTo(b.type.index);
+      });
     final List<ActivityEvent> items =
-        maxItems != null && events.length > maxItems!
-            ? events.sublist(0, maxItems!)
-            : events;
+        maxItems != null && ordered.length > maxItems!
+            ? ordered.sublist(0, maxItems!)
+            : ordered;
 
     return Column(
       children: List<Widget>.generate(items.length, (int i) {

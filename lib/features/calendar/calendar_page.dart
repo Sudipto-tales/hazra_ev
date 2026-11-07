@@ -44,6 +44,7 @@ class _CalendarPageState extends State<CalendarPage> {
   PeriodStatistics? _stats;
   StatsRange _range = StatsRange.thisMonth;
   DateTimeRange? _customRange;
+  int _selectionRequest = 0;
 
   @override
   void initState() {
@@ -65,14 +66,12 @@ class _CalendarPageState extends State<CalendarPage> {
       if (!mounted) return;
       setState(() {
         _records = <int, Attendance>{
-          for (final Attendance a in rows) a.date.day: a,
+          for (final Attendance a in rows) _dateKey(a.date): a,
         };
         _selectedRecord = _selected == null
             ? null
-            : _records[_selected!.day] != null &&
-                    _selected!.month == _month.month &&
-                    _selected!.year == _month.year
-                ? _records[_selected!.day]
+            : _selected!.month == _month.month && _selected!.year == _month.year
+                ? _records[_dateKey(_selected!)]
                 : null;
         _loadingMonth = false;
       });
@@ -87,12 +86,11 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Future<void> _loadStats() async {
     setState(() => _loadingStats = true);
-    final PeriodStatistics s =
-        await AppScope.of(context).repository.statistics(
-              range: _range,
-              from: _customRange?.start,
-              to: _customRange?.end,
-            );
+    final PeriodStatistics s = await AppScope.of(context).repository.statistics(
+          range: _range,
+          from: _customRange?.start,
+          to: _customRange?.end,
+        );
     if (!mounted) return;
     setState(() {
       _stats = s;
@@ -108,12 +106,20 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Future<void> _selectDay(DateTime date) async {
-    setState(() => _selected = date);
+    final int request = ++_selectionRequest;
+    final DateTime selected = DateTime(date.year, date.month, date.day);
+    setState(() {
+      _selected = selected;
+      _selectedRecord = _records[_dateKey(selected)];
+    });
     final Attendance? record =
-        await AppScope.of(context).repository.attendanceForDate(date);
-    if (!mounted) return;
-    setState(() => _selectedRecord = record);
+        await AppScope.of(context).repository.attendanceForDate(selected);
+    if (!mounted || request != _selectionRequest) return;
+    setState(() => _selectedRecord = record?.date == selected ? record : null);
   }
+
+  int _dateKey(DateTime date) =>
+      date.year * 10000 + date.month * 100 + date.day;
 
   @override
   Widget build(BuildContext context) {
@@ -534,8 +540,7 @@ class _StatisticsTab extends StatelessWidget {
                   label: 'Absent days',
                   value: '${stats!.absentDays}',
                   icon: Icons.event_busy_outlined,
-                  valueColor:
-                      stats!.absentDays > 0 ? AppColors.danger : null,
+                  valueColor: stats!.absentDays > 0 ? AppColors.danger : null,
                 ),
               ],
             ),

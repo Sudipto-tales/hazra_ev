@@ -23,7 +23,13 @@ class MonthGrid extends StatelessWidget {
   final ValueChanged<DateTime> onSelect;
 
   static const List<String> _weekdayLabels = <String>[
-    'M', 'T', 'W', 'T', 'F', 'S', 'S',
+    'M',
+    'T',
+    'W',
+    'T',
+    'F',
+    'S',
+    'S',
   ];
 
   @override
@@ -63,7 +69,8 @@ class MonthGrid extends StatelessWidget {
 
             final int day = i - leadingBlanks + 1;
             final DateTime date = DateTime(month.year, month.month, day);
-            final Attendance? record = records[day];
+            final Attendance? record =
+                records[date.year * 10000 + date.month * 100 + day];
             final bool isSelected =
                 selected != null && Fmt.isSameDay(selected!, date);
             final bool isToday = Fmt.isSameDay(date, today);

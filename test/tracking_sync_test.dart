@@ -22,6 +22,8 @@ class _FakeTrackingRepository implements TrackingRepository {
   final List<SessionEndReason> closeReasons = <SessionEndReason>[];
   final List<String> pushedFixIds = <String>[];
   final List<String> pushedSessionIds = <String>[];
+  final List<double?> pushedOdometers = <double?>[];
+  final List<double?> closeOdometers = <double?>[];
   final List<LocationHealth> healthPings = <LocationHealth>[];
 
   /// clientId → server id, so a repeated open returns the same session the way
@@ -59,11 +61,13 @@ class _FakeTrackingRepository implements TrackingRepository {
     required SessionEndReason reason,
     LocationLog? fix,
     DateTime? endedAt,
+    double? measuredDistanceKm,
   }) async {
     if (failClose) throw StateError('network down');
 
     closed.add(sessionId);
     closeReasons.add(reason);
+    closeOdometers.add(measuredDistanceKm);
 
     return WorkSession(
       id: sessionId,
@@ -82,11 +86,13 @@ class _FakeTrackingRepository implements TrackingRepository {
   Future<LocationSyncResult> pushLocations({
     required String sessionId,
     required List<LocationLog> fixes,
+    double? measuredDistanceKm,
   }) async {
     if (failPush) throw StateError('network down');
 
     pushedSessionIds.add(sessionId);
     pushedFixIds.addAll(fixes.map((LocationLog f) => f.id));
+    pushedOdometers.add(measuredDistanceKm);
 
     return LocationSyncResult(
       accepted: fixes.map((LocationLog f) => f.id).toList(),
@@ -238,6 +244,10 @@ void main() {
     expect(server.closeReasons.single, SessionEndReason.pause);
     expect(server.pushedSessionIds, isEmpty);
     expect(sessionId, isNotEmpty);
+    // The session's final odometer rides the close as its headline distance
+    // (v3, migration 037): the field is present and non-negative, never null.
+    expect(server.closeOdometers.single, isNotNull);
+    expect(server.closeOdometers.single, greaterThanOrEqualTo(0.0));
   });
 
   test('an upload failure throws through so the queue keeps the fixes',
