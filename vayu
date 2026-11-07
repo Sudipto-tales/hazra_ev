@@ -21,6 +21,7 @@ require __DIR__ . '/core/Console/DbSyncCommand.php';
 require __DIR__ . '/core/Console/DbExportCommand.php';
 require __DIR__ . '/core/Console/MatchCommand.php';
 require __DIR__ . '/core/Console/CloseDaysCommand.php';
+require __DIR__ . '/core/Console/WorkedRebuildCommand.php';
 require __DIR__ . '/core/Console/DeleteAccountsCommand.php';
 require __DIR__ . '/core/Console/UserPasswordCommand.php';
 require __DIR__ . '/core/Console/MessagingCommand.php';
@@ -35,6 +36,7 @@ $commands = [
     'db:export' => 'Write the schema + bootstrap admin as .sql for phpMyAdmin import',
     'match'   => 'Backfill road-matched route geometry (--days, --date, --employee, --force)',
     'days:close' => 'Close days nobody ended, at org-local midnight (--date, --employee, --dry)',
+    'worked:rebuild' => 'Re-derive worked_seconds + status on past days (--dry, --days, --from, --to, --date, --employee)',
     'accounts:delete-due' => 'Process account deletion requests after 30 days (--dry)',
     'user:password' => 'Reset a user password interactively (--email, --org, --no-must-change)',
     'key:generate' => 'Generate an APP_KEY for the encrypted credential store (--write)',
@@ -65,6 +67,7 @@ match ($command) {
     'db:export' => (new DbExportCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'match'   => (new MatchCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'days:close' => (new CloseDaysCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
+    'worked:rebuild' => (new WorkedRebuildCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'accounts:delete-due' => (new DeleteAccountsCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'user:password' => (new UserPasswordCommand(__DIR__, $framework))->run(array_slice($argv, 2)),
     'key:generate' => (new MessagingCommand(__DIR__, $framework))->keyGenerate(array_slice($argv, 2)),

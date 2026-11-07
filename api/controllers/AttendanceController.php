@@ -51,7 +51,7 @@ final class AttendanceController extends V1Controller
             );
         }
 
-        $this->cache($to);
+        $this->cache('calendar', $from, $to, [$subject['id']]);
 
         Envelope::ok($data, ['total' => count($data), 'from' => $from, 'to' => $to]);
     }
@@ -112,7 +112,7 @@ final class AttendanceController extends V1Controller
             ];
         }
 
-        $this->cache($to);
+        $this->cache('grid', $from, $to, $employeeIds);
 
         Envelope::ok([
             'month' => substr($from, 0, 7),
@@ -176,14 +176,97 @@ final class AttendanceController extends V1Controller
         return $date >= Ctx::today() ? 'no_data' : 'absent';
     }
 
-    /** A window that ends before today can no longer change. */
-    private function cache(string $to): void
+    /**
+     * A past window is STABLE UNTIL SOMETHING RE-DERIVES IT — which is not the
+     * same as unchangeable, and the difference is a bug this used to carry.
+     *
+     * It used to send `private, max-age=86400` for any window ending before
+     * today, on the premise that "a window that ends before today can no
+     * longer change". That premise is false. A past day's status moves
+     * whenever its rollup is re-derived: an admin reopens a closeout, a late
+     * offline batch arrives with fixes for a day that already closed, a
+     * holiday is added to the calendar, `days:close` runs, a tracking
+     * threshold is retuned, or `vayu worked:rebuild` corrects historical
+     * worked time in a burst (`09-SESSION-DARK-TIME-PLAN.md` §7.5). Under
+     * max-age the client kept showing the old verdict for up to 24 hours with
+     * no way to find out, and the comment was the reason somebody would
+     * reintroduce it.
+     *
+     * So a past window now gets a VALIDATOR instead of a lifetime:
+     * `private, no-cache` plus an ETag over the rollup rows the window
+     * actually covers. The body is still cached — `no-cache` means
+     * "revalidate", not "do not store" — but every read checks, and a
+     * revalidation of an untouched month is a 304 with no body, which is
+     * cheaper than the max-age it replaces was honest. Nothing in either
+     * client sends `If-None-Match` by hand; browsers do it themselves from the
+     * stored ETag, which is where the 24-hour staleness actually bit.
+     *
+     * Today's window stays `no-store` exactly as before.
+     */
+    private function cache(string $shape, string $from, string $to, array $employeeIds): void
     {
         if ($to < Ctx::today()) {
-            header('Cache-Control: ' . Envelope::IMMUTABLE);
+            Envelope::freshness($this->validator($shape, $employeeIds, $from, $to), Envelope::REVALIDATE);
             return;
         }
 
         Envelope::noStore();
+    }
+
+    /**
+     * An opaque tag that changes if and only if something the payload is built
+     * from has moved.
+     *
+     * Four inputs, because the payload has four:
+     *
+     *   1. the covered attendance_days rows — MAX(computed_at) catches every
+     *      re-derivation, because every writer of this table restamps it:
+     *      rollupDay() does, and so does `worked:rebuild`. The count and the
+     *      two aggregates catch a row appearing or disappearing without the
+     *      max moving. (If a third writer is ever added that sets `status`
+     *      WITHOUT touching computed_at, it must be added here too — that is
+     *      the one assumption this tag rests on.)
+     *   2. the holidays in the window, because fallbackStatus() reads them and
+     *      a day with no rollup row renders from them alone;
+     *   3. the org's weekend days, which feed fallbackStatus() for the same
+     *      reason and live on the organisations row;
+     *   4. the subject and the shape, so one employee's month can never
+     *      validate another's and the grid can never validate a calendar.
+     *
+     * Deliberately NOT a hash of the rendered payload: that would mean
+     * building the payload before deciding, which is the work a 304 exists to
+     * skip. These are two aggregates over indexed columns.
+     */
+    private function validator(string $shape, array $employeeIds, string $from, string $to): string
+    {
+        [$clause, $params] = $this->inClause('employee_id', $employeeIds);
+
+        $rollup = db_fetch_one(
+            "SELECT COUNT(*) AS n, MAX(computed_at) AS at,
+                    SUM(worked_seconds) AS worked, COUNT(DISTINCT status) AS states
+               FROM attendance_days
+              WHERE {$clause} AND work_date BETWEEN ? AND ?",
+            [...$params, $from, $to],
+        ) ?: [];
+
+        $holidays = db_fetch_one(
+            "SELECT COUNT(*) AS n, MAX(date) AS at FROM holidays
+              WHERE org_id = ? AND date BETWEEN ? AND ?",
+            [Ctx::orgId(), $from, $to],
+        ) ?: [];
+
+        $parts = [
+            $shape, $from, $to,
+            implode(',', $employeeIds),
+            (string) ($rollup['n'] ?? 0),
+            (string) ($rollup['at'] ?? ''),
+            (string) ($rollup['worked'] ?? ''),
+            (string) ($rollup['states'] ?? ''),
+            (string) ($holidays['n'] ?? 0),
+            (string) ($holidays['at'] ?? ''),
+            (string) (Ctx::org()['weekend_days'] ?? ''),
+        ];
+
+        return 'att-' . md5(implode('|', $parts));
     }
 }

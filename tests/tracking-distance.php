@@ -299,12 +299,14 @@ reload();
 $v2Date = '2026-10-03';
 $v2Base = strtotime($v2Date . 'T07:00:00Z');
 
+// Pinned to literal 2, NOT Engine::DISTANCE_ALGO_VERSION: this section exercises
+// the frozen v2 engine, and the constant has since moved on to 3 (the client
+// odometer, migration 037, which has its own section at the end of the file).
 function makeSessionV2(string $id, string $date): array {
     global $sessionSeq;
     db_execute('INSERT INTO work_sessions (id, employee_id, client_id, work_date, seq, started_at, start_lat, start_lng, distance_algo_version)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [$id, 'employee', $id . '-client', $date, ++$sessionSeq, $date . 'T07:00:00Z', 22.5700, 88.3600,
-         Engine::DISTANCE_ALGO_VERSION]);
+        [$id, 'employee', $id . '-client', $date, ++$sessionSeq, $date . 'T07:00:00Z', 22.5700, 88.3600, 2]);
     return db_fetch_one('SELECT * FROM work_sessions WHERE id = ?', [$id]);
 }
 
@@ -474,5 +476,87 @@ check((float) $day['incomplete_distance_km'] > 4.9, 'The day must carry the tunn
 // between them as travel AND as a GPS outage; measuring per session cannot.
 $dayGaps = db_fetch_all("SELECT * FROM session_gps_gaps WHERE employee_id = 'employee' AND work_date = ?", [$v2Date]);
 check(count($dayGaps) === 3, sprintf('Only the three real in-session gaps may exist, got %d', count($dayGaps)));
+
+// ---------------------------------------------------------------------------
+// 9. The client odometer (migration 037, Engine::DISTANCE_ALGO_VERSION = 3).
+//
+// THE real-world failure this exists to fix: the phone captures one fix every
+// ~60 s while moving, which lands right on gps_gap_warning_seconds (60), so v2
+// routes ordinary driving into incompleteKm and the verified headline
+// collapses to a fraction of the distance. v3 keeps v2's derivation as a
+// DIAGNOSTIC and makes the phone's own odometer the headline distance_km.
+// ---------------------------------------------------------------------------
+$v3Date = '2026-10-04';
+$v3Base = strtotime($v3Date . 'T07:00:00Z');
+
+function makeSessionV3(string $id, string $date, int $seq): array {
+    db_execute('INSERT INTO work_sessions (id, employee_id, client_id, work_date, seq, started_at, start_lat, start_lng, distance_algo_version)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$id, 'employee', $id . '-client', $date, $seq, $date . 'T07:00:00Z', 22.5700, 88.3600,
+         Engine::DISTANCE_ALGO_VERSION]);
+    return db_fetch_one('SELECT * FROM work_sessions WHERE id = ?', [$id]);
+}
+function addV3Fix(string $sessionId, array $point, float $accuracy, int $second): void {
+    global $fixSeq, $v3Base;
+    $ts = gmdate('Y-m-d\TH:i:s\Z', $v3Base + $second);
+    db_execute('INSERT INTO location_fixes (session_id, employee_id, client_id, recorded_at, received_at, lat, lng, accuracy_m, speed_kmh, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$sessionId, 'employee', 'fix-' . (++$fixSeq), $ts, $ts, $point[0], $point[1], $accuracy, 0, 'STREAM']);
+}
+
+check(Engine::DISTANCE_ALGO_VERSION === 3, 'A new session must be stamped v3 (the client odometer)');
+
+// A session whose every leg trips the gap gate: five fixes 1 km apart, 90 s
+// between them (>= the 60 s warning threshold), good accuracy. v2 verifies none
+// of it — the whole 4 km goes to incomplete. This is the bug, faithfully.
+$odo = makeSessionV3('odo', $v3Date, 1);
+for ($i = 0; $i <= 4; $i++) { addV3Fix('odo', at($base, $i * 1000, 0), 10, $i * 90); }
+
+// Before any odometer report, a v3 session falls back to the derived figure —
+// never 0 for want of a report, and here that derived figure IS the collapse.
+Engine::refreshSession('odo');
+$row = db_fetch_one("SELECT * FROM work_sessions WHERE id = 'odo'");
+check($row['client_distance_km'] === null, 'No report yet means a NULL odometer');
+near((float) $row['distance_km'], 0.0, 0.01, 'With no report the headline falls back to the derived (collapsed) figure');
+near((float) $row['incomplete_distance_km'], 4.0, 0.05, 'The 4 km the gates rejected is still measured as incomplete');
+
+// The phone reports what it actually measured — the real 4 km. The controller
+// stores max(stored, reported); here that write is simulated directly, and the
+// Engine must now read it as the headline while leaving the diagnostics alone.
+db_execute("UPDATE work_sessions SET client_distance_km = 4.0 WHERE id = 'odo'");
+Engine::refreshSession('odo');
+$row = db_fetch_one("SELECT * FROM work_sessions WHERE id = 'odo'");
+near((float) $row['distance_km'], 4.0, 0.0001, 'distance_km must now be the reported odometer, not the derived figure');
+near((float) $row['verified_distance_km'], 0.0, 0.01, 'verified_distance_km stays the fix-derived figure — the odometer never overwrites it');
+near((float) $row['incomplete_distance_km'], 4.0, 0.05, 'The gap diagnostics are untouched by the odometer');
+near((float) $row['gps_coverage_percent'], 0.0, 0.01, 'Coverage still reports the day was all gap');
+check(count(gapsOf('odo')) === 4, 'The four gap rows are still recorded for the admin map');
+
+// A second v3 session the same day with clean GPS and a modest odometer, so the
+// day is a mix: one collapsed-but-reported session and one clean one.
+$odo2 = makeSessionV3('odo2', $v3Date, 2);
+for ($i = 0; $i <= 4; $i++) { addV3Fix('odo2', at($base, $i * 200, 0), 10, 10000 + $i * 30); }
+db_execute("UPDATE work_sessions SET client_distance_km = 0.8 WHERE id = 'odo2'");
+
+Engine::recompute('employee', $v3Date);
+
+$v3Route = db_fetch_one("SELECT * FROM day_routes WHERE employee_id = 'employee' AND work_date = ?", [$v3Date]);
+check((int) $v3Route['distance_algo_version'] === 3, 'A day of v3 sessions must be pinned to v3');
+near((float) $v3Route['total_distance_km'], 4.8, 0.05, 'The drawn route headline is the summed odometer (4.0 + 0.8)');
+near((float) $v3Route['verified_distance_km'], 0.8, 0.05, 'The day verified figure is the derived sum (0.0 + 0.8), not the odometer');
+
+$v3Day = db_fetch_one("SELECT * FROM attendance_days WHERE employee_id = 'employee' AND work_date = ?", [$v3Date]);
+near((float) $v3Day['distance_km'], 4.8, 0.05, 'The day summary headline is the summed odometer');
+near((float) $v3Day['distance_km'], (float) $v3Route['total_distance_km'], 0.0001,
+    'The day summary and the drawn route must agree on the headline');
+near((float) $v3Day['verified_distance_km'], 0.8, 0.05, 'The day verified figure stays the derived sum');
+
+// The live route (open, uncached day) must read the same headline the cache
+// holds — the stored odometer sum, not a re-derivation from the raw fixes.
+$v3Fixes = db_fetch_all("SELECT f.lat, f.lng, f.accuracy_m, f.recorded_at, f.source
+                           FROM location_fixes f JOIN work_sessions s ON s.id = f.session_id
+                          WHERE s.employee_id = 'employee' AND s.work_date = ? ORDER BY f.recorded_at, f.id", [$v3Date]);
+near(Engine::liveDayDistanceKm('employee', $v3Date, $v3Fixes), 4.8, 0.05,
+    'The live headline must equal the cached odometer sum, not the fix-derived figure');
 
 fwrite(STDOUT, "tracking-distance: all checks passed\n");
