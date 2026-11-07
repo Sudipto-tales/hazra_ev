@@ -389,7 +389,7 @@ void main() {
       expect(tracking.summary.distanceKm, closeTo(1.111, 0.05));
     });
 
-    test('follows the server downward when a covered day is reconciled lower',
+    test('keeps the displayed odometer monotonic across a lower server refresh',
         () async {
       location.nextFix = _fix('open', lat: 23.2400, lng: 87.8600);
       await tracking.startDay();
@@ -405,6 +405,7 @@ void main() {
           session: sid));
       await Future<void>.delayed(Duration.zero);
       expect(tracking.summary.distanceKm, closeTo(2.22, 0.1));
+      final double displayedBeforeRefresh = tracking.summary.distanceKm;
 
       // Both legs have now reached the server.
       location.emitSync(SyncSnapshot(
@@ -415,14 +416,14 @@ void main() {
       ));
       await Future<void>.delayed(Duration.zero);
 
-      // The server's universal engine counted one hop as jitter / moved a gap
-      // chord to incompleteKm, so the verified day is lower than the device's
-      // optimistic sum. The screen must follow it down — freezing high is the
-      // bug that made Home disagree with the dashboard and the stats tab.
+      // A lagging/stale server response must not make the active day's
+      // displayed odometer tick backward. The server stores the device's
+      // measured odometer, so a lower response is transient and the local
+      // reading remains visible until the server catches up.
       repo.serverDistanceKm = 1.4;
       await tracking.refresh();
 
-      expect(tracking.summary.distanceKm, closeTo(1.4, 0.01));
+      expect(tracking.summary.distanceKm, closeTo(displayedBeforeRefresh, 0.01));
       expect(tracking.liveDistanceKm, tracking.summary.distanceKm);
     });
   });
