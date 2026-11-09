@@ -69,6 +69,14 @@ final class TrackingController extends V1Controller
             Envelope::conflict('DAY_CLOSED', 'Today is closed. An admin has to reopen it before you can work it.');
         }
 
+        // Mirrors the DAY_CLOSED guard above: checked only for a genuinely new
+        // session, after the clientId replay, so an offline retry of a session
+        // legitimately opened earlier still succeeds. A holiday or weekend is not
+        // a day anyone can start work on.
+        if (Engine::isNonWorkingDay(Ctx::orgId(), Ctx::today())) {
+            Envelope::conflict('NON_WORKING_DAY', 'Today is a holiday. You can’t start work.');
+        }
+
         $fix = $this->input('fix');
 
         if (!is_array($fix) || !isset($fix['latitude'], $fix['longitude'])) {

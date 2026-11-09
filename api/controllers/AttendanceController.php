@@ -81,21 +81,20 @@ final class AttendanceController extends V1Controller
         $rows = [];
         foreach ($employees as $employee) {
             $byDayKey = [];
-            $present = $absent = $partial = 0;
+            $present = $absent = 0;
             $working = 0;
 
             foreach ($days as $date) {
                 $status = $byEmployee[$employee['id']][$date] ?? $this->fallbackStatus($date);
                 $byDayKey[(int) str_replace('-', '', $date)] = Wire::enum($status);
 
-                // Weekends and holidays are not working days, so they must
-                // not drag the percentage down.
-                if (in_array($status, ['present', 'partial', 'absent'], true)) {
+                // Attendance is binary now: a working day is present or absent,
+                // nothing in between. Weekends and holidays are not working days,
+                // so they must not drag the percentage down.
+                if (in_array($status, ['present', 'absent'], true)) {
                     $working++;
                     if ($status === 'present') {
                         $present++;
-                    } elseif ($status === 'partial') {
-                        $partial++;
                     } else {
                         $absent++;
                     }
@@ -107,8 +106,11 @@ final class AttendanceController extends V1Controller
                 'byDayKey'          => $byDayKey,
                 'presentDays'       => $present,
                 'absentDays'        => $absent,
-                'partialDays'       => $partial,
-                'attendancePercent' => $working === 0 ? 0.0 : Wire::float(($present + $partial) * 100 / $working),
+                // 'partial' is retired, but the key stays and is pinned to 0 so
+                // the existing mobile parser does not break; it is removed as a
+                // separate step once every client has dropped it.
+                'partialDays'       => 0,
+                'attendancePercent' => $working === 0 ? 0.0 : Wire::float($present * 100 / $working),
             ];
         }
 
@@ -163,9 +165,9 @@ final class AttendanceController extends V1Controller
      */
     private function fallbackStatus(string $date): string
     {
-        $holiday = db_fetch_one("SELECT date FROM holidays WHERE org_id = ? AND date = ?", [Ctx::orgId(), $date]);
-
-        if ($holiday) {
+        // Through Engine::holidayOn so a yearly holiday renders on a day with no
+        // rollup row, the same recurrence rule classifyDay uses.
+        if (Engine::holidayOn(Ctx::orgId(), $date) !== null) {
             return 'holiday';
         }
 
@@ -226,8 +228,11 @@ final class AttendanceController extends V1Controller
      *      max moving. (If a third writer is ever added that sets `status`
      *      WITHOUT touching computed_at, it must be added here too — that is
      *      the one assumption this tag rests on.)
-     *   2. the holidays in the window, because fallbackStatus() reads them and
-     *      a day with no rollup row renders from them alone;
+     *   2. the holidays that render into the window, because fallbackStatus()
+     *      reads them and a day with no rollup row renders from them alone —
+     *      one_time holidays bounded by the window, plus every yearly holiday
+     *      for the org (a yearly entry projects onto this window from an anchor
+     *      in another year, so it cannot be window-bounded);
      *   3. the org's weekend days, which feed fallbackStatus() for the same
      *      reason and live on the organisations row;
      *   4. the subject and the shape, so one employee's month can never
@@ -249,10 +254,25 @@ final class AttendanceController extends V1Controller
             [...$params, $from, $to],
         ) ?: [];
 
-        $holidays = db_fetch_one(
+        // one_time holidays are anchored in the window, so a window-bounded count
+        // catches them. A YEARLY holiday is anchored in some single year but
+        // renders on the matching month-day of EVERY year, including years inside
+        // this window its anchor is not — so a window-bounded query would miss it
+        // and leave a no-rollup-row day's cached verdict stale. Every yearly
+        // holiday for the org therefore feeds the tag unconditionally: adding,
+        // removing or re-dating one busts the calendar, at the cost of
+        // occasionally revalidating a window a given yearly holiday does not
+        // actually touch — a cheap 304 either way, never a stale verdict.
+        $oneTime = db_fetch_one(
             "SELECT COUNT(*) AS n, MAX(date) AS at FROM holidays
-              WHERE org_id = ? AND date BETWEEN ? AND ?",
+              WHERE org_id = ? AND recurrence = 'one_time' AND date BETWEEN ? AND ?",
             [Ctx::orgId(), $from, $to],
+        ) ?: [];
+
+        $yearly = db_fetch_one(
+            "SELECT COUNT(*) AS n, MAX(date) AS at FROM holidays
+              WHERE org_id = ? AND recurrence = 'yearly'",
+            [Ctx::orgId()],
         ) ?: [];
 
         $parts = [
@@ -262,8 +282,10 @@ final class AttendanceController extends V1Controller
             (string) ($rollup['at'] ?? ''),
             (string) ($rollup['worked'] ?? ''),
             (string) ($rollup['states'] ?? ''),
-            (string) ($holidays['n'] ?? 0),
-            (string) ($holidays['at'] ?? ''),
+            (string) ($oneTime['n'] ?? 0),
+            (string) ($oneTime['at'] ?? ''),
+            (string) ($yearly['n'] ?? 0),
+            (string) ($yearly['at'] ?? ''),
             (string) (Ctx::org()['weekend_days'] ?? ''),
         ];
 

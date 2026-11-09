@@ -55,6 +55,12 @@ final class DaysController extends V1Controller
             // missing dayState to `open`, so omitting it would read a locked
             // day as workable — the one thing the lock exists to prevent.
             'dayState'       => $lock['state'],
+            // Lets the client grey out Start Work on a holiday or weekend BEFORE
+            // the tap, instead of only learning from the NON_WORKING_DAY 409 that
+            // openSession raises. Same one rule as that guard — one helper, no
+            // second definition. A property of the date and the org, so it rides
+            // on both the employee and the admin-mirror payload.
+            'nonWorkingDay'  => Engine::isNonWorkingDay(Ctx::orgId(), $date),
         ];
 
         $day = db_fetch_one(

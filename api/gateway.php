@@ -77,6 +77,14 @@ class ApiGatewayProvider extends RouteProvider
             // --- Attendance: both calendars and the team matrix -------------- §3.5
             'GET:api/v1/attendance'        => ['AttendanceController', 'index', 'auth'],
 
+            // --- Holidays: admin calendar (role enforced in the controller) --- §3.5
+            'GET:api/v1/admin/holidays'    => ['HolidaysController', 'index',   'auth'],
+            'POST:api/v1/admin/holidays'   => ['HolidaysController', 'store',   'auth'],
+            'DELETE:api/v1/admin/holidays' => ['HolidaysController', 'destroy', 'auth'],
+            // Weekly rest days — the weekly half of the same calendar.
+            'GET:api/v1/admin/weekend-days' => ['HolidaysController', 'weekendDays',       'auth'],
+            'PUT:api/v1/admin/weekend-days' => ['HolidaysController', 'updateWeekendDays', 'auth'],
+
             // --- Statistics: one route, two scopes --------------------------- §3.6
             'GET:api/v1/statistics'        => ['StatisticsController', 'index', 'auth'],
 
