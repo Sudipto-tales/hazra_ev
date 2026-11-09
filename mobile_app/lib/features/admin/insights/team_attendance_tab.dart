@@ -263,10 +263,11 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Binary attendance: no `partial` in the live legend. The enum value and
+    // its parsing survive only so historical rollups still render.
     const List<(String, AttendanceStatus)> items =
         <(String, AttendanceStatus)>[
       ('Present', AttendanceStatus.present),
-      ('Partial', AttendanceStatus.partial),
       ('Absent', AttendanceStatus.absent),
       ('Holiday', AttendanceStatus.holiday),
       ('Weekend', AttendanceStatus.weekend),

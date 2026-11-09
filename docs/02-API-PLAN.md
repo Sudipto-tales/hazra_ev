@@ -250,7 +250,8 @@ POST /days/{id}/reopen          {date, reason}  → {dayState:"open", date}
 `tags[]` ∈ `traffic | vehicleIssue | customerUnavailable | weather | noLeads | goodDay`.
 Declared figures sit beside the GPS-measured ones and never overwrite `attendance_days` —
 the gap is the signal. `POST /tracking/sessions` returns **409 `DAY_CLOSED`** (after the
-`clientId` replay check) when the day is locked. Midnight force-close is the
+`clientId` replay check) when the day is locked, and **409 `NON_WORKING_DAY`** when today is a
+holiday or weekend (§3.11). Midnight force-close is the
 `php vayu days:close` console command reading each org's own timezone — **not scheduled
 on prod yet**, so `closedBySystem` is not emitted until the cron is installed.
 
@@ -273,6 +274,65 @@ the matrix consumes them — the client does no date arithmetic.
 Each `Attendance` embeds a `summary` object of the nine `DaySummary` fields rather than
 repeating them at the top level, which is the §12 de-duplication made concrete.
 
+#### Attendance is BINARY as of 2026-11-08 — `partial` is RETIRED (built, untracked, NOT deployed)
+
+> **Breaking shape change, per project rule 3.** Built by web-agent 2026-11-08 (migration
+> `038_holiday_recurrence_binary_attendance.php` + `Engine`/`AttendanceController`/
+> `StatisticsController`/`TrackingController` changes). **Untracked in git, applied on SQLite
+> by `tests/attendance-binary-holidays.php`, NOT on production** (which still grades against
+> the old threshold). Reported `web-20261108T221358Z`.
+
+`Engine::classifyDay` is now a two-outcome rule, in this order:
+**holiday → weekend → (no session: future `no_data`, past `absent`) → `present`.** The old
+4-hour `FULL_DAY_SECONDS` threshold is **gone** (the constant was removed) and the `partial`
+status is **retired** — `classifyDay` never emits it and no attendance/day endpoint ever puts
+`partial` on the wire again. A one-way data migration (038) folded historical
+`attendance_days.status = 'partial'` → `'present'`. `worked_seconds` is still computed and
+still feeds the `summary` tiles and statistics averages; it simply **no longer decides the
+status**.
+
+- `GET /attendance?format=grid` — `partialDays` is now **ALWAYS `0`**. The key is retained so
+  the current mobile parser does not break; **treat it as deprecated**, slated for removal in a
+  later step once no client reads it. Any day that would have been `partial` is now `present`,
+  and `attendancePercent = presentDays * 100 / (presentDays + absentDays)` — partial no longer
+  enters the sum. **mobile-agent: stop rendering a partial bucket.**
+
+#### 3.5a Admin holiday calendar & weekend rest days — NEW, admin-only (built, untracked, NOT deployed)
+
+Five new routes on `HolidaysController` (`gateway.php:81-86`, all `auth`, admin role enforced
+in-controller). This is the write path mobile's calendar "yearly holiday" and "weekly rest
+day" options need — holidays were create-time-only before, `weekend_days` was seed-time only.
+The two shared engine helpers `Engine::isNonWorkingDay()` / `Engine::holidayOn()` are the
+single source of the holiday/weekend rule that `classifyDay`, the statistics denominator and
+the session guard all read.
+
+```
+GET    /admin/holidays?year=YYYY
+POST   /admin/holidays            {date, name, recurrence}
+DELETE /admin/holidays?date=YYYY-MM-DD
+GET    /admin/weekend-days
+PUT    /admin/weekend-days        {weekendDays:[int 1..7]}
+```
+
+| Call | Returns |
+| --- | --- |
+| `GET /admin/holidays?year=YYYY` | `data:[{date:"YYYY-MM-DD", name, recurrence:"one_time"\|"yearly"}]`, `meta:{year,total}`. `yearly` entries are projected onto `year` (Feb-29 omitted in a non-leap year); `one_time` filtered to that year; sorted by `date`. `year` defaults to the org's current year; `422 field:year` on a non-`YYYY` value |
+| `POST /admin/holidays` | `201 {date,name,recurrence}`. Upserts on the PK `(org_id,date)` so re-posting a date edits it. `422 field:recurrence` on a value other than `one_time`/`yearly`; `422 field:date` on a bad date; `422 field:name` on empty. Create re-derives the stored status of every employee-day already worked on the affected date(s) so a rolled-up `present` flips to `holiday` |
+| `DELETE /admin/holidays?date=YYYY-MM-DD` | `204`. Deletes by PK; forgiving for `yearly` — a projected date resolves to its stored anchor by month-day. `404 HOLIDAY_NOT_FOUND` if none. Re-derives the affected date(s) the same way |
+| `GET /admin/weekend-days` | `data:{weekendDays:[int,...]}` — ISO weekday numbers 1=Mon..7=Sun, read from `organizations.weekend_days` |
+| `PUT /admin/weekend-days` | `200 {weekendDays:[int,...]}` (deduped, sorted, persisted as the JSON array the seeder writes). Each value validated ∈ 1..7, else `422 field:weekendDays` (also on a non-list or a non-integer). After a change, **today and any open session** in the org are re-derived — closed historical days are NOT retroactively re-derived (the read-time stance `ConfigController::rederiveOpenDays` already takes) |
+
+**Recurrence model.** A holiday is `one_time` (its stored `date` is the single occurrence) or
+`yearly` (only the month-day of `date` matters, matched at read time via the portable
+`SUBSTR(date, 6, 5)` — **not** `strftime`, because prod is MariaDB and `Dialect::dml` rewrites
+only upsert syntax, not functions). The PK stays `(org_id, date)`; `date` is the anchor and the
+uniqueness key.
+
+**Why `/admin/weekend-days` is its own route, not folded into `PUT /config`:** `weekend_days`
+lives on `organizations`, not `tracking_configs`, so putting it in `ConfigController`'s field
+map would have mixed two tables. The dated holidays and the weekly rest days now have one
+owning controller.
+
 ### 3.6 Statistics — **one route, two scopes**
 
 ```
@@ -285,6 +345,14 @@ GET /statistics?subject=me|{id}|team&range=&from=&to=&include=perEmployee,daily
 Same field names in both, which is already true of the models. `include=daily` adds the
 `dailyDistance` `DailyMetric[]` series; the chart is the only caller that needs it, so it
 is opt-in.
+
+**Attendance percentages shift with the binary model (2026-11-08, built/untracked/not
+deployed).** The response shape is unchanged. Values move for two reasons: days that were
+`partial` now count as `present` (the numerator rises), and `calendarWorkingDays()` routes
+every candidate day through `Engine::isNonWorkingDay`, so a **yearly** holiday drops out of
+the working-day denominator on *every* year it falls, not only its anchor year. The internal
+`present + partial` sum still exists in `StatisticsController` but `partial` is permanently `0`
+now, so it is just `present`.
 
 ### 3.7 Routes — **one route, single track is n = 1**
 
@@ -495,6 +563,13 @@ POST  /tracking/watch                 {employeeIds:[...], ttlSeconds?}    → wa
 - Sessions carry a `clientId` because they are opened offline. A repeated open with the
   same `clientId` returns the existing session — that is what makes "Start Day" safe to
   retry on a dead network.
+- **`POST /tracking/sessions` gains a `409 {"error":{"code":"NON_WORKING_DAY"}}` guard
+  (2026-11-08, built/untracked/not deployed).** Returned when today is a holiday or a weekend
+  per `Engine::isNonWorkingDay`. It sits **right after** the existing `409 DAY_CLOSED` check
+  (`TrackingController:69-77`) and, like it, runs only for a genuinely new session — an offline
+  retry of an already-opened session still replays its original result through the `clientId`
+  check first, so a legitimately-opened day is never blocked. **mobile-agent: handle this like
+  `DAY_CLOSED` on Start Day — both are 409 conflicts on the same button.**
 - Stops and visits are **derived server-side** from the fix chain. The client never posts
   them; posting them would let two devices disagree about what a stop is.
 - `POST /tracking/health` is what turns a `TeamMember` red on the admin dashboard while the

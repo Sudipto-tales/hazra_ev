@@ -258,25 +258,18 @@ final class StatisticsController extends V1Controller
             return 0;
         }
 
-        $holidays = [];
-        foreach (db_fetch_all(
-            "SELECT date FROM holidays WHERE org_id = ? AND date BETWEEN ? AND ?",
-            [Ctx::orgId(), $start, $end],
-        ) as $row) {
-            $holidays[substr((string) $row['date'], 0, 10)] = true;
-        }
-
-        $weekend = Ctx::weekendDays();
+        // One rule for "not a working day", shared with classifyDay and the
+        // openSession guard: Engine::isNonWorkingDay is weekend- AND holiday-aware
+        // including yearly holidays, so a recurring holiday drops out of the
+        // denominator on every year it falls in, not only its anchor year.
+        $orgId = Ctx::orgId();
         $count = 0;
 
         $cursor = new DateTimeImmutable($start);
         $last = new DateTimeImmutable($end);
 
         while ($cursor <= $last) {
-            $date = $cursor->format('Y-m-d');
-            $isoDay = (int) $cursor->format('N');
-
-            if (!in_array($isoDay, $weekend, true) && !isset($holidays[$date])) {
+            if (!Engine::isNonWorkingDay($orgId, $cursor->format('Y-m-d'))) {
                 $count++;
             }
 

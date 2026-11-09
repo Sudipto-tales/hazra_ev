@@ -55,6 +55,49 @@ class AdminUser {
   }
 }
 
+/// How a holiday recurs. Mirrors the server's `recurrence` column exactly
+/// (`one_time` | `yearly`). The admin calendar also offers a third *Weekly*
+/// choice, but that is not a holiday — it writes the org's weekend set instead,
+/// so it has no place in this enum.
+enum HolidayRecurrence { oneTime, yearly }
+
+extension HolidayRecurrenceX on HolidayRecurrence {
+  /// The exact wire token the API expects / returns.
+  String get wire => switch (this) {
+        HolidayRecurrence.oneTime => 'one_time',
+        HolidayRecurrence.yearly => 'yearly',
+      };
+
+  String get label => switch (this) {
+        HolidayRecurrence.oneTime => 'One-time',
+        HolidayRecurrence.yearly => 'Yearly',
+      };
+
+  /// Tolerant parse: an unknown token falls back to [HolidayRecurrence.oneTime]
+  /// rather than throwing, so a future server value cannot crash the calendar.
+  static HolidayRecurrence fromWire(String? raw) => switch (raw) {
+        'yearly' => HolidayRecurrence.yearly,
+        _ => HolidayRecurrence.oneTime,
+      };
+}
+
+/// One entry on the admin holiday calendar — `GET /admin/holidays`.
+///
+/// [date] is the concrete yyyy-mm-dd occurrence for the requested year: the
+/// server projects yearly entries onto that year, so the client never does
+/// calendar arithmetic.
+class Holiday {
+  const Holiday({
+    required this.date,
+    required this.name,
+    required this.recurrence,
+  });
+
+  final DateTime date;
+  final String name;
+  final HolidayRecurrence recurrence;
+}
+
 /// One row of the live team roster: an employee plus today's tracking state.
 class TeamMember {
   const TeamMember({

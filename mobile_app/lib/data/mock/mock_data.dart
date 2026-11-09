@@ -659,18 +659,20 @@ class MockData {
         continue;
       }
 
-      final bool partial = roll < 17;
+      // A lighter day — fewer hours, less travel — but still Present. Attendance
+      // is binary: any started session counts, so there is no `partial` status.
+      final bool light = roll < 17;
       final int joinHour = 8 + rnd.nextInt(2);
       final int joinMinute = rnd.nextInt(58);
       final DateTime joining =
           DateTime(date.year, date.month, date.day, joinHour, joinMinute);
       final int workedMinutes =
-          partial ? 180 + rnd.nextInt(90) : 450 + rnd.nextInt(150);
-      final int sessions = partial ? 1 : 1 + rnd.nextInt(3);
-      final double distance = partial
+          light ? 180 + rnd.nextInt(90) : 450 + rnd.nextInt(150);
+      final int sessions = light ? 1 : 1 + rnd.nextInt(3);
+      final double distance = light
           ? 12 + rnd.nextInt(18) + rnd.nextDouble()
           : 24 + rnd.nextInt(46) + rnd.nextDouble();
-      final int visits = partial ? 1 + rnd.nextInt(2) : 2 + rnd.nextInt(5);
+      final int visits = light ? 1 + rnd.nextInt(2) : 2 + rnd.nextInt(5);
       final int reports = visits + (rnd.nextInt(100) < 35 ? 1 : 0);
       final int stopMinutes = 40 + rnd.nextInt(140);
 
@@ -678,7 +680,7 @@ class MockData {
         Attendance(
           id: 'att_${date.millisecondsSinceEpoch}',
           date: date,
-          status: partial ? AttendanceStatus.partial : AttendanceStatus.present,
+          status: AttendanceStatus.present,
           joiningTime: joining,
           endTime: joining.add(Duration(minutes: workedMinutes + stopMinutes ~/ 2)),
           sessionCount: sessions,

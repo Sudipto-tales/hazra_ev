@@ -189,6 +189,19 @@ db_execute(
 $afterHoliday = $tagOf('calendar', ['emp-a'], $FROM, $TO);
 check($afterHoliday !== $afterInsert, 'A holiday added in the window must invalidate it');
 
+// A YEARLY holiday renders on its month-day in EVERY year, so it projects into
+// this window from an anchor year the window does not contain. A window-bounded
+// holiday count would miss it and leave a no-rollup-row day's verdict stale, so
+// every yearly holiday feeds the tag — adding one must bust the calendar.
+db_execute(
+    "INSERT INTO holidays (org_id, date, name, recurrence) VALUES (?, ?, ?, 'yearly')",
+    ['org', '2001-08-15', 'Yearly Fest'],
+);
+
+$afterYearly = $tagOf('calendar', ['emp-a'], $FROM, $TO);
+check($afterYearly !== $afterHoliday, 'A yearly holiday (anchored in another year) must invalidate the calendar ETag');
+$afterHoliday = $afterYearly;   // the new baseline for section E below
+
 // ===========================================================================
 // E — scoped by subject, by shape and by range
 // ===========================================================================

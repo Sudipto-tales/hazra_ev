@@ -250,6 +250,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                     const SizedBox(height: Insets.lg),
                   ],
+                  if (c.startRejectedAt != null) ...<Widget>[
+                    AlertBanner(
+                      icon: Icons.event_busy_rounded,
+                      tone: AppColors.warning,
+                      title: 'Could not start work',
+                      message: c.startRejectedMessage ??
+                          'Today turned out to be a non-working day, so the '
+                              'session was not started.',
+                      actionLabel: 'Dismiss',
+                      onAction: c.acknowledgeStartRejection,
+                    ),
+                    const SizedBox(height: Insets.lg),
+                  ],
                   if (c.autoClosedAt != null) ...<Widget>[
                     AlertBanner(
                       icon: Icons.timer_off_rounded,
@@ -342,6 +355,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         await showOfflineDialog(context, forEndDay: false);
       case StartDayOutcome.dayLocked:
         await showDayLockedDialog(context, result.dayState);
+      case StartDayOutcome.nonWorkingDay:
+        await showNonWorkingDayDialog(context);
       case StartDayOutcome.alreadyRunning:
         break;
     }

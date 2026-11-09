@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/config/tracking_config.dart';
 import '../core/utils/geo.dart';
+import '../data/api/api_exception.dart';
 import '../data/models/models.dart';
 import '../data/repositories/employee_repository.dart';
 import '../data/repositories/tracking_repository.dart';
@@ -16,6 +17,11 @@ enum StartDayOutcome {
   blocked,
   offline,
   dayLocked,
+
+  /// Today is a holiday or a weekly rest day — the server refuses a session on
+  /// it (`NON_WORKING_DAY`). Reached proactively from the day snapshot, or from
+  /// the 409 the session-open call returns in the race case.
+  nonWorkingDay,
   alreadyRunning,
 }
 
@@ -296,6 +302,27 @@ class TrackingController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Today is a holiday or weekly rest day, as the server reported it on the
+  /// day snapshot. Lets Home disable and annotate Start Work *before* the tap —
+  /// the 409 from the session-open call is the backstop for the race.
+  bool get isNonWorkingDay => _snapshot?.isNonWorkingDay ?? false;
+
+  /// Set when a session the device opened locally was refused by the server
+  /// with `NON_WORKING_DAY` / `DAY_CLOSED` after the fact — the race case.
+  /// Home shows one notice and then clears it. Null the rest of the time.
+  DateTime? _startRejectedAt;
+  String? _startRejectedMessage;
+
+  DateTime? get startRejectedAt => _startRejectedAt;
+  String? get startRejectedMessage => _startRejectedMessage;
+
+  void acknowledgeStartRejection() {
+    if (_startRejectedAt == null) return;
+    _startRejectedAt = null;
+    _startRejectedMessage = null;
+    notifyListeners();
+  }
+
   bool get _isOnline => _snapshot?.sync.isOnline ?? true;
 
   /// Live duration of the open session as of the controller's last tick; zero
@@ -471,6 +498,9 @@ class TrackingController extends ChangeNotifier {
     }
 
     _busy = true;
+    // A fresh attempt clears any stale rejection notice from a previous one.
+    _startRejectedAt = null;
+    _startRejectedMessage = null;
     notifyListeners();
     // Re-read the server's thresholds for this session (§3.12). Kicked off here
     // so it runs alongside the home() check below and adds no latency to the
@@ -496,6 +526,7 @@ class TrackingController extends ChangeNotifier {
           closeout: fresh.closeout,
           summary: fresh.summary,
           sync: fresh.sync,
+          isNonWorkingDay: fresh.isNonWorkingDay,
         );
       } catch (_) {
         _applyHealth(LocationHealth.noInternet);
@@ -506,6 +537,13 @@ class TrackingController extends ChangeNotifier {
       if (isDayLocked) {
         return StartDayResult(
             StartDayOutcome.dayLocked, LocationHealth.ok, dayState);
+      }
+
+      // A holiday or weekly rest day the server has already told us about. The
+      // session-open call would 409; refuse it here so nothing opens locally.
+      if (isNonWorkingDay) {
+        return StartDayResult(
+            StartDayOutcome.nonWorkingDay, LocationHealth.ok, dayState);
       }
 
       final LocationHealth health = await _location.health();
@@ -716,6 +754,63 @@ class TrackingController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Roll a locally-opened session back after the server refused to open it —
+  /// `NON_WORKING_DAY` or `DAY_CLOSED` arrived after the device already started
+  /// the day (the race case). Nothing crashed: the session simply never
+  /// happened, so it is removed and a single notice is raised for Home.
+  void _rejectStartedSession(_SessionOutbox entry, ApiException reason) {
+    final String clientId = entry.clientId;
+    _outbox.remove(clientId);
+
+    WorkSession? removed;
+    for (final WorkSession s in sessions) {
+      if (s.id == clientId) {
+        removed = s;
+        break;
+      }
+    }
+
+    final bool wasOpen = activeSession?.id == clientId;
+    final List<WorkSession> remaining = sessions
+        .where((WorkSession s) => s.id != clientId)
+        .toList(growable: false);
+
+    // Drop the provisional "Day started" / "Session N started" rows this
+    // session put on the timeline, matched on its start instant.
+    if (removed != null) {
+      final DateTime at = removed.startTime;
+      _localActivity.removeWhere((ActivityEvent e) =>
+          e.provisional &&
+          (e.type == ActivityType.sessionStarted ||
+              e.type == ActivityType.dayStarted) &&
+          (e.time.difference(at)).abs() < const Duration(seconds: 2));
+    }
+
+    final bool stillOpen =
+        remaining.any((WorkSession s) => s.endTime == null);
+    final WorkStatus nextStatus = stillOpen
+        ? status
+        : (remaining.isEmpty ? WorkStatus.notStarted : WorkStatus.paused);
+
+    _snapshot = _snapshot?.copyWith(
+      sessions: remaining,
+      status: nextStatus,
+      movement: MovementStatus.unknown,
+    );
+
+    if (wasOpen) {
+      _openSessionBaselineKm = 0;
+      _openSessionLocalKm = 0;
+      _distanceAnchor = null;
+      unawaited(_location.stopTracking());
+      _stopTicker();
+    }
+
+    _startRejectedAt = DateTime.now();
+    _startRejectedMessage = reason.message;
+    notifyListeners();
+  }
+
   /// Demo helper: puts the day back to "Not Started" so the start flow can be
   /// walked through. Not part of the production surface.
   Future<void> resetDay() async {
@@ -726,6 +821,8 @@ class TrackingController extends ChangeNotifier {
     _localActivity.clear();
     _degradedSince = null;
     _autoClosedAt = null;
+    _startRejectedAt = null;
+    _startRejectedMessage = null;
     _outbox.clear();
     _outboxRetry?.cancel();
     _outboxRetry = null;
@@ -1108,9 +1205,22 @@ class TrackingController extends ChangeNotifier {
               startedAt: fix.recordedAt,
             );
             entry.serverId = opened.id;
+          } on ApiException catch (e) {
+            // A terminal "today is not workable" verdict — the day closed, or
+            // it is a holiday/weekend — between the device deciding to start and
+            // this call landing. Retrying would loop forever, so roll the local
+            // session back and surface one notice. NON_WORKING_DAY is handled
+            // exactly like DAY_CLOSED: they share this one path.
+            if (e.code == 'NON_WORKING_DAY' || e.code == 'DAY_CLOSED') {
+              _rejectStartedSession(entry, e);
+              continue;
+            }
+            // Anything else (offline, server down, a timeout) is transient. The
+            // clientId makes the retry safe: a repeat returns the session the
+            // server already created.
+            debugPrint('[tracking] session open still pending: $e');
+            continue;
           } catch (e) {
-            // Offline, or the server is down. The clientId is what makes the
-            // retry safe: a repeat returns the session already created.
             debugPrint('[tracking] session open still pending: $e');
             continue;
           }

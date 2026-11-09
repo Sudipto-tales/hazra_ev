@@ -94,7 +94,7 @@ Employee → Attendance (one per calendar day)
 | --- | --- | --- | --- | --- |
 | `id` | string | R | SRV | |
 | `date` | date | R | SRV | Local calendar day, no time part |
-| `status` | enum | R | SRV | `present absent partial holiday weekend noData` |
+| `status` | enum | R | SRV | **Binary since 2026-11-08 (built/untracked/not deployed):** `present absent holiday weekend noData`. **`partial` is retired** — never emitted again; the enum value lingers only as a legacy name (migration 038 folded all historical `partial` → `present`). `02` §3.5 |
 | `joiningTime` | datetime | O | SRV | First **valid** session start — the authoritative joining time. Null when absent |
 | `endTime` | datetime | O | SRV | Last session close. Null while the day is open |
 | `sessionCount` | int | R | SRV | |
@@ -114,11 +114,17 @@ untouched by the evidence-bounding above. So a day can legitimately read "joined
 ended 18:00" with **3.5 h worked**. Both numbers are honest and they answer different
 questions, but nothing on any screen says so yet — an open copy/UI item for `design-agent`.
 
-**`status` can now change on a day that is already closed.** The corrected `workedDuration`
-is graded by `Engine::classifyDay` against a four-hour full day, so removing phantom hours
-can flip `present` → `partial`. It happens whenever the day is re-derived, which may be
-weeks later. One consequence reaches the API: `GET /attendance` caches past windows for 24 h
-on the premise that they cannot change — see `02` §3.16.
+**`status` can still change on a day that is already closed, but NOT because of worked time
+any more.** As of 2026-11-08 (binary model, built/untracked/not deployed) `Engine::classifyDay`
+**dropped the four-hour threshold**: `worked_seconds` no longer grades the day, so correcting
+phantom hours can no longer flip the verdict — the old `present` → `partial` flip is **gone
+with the status itself**. What *can* still re-derive a closed day's status is the **calendar**:
+creating a holiday on an already-worked date flips `present` → `holiday` (and delete flips it
+back), and editing `weekend_days` re-derives today + open sessions. That re-derivation is
+read-time and scoped — closed historical days are not retroactively re-graded by a calendar
+edit — but `POST /admin/holidays` *does* re-derive the stored rows of employee-days worked on
+the affected date(s). One consequence still reaches the API: `GET /attendance` caches past
+windows for 24 h on the premise that they cannot change — see `02` §3.16.
 
 ### 2.2 `WorkSession`
 
@@ -436,8 +442,9 @@ draws a phantom straight line), `firstFixAt`, `lastFixAt`, `queuedCount`, `isEmp
 
 Grid: `month` R · `days` `date[]` R · `rows[]` R.
 Row: `employee` R · `byDayKey` `Map<int, AttendanceStatus>` R (key `yyyymmdd`, so the cell
-lookup needs no date arithmetic) · `presentDays` · `absentDays` · `partialDays` ·
-`attendancePercent`.
+lookup needs no date arithmetic) · `presentDays` · `absentDays` · `partialDays` **(deprecated,
+always `0` since the 2026-11-08 binary model — key kept so the parser does not break, slated
+for removal)** · `attendancePercent`.
 
 ---
 
@@ -448,7 +455,7 @@ lookup needs no date arithmetic) · `presentDays` · `absentDays` · `partialDay
 | `WorkStatus` | `notStarted working idle locationUnavailable offline ended` | Server, from session state + fix recency |
 | `MovementStatus` | `moving stationary unknown` | Last fixes vs `movementSpeedThresholdKmh` |
 | `LocationHealth` | `ok serviceDisabled permissionDenied permissionDeniedForever backgroundDenied poorAccuracy noInternet` | **Device only** — reported upward, never authored by the server. **`poorAccuracy` is a legacy wire value since 2026-11-05:** weak GPS is no longer a status anybody is shown. The device no longer *produces* it (`LocationService.health()` stopped consulting accuracy; the 3-interval `_accuracyIsPoor` window is deleted), the client folds it onto the same arm as `ok` for title/message/action, and the server accepts it and does nothing with it. It stays on the wire only because builds already in the field (0.1.7) send it |
-| `AttendanceStatus` | `present absent partial holiday weekend noData` | Server calendar rules |
+| `AttendanceStatus` | `present absent holiday weekend noData` (**binary since 2026-11-08** — `partial` retired, never emitted; see §2.1) | Server calendar rules — holiday > weekend > (no session: future `noData`, past `absent`) > `present` |
 | `SyncState` | `synced queued failed` | Device |
 | `VisitStatus` | `inProgress completed unassigned` | Server |
 | `ReportStatus` | `draft queued uploading submitted failed reviewed` | Device (upload), server flips to `reviewed` |
@@ -549,8 +556,8 @@ These drive the endpoint consolidation in `02-API-PLAN.md`.
 | **`received_at`** alongside `recordedAt` on a fix | Device clock skew, late-arriving offline batches |
 | **Audit trail**: who changed a config/employee/product, and when | Tracking rules and roster edits are unattributed |
 | **Manager id** behind `Employee.reportingTo` | It is a rendered string today |
-| **Holiday calendar** | `AttendanceStatus.holiday` has no source |
-| **Weekend definition** per org | `weekend` is hard-coded in the fixtures |
+| ~~**Holiday calendar**~~ | **Closed 2026-11-08 (built/untracked/not deployed)** — `holidays` table (now with `one_time`/`yearly` recurrence) + admin CRUD `GET/POST/DELETE /admin/holidays`; `Engine::holidayOn` is the single read-time source. `02` §3.5a |
+| ~~**Weekend definition** per org~~ | **Closed 2026-11-08 (built/untracked/not deployed)** — `organizations.weekend_days` now has an admin write path `GET/PUT /admin/weekend-days`; was seed-time only |
 | **Pagination cursors** on reports / fixes / notifications | Every list is unbounded today |
 | **`Product.active`** as a first-class field | Currently a side-channel `delistedProductIds()` set |
 | **Push/notification delivery receipts** | `AppNotification.read` is local-only |

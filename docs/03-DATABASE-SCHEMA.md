@@ -50,7 +50,7 @@ CREATE TYPE user_role          AS ENUM ('employee','admin');
 CREATE TYPE work_status        AS ENUM ('not_started','working','idle','location_unavailable','offline','ended');
 CREATE TYPE movement_status    AS ENUM ('moving','stationary','unknown');
 CREATE TYPE location_health    AS ENUM ('ok','service_disabled','permission_denied','permission_denied_forever','background_denied','poor_accuracy','no_internet');
-CREATE TYPE attendance_status  AS ENUM ('present','absent','partial','holiday','weekend','no_data');
+CREATE TYPE attendance_status  AS ENUM ('present','absent','partial','holiday','weekend','no_data');  -- 'partial' RETIRED 2026-11-08: never written, never emitted (see §attendance_days)
 CREATE TYPE visit_status       AS ENUM ('in_progress','completed','unassigned');
 CREATE TYPE report_status      AS ENUM ('draft','queued','uploading','submitted','failed','reviewed');
 CREATE TYPE review_decision    AS ENUM ('pending','approved','rejected');
@@ -100,7 +100,7 @@ CREATE TABLE organizations (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name          text NOT NULL,
   timezone      text NOT NULL DEFAULT 'Asia/Dhaka',
-  weekend_days  smallint[] NOT NULL DEFAULT '{5,6}',   -- ISO weekday numbers
+  weekend_days  smallint[] NOT NULL DEFAULT '{5,6}',   -- ISO weekday numbers (1=Mon..7=Sun); admin write path GET/PUT /admin/weekend-days since 2026-11-08, was seed-time only. Stored as a JSON array under the MySQL dialect
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
@@ -724,10 +724,20 @@ worker on session close — and **by nothing else.**
 > wire keys, corrected values, and **not retroactive by nature** — retuning the
 > weekend/holiday calendar re-derives and rewrites nothing, which is standing rule 2 again.
 >
-> **The stored `status` enum therefore only ever holds the worked-day verdicts the rollup
-> writes** (`present` / `partial`). `absent`, `holiday`, `weekend` and `noData` are
-> read-time answers that no row ever carries — which is the opposite of what the enum's
-> presence in the DDL suggests, so do not code against a stored `absent`.
+> **The stored `status` enum therefore only ever holds the worked-day verdict the rollup
+> writes** — which since the 2026-11-08 binary model is just `present` (or `holiday` when the
+> worked day is a public holiday). `absent`, `weekend` and `noData` are read-time answers that
+> no row ever carries — the opposite of what the enum's presence in the DDL suggests, so do not
+> code against a stored `absent`.
+>
+> **Binary attendance, 2026-11-08 (migration 038, built/untracked/not deployed).**
+> `Engine::classifyDay` dropped its 4-hour `FULL_DAY_SECONDS` threshold and the `partial`
+> status is **retired**: the rule is now holiday → weekend → (no session: future `no_data` /
+> past `absent`) → `present`. Migration 038 ran a **one-way** data fold
+> `UPDATE attendance_days SET status='present' WHERE status='partial'`, so no stored `partial`
+> survives and the enum value is legacy-only (SQLite/MySQL store `status` as plain text, so the
+> enum is not a hard DB constraint here). `worked_seconds` is still computed and still feeds the
+> `summary`/statistics tiles — it just no longer decides `status`. `02` §3.5.
 >
 > **One approximation is flagged rather than fudged:** `team()`'s single aggregate
 > denominator is `calendarWorkingDays × headcount` and does **not** subtract per-employee
@@ -736,6 +746,29 @@ worker on session close — and **by nothing else.**
 
 The `(employee_id, work_date)` primary key makes a 120-day calendar a single range scan,
 and `(work_date)` makes the team matrix for a month one scan of ~360 rows.
+
+### The holiday calendar
+
+```sql
+CREATE TABLE holidays (                              -- migration 002; recurrence added by 038
+  org_id      uuid NOT NULL REFERENCES organizations(id),
+  date        date NOT NULL,                         -- yyyy-mm-dd; the ANCHOR and the uniqueness key
+  name        text NOT NULL,
+  recurrence  text NOT NULL DEFAULT 'one_time',      -- 'one_time' | 'yearly'; added by migration 038
+  PRIMARY KEY (org_id, date)
+);
+```
+
+The source `Engine::holidayOn` / `classifyDay` / the statistics denominator / the
+`NON_WORKING_DAY` session guard all read for a public holiday. The admin CRUD is
+`GET/POST/DELETE /admin/holidays` (`02` §3.5a). **`recurrence` was added 2026-11-08 (migration
+038, built/untracked/not deployed), defaulting to `one_time`** so every pre-existing holiday
+keeps its exact meaning with no backfill. A `yearly` holiday stores a single anchor row and is
+matched at read time by **month-day** via the portable `SUBSTR(date, 6, 5)` (not `strftime` —
+prod is MariaDB), projected onto whichever year is read; a Feb-29 anchor simply has no
+occurrence in a non-leap year. The PK stays `(org_id, date)`, so a `POST` upserts on the
+anchor. Weekly rest days are **not** here — they are `organizations.weekend_days` (§3), applied
+by the same engine helpers.
 
 ```sql
 CREATE TABLE day_routes (
@@ -1055,8 +1088,8 @@ both) → `visit_reports` → `report_sales`, `report_images`, `report_reviews` 
 `attendance_days`, `day_routes`, `activity_events` → `notifications`,
 `notification_recipients` → `audit_log`.
 
-Shipped migration ledger (`website/database/migrations/`, 001–036 on disk; **001–031
-applied on production, 032–036 not**): 001–007 core/tracking/
+Shipped migration ledger (`website/database/migrations/`, 001–038 on disk; **001–031
+applied on production, 032–038 not**): 001–007 core/tracking/
 catalogue/session/report/rollup/notification tables, **008** `route_geometry`, **009**
 `day_closeouts` + `day_reopen_audit`, **010** `users.must_change_password`, 011+ the website
 admin / content / catalogue / warranty / app-release / dealer-locations / account-deletion /
@@ -1102,6 +1135,17 @@ displacement-aware so 036 does not *depend* on it — but deploying ahead of the
 means the one case `source` was added to disambiguate falls back to displacement alone.
 (2) The mobile client's pre-fetch config fallbacks still read the **old** `60 / 20 / 50`,
 so a cold start before the first `GET /config` captures at the pre-036 cadence.
+
+**037 — client-reported odometer (algo v3). On disk, no inbox report here, so named not
+modelled** (committed, unlike 038 below). **038 — holiday recurrence + binary attendance.
+BUILT, UNTRACKED, applied on SQLite by `tests/attendance-binary-holidays.php`, NEVER on
+production.** Two decisions land together: (a) `holidays.recurrence text NOT NULL DEFAULT
+'one_time'` (`one_time`|`yearly`; PK stays `(org_id,date)`, `date` the anchor) — additive, no
+backfill; (b) a one-way data fold `UPDATE attendance_days SET status='present' WHERE
+status='partial'`, because `Engine::classifyDay` dropped its 4-hour threshold and `partial` is
+retired. `down()` is deliberately a no-op: SQLite cannot drop a column and the `partial →
+present` fold is not reversible regardless — the same stance 037/036/031/010 take for an added
+column. `02` §3.5 / §3.5a.
 
 **Config v9 — shipped as migration 031, applied on production 2026-11-04T18:20:03Z.** It was
 written first as `031_tracking_config_v8.php` and retargeted under the **new filename**

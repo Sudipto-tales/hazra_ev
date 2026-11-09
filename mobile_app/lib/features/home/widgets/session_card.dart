@@ -197,6 +197,7 @@ class SessionCard extends StatelessWidget {
           _Actions(
             status: status,
             locked: controller.isDayLocked,
+            nonWorkingDay: controller.isNonWorkingDay,
             busy: controller.isBusy,
             onStartDay: onStartDay,
             onEndDay: onEndDay,
@@ -230,6 +231,7 @@ class _Actions extends StatelessWidget {
   const _Actions({
     required this.status,
     required this.locked,
+    required this.nonWorkingDay,
     required this.busy,
     required this.onStartDay,
     required this.onEndDay,
@@ -241,6 +243,10 @@ class _Actions extends StatelessWidget {
   /// The day is closed server-side. Only an admin can undo that, so the
   /// primary action is dead rather than merely discouraged.
   final bool locked;
+
+  /// Today is a holiday or weekly rest day. Start Work is shown disabled and
+  /// annotated rather than letting the tap fail on the server's 409.
+  final bool nonWorkingDay;
   final bool busy;
   final VoidCallback onStartDay;
   final VoidCallback onEndDay;
@@ -257,6 +263,18 @@ class _Actions extends StatelessWidget {
     }
 
     if (!status.isSessionOpen) {
+      // A holiday or weekly rest day with nothing open yet: the day cannot
+      // start, so the action is dead and says why. A paused day (a session was
+      // already worked earlier) is left resumable — the server allows the
+      // replay of an already-started session.
+      if (nonWorkingDay && status == WorkStatus.notStarted) {
+        return const _WhiteButton(
+          label: 'Not a working day',
+          icon: Icons.beach_access_rounded,
+          onPressed: null,
+        );
+      }
+
       final bool resuming = status == WorkStatus.paused;
       return _WhiteButton(
         label: resuming ? 'Resume session' : 'Start Day',

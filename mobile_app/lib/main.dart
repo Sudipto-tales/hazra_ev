@@ -10,6 +10,7 @@ import 'data/api/token_store.dart';
 import 'data/company_directory.dart';
 import 'data/mock/day_lock_store.dart';
 import 'data/mock/account_deletion_store.dart';
+import 'data/mock/holiday_store.dart';
 import 'data/mock/product_store.dart';
 import 'data/repositories/admin_repository.dart';
 import 'data/repositories/employee_repository.dart';
@@ -69,18 +70,24 @@ Future<void> main() async {
     final ProductStore productStore = ProductStore();
     final DayLockStore dayLock = DayLockStore();
     final AccountDeletionStore deletions = AccountDeletionStore();
+    // One non-working calendar shared by both repositories, so a holiday the
+    // admin adds immediately blocks the employee's Start Work. The server owns
+    // this against the real API.
+    final HolidayStore holidays = HolidayStore();
 
     repository = MockEmployeeRepository(
       products: productStore,
       notifications: notifications,
       dayLock: dayLock,
       deletions: deletions,
+      holidays: holidays,
     );
     adminRepository = MockAdminRepository(
       products: productStore,
       notifications: notifications,
       dayLock: dayLock,
       deletions: deletions,
+      holidays: holidays,
     );
     // Nothing to write to. The no-op hands the device's own session id back,
     // so the offline build behaves exactly as it did before the write path.

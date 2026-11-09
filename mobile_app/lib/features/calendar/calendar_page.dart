@@ -38,6 +38,7 @@ class _CalendarPageState extends State<CalendarPage> {
   bool _loadingMonth = true;
   bool _loadingStats = true;
   Object? _error;
+  Object? _statsError;
 
   Map<int, Attendance> _records = <int, Attendance>{};
   Attendance? _selectedRecord;
@@ -85,17 +86,32 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Future<void> _loadStats() async {
-    setState(() => _loadingStats = true);
-    final PeriodStatistics s = await AppScope.of(context).repository.statistics(
-          range: _range,
-          from: _customRange?.start,
-          to: _customRange?.end,
-        );
-    if (!mounted) return;
     setState(() {
-      _stats = s;
-      _loadingStats = false;
+      _loadingStats = true;
+      _statsError = null;
     });
+    try {
+      final PeriodStatistics s =
+          await AppScope.of(context).repository.statistics(
+                range: _range,
+                from: _customRange?.start,
+                to: _customRange?.end,
+              );
+      if (!mounted) return;
+      setState(() {
+        _stats = s;
+        _loadingStats = false;
+      });
+    } catch (e) {
+      // Without this, a single failed request left the tab on its loading
+      // skeleton forever — no error, no retry. Mirror _loadMonth so a failure
+      // surfaces and can be retried.
+      if (!mounted) return;
+      setState(() {
+        _statsError = e;
+        _loadingStats = false;
+      });
+    }
   }
 
   void _shiftMonth(int delta) {
@@ -151,6 +167,8 @@ class _CalendarPageState extends State<CalendarPage> {
             _StatisticsTab(
               stats: _stats,
               loading: _loadingStats,
+              error: _statsError,
+              onRetry: _loadStats,
               range: _range,
               onRangeChanged: (StatsRange r) async {
                 if (r == StatsRange.custom) {
@@ -380,18 +398,24 @@ class _StatisticsTab extends StatelessWidget {
   const _StatisticsTab({
     required this.stats,
     required this.loading,
+    required this.error,
+    required this.onRetry,
     required this.range,
     required this.onRangeChanged,
   });
 
   final PeriodStatistics? stats;
   final bool loading;
+  final Object? error;
+  final VoidCallback onRetry;
   final StatsRange range;
   final ValueChanged<StatsRange> onRangeChanged;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+
+    if (error != null) return ErrorState(onRetry: onRetry);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
