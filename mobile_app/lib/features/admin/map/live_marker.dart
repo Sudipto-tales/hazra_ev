@@ -9,11 +9,12 @@ import '../../../data/models/models.dart';
 
 /// What one live marker should look like — derived, pure, and unit-tested.
 ///
-/// The whole marker system is **two independent channels**, and keeping them
-/// independent is the point of this file:
+/// The marker is **two independent channels**, and keeping them independent is
+/// the point of this file:
 ///
-/// * **Colour is state.** Moving, stopped, alert, last-known, stale. Five
-///   values, no more, all from [AppColors].
+/// * **The marker's colour is state.** Moving, stopped, alert, last-known,
+///   stale. Five values, no more, all from [AppColors]. This is [tone], and it
+///   is what makes "green is moving, red needs me" readable at a glance.
 /// * **Glyph is `activity`.** Mapped 1:1 from the server's enum (API plan
 ///   §3.14) and from nothing else. There is deliberately no client-side
 ///   recombination of `status` + `movement` + `locationHealth` here — that
@@ -21,8 +22,18 @@ import '../../../data/models/models.dart';
 ///   second copy of the server's precedence table would drift from it within
 ///   a release.
 ///
-/// Conflating the two is how a map ends up with eight colours nobody can name.
-/// An admin learns "green is moving, red needs me" in a second; learning
+/// **Identity moved off the marker and onto the line.** It used to be that
+/// *everything* was state — the trail was drawn in [tone] too, so two people
+/// in the same state had the same-coloured trail and you could not tell whose
+/// was whose where they crossed. Identity now lives on the **trail**, in a
+/// stable per-employee hue ([AppColors.employeeColor]); the marker keeps
+/// state. So: **line answers "whose?", marker answers "doing what?"** — and the
+/// map's legend names the line colours. The marker is deliberately *not*
+/// tinted with the identity hue: overloading the one at-a-glance status signal
+/// with a second meaning is the exact trap this split exists to avoid.
+///
+/// Conflating the marker's two channels is how a map ends up with eight colours
+/// nobody can name. An admin learns the five states in a second; learning
 /// sixteen colour-glyph combinations takes a legend, and nobody reads legends
 /// on a map they glance at.
 

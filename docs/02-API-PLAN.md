@@ -232,6 +232,14 @@ rules, which is why a settled day reads `ended` rather than `offline`.
 include — `Wire.homeSnapshot` defaults a missing value to `open`, so making it opt-in
 would read a locked day as workable. `?include=closeout` adds the `DayCloseout` object.
 
+`nonWorkingDay` (boolean) is **always present** on both `/days/me` and the admin
+`/days/{id}` mirror (added 2026-11-08, `DaysController::show` → `Engine::isNonWorkingDay`,
+the same rule the `POST /tracking/sessions` 409 guard uses). `true` on a holiday
+(`one_time` or `yearly`) or a weekend day per `organizations.weekend_days`. Additive and
+non-breaking; mobile reads it tolerantly (defaults `false`) and uses it to grey out Start
+Work **before** the tap, with the `NON_WORKING_DAY` 409 as the backstop. Consumed in the
+2026-11-08 mobile holiday-calendar tranche (`home_snapshot.isNonWorkingDay`).
+
 This replaces `home()`, `activity()` and `employeeDay()`.
 
 **Day closeout and reopen** (built 2026-08-27):
@@ -1093,7 +1101,11 @@ Notes on the order, because each position is a decision:
 Rule 5 reads the **existing** `stop_records` table through the **existing** `open_stops`
 partial index. Those rows are only created once a fix cluster has persisted for
 `stopThresholdMinutes` within `stopRadiusMetres` — so **dwell time is already encoded in the
-row's existence**. Rule 5 therefore inherits stop hysteresis with **no new dwell tracking,
+row's existence**. (Cluster membership is tested against the run's **running centroid**, not
+its immutable first fix — `Engine::clusterStops`, reworked 2026-11-09; ordinary stationary
+jitter drifting past the first-fix radius used to shatter a long stop into sub-threshold
+fragments that were dropped at the `stopThresholdMinutes` gate. Derived-behaviour change
+only — no wire-shape change, `reconcileStops()` keys unchanged.) Rule 5 therefore inherits stop hysteresis with **no new dwell tracking,
 no new timer, no new state**: a brief pause at a traffic light never opens a stop row and so
 never reads `stopped`, while a genuine 10-minute halt does. Do not add a parallel dwell
 mechanism for `activity`; if the stop rules need tuning, tune `stopThresholdMinutes` and

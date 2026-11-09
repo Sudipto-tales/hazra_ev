@@ -7,6 +7,7 @@ import '../../../core/theme/theme_ext.dart';
 import '../../../data/models/models.dart';
 import 'route_accuracy.dart';
 import 'route_projection.dart';
+import 'trail_arrows.dart';
 
 /// Colours resolved from the theme *outside* `paint()`. A painter must never
 /// read `Theme.of` itself, and passing them in is what makes dark mode work.
@@ -29,19 +30,27 @@ class RouteMapColors {
     required this.selection,
   });
 
-  factory RouteMapColors.of(BuildContext context) {
+  /// [routeColor] is the employee's identity hue (see [AppColors.employeeColor])
+  /// — the colour the trace, its glow and its rough stretches are drawn in, so
+  /// the same person's line looks the same here and on the live team map. It
+  /// defaults to [AppColors.primary] for callers that have no employee in hand
+  /// (and so the route screen keeps rendering if a colour is never threaded).
+  /// The marker hues — stop, long stop, visit, start, end — stay semantic and
+  /// are deliberately *not* tinted: those carry meaning, not identity.
+  factory RouteMapColors.of(BuildContext context, {Color? routeColor}) {
     final bool dark = context.isDark;
+    final Color route = routeColor ?? AppColors.primary;
     return RouteMapColors(
       plate: dark ? AppColors.surfaceAltDark : AppColors.surfaceAlt,
       grid: context.lineColor.withValues(alpha: dark ? 0.5 : 0.7),
       gridMajor: context.lineColor,
-      stroke: AppColors.primary,
-      glow: AppColors.primary.withValues(alpha: dark ? 0.26 : 0.18),
+      stroke: route,
+      glow: route.withValues(alpha: dark ? 0.26 : 0.18),
       // The route's own hue, held back. A rough stretch is still the route —
       // giving it a colour of its own would read as a different kind of event,
       // and a red or amber would read as a fault. Dashed-and-faint says
       // "approximate" without saying "wrong".
-      rough: AppColors.primary.withValues(alpha: dark ? 0.62 : 0.5),
+      rough: route.withValues(alpha: dark ? 0.62 : 0.5),
       queued: AppColors.textTertiary,
       stop: AppColors.warning,
       longStop: AppColors.danger,
@@ -341,37 +350,48 @@ class RoutePainter extends CustomPainter {
     }
   }
 
+  /// Direction arrows, spaced by **distance along the line** rather than by
+  /// fix count, so a stop that emitted forty fixes does not sprout forty arrows
+  /// while an open road gets none. Spacing is in screen pixels (`_s` divides by
+  /// the viewer zoom), so zooming in reveals more arrows and zooming out thins
+  /// them instead of smearing them into a bar.
+  ///
+  /// Only confident stretches get arrows, for the same reason the solid line is
+  /// confident-only: a crisp chevron pointing the wrong way, derived from two
+  /// weak fixes, is worse than no chevron. The arrows wear the route's own hue
+  /// (identity), held a touch back so they never outweigh the stop and cap dots.
   void _paintChevrons(Canvas canvas) {
-    final List<LocationLog> pts = track.points;
-    if (pts.length < 12) return;
-
-    final int step = max(6, pts.length ~/ 12);
     final Paint paint = Paint()
-      ..color = colors.stroke
+      ..color = colors.stroke.withValues(alpha: 0.85)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = _s(2)
-      ..strokeCap = StrokeCap.round;
+      ..strokeWidth = _s(1.7)
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
-    for (int i = step; i < pts.length - 1; i += step) {
-      if (pts[i].sessionId != pts[i - 1].sessionId) continue;
-      // Direction derived from two weak fixes is a guess. A missing chevron is
-      // honest; a confident arrow pointing the wrong way is not.
-      if (accuracy.isRough(pts[i]) || accuracy.isRough(pts[i - 1])) continue;
-      final Offset a = projection.projectPoint(pts[i - 1]);
-      final Offset b = projection.projectPoint(pts[i]);
-      final double angle = atan2(b.dy - a.dy, b.dx - a.dx);
-      if (!angle.isFinite) continue;
+    const double spread = 0.62;
+    final double len = _s(5);
+    final double spacing = _s(64);
 
-      // Two arms swept back from the direction of travel, forming a ">".
-      const double spread = 0.55;
-      final double len = _s(6);
-      for (final double side in <double>[-1, 1]) {
-        final double a2 = angle + pi + side * spread;
-        canvas.drawLine(
-          b,
-          b + Offset(cos(a2) * len, sin(a2) * len),
-          paint,
-        );
+    for (final List<LocationLog> segment in track.segments) {
+      for (final AccuracyRun run in accuracy.runs(segment)) {
+        if (run.rough || run.points.length < 2) continue;
+        final List<Offset> o =
+            run.points.map(projection.projectPoint).toList(growable: false);
+
+        for (final ArrowPlacement arrow
+            in arrowsAlongOffsets(o, spacing: spacing)) {
+          final double angle = arrow.angleRad;
+          if (!angle.isFinite) continue;
+          // Two arms swept back from the direction of travel, forming a ">".
+          for (final double side in <double>[-1, 1]) {
+            final double a2 = angle + pi + side * spread;
+            canvas.drawLine(
+              arrow.position,
+              arrow.position + Offset(cos(a2) * len, sin(a2) * len),
+              paint,
+            );
+          }
+        }
       }
     }
   }

@@ -42,4 +42,69 @@ class AppColors {
   static const Color statusIdle = warning;
   static const Color statusLongStop = danger;
   static const Color statusOffline = Color(0xFF64748B);
+
+  /// Identity colours for the admin map: one stable hue per employee, worn by
+  /// their route line and their live trail so an admin learns "the violet one
+  /// is Asha" and keeps that across screens and sessions. Resolve an id to a
+  /// colour with [employeeColor], never by indexing this list directly.
+  ///
+  /// This is a **categorical** palette, a different job from the semantic
+  /// colours above. Two rules shaped it:
+  ///
+  /// * **It stays off the status hues.** The marker still carries state in
+  ///   green/amber/red (see `LiveMarkerTone`); if a trail could also be a
+  ///   saturated green or red, line and pin would argue. So the palette leans
+  ///   into blues, violets, teals, pinks and magentas and keeps its two warm
+  ///   entries (orange, olive) clearly off the exact `warning`/`success`
+  ///   shades. Identity lives on the line, state lives on the pin, and the two
+  ///   channels never reach for the same colour.
+  /// * **It reads on both plates.** Every hue is mid-toned rather than pale or
+  ///   near-black, so it holds up on the light Voyager plate and the dark
+  ///   Dark-Matter one without a second list — the trail is drawn with a
+  ///   fading alpha gradient, and a washed-out or ink-dark hue would vanish at
+  ///   the transparent end.
+  ///
+  /// Colour-blind-aware, not colour-blind-proof: no categorical palette this
+  /// size can be fully unambiguous under deuteranopia, which is the other
+  /// reason the legend exists and the reason names ride beside the swatches.
+  static const List<Color> trailPalette = <Color>[
+    Color(0xFF4263EB), // indigo
+    Color(0xFF0CA678), // teal-green
+    Color(0xFF7048E8), // violet
+    Color(0xFFE64980), // pink
+    Color(0xFF1098AD), // cyan
+    Color(0xFFF76707), // orange
+    Color(0xFF9C36B5), // purple
+    Color(0xFF1864AB), // deep blue
+    Color(0xFFC2255C), // raspberry
+    Color(0xFF5C940D), // olive
+  ];
+
+  /// The stable identity colour for [employeeId].
+  ///
+  /// Deterministic and self-contained: it hashes the id with FNV-1a rather than
+  /// `String.hashCode`, because the VM is free to seed `hashCode` per run and a
+  /// colour that changed between launches would defeat the entire point of an
+  /// identity hue. The same id maps to the same [trailPalette] slot on every
+  /// device, every session, forever — which is also what makes it a pure,
+  /// unit-testable function with no dependency on load order or roster index.
+  static Color employeeColor(String employeeId) =>
+      trailPalette[_employeeColorIndex(employeeId)];
+
+  /// Visible for testing: the palette index [employeeColor] resolves to.
+  static int employeeColorIndex(String employeeId) =>
+      _employeeColorIndex(employeeId);
+
+  static int _employeeColorIndex(String employeeId) {
+    // FNV-1a over UTF-16 code units, 32-bit. Masked back to 32 bits each round
+    // so it behaves identically on the VM (64-bit ints) and the web (doubles),
+    // then reduced to a palette slot. An empty id hashes to the FNV offset
+    // basis, which is a defined, stable slot rather than a crash.
+    int hash = 0x811c9dc5;
+    for (int i = 0; i < employeeId.length; i++) {
+      hash ^= employeeId.codeUnitAt(i);
+      hash = (hash * 0x01000193) & 0xFFFFFFFF;
+    }
+    return hash % trailPalette.length;
+  }
 }

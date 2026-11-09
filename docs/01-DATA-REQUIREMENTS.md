@@ -406,7 +406,9 @@ ignored) · `averageWorkedDuration` R · `averageDistanceKm` R · `totalDistance
 ### 8.1 `HomeSnapshot` — employee Home
 
 `status` `WorkStatus` R · `movement` R · `locationHealth` R · `sessions[]` R ·
-`summary` R · `activity[]` R · `visits[]` R · `stops[]` R · `lastFix` O · `sync` R.
+`summary` R · `activity[]` R · `visits[]` R · `stops[]` R · `lastFix` O · `sync` R ·
+`isNonWorkingDay` bool R (added 2026-11-08, default `false` — holiday/weekend, used to
+pre-disable Start Work; backstopped by the `NON_WORKING_DAY` 409).
 Derived: `activeSession` (first open session).
 
 ### 8.2 `EmployeeDay` — admin mirror of the above

@@ -683,15 +683,39 @@ final class Engine
         $i = 0;
 
         while ($i < $count) {
-            $anchorLat = (float) $fixes[$i]['lat'];
-            $anchorLng = (float) $fixes[$i]['lng'];
+            // Grow a cluster forward against its RUNNING centroid, not the
+            // first fix. A candidate joins while it lies within radiusM of the
+            // mean of the fixes accepted so far (kept as running sums so the
+            // centroid recompute is O(1) per fix and the whole scan stays
+            // O(n)). Pinning the window to the immutable first fix shattered a
+            // genuine long stop: accepted fixes may be up to min_accuracy_metres
+            // off, so ordinary stationary jitter routinely drifts past the 75 m
+            // first-fix radius, each break starting a fresh sub-run that fell
+            // under stop_threshold_minutes and got dropped. A centroid wobbles
+            // around the true centre instead, so a long stop absorbs the drift
+            // while still ending when the person actually leaves the area.
+            //
+            // Rule: a single forward pass. Once a fix is accepted it stays in
+            // the cluster even if a later fix nudges the centroid such that the
+            // earlier fix would now sit just outside radiusM — we never re-test
+            // accepted members. This keeps membership deterministic and the loop
+            // linear; the final radius is recomputed from the final centroid
+            // below, so the reported spread still reflects the whole cluster.
+            $sumLat = (float) $fixes[$i]['lat'];
+            $sumLng = (float) $fixes[$i]['lng'];
+            $n      = 1;
 
             $j = $i + 1;
             while ($j < $count) {
-                $d = Geo::distanceM($anchorLat, $anchorLng, (float) $fixes[$j]['lat'], (float) $fixes[$j]['lng']);
+                $cLat = $sumLat / $n;
+                $cLng = $sumLng / $n;
+                $d = Geo::distanceM($cLat, $cLng, (float) $fixes[$j]['lat'], (float) $fixes[$j]['lng']);
                 if ($d > $radiusM) {
                     break;
                 }
+                $sumLat += (float) $fixes[$j]['lat'];
+                $sumLng += (float) $fixes[$j]['lng'];
+                $n++;
                 $j++;
             }
 

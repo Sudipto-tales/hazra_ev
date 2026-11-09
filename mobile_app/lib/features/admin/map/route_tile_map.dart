@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -6,11 +8,13 @@ import '../../../core/config/map_config.dart';
 import '../../../core/config/tracking_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
+import '../../../core/utils/street_view.dart';
 import '../../../data/models/models.dart' hide LatLngBounds;
 import '../../../services/osrm_service.dart';
 import 'map_chrome.dart';
 import 'route_accuracy.dart';
 import 'route_painter.dart' show RouteMapColors;
+import 'trail_arrows.dart';
 
 /// One colour per work session, so a day split by a lunch break reads as two
 /// legs rather than one line that mysteriously teleports. Wraps after five —
@@ -132,6 +136,11 @@ class RouteTileMap extends StatefulWidget {
 class _RouteTileMapState extends State<RouteTileMap> {
   final MapController _map = MapController();
   final OsrmService _osrm = OsrmService();
+
+  /// Tracked coarsely (whole zoom levels) so direction arrows re-space when the
+  /// admin zooms a level, without rebuilding the whole map on every pinch pixel.
+  double _zoom = 15;
+  int _zoomStep = 15;
 
   List<List<LatLng>>? _snapped;
   bool _snapping = false;
@@ -347,6 +356,20 @@ class _RouteTileMapState extends State<RouteTileMap> {
               backgroundColor: colors.plate,
               // Tapping bare map dismisses the detail card.
               onTap: (_, __) => widget.onSelect(null),
+              // Long-press any point on the route opens Street View there — no
+              // key, no in-app panorama, just a hand-off to the Maps app. The
+              // stop/visit callouts carry the same action discoverably.
+              onLongPress: (_, LatLng p) =>
+                  StreetView.open(context, p.latitude, p.longitude),
+              onPositionChanged: (MapCamera camera, bool hasGesture) {
+                _zoom = camera.zoom;
+                final int step = camera.zoom.floor();
+                if (step == _zoomStep) return;
+                _zoomStep = step;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() {});
+                });
+              },
               interactionOptions: InteractionOptions(
                 // Inline, the map lives inside a scrolling list, so a
                 // one-finger drag has to keep belonging to the list — two
@@ -368,7 +391,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
             children: <Widget>[
               TileLayer(
                 // Esri Light/Dark Gray Base, matched to the app theme,
-                // or CARTO Positron / Dark Matter when a key is defined — see
+                // or CARTO Voyager / Dark Matter when a key is defined — see
                 // MapConfig for why neither is raw OSM.
                 urlTemplate: MapConfig.tileUrlFor(dark: dark),
                 userAgentPackageName: MapConfig.userAgentPackageName,
@@ -392,6 +415,7 @@ class _RouteTileMapState extends State<RouteTileMap> {
               if (_unsynced.isNotEmpty)
                 CircleLayer(circles: _unsyncedDots(colors)),
               PolylineLayer(polylines: _polylines(colors)),
+              if (_zoom > 12) MarkerLayer(markers: _arrowMarkers()),
               MarkerLayer(markers: _markers(colors)),
               Scalebar(
                 alignment: Alignment.bottomLeft,
@@ -504,6 +528,47 @@ class _RouteTileMapState extends State<RouteTileMap> {
   // ---------------------------------------------------------------- layers
 
   Color _sessionColor(int index) => sessionColor(index);
+
+  /// Direction chevrons along the drawn line — the snapped geometry when there
+  /// is one, the raw trace otherwise — so a there-and-back on the same road
+  /// reads as two passes. Spaced by ground distance and thinned with zoom (the
+  /// layer is gated off below z12), and coloured per work session to match the
+  /// line they ride. Subtle on purpose: the stop, visit, start and end pins
+  /// stay the loudest things on the route.
+  List<Marker> _arrowMarkers() {
+    final List<List<LatLng>> segments =
+        _hasSnap && _snapped != null ? _snapped! : _rawSegments;
+
+    final List<Marker> out = <Marker>[];
+    for (int i = 0; i < segments.length; i++) {
+      final List<LatLng> pts = segments[i];
+      if (pts.length < 2) continue;
+      final Color color = _sessionColor(i);
+
+      // Roughly constant on-screen spacing: metres-per-pixel at this zoom and
+      // latitude times a target gap, so zooming out thins the arrows.
+      final double mpp = 156543.03392 *
+          math.cos(pts.first.latitude * math.pi / 180).abs() /
+          math.pow(2, _zoom);
+      final double spacingMetres = (mpp * 58).clamp(5, double.infinity);
+
+      for (final TrailArrow arrow
+          in arrowsAlongLatLng(pts, spacingMetres: spacingMetres)) {
+        out.add(
+          Marker(
+            point: arrow.position,
+            width: 10,
+            height: 10,
+            child: Transform.rotate(
+              angle: arrow.bearingDeg * math.pi / 180,
+              child: TrailArrowIcon(color: color, size: 10),
+            ),
+          ),
+        );
+      }
+    }
+    return out;
+  }
 
   List<Polyline> _polylines(RouteMapColors colors) {
     final bool snapped = _hasSnap;

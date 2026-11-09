@@ -24,7 +24,12 @@ class ActivityTimeline extends StatelessWidget {
     final List<ActivityEvent> ordered = List<ActivityEvent>.of(events)
       ..sort((ActivityEvent a, ActivityEvent b) {
         final int byTime = a.time.compareTo(b.time);
-        return byTime != 0 ? byTime : a.type.index.compareTo(b.type.index);
+        // Ties (a departure and the trip it starts share one instant) fall back
+        // to lifecycle order, not enum declaration order, so "Left" renders
+        // above "Travelling" rather than the reverse.
+        return byTime != 0
+            ? byTime
+            : a.type.timelineRank.compareTo(b.type.timelineRank);
       });
     final List<ActivityEvent> items =
         maxItems != null && ordered.length > maxItems!
