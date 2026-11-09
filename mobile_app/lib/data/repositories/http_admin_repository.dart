@@ -1,4 +1,5 @@
 import '../../core/config/tracking_config.dart';
+import '../../core/utils/formatters.dart';
 import '../api/api_client.dart';
 import '../api/wire.dart';
 import '../models/models.dart';
@@ -94,7 +95,15 @@ class HttpAdminRepository implements AdminRepository {
   }) async {
     final ApiResult result =
         await _api.get('/days/$employeeId', query: <String, dynamic>{
-      'date': Wire.day(date),
+      // Resolve "today" on the server, in the org's timezone — exactly as the
+      // employee's own `/days/me` and the `memberById` call on this same screen
+      // already do. Sending the device's local calendar date instead made the
+      // admin day view ask for a different day than the one the sessions were
+      // recorded under whenever the device and the org disagreed on the date
+      // (another timezone, or just after midnight). Every employee then read
+      // "No session was opened" even though the employee's own app — which lets
+      // the server pick the day — still showed the work.
+      'date': Fmt.isSameDay(date, DateTime.now()) ? 'today' : Wire.day(date),
       'include': _dayIncludes,
     });
 
