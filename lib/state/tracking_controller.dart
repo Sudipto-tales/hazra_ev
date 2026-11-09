@@ -265,7 +265,16 @@ class TrackingController extends ChangeNotifier {
   /// already owns are synthesized; stops/visits/reports stay the server's.
   List<ActivityEvent> get activity {
     final List<ActivityEvent> server = _snapshot?.activity ?? const <ActivityEvent>[];
-    if (_localActivity.isEmpty) return server;
+
+    // Once the day is closed the server has rebuilt and returned the whole
+    // timeline — every boundary, stop and report — and it is authoritative and
+    // final. The provisional device rows have nothing left to add, and any that
+    // the supersede match missed (a fix time that landed more than the match
+    // window from the tap, a device/server clock skew) would linger here as a
+    // second copy of an event the server already sent. That is the "every
+    // activity doubles after I end the day" the timeline showed. So after the
+    // lock, the server's list stands alone.
+    if (_localActivity.isEmpty || isDayLocked) return server;
 
     final List<ActivityEvent> merged = <ActivityEvent>[
       ...server,
@@ -475,6 +484,9 @@ class TrackingController extends ChangeNotifier {
       _reconcileDistance(fresh.summary.distanceKm, syncedAt: syncedAt);
       _pruneLocalActivity(fresh.activity);
       if (locked) {
+        // The server owns the closed day's timeline outright now, so drop any
+        // provisional device rows rather than carry them as possible duplicates.
+        _localActivity.clear();
         await _location.stopTracking();
         _stopTicker();
       }
