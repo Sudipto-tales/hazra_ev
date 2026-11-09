@@ -62,8 +62,8 @@ $UTC  = new DateTimeZone('UTC');
 $now  = Wire::now();
 
 // weekend_days emptied on purpose: classifyDay lets a weekend win over
-// presence, and this suite asserts present-vs-partial, so the fixture must not
-// depend on which weekday the test happens to run on.
+// presence, and this suite asserts the worked-seconds backfill on worked days,
+// so the fixture must not depend on which weekday the test happens to run on.
 db_execute(
     'INSERT INTO organizations (id, name, timezone, weekend_days, created_at) VALUES (?, ?, ?, ?, ?)',
     ['org', 'Hazra EV', 'Asia/Kolkata', '[]', $now],
@@ -154,7 +154,8 @@ foreach (['tail', 'gap', 'nofix', 'old', 'today', 'agree', 'other'] as $slug) {
 }
 
 // emp-tail — 09:00 to 12:30 of fixes, End Day declared at 18:00. The 5½-hour
-// dark tail no longer counts: 32400 stored -> 12600 derived, present -> partial.
+// dark tail no longer counts: 32400 stored -> 12600 derived. Attendance is
+// binary, so the status stays present; only worked_seconds moves.
 $seed('tail', $D2, $at($D2, '09:00:00'), $at($D2, '18:00:00'), $at($D2, '09:00:00'), 43, 300, 32400, 'present');
 
 // emp-gap — an INTERIOR hole. Fixes 09:00-10:00 and 13:00-14:00, ended 14:05.
@@ -252,15 +253,15 @@ check(str_contains($out, 'would change'), "--dry must print what it would change
 check(str_contains($out, 'nothing was written'), '--dry must say that nothing was written');
 check(str_contains($out, '9.00 h ->') && str_contains($out, '3.50 h'),
     "--dry must print the before and after hours for emp-tail, said:\n{$out}");
-check(str_contains($out, 'present -> partial'), '--dry must print the status flip');
+check(!str_contains($out, '-> partial'), 'Binary attendance: there is no present -> partial flip any more');
 check(preg_match('/days_examined\s+5/', $out) === 1,
     "5 in-range days with sessions, got:\n{$out}");
 check(preg_match('/days_that_move\s+4/', $out) === 1,
-    "4 of them move (tail, nofix, agree, other — not gap), got:\n{$out}");
-check(preg_match('/days_present_to_partial\s+4/', $out) === 1,
-    "all four flips are present -> partial, got:\n{$out}");
+    "4 of them move on worked_seconds (tail, nofix, agree, other — not gap), got:\n{$out}");
+check(preg_match('/days_present_to_partial\s+0/', $out) === 1,
+    "partial is retired, so no day flips present -> partial, got:\n{$out}");
 check(preg_match('/other status changes\s+0/', $out) === 1,
-    "the SQL predicts no other status change, got:\n{$out}");
+    "a started session stays present, so no status moves at all, got:\n{$out}");
 // (32400-12600) + (32400-0) + (30600-7200) + (32400-12600) = 95400 s = 26.5 h
 check(preg_match('/hours_removed_total\s+26\.5/', $out) === 1,
     "net hours removed must be 26.5, got:\n{$out}");
@@ -312,9 +313,9 @@ check($snapshot('activity_events', 'id') === $before['activity_events'],
 // ...and the two fields it DOES write, written.
 check((int) $dayRow('tail', $D2)['worked_seconds'] === 12600,
     'emp-tail must now read 09:00 -> 12:30 = 12600 s, got ' . json_encode($dayRow('tail', $D2)['worked_seconds']));
-check($dayRow('tail', $D2)['status'] === 'partial', 'emp-tail must have flipped to partial');
+check($dayRow('tail', $D2)['status'] === 'present', 'emp-tail stays present — only its worked_seconds moved');
 check((int) $dayRow('nofix', $D4)['worked_seconds'] === 0, 'A fixless day must read 0');
-check($dayRow('nofix', $D4)['status'] === 'partial', 'A fixless day cannot be present');
+check($dayRow('nofix', $D4)['status'] === 'present', 'A started session is present even with no fixes');
 check((int) $dayRow('gap', $D2)['worked_seconds'] === 18300,
     'The interior-gap day must still read 18300 s — untouched, not rewritten to the same value');
 check($dayRow('gap', $D2)['status'] === 'present', 'The interior-gap day stays present');
@@ -376,7 +377,7 @@ check($row !== false && $row !== null, 'The changed day must have an audit row k
 check($row['actor_id'] === null, 'No human did this, so actor_id must be NULL');
 check(json_decode($row['before'], true) === ['worked_seconds' => 32400, 'status' => 'present'],
     'The audit row must carry the figure it replaced, got ' . json_encode($row['before']));
-check(json_decode($row['after'], true) === ['worked_seconds' => 12600, 'status' => 'partial'],
+check(json_decode($row['after'], true) === ['worked_seconds' => 12600, 'status' => 'present'],
     'The audit row must carry what it wrote, got ' . json_encode($row['after']));
 
 // ===========================================================================

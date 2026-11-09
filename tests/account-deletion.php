@@ -29,17 +29,21 @@ foreach (['employee', 'untouched', 'automatic', 'due-on-access', 'admin', 'other
 $before = db_fetch_one("SELECT * FROM users WHERE id = 'untouched'");
 $migration = new AccountDeletionRequests($pdo); $migration->up(); $migration->up();
 require_once __DIR__ . '/../database/migrations/030_account_deletion_admin_note.php';
-// 031 and 036 too, in production order: Engine::rollupDay now also reads the
-// tracking config (worked time is trimmed against offline_threshold_minutes at
-// read time), and Ctx::config() materialises a missing row with the v9/v10
+// 031, 036 and 038 too, in production order: Engine::rollupDay now also reads
+// the tracking config (worked time is trimmed against offline_threshold_minutes
+// at read time), and Ctx::config() materialises a missing row with the v9/v10
 // columns — so tracking_configs has to be the real shape, not 002's. 036 is
 // needed because rollupDay reads work_sessions.distance_algo_version, which
-// pins a day's measurement rule. Both required explicitly for the same reason
-// 027 and 030 are — the glob above deliberately stops at 009.
+// pins a day's measurement rule. 038 is needed because rollupDay -> classifyDay
+// -> Engine::holidayOn reads holidays.recurrence, the binary-attendance column.
+// All required explicitly for the same reason 027 and 030 are — the glob above
+// deliberately stops at 009.
 require_once __DIR__ . '/../database/migrations/031_tracking_config_v9.php';
 (new TrackingConfigV9($pdo))->up();
 require_once __DIR__ . '/../database/migrations/036_universal_distance_engine.php';
 (new UniversalDistanceEngine($pdo))->up();
+require_once __DIR__ . '/../database/migrations/038_holiday_recurrence_binary_attendance.php';
+(new HolidayRecurrenceBinaryAttendance($pdo))->up();
 (new AccountDeletionAdminNote($pdo))->up();
 (new AccountDeletionAdminNote($pdo))->up();
 $after = db_fetch_one("SELECT * FROM users WHERE id = 'untouched'");

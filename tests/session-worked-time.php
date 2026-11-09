@@ -72,8 +72,8 @@ $UTC  = new DateTimeZone('UTC');
 $now  = Wire::now();
 
 // weekend_days is emptied on purpose: classifyDay lets a weekend win over
-// presence, and this suite asserts present-vs-partial, so the fixture must not
-// depend on which weekday the test happens to run on.
+// presence, and this suite asserts the worked-time arithmetic on worked days,
+// so the fixture must not depend on which weekday the test happens to run on.
 db_execute(
     'INSERT INTO organizations (id, name, timezone, weekend_days, created_at) VALUES (?, ?, ?, ?, ?)',
     ['org', 'Hazra EV', 'Asia/Kolkata', '[]', $now],
@@ -209,12 +209,14 @@ check($wall === 32400, "Fixture check: the wall-clock span should be 9 h, got {$
 check($worked('emp-tail', $PAST) === 12600,
     'A trailing dark tail must be excluded: expected 12600 s (09:00 -> 12:30), got ' . $worked('emp-tail', $PAST));
 
-// The verdict, which is the part a human reads. 9 h of wall clock is a full
-// day; 3.5 h of evidence is not.
+// The verdict, which is the part a human reads. Attendance is binary now: a
+// started session is present regardless of how many hours of evidence survive
+// the dark-tail trim — the worked_seconds correction above is what moves, not
+// the status.
 check(Engine::classifyDay($PAST, 1, $wall) === 'present',
-    'Fixture check: the uncorrected 9 h span must have classified as present');
-check($day('emp-tail', $PAST)['status'] === 'partial',
-    'A phantom-hours day must read partial once its dark tail is removed, got ' . json_encode($day('emp-tail', $PAST)['status']));
+    'Fixture check: a day with a session classifies present');
+check($day('emp-tail', $PAST)['status'] === 'present',
+    'A started session is present even after its dark tail is trimmed, got ' . json_encode($day('emp-tail', $PAST)['status']));
 
 // ===========================================================================
 // B — an interior dark gap is NOT excluded
@@ -286,8 +288,8 @@ check($worked('emp-nofix', $PAST) === 0,
 // Still a session, and still not an absence: the day was declared, it just has
 // nothing behind it.
 check((int) $day('emp-nofix', $PAST)['session_count'] === 1, 'The fixless session must still be counted');
-check($day('emp-nofix', $PAST)['status'] === 'partial',
-    'A fixless day is partial, not absent, got ' . json_encode($day('emp-nofix', $PAST)['status']));
+check($day('emp-nofix', $PAST)['status'] === 'present',
+    'A fixless day with a started session is present, not absent, got ' . json_encode($day('emp-nofix', $PAST)['status']));
 
 // ===========================================================================
 // E — the threshold boundary, and that the threshold is read at read time
@@ -341,7 +343,7 @@ $reload('emp-tail');
 Engine::recompute('emp-tail', $PAST);
 check($worked('emp-tail', $PAST) === 12600,
     'recompute() must not restore a trimmed dark tail, got ' . $worked('emp-tail', $PAST));
-check($day('emp-tail', $PAST)['status'] === 'partial', 'recompute() must not restore the present verdict');
+check($day('emp-tail', $PAST)['status'] === 'present', 'recompute() keeps the binary present verdict');
 
 // ===========================================================================
 // G — `days:close` stamps last evidence, not 23:59:59

@@ -42,9 +42,6 @@ final class Engine
      */
     private const CLIENT_ODOMETER_ALGO = 3;
 
-    /** Worked seconds at or above this count as a full day; below it, partial. */
-    private const FULL_DAY_SECONDS = 4 * 3600;
-
     /** How close a stop must be to a branch before it is promoted to a visit. */
     private const VISIT_MATCH_METRES = 150.0;
 
@@ -1137,17 +1134,69 @@ final class Engine
     }
 
     /**
-     * Calendar rules. Holiday and weekend win over presence so a day worked on
-     * a public holiday still reads as a holiday on the calendar.
+     * The holiday that falls on a date for an org, or null.
+     *
+     * One query answers both recurrences: a 'one_time' holiday matches its exact
+     * stored date, a 'yearly' one matches on month-day alone so its anchor year
+     * is irrelevant. `SUBSTR(date, 6, 5)` is the month-day of a yyyy-mm-dd string
+     * and is portable across SQLite and MariaDB (prod) — `strftime` is not, and
+     * Dialect::dml rewrites only upsert syntax, never functions. An exact date
+     * match is ordered first so a one_time entry wins over a yearly one sharing
+     * its month-day, and the precise name comes back.
+     *
+     * The single place the holiday rule is expressed: classifyDay, fallbackStatus,
+     * the openSession guard and the statistics denominator all reach it through
+     * here (or through isNonWorkingDay), so the recurrence logic is not written
+     * a second, third and fourth time.
+     *
+     * @return array{org_id: string, date: string, name: string, recurrence: string}|null
+     */
+    public static function holidayOn(string $orgId, string $date): ?array
+    {
+        return db_fetch_one(
+            "SELECT org_id, date, name, recurrence FROM holidays
+              WHERE org_id = ?
+                AND ( (recurrence = 'one_time' AND date = ?)
+                      OR (recurrence = 'yearly' AND SUBSTR(date, 6, 5) = SUBSTR(?, 6, 5)) )
+              ORDER BY CASE WHEN date = ? THEN 0 ELSE 1 END
+              LIMIT 1",
+            [$orgId, $date, $date, $date],
+        ) ?: null;
+    }
+
+    /**
+     * Whether a date is a non-working day for an org — a holiday (either
+     * recurrence) or a weekend per the org's weekend_days. The one predicate the
+     * openSession guard and the statistics denominator share, so "you cannot
+     * start work on a holiday" and "a holiday is not a working day" can never
+     * drift apart.
+     *
+     * Weekend days come from Ctx (org-level), exactly as classifyDay reads them;
+     * every caller runs inside the org whose id it passes.
+     */
+    public static function isNonWorkingDay(string $orgId, string $date): bool
+    {
+        if (self::holidayOn($orgId, $date) !== null) {
+            return true;
+        }
+
+        $isoDay = (int) (new DateTimeImmutable($date))->format('N');
+
+        return in_array($isoDay, Ctx::weekendDays(), true);
+    }
+
+    /**
+     * Calendar rules, now BINARY. Holiday and weekend win over presence so a day
+     * worked on a public holiday still reads as a holiday on the calendar; below
+     * them any started session is 'present' and a past working day with none is
+     * 'absent'. There is no worked-time threshold and no 'partial' any more —
+     * `$workedSeconds` is still stored (it feeds display and stat tiles) but no
+     * longer decides the status, so the parameter is kept for the call sites that
+     * pass it and is deliberately unused here.
      */
     public static function classifyDay(string $workDate, int $sessionCount, int $workedSeconds): string
     {
-        $holiday = db_fetch_one(
-            "SELECT date FROM holidays WHERE org_id = ? AND date = ?",
-            [Ctx::orgId(), $workDate],
-        );
-
-        if ($holiday) {
+        if (self::holidayOn(Ctx::orgId(), $workDate) !== null) {
             return 'holiday';
         }
 
@@ -1160,7 +1209,7 @@ final class Engine
             return $workDate > Ctx::today() ? 'no_data' : 'absent';
         }
 
-        return $workedSeconds >= self::FULL_DAY_SECONDS ? 'present' : 'partial';
+        return 'present';
     }
 
     /**
