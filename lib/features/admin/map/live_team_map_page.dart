@@ -8,6 +8,7 @@ import '../../../core/config/tracking_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/street_view.dart';
 import '../../../data/api/api_exception.dart';
 import '../../../data/models/models.dart';
 import '../../../state/app_scope.dart';
@@ -40,6 +41,13 @@ import 'live_team_map.dart';
 /// **entering live mode takes up to one drain interval** and why every marker
 /// carries its real fix age (API plan §3.11). A watch is a request for
 /// freshness, not a claim of it.
+/// The two trail views fetched together: the 30-minute window per employee and
+/// the whole day per employee (grouped by session).
+typedef _Trails = ({
+  Map<String, List<GeoPoint>> windows,
+  Map<String, List<List<GeoPoint>>> full,
+});
+
 class LiveTeamMapPage extends StatefulWidget {
   const LiveTeamMapPage({super.key});
 
@@ -62,6 +70,12 @@ class _LiveTeamMapPageState extends State<LiveTeamMapPage>
 
   List<TeamMember> _members = const <TeamMember>[];
   Map<String, List<GeoPoint>> _trails = const <String, List<GeoPoint>>{};
+
+  /// Employee id → whole-day route, grouped by session, snapped where the
+  /// server had a match. Built from the same `teamRoutes` fetch that feeds the
+  /// 30-minute windows, and only *drawn* for the selected employee.
+  Map<String, List<List<GeoPoint>>> _fullTrails =
+      const <String, List<List<GeoPoint>>>{};
   TrackingConfig _config = TrackingConfig.defaults;
   String? _selectedId;
 
@@ -137,13 +151,14 @@ class _LiveTeamMapPageState extends State<LiveTeamMapPage>
           ? await scope.adminRepository.config()
           : _config;
 
-      final Map<String, List<GeoPoint>> trails = await _loadTrails(scope);
+      final _Trails trails = await _loadTrails(scope);
 
       if (!mounted) return false;
       setState(() {
         _members = members;
         _config = config;
-        _trails = trails;
+        _trails = trails.windows;
+        _fullTrails = trails.full;
         _error = null;
         _loading = false;
       });
@@ -165,19 +180,21 @@ class _LiveTeamMapPageState extends State<LiveTeamMapPage>
     }
   }
 
-  Future<Map<String, List<GeoPoint>>> _loadTrails(AppScope scope) async {
+  Future<_Trails> _loadTrails(AppScope scope) async {
     final DateTime? at = _trailsAt;
     if (at != null &&
         DateTime.now().difference(at) < _trailInterval &&
         _trails.isNotEmpty) {
-      return _trails;
+      return (windows: _trails, full: _fullTrails);
     }
 
     try {
       final List<RouteTrack> tracks =
           await scope.adminRepository.teamRoutes(date: DateTime.now());
       final DateTime cutoff = DateTime.now().subtract(MapConfig.liveTrailWindow);
-      final Map<String, List<GeoPoint>> out = <String, List<GeoPoint>>{};
+      final Map<String, List<GeoPoint>> windows = <String, List<GeoPoint>>{};
+      final Map<String, List<List<GeoPoint>>> full =
+          <String, List<List<GeoPoint>>>{};
 
       for (final RouteTrack track in tracks) {
         final List<GeoPoint> recent = <GeoPoint>[];
@@ -185,17 +202,55 @@ class _LiveTeamMapPageState extends State<LiveTeamMapPage>
           if (p.recordedAt.isBefore(cutoff)) continue;
           recent.add(GeoPoint(p.latitude, p.longitude));
         }
-        if (recent.length >= 2) out[track.employeeId] = recent;
+        if (recent.length >= 2) windows[track.employeeId] = recent;
+
+        // The whole day, per session, snapped where the server matched it and
+        // raw where it did not — the same rule the historical route screen uses.
+        // Only the selected employee's is ever drawn, so building it for all is
+        // cheap: it is the fixes we already fetched, regrouped.
+        final List<List<GeoPoint>> segments = _fullDaySegments(track);
+        if (segments.isNotEmpty) full[track.employeeId] = segments;
       }
 
       _trailsAt = DateTime.now();
-      return out;
+      return (windows: windows, full: full);
     } catch (e) {
       // A trail is context, not the answer. Losing it must never cost the
       // markers, which are the whole point of the screen.
       debugPrint('[live-map] trail load failed: $e');
-      return _trails;
+      return (windows: _trails, full: _fullTrails);
     }
+  }
+
+  /// One polyline per work session for [track]: the server's road-matched
+  /// geometry when it is usable for that session, the raw trace otherwise.
+  /// Grouped rather than flattened so a lunch break never draws a straight
+  /// chord across the map between where the employee stopped and resumed.
+  List<List<GeoPoint>> _fullDaySegments(RouteTrack track) {
+    final MatchedRoute? matched = track.matched;
+    final bool canSnap = matched != null && matched.isUsable;
+
+    final List<List<GeoPoint>> out = <List<GeoPoint>>[];
+    for (final List<LocationLog> segment in track.segments) {
+      if (segment.isEmpty) continue;
+      final int index = _sessionIndexOf(track, segment.first.sessionId);
+      final List<GeoPoint>? snapped =
+          canSnap && index > 0 ? matched.pointsForSession(index) : null;
+
+      final List<GeoPoint> points = snapped ??
+          segment
+              .map((LocationLog p) => GeoPoint(p.latitude, p.longitude))
+              .toList(growable: false);
+      if (points.length >= 2) out.add(points);
+    }
+    return out;
+  }
+
+  int _sessionIndexOf(RouteTrack track, String sessionId) {
+    for (final WorkSession s in track.sessions) {
+      if (s.id == sessionId) return s.index;
+    }
+    return -1;
   }
 
   // ------------------------------------------------------------ watch loop
@@ -307,6 +362,7 @@ class _LiveTeamMapPageState extends State<LiveTeamMapPage>
         config: _config,
         clock: autoRefreshClock,
         trails: _trails,
+        fullTrails: _fullTrails,
         selectedId: _selectedId,
         onSelect: _select,
       );
@@ -642,6 +698,15 @@ class _RosterRow extends StatelessWidget {
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Street View at last fix',
+                  onPressed: () => StreetView.open(
+                    context,
+                    marker.fix.latitude,
+                    marker.fix.longitude,
+                  ),
+                  icon: const Icon(Icons.streetview_rounded, size: 20),
                 ),
                 IconButton(
                   tooltip: "Open today's detail",

@@ -9,10 +9,12 @@ import '../../../core/config/map_config.dart';
 import '../../../core/config/tracking_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
+import '../../../core/utils/street_view.dart';
 import '../../../data/models/models.dart' hide LatLngBounds;
 import 'live_marker.dart';
 import 'live_pin.dart';
 import 'map_chrome.dart';
+import 'trail_arrows.dart';
 
 /// The map half of the live team screen: tiles, trails, markers, clusters.
 ///
@@ -33,6 +35,7 @@ class LiveTeamMap extends StatefulWidget {
     required this.config,
     required this.clock,
     required this.trails,
+    required this.fullTrails,
     required this.selectedId,
     required this.onSelect,
   });
@@ -47,8 +50,15 @@ class LiveTeamMap extends StatefulWidget {
   /// Ticks once a second. Only the layers listen.
   final ValueListenable<DateTime> clock;
 
-  /// Employee id → their last 30 minutes, oldest first.
+  /// Employee id → their last 30 minutes, oldest first. The default glanceable
+  /// view — enough tail to read direction, little enough to keep a team legible.
   final Map<String, List<GeoPoint>> trails;
+
+  /// Employee id → their *whole day*, grouped by session (snapped geometry when
+  /// the server had it, raw trace otherwise). Opt-in: only the **selected**
+  /// employee's full trail is drawn, so picking one person swaps their 30-minute
+  /// tail for the full day without turning the whole map into spaghetti.
+  final Map<String, List<List<GeoPoint>>> fullTrails;
 
   final String? selectedId;
   final ValueChanged<String?> onSelect;
@@ -82,6 +92,11 @@ class _LiveTeamMapState extends State<LiveTeamMap>
   double _zoom = 11;
 
   bool _followSelection = false;
+
+  /// The identity legend starts open — a map of coloured lines is unreadable
+  /// until you can name them — but collapses to a chip the moment an admin
+  /// wants the pixels back.
+  bool _legendOpen = true;
 
   @override
   void initState() {
@@ -275,6 +290,12 @@ class _LiveTeamMapState extends State<LiveTeamMap>
             maxZoom: MapConfig.maxZoom,
             backgroundColor: plate,
             onTap: (_, __) => widget.onSelect(null),
+            // Long-press anywhere on the map opens Street View at that exact
+            // point — the "look at where they are" gesture, without a key or an
+            // in-app panorama. The selected pin's callout offers the same thing
+            // discoverably; this is the power-user path for any point on a trail.
+            onLongPress: (_, LatLng p) =>
+                StreetView.open(context, p.latitude, p.longitude),
             onPositionChanged: (MapCamera camera, bool hasGesture) {
               _zoom = camera.zoom;
               final int step = camera.zoom.floor();
@@ -299,7 +320,7 @@ class _LiveTeamMapState extends State<LiveTeamMap>
           ),
           children: <Widget>[
             TileLayer(
-              // Esri Light/Dark Gray Base by default, CARTO Positron / Dark
+              // Esri Light/Dark Gray Base by default, CARTO Voyager / Dark
               // Matter when a key is defined — see MapConfig for why, and for
               // why maxNativeZoom is a getter rather than a constant.
               urlTemplate: MapConfig.tileUrlFor(dark: dark),
@@ -319,11 +340,14 @@ class _LiveTeamMapState extends State<LiveTeamMap>
                   builder: (BuildContext context, DateTime now, _) {
                     final List<LiveMarker> markers = _derive(now);
                     final double t = _eased.value;
+                    final List<_TrailDraw> draws = _trailDraws(markers);
                     return Stack(
                       children: <Widget>[
                         PolylineLayer<Object>(
-                          polylines: _trailLines(markers),
+                          polylines: _trailLines(draws),
                         ),
+                        if (_zoom > MapConfig.liveClusterMaxZoom)
+                          MarkerLayer(markers: _trailArrows(draws)),
                         MarkerLayer(markers: _markers(markers, t)),
                       ],
                     );
@@ -377,8 +401,38 @@ class _LiveTeamMapState extends State<LiveTeamMap>
             ],
           ),
         ),
+        Positioned(
+          top: Insets.sm,
+          left: Insets.sm,
+          child: _LiveLegend(
+            entries: _legendEntries(),
+            open: _legendOpen,
+            selectedId: widget.selectedId,
+            plate: plate,
+            onToggle: () => setState(() => _legendOpen = !_legendOpen),
+            onSelect: widget.onSelect,
+          ),
+        ),
       ],
     );
+  }
+
+  /// Name + identity hue for everyone currently on the map, sorted by name so
+  /// the legend order is stable between rebuilds. Derived straight from the
+  /// roster — no per-second data here, so it does not ride the clock.
+  List<_LegendEntry> _legendEntries() {
+    final List<_LegendEntry> out = <_LegendEntry>[];
+    for (final LiveMarker m in _derive(DateTime.now())) {
+      out.add(
+        _LegendEntry(
+          id: m.employeeId,
+          name: m.member.employee.name,
+          color: AppColors.employeeColor(m.employeeId),
+        ),
+      );
+    }
+    out.sort((_LegendEntry a, _LegendEntry b) => a.name.compareTo(b.name));
+    return out;
   }
 
   // ------------------------------------------------------------- layers
@@ -388,28 +442,129 @@ class _LiveTeamMapState extends State<LiveTeamMap>
   /// The fade is the information: the bright end is where they are now and the
   /// transparent end is where they were, so direction of travel reads off the
   /// line itself without an arrowhead to decode.
-  List<Polyline<Object>> _trailLines(List<LiveMarker> markers) {
-    final List<Polyline<Object>> out = <Polyline<Object>>[];
+  ///
+  /// **The line's colour is identity, not state.** Each trail wears its
+  /// employee's stable hue ([AppColors.employeeColor]) so an admin can tell
+  /// two overlapping trails apart — and match a line to a name in the legend —
+  /// while the *marker* at its head keeps carrying moving/stopped/alert state.
+  /// Line answers "whose?", pin answers "doing what?".
+  /// What to draw behind each marker: the 30-minute window for everyone, or the
+  /// whole day for the one selected employee.
+  ///
+  /// The selected person's full-day trail is opt-in on purpose — it is why
+  /// `fullTrails` is only consulted for `selectedId`. Picking someone trades
+  /// their short glance-tail for the full route (one polyline per session, so a
+  /// lunch break never draws a phantom chord), and everyone else stays on the
+  /// legible 30-minute window.
+  List<_TrailDraw> _trailDraws(List<LiveMarker> markers) {
+    final List<_TrailDraw> out = <_TrailDraw>[];
 
     for (final LiveMarker marker in markers) {
-      final List<GeoPoint>? trail = widget.trails[marker.employeeId];
-      if (trail == null || trail.length < 2) continue;
-
       final bool selected = marker.employeeId == widget.selectedId;
-      final Color color = marker.tone.color;
+      final Color color = AppColors.employeeColor(marker.employeeId);
 
-      out.add(
-        Polyline<Object>(
-          points: trail
-              .map((GeoPoint p) => LatLng(p.latitude, p.longitude))
-              .toList(growable: false),
-          strokeWidth: selected ? 4.5 : 3,
-          gradientColors: <Color>[
-            color.withValues(alpha: 0),
-            color.withValues(alpha: marker.stale ? 0.35 : 0.85),
-          ],
-        ),
-      );
+      final List<List<GeoPoint>>? full =
+          selected ? widget.fullTrails[marker.employeeId] : null;
+
+      if (full != null && full.isNotEmpty) {
+        for (final List<GeoPoint> seg in full) {
+          if (seg.length < 2) continue;
+          out.add(_TrailDraw(
+            points: _toLatLng(seg),
+            color: color,
+            selected: true,
+            fullDay: true,
+            stale: marker.stale,
+          ));
+        }
+      } else {
+        final List<GeoPoint>? trail = widget.trails[marker.employeeId];
+        if (trail == null || trail.length < 2) continue;
+        out.add(_TrailDraw(
+          points: _toLatLng(trail),
+          color: color,
+          selected: selected,
+          fullDay: false,
+          stale: marker.stale,
+        ));
+      }
+    }
+
+    return out;
+  }
+
+  static List<LatLng> _toLatLng(List<GeoPoint> points) => points
+      .map((GeoPoint p) => LatLng(p.latitude, p.longitude))
+      .toList(growable: false);
+
+  /// The trail polylines. The 30-minute window keeps its fade — bright head,
+  /// transparent tail, so recency reads off the line. The full-day trail is a
+  /// flat line instead: "now" is not a meaningful end of a whole day, so a fade
+  /// would imply a freshness that is not there.
+  List<Polyline<Object>> _trailLines(List<_TrailDraw> draws) {
+    final List<Polyline<Object>> out = <Polyline<Object>>[];
+
+    for (final _TrailDraw d in draws) {
+      if (d.fullDay) {
+        out.add(
+          Polyline<Object>(
+            points: d.points,
+            strokeWidth: 4,
+            color: d.color.withValues(alpha: 0.75),
+          ),
+        );
+      } else {
+        out.add(
+          Polyline<Object>(
+            points: d.points,
+            strokeWidth: d.selected ? 4.5 : 3,
+            gradientColors: <Color>[
+              d.color.withValues(alpha: 0),
+              d.color.withValues(alpha: d.stale ? 0.35 : 0.85),
+            ],
+          ),
+        );
+      }
+    }
+
+    return out;
+  }
+
+  /// Direction chevrons along every trail, spaced by ground distance and thinned
+  /// with zoom so they read as a flow rather than smearing into a bar. Gated
+  /// above the cluster zoom by the caller: when markers collapse into counts,
+  /// arrows would be noise.
+  List<Marker> _trailArrows(List<_TrailDraw> draws) {
+    final List<Marker> out = <Marker>[];
+
+    for (final _TrailDraw d in draws) {
+      if (d.points.isEmpty) continue;
+      // Keep the on-screen spacing roughly constant: metres-per-pixel at this
+      // zoom and latitude, times a target pixel gap. Zooming out grows the gap,
+      // which is what thins the arrows instead of piling them up.
+      final double mpp = 156543.03392 *
+          math.cos(d.points.first.latitude * math.pi / 180).abs() /
+          math.pow(2, _zoom);
+      final double spacingMetres = (mpp * 58).clamp(5, double.infinity);
+      final double size = d.selected ? 11 : 9.5;
+
+      for (final TrailArrow arrow
+          in arrowsAlongLatLng(d.points, spacingMetres: spacingMetres)) {
+        out.add(
+          Marker(
+            point: arrow.position,
+            width: size,
+            height: size,
+            child: Transform.rotate(
+              angle: arrow.bearingDeg * math.pi / 180,
+              child: TrailArrowIcon(
+                color: d.color.withValues(alpha: d.stale ? 0.5 : 1),
+                size: size,
+              ),
+            ),
+          ),
+        );
+      }
     }
 
     return out;
@@ -493,6 +648,193 @@ class _LiveTeamMapState extends State<LiveTeamMap>
           count: cluster.markers.length,
           tone: cluster.tone,
           size: size,
+        ),
+      ),
+    );
+  }
+}
+
+/// One trail to render: its points, its identity hue, and the two flags that
+/// decide how it is stroked (full day vs 30-minute window, selected vs not).
+@immutable
+class _TrailDraw {
+  const _TrailDraw({
+    required this.points,
+    required this.color,
+    required this.selected,
+    required this.fullDay,
+    required this.stale,
+  });
+
+  final List<LatLng> points;
+  final Color color;
+  final bool selected;
+  final bool fullDay;
+  final bool stale;
+}
+
+/// One row of the identity legend: a name and the hue its trail is drawn in.
+@immutable
+class _LegendEntry {
+  const _LegendEntry({
+    required this.id,
+    required this.name,
+    required this.color,
+  });
+
+  final String id;
+  final String name;
+  final Color color;
+}
+
+/// The map's identity key: which colour is whose trail.
+///
+/// Colour-by-employee is only as readable as the thing that names the colours,
+/// so this is not optional chrome. It is deliberately **collapsible** — a team
+/// of twenty would otherwise wall off a quarter of the map — and **scrollable**
+/// past a handful of rows, so it never grows taller than the plate. Tapping a
+/// row selects that employee, the same selection the roster and the pins share.
+class _LiveLegend extends StatelessWidget {
+  const _LiveLegend({
+    required this.entries,
+    required this.open,
+    required this.selectedId,
+    required this.plate,
+    required this.onToggle,
+    required this.onSelect,
+  });
+
+  final List<_LegendEntry> entries;
+  final bool open;
+  final String? selectedId;
+  final Color plate;
+  final VoidCallback onToggle;
+  final ValueChanged<String?> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    if (entries.isEmpty) return const SizedBox.shrink();
+
+    final ThemeData theme = Theme.of(context);
+    final BorderRadius radius = BorderRadius.circular(Radii.md);
+    final Color surface = plate.withValues(alpha: 0.92);
+
+    if (!open) {
+      return Material(
+        color: surface,
+        borderRadius: radius,
+        elevation: 1,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Insets.sm,
+              vertical: 6,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(
+                  Icons.palette_outlined,
+                  size: 15,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text('Legend', style: theme.textTheme.labelMedium),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      color: surface,
+      borderRadius: radius,
+      elevation: 1,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 190, maxHeight: 240),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            InkWell(
+              borderRadius: BorderRadius.only(
+                topLeft: radius.topLeft,
+                topRight: radius.topRight,
+              ),
+              onTap: onToggle,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Insets.sm, 6, 6, 6),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'Trails',
+                        style: theme.textTheme.labelMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.keyboard_arrow_up_rounded,
+                      size: 17,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                padding: const EdgeInsets.only(bottom: 6),
+                shrinkWrap: true,
+                itemCount: entries.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final _LegendEntry e = entries[index];
+                  final bool selected = e.id == selectedId;
+                  return InkWell(
+                    onTap: () => onSelect(selected ? null : e.id),
+                    child: Container(
+                      color: selected
+                          ? AppColors.primary.withValues(alpha: 0.12)
+                          : Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Insets.sm,
+                        vertical: 4,
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Container(
+                            width: 12,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: e.color,
+                              borderRadius: BorderRadius.circular(Radii.pill),
+                            ),
+                          ),
+                          const SizedBox(width: Insets.sm),
+                          Expanded(
+                            child: Text(
+                              e.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 11.5,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -10,7 +10,7 @@
 ///
 /// ```sh
 /// flutter run --dart-define=MAP_TILE_URL=https://tiles.internal/{z}/{x}/{y}.png
-/// flutter run --dart-define=CARTO_KEY=…             # Positron / Dark Matter at z19
+/// flutter run --dart-define=CARTO_KEY=…             # Voyager / Dark Matter at z19
 /// flutter run --dart-define=OSRM_BASE_URL=https://osrm.internal
 /// flutter run --dart-define=SNAP_TO_ROADS=false   # raw GPS trace only
 /// flutter run --dart-define=OFFLINE_MAP=true      # force the painted fallback
@@ -45,15 +45,28 @@
 /// And its native tiles stop at z16: ask for z17 and you get a
 /// "Map data not yet available" placeholder at HTTP 200, so it fails silently
 /// rather than 404ing. [maxNativeZoom] is therefore 16 for Esri, and the map
-/// over-zooms the z16 tile past that instead of going blank.
+/// over-zooms the z16 tile past that instead of going blank. Over-zooming a
+/// z16 label-light tile is also exactly why streets read as a vague grey
+/// blur once an admin pinches in past a neighbourhood — the keyless plate has
+/// no z17–z19 detail to show.
 ///
-/// A CARTO key brings the original styling back at full z19 detail. Keys are
-/// free from <https://carto.com/basemaps/apikey> — no account, no card, it
-/// arrives by email — and the commercial free tier is a million tile requests
-/// a month, which a fleet of this size does not come close to. Pass it as
-/// `--dart-define=CARTO_KEY=…`; the query parameter is `key=`, appended after
-/// the file extension. A native app sends no `Referer`, so the key has to be
-/// left unrestricted or restricted by Android package name + signing cert.
+/// A CARTO key is the fix for that blur, and it changes the *light* default as
+/// well as lifting the zoom ceiling. The keyed light basemap is now CARTO
+/// **Voyager** (`rastertiles/voyager`), not Positron: Voyager keeps the pale,
+/// low-contrast plate Positron had but carries proper street labels and road
+/// casings down to z19, so a zoomed-in map names the road an employee is
+/// parked on instead of showing an unlabelled grey ribbon. Dark theme stays on
+/// Dark Matter (`dark_all`) — there is no "voyager dark", and Dark Matter is
+/// already the quiet dark plate the markers need. Both go to z19, which is the
+/// whole point of holding a key.
+///
+/// Keys are free from <https://carto.com/basemaps/apikey> — no account, no
+/// card, it arrives by email — and the commercial free tier is a million tile
+/// requests a month, which a fleet of this size does not come close to. Pass
+/// it as `--dart-define=CARTO_KEY=…`; the query parameter is `key=`, appended
+/// after the file extension. A native app sends no `Referer`, so the key has
+/// to be left unrestricted or restricted by Android package name + signing
+/// cert.
 class MapConfig {
   const MapConfig._();
 
@@ -85,15 +98,22 @@ class MapConfig {
       'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/'
       'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 
-  /// CARTO Positron, key-only since 2026-09-25. `{r}` is flutter_map's retina
-  /// placeholder and resolves to `''` unless `retinaMode` is on, so the query
-  /// string goes after the `.png`, not between the tile path and it. `{s}`
-  /// subdomains are deliberately absent — `basemaps.cartocdn.com` serves every
-  /// tile without them.
+  /// CARTO Voyager, the keyed light default since 2026-11-09 — the street-
+  /// labelled plate that makes zoomed-in roads legible where Positron (and the
+  /// Esri fallback) leave them an unlabelled blur. Key-only, like every CARTO
+  /// raster since 2026-09-25. `{r}` is flutter_map's retina placeholder and
+  /// resolves to `''` unless `retinaMode` is on, so the query string goes after
+  /// the `.png`, not between the tile path and it. `{s}` subdomains are
+  /// deliberately absent — `basemaps.cartocdn.com` serves every tile without
+  /// them. Endpoint path verified against CARTO's raster CDN (a keyless HEAD
+  /// still answers 200 image/png, so the path is right; the key is what stops
+  /// the "API KEY REQUIRED" watermark coming back in the pixels).
   static const String cartoLightTileUrl =
-      'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=$cartoKey';
+      'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=$cartoKey';
 
-  /// CARTO Dark Matter, the dark counterpart to Positron.
+  /// CARTO Dark Matter, the dark counterpart. There is no Voyager dark variant,
+  /// and Dark Matter is already the quiet near-black plate the markers want, so
+  /// the dark theme stays on it.
   static const String cartoDarkTileUrl =
       'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=$cartoKey';
 

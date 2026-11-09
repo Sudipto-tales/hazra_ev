@@ -144,6 +144,69 @@ class _PinPainter extends CustomPainter {
       old.borderWidth != borderWidth;
 }
 
+/// A single direction arrow drawn along a trail, pointing **north** at rest.
+///
+/// The caller wraps it in a `Transform.rotate` by the segment's bearing so a
+/// there-and-back on one road shows two opposing flows. Deliberately small and
+/// hollow (a thin open chevron, not a filled wedge) and carried at the trail's
+/// own colour: it is a hint about direction, and it must never shout louder
+/// than the stop, start and end dots it travels between.
+class TrailArrowIcon extends StatelessWidget {
+  const TrailArrowIcon({super.key, required this.color, this.size = 9});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _ChevronPainter(color),
+    );
+  }
+}
+
+class _ChevronPainter extends CustomPainter {
+  const _ChevronPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double w = size.width;
+    final double h = size.height;
+    // An open "^" pointing up: apex at top-centre, arms down to the corners.
+    final ui.Path path = ui.Path()
+      ..moveTo(w * 0.12, h * 0.82)
+      ..lineTo(w * 0.5, h * 0.18)
+      ..lineTo(w * 0.88, h * 0.82);
+
+    // A faint white backing keeps the chevron legible over a same-hue trail and
+    // over busy tiles, without the weight of a full casing.
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.3
+        ..strokeJoin = StrokeJoin.round
+        ..strokeCap = StrokeCap.round
+        ..color = Colors.white.withValues(alpha: 0.7),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.18
+        ..strokeJoin = StrokeJoin.round
+        ..strokeCap = StrokeCap.round
+        ..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ChevronPainter old) => old.color != color;
+}
+
 /// A round floating control over the map — full screen, fit, renderer swap.
 class MapIconButton extends StatelessWidget {
   const MapIconButton({

@@ -79,6 +79,59 @@ void main() {
     });
   });
 
+  group('same-instant ordering', () {
+    testWidgets('a departure renders above the trip it starts',
+        (WidgetTester tester) async {
+      // Leaving a company and the trip that follows share one instant:
+      // travelling.time is when movement began, which is when you left. The
+      // timeline must read in the order it happened — leave, then travel — not
+      // in enum declaration order, which would surface travelling first.
+      final DateTime instant = DateTime(2026, 11, 5, 14, 0);
+      await _pump(tester, <ActivityEvent>[
+        ActivityEvent(
+          id: 'trip',
+          type: ActivityType.travelling,
+          time: instant,
+          title: 'Travelling',
+        ),
+        ActivityEvent(
+          id: 'depart',
+          type: ActivityType.left,
+          time: instant,
+          title: 'Left Nova Retail House',
+        ),
+      ]);
+
+      final double leftY = tester.getTopLeft(find.text('Left Nova Retail House')).dy;
+      final double travellingY = tester.getTopLeft(find.text('Travelling')).dy;
+      expect(leftY, lessThan(travellingY),
+          reason: 'you cannot be travelling before you have left');
+    });
+
+    testWidgets('earlier events still render above later ones',
+        (WidgetTester tester) async {
+      await _pump(tester, <ActivityEvent>[
+        ActivityEvent(
+          id: 'late',
+          type: ActivityType.reportSubmitted,
+          time: _t.add(const Duration(hours: 1)),
+          title: 'Report submitted',
+        ),
+        ActivityEvent(
+          id: 'early',
+          type: ActivityType.arrived,
+          time: _t,
+          title: 'Arrived at ABC Trading Ltd.',
+        ),
+      ]);
+
+      final double earlyY =
+          tester.getTopLeft(find.text('Arrived at ABC Trading Ltd.')).dy;
+      final double lateY = tester.getTopLeft(find.text('Report submitted')).dy;
+      expect(earlyY, lessThan(lateY));
+    });
+  });
+
   group('alerts outside the health family', () {
     testWidgets('a long stay still flags red without changing type',
         (WidgetTester tester) async {

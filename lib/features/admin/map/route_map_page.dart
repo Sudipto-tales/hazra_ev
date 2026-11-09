@@ -5,6 +5,7 @@ import '../../../core/config/tracking_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/dimens.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/street_view.dart';
 import '../../../data/company_directory.dart';
 import '../../../data/models/models.dart';
 import '../../../state/app_scope.dart';
@@ -177,6 +178,11 @@ class _RouteMapPageState extends State<RouteMapPage> {
                   track: track,
                   config: _config,
                   accuracy: accuracy,
+                  // The employee's identity hue, the same colour their trail
+                  // wears on the live team map. The tile renderer colours by
+                  // work session instead; the painted fallback has no session
+                  // palette, so identity is the honest thing to show here.
+                  routeColor: AppColors.employeeColor(widget.employee.id),
                   selectedId: _selectedId,
                   onSelect: (String? id) =>
                       setState(() => _selectedId = id),
@@ -286,6 +292,7 @@ class _RouteCanvas extends StatefulWidget {
     required this.track,
     required this.config,
     required this.accuracy,
+    required this.routeColor,
     required this.selectedId,
     required this.onSelect,
     this.onUseTiles,
@@ -294,6 +301,10 @@ class _RouteCanvas extends StatefulWidget {
   final RouteTrack track;
   final TrackingConfig config;
   final RouteAccuracy accuracy;
+
+  /// The employee's identity hue for the trace, glow and rough stretches.
+  final Color routeColor;
+
   final String? selectedId;
   final ValueChanged<String?> onSelect;
 
@@ -358,7 +369,8 @@ class _RouteCanvasState extends State<_RouteCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    final RouteMapColors colors = RouteMapColors.of(context);
+    final RouteMapColors colors =
+        RouteMapColors.of(context, routeColor: widget.routeColor);
 
     return SizedBox(
       height: 340,
@@ -645,6 +657,10 @@ class _SelectionCard extends StatelessWidget {
               dense: true,
             ),
             ..._accuracyRows(context, accuracy.visit(visit)),
+            _StreetViewAction(
+              latitude: visit.latitude,
+              longitude: visit.longitude,
+            ),
           ],
         ),
       );
@@ -696,6 +712,10 @@ class _SelectionCard extends StatelessWidget {
               dense: true,
             ),
             ..._accuracyRows(context, quality),
+            _StreetViewAction(
+              latitude: stop.latitude,
+              longitude: stop.longitude,
+            ),
           ],
         ),
       );
@@ -726,6 +746,38 @@ class _SelectionCard extends StatelessWidget {
         _RoughGpsNote(threshold: accuracy.thresholdLabel),
       ],
     ];
+  }
+}
+
+/// A "Street View" action for a stop or visit callout.
+///
+/// Discoverable on purpose: Street View is the obvious question at a stop —
+/// "what is actually there?" — so it sits in the card as a labelled button
+/// rather than hiding behind a map gesture. Opens an external panorama at the
+/// coordinate; no key, no billing, no in-app viewer.
+class _StreetViewAction extends StatelessWidget {
+  const _StreetViewAction({required this.latitude, required this.longitude});
+
+  final double latitude;
+  final double longitude;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(top: Insets.xs),
+        child: TextButton.icon(
+          onPressed: () => StreetView.open(context, latitude, longitude),
+          icon: const Icon(Icons.streetview_rounded, size: 18),
+          label: const Text('Street View'),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: Insets.sm),
+            visualDensity: VisualDensity.compact,
+          ),
+        ),
+      ),
+    );
   }
 }
 
