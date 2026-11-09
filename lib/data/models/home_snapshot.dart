@@ -20,6 +20,7 @@ class HomeSnapshot {
     required this.sync,
     this.dayState = DayState.open,
     this.closeout,
+    this.isNonWorkingDay = false,
   });
 
   final WorkStatus status;
@@ -39,6 +40,15 @@ class HomeSnapshot {
 
   /// Present once the employee has submitted their end-of-day declaration.
   final DayCloseout? closeout;
+
+  /// True when today is a holiday or a weekly rest day — the server will refuse
+  /// `POST /tracking/sessions` with `NON_WORKING_DAY`, so Start Work is offered
+  /// only as a disabled, annotated action.
+  ///
+  /// Tolerant and additive: a server that does not send the `nonWorkingDay`
+  /// flag leaves this `false`, in which case the only guard is the 409 that
+  /// comes back from the session-start call itself (the race path).
+  final bool isNonWorkingDay;
 
   WorkSession? get activeSession {
     for (final WorkSession s in sessions) {
@@ -60,6 +70,7 @@ class HomeSnapshot {
     SyncSnapshot? sync,
     DayState? dayState,
     DayCloseout? closeout,
+    bool? isNonWorkingDay,
   }) {
     return HomeSnapshot(
       status: status ?? this.status,
@@ -74,6 +85,7 @@ class HomeSnapshot {
       sync: sync ?? this.sync,
       dayState: dayState ?? this.dayState,
       closeout: closeout ?? this.closeout,
+      isNonWorkingDay: isNonWorkingDay ?? this.isNonWorkingDay,
     );
   }
 }

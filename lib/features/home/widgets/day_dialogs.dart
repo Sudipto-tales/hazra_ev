@@ -116,6 +116,39 @@ Future<void> showOfflineDialog(
   );
 }
 
+/// Today is a holiday or a weekly rest day, so work cannot start.
+Future<void> showNonWorkingDayDialog(BuildContext context, {String? message}) {
+  return showDialog<void>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        icon: const Icon(
+          Icons.beach_access_rounded,
+          color: AppColors.info,
+          size: 34,
+        ),
+        title: const Text('Not a working day', textAlign: TextAlign.center),
+        content: Text(
+          message ??
+              'Today is a holiday or a weekly rest day, so you can’t start '
+                  'work. Enjoy your day off.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        actions: <Widget>[
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(120, Sizes.touchTarget),
+            ),
+            child: const Text('Got it'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 /// The day is already closed and only an admin can reopen it.
 Future<void> showDayLockedDialog(BuildContext context, DayState state) {
   return showDialog<void>(

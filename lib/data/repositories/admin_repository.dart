@@ -189,6 +189,32 @@ abstract class AdminRepository {
 
   Future<TrackingConfig> saveConfig(TrackingConfig config);
 
+  // --------------------------------------------------------- holiday calendar
+
+  /// `GET /admin/holidays?year=` — the dated public-holiday calendar for one
+  /// year. Yearly entries come back already projected onto [year] and the list
+  /// is sorted by date, so the UI does no calendar arithmetic.
+  Future<List<Holiday>> holidays({required int year});
+
+  /// `POST /admin/holidays` — upserts on the date. Used for the One-time and
+  /// Yearly recurrence choices; Weekly is a weekend-day write, not a holiday.
+  Future<Holiday> saveHoliday({
+    required DateTime date,
+    required String name,
+    required HolidayRecurrence recurrence,
+  });
+
+  /// `DELETE /admin/holidays?date=` — removes a dated holiday. Forgiving on a
+  /// projected yearly date, which resolves back to its stored anchor.
+  Future<void> deleteHoliday(DateTime date);
+
+  /// `GET /admin/weekend-days` → ISO weekday numbers (1=Mon..7=Sun).
+  Future<List<int>> weekendDays();
+
+  /// `PUT /admin/weekend-days` — replaces the weekly rest-day set. The server
+  /// dedupes and sorts, so the returned list is authoritative.
+  Future<List<int>> saveWeekendDays(List<int> days);
+
   /// Uploads a product image and returns the public URL.
   Future<String> uploadProductImage(XFile file);
 }

@@ -146,9 +146,12 @@ class MonthLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Attendance is binary now — any started session is Present, a working day
+    // with none is Absent. `partial` is retired from the live vocabulary (the
+    // enum and parsing keep it only so historical payloads still decode), so it
+    // is not listed here.
     const List<(String, Color)> items = <(String, Color)>[
       ('Present', AppColors.success),
-      ('Partial', AppColors.warning),
       ('Absent', AppColors.danger),
       ('Holiday', AppColors.info),
       ('No data', AppColors.textTertiary),

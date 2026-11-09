@@ -236,7 +236,9 @@ class AdminMockData {
         continue;
       }
 
-      final bool partial = roll < arc.absenceRate + 10;
+      // A lighter day, but still Present — attendance is binary now, so there
+      // is no `partial` status. The flag only varies the day's intensity.
+      final bool light = roll < arc.absenceRate + 10;
       final DateTime joining = DateTime(
         date.year,
         date.month,
@@ -245,12 +247,12 @@ class AdminMockData {
         rnd.nextInt(58),
       );
       final int workedMinutes =
-          partial ? 170 + rnd.nextInt(100) : 430 + rnd.nextInt(160);
-      final int stopMinutes = partial ? 30 + rnd.nextInt(60) : 55 + rnd.nextInt(120);
-      final int visits = partial
+          light ? 170 + rnd.nextInt(100) : 430 + rnd.nextInt(160);
+      final int stopMinutes = light ? 30 + rnd.nextInt(60) : 55 + rnd.nextInt(120);
+      final int visits = light
           ? 1 + rnd.nextInt(2)
           : max(1, arc.visitBase - 1 + rnd.nextInt(3));
-      final double distance = partial
+      final double distance = light
           ? arc.distanceBase * 0.45 + rnd.nextInt(10) + rnd.nextDouble()
           : arc.distanceBase * 0.75 + rnd.nextInt(24) + rnd.nextDouble();
 
@@ -258,10 +260,10 @@ class AdminMockData {
         Attendance(
           id: 'att_${employeeId}_${date.millisecondsSinceEpoch}',
           date: date,
-          status: partial ? AttendanceStatus.partial : AttendanceStatus.present,
+          status: AttendanceStatus.present,
           joiningTime: joining,
           endTime: joining.add(Duration(minutes: workedMinutes)),
-          sessionCount: partial ? 1 : 1 + rnd.nextInt(3),
+          sessionCount: light ? 1 : 1 + rnd.nextInt(3),
           workedDuration: Duration(minutes: workedMinutes),
           distanceKm: double.parse(distance.toStringAsFixed(1)),
           companiesVisited: visits,

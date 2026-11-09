@@ -5,9 +5,11 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/config/tracking_config.dart';
 import '../../core/utils/formatters.dart';
 import '../../state/notification_center.dart';
+import '../api/api_exception.dart';
 import '../mock/admin_mock_data.dart';
 import '../mock/day_lock_store.dart';
 import '../mock/account_deletion_store.dart';
+import '../mock/holiday_store.dart';
 import '../mock/mock_data.dart';
 import '../mock/product_store.dart';
 import '../models/models.dart';
@@ -32,10 +34,12 @@ class MockAdminRepository implements AdminRepository {
     NotificationCenter? notifications,
     DayLockStore? dayLock,
     AccountDeletionStore? deletions,
+    HolidayStore? holidays,
   })  : _products = products ?? ProductStore(),
         _notifications = notifications ?? NotificationCenter(),
         _dayLock = dayLock ?? DayLockStore(),
-        _deletions = deletions ?? AccountDeletionStore();
+        _deletions = deletions ?? AccountDeletionStore(),
+        _holidays = holidays ?? HolidayStore();
 
   @override
   Future<List<AccountDeletionRequest>> accountDeletionRequests() =>
@@ -64,6 +68,10 @@ class MockAdminRepository implements AdminRepository {
   final AccountDeletionStore _deletions;
   final ProductStore _products;
   final NotificationCenter _notifications;
+
+  /// Shared with `MockEmployeeRepository` — the admin writes the calendar here
+  /// and the employee's Start Work guard reads it. See [HolidayStore].
+  final HolidayStore _holidays;
 
   final List<Employee> _created = <Employee>[];
   final Map<String, Employee> _edited = <String, Employee>{};
@@ -857,6 +865,73 @@ class MockAdminRepository implements AdminRepository {
   Future<TrackingConfig> saveConfig(TrackingConfig config) async {
     _config = config;
     return _delayed(_config);
+  }
+
+  // --------------------------------------------------------- holiday calendar
+
+  @override
+  Future<List<Holiday>> holidays({required int year}) =>
+      _delayed(_holidays.holidaysForYear(year));
+
+  @override
+  Future<Holiday> saveHoliday({
+    required DateTime date,
+    required String name,
+    required HolidayRecurrence recurrence,
+  }) {
+    // Mirror the server's 422: a blank name is rejected before it is stored.
+    if (name.trim().isEmpty) {
+      return Future<Holiday>.delayed(
+        latency,
+        () => throw const ApiException(
+          code: 'VALIDATION',
+          message: 'name is required',
+          status: 422,
+          field: 'name',
+        ),
+      );
+    }
+    return _delayed(_holidays.upsertHoliday(
+      date: date,
+      name: name.trim(),
+      recurrence: recurrence,
+    ));
+  }
+
+  @override
+  Future<void> deleteHoliday(DateTime date) {
+    if (!_holidays.deleteHoliday(date)) {
+      return Future<void>.delayed(
+        latency,
+        () => throw const ApiException(
+          code: 'HOLIDAY_NOT_FOUND',
+          message: 'No holiday on that date',
+          status: 404,
+        ),
+      );
+    }
+    return _delayed(null);
+  }
+
+  @override
+  Future<List<int>> weekendDays() => _delayed(_holidays.weekendDays);
+
+  @override
+  Future<List<int>> saveWeekendDays(List<int> days) {
+    for (final int d in days) {
+      if (d < 1 || d > 7) {
+        return Future<List<int>>.delayed(
+          latency,
+          () => throw const ApiException(
+            code: 'VALIDATION',
+            message: 'weekendDays values must be 1..7 (1=Mon..7=Sun)',
+            status: 422,
+            field: 'weekendDays',
+          ),
+        );
+      }
+    }
+    return _delayed(_holidays.setWeekendDays(days));
   }
 
   @override

@@ -4,6 +4,7 @@ import '../api/api_exception.dart';
 import '../../state/notification_center.dart';
 import '../mock/day_lock_store.dart';
 import '../mock/account_deletion_store.dart';
+import '../mock/holiday_store.dart';
 import '../mock/mock_data.dart';
 import '../mock/product_store.dart';
 import '../models/models.dart';
@@ -20,10 +21,12 @@ class MockEmployeeRepository implements EmployeeRepository {
     NotificationCenter? notifications,
     DayLockStore? dayLock,
     AccountDeletionStore? deletions,
+    HolidayStore? holidays,
   })  : _products = products ?? ProductStore(),
         _notifications = notifications ?? NotificationCenter(),
         _dayLock = dayLock ?? DayLockStore(),
-        _deletions = deletions ?? AccountDeletionStore();
+        _deletions = deletions ?? AccountDeletionStore(),
+        _holidays = holidays ?? HolidayStore();
 
   final Duration latency;
   final AccountDeletionStore _deletions;
@@ -45,6 +48,10 @@ class MockEmployeeRepository implements EmployeeRepository {
   /// Shared with `MockAdminRepository` — see [DayLockStore]. This is what
   /// makes an admin reopen show up on the employee's Home.
   final DayLockStore _dayLock;
+
+  /// Shared with `MockAdminRepository` — see [HolidayStore]. Lets the Start Work
+  /// guard reflect a holiday the admin added, with no server in between.
+  final HolidayStore _holidays;
 
   /// Mutable so [updateProfile] is observable across calls, the way the real
   /// endpoint is. Seeded from the fixture.
@@ -113,6 +120,7 @@ class MockEmployeeRepository implements EmployeeRepository {
         sync: MockData.syncSnapshot,
         dayState: _dayLock.state,
         closeout: _closeout,
+        isNonWorkingDay: _holidays.isNonWorkingDay(MockData.today),
       ),
     );
   }

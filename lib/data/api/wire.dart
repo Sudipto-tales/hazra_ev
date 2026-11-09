@@ -247,6 +247,30 @@ class Wire {
     );
   }
 
+  /// `GET /admin/holidays` row — `{date, name, recurrence}`. The server has
+  /// already projected `date` onto the requested year, so it is a plain day.
+  static Holiday holiday(Map<String, dynamic> j) => Holiday(
+        date: date(j['date']),
+        name: str(j['name']),
+        recurrence: HolidayRecurrenceX.fromWire(strOrNull(j['recurrence'])),
+      );
+
+  /// `GET/PUT /admin/weekend-days` → `{weekendDays:[int]}` (ISO 1=Mon..7=Sun).
+  /// Out-of-range or non-integer values are dropped rather than trusted.
+  static List<int> weekendDays(Map<String, dynamic> j) {
+    final Object? raw = j['weekendDays'];
+    if (raw is! List) return const <int>[];
+    final List<int> out = <int>[];
+    for (final Object? value in raw) {
+      if (value is num && value == value.toInt()) {
+        final int day = value.toInt();
+        if (day >= 1 && day <= 7 && !out.contains(day)) out.add(day);
+      }
+    }
+    out.sort();
+    return out;
+  }
+
   // -------------------------------------------------------- sessions & fixes
 
   static WorkSession session(Map<String, dynamic> j) => WorkSession(
@@ -659,6 +683,10 @@ class Wire {
         ),
         dayState: _enum(DayState.values, j['dayState'], DayState.open),
         closeout: dayCloseoutOrNull(j['closeout']),
+        // Additive: absent on a server that predates the binary-attendance
+        // work, in which case it reads false and the 409 race path is the only
+        // guard. See `HomeSnapshot.isNonWorkingDay`.
+        isNonWorkingDay: boolean(j['nonWorkingDay']),
       );
 
   static EmployeeDay employeeDay(Map<String, dynamic> j, Employee fallback) =>

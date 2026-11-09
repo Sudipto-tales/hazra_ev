@@ -424,6 +424,56 @@ class HttpAdminRepository implements AdminRepository {
     return Wire.config(result.map);
   }
 
+  // --------------------------------------------------------- holiday calendar
+
+  @override
+  Future<List<Holiday>> holidays({required int year}) async {
+    final ApiResult result = await _api.get(
+      '/admin/holidays',
+      query: <String, dynamic>{'year': year},
+    );
+    return result.list.map(Wire.holiday).toList();
+  }
+
+  @override
+  Future<Holiday> saveHoliday({
+    required DateTime date,
+    required String name,
+    required HolidayRecurrence recurrence,
+  }) async {
+    final ApiResult result = await _api.post(
+      '/admin/holidays',
+      body: <String, dynamic>{
+        'date': Wire.day(date),
+        'name': name,
+        'recurrence': recurrence.wire,
+      },
+    );
+    return Wire.holiday(result.map);
+  }
+
+  /// `DELETE` takes the date as a query parameter. The verb carries no body, so
+  /// it rides in the path — `_api.delete` has no query argument, and
+  /// `Uri.parse` keeps the `?date=` the server reads by PK.
+  @override
+  Future<void> deleteHoliday(DateTime date) =>
+      _api.delete('/admin/holidays?date=${Wire.day(date)}');
+
+  @override
+  Future<List<int>> weekendDays() async {
+    final ApiResult result = await _api.get('/admin/weekend-days');
+    return Wire.weekendDays(result.map);
+  }
+
+  @override
+  Future<List<int>> saveWeekendDays(List<int> days) async {
+    final ApiResult result = await _api.put(
+      '/admin/weekend-days',
+      body: <String, dynamic>{'weekendDays': days},
+    );
+    return Wire.weekendDays(result.map);
+  }
+
   @override
   Future<String> uploadProductImage(XFile file) async {
     return _api.uploadProductImage(file);

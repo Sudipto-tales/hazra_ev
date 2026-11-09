@@ -12,6 +12,7 @@ import '../../../widgets/stat_tile.dart';
 import '../../../widgets/states.dart';
 import '../../auth/role_select_page.dart';
 import '../../profile/version_label.dart';
+import '../calendar/holiday_calendar_page.dart';
 import '../employees/employees_page.dart';
 import '../manage/tracking_rules_page.dart';
 import '../manage/account_deletion_requests_page.dart';
@@ -203,6 +204,16 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => const ProductsPage(),
+                        ),
+                      ),
+                    ),
+                    SettingsTile(
+                      icon: Icons.event_busy_outlined,
+                      title: 'Holiday calendar',
+                      subtitle: 'Public holidays and weekly rest days',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const HolidayCalendarPage(),
                         ),
                       ),
                     ),
